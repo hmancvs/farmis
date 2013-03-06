@@ -1,0 +1,90 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$loanid = decode($request->loanid);
+	$loan = new Loan();
+	$loan->populate($loanid);
+	// debugMessage($loan->toArray());
+	
+	$baseurl = $this->baseUrl("finance/processpaycredit");
+	$loanpayment = new LoanPayment();
+	$loanpayment->setLoanID($loan->getID());
+	if(!isEmptyString($request->id)){
+		$loanpayment->populate(decode($request->id));
+	}
+	
+	#in case of errors in session, populate the fields from session
+	if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
+		$loanpayment->processPost($session->getVar(FORM_VALUES));	
+	}
+	
+	$title = "New Loan Debit"; 
+	$this->headTitle($title);
+	
+?>
+<script>
+	$(document).ready(function() {
+		$("#indexform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				paymentdate: "required",
+				amount: {
+					required: true
+				}
+			}, 
+			// the messages for each of the fields being validated
+			messages: {		
+				paymentdate: "Please select a Date",
+				amount: {
+					required: "Please enter Amount"
+				}
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						error.appendTo("#"+element.attr("name")+"_error")
+						break;
+				}			
+			}
+		});
+		
+		// datepickerOpts = new Date();   
+		$("#paymentdate").datepicker(datepickerOpts);
+	}); 
+</script>
+<style>
+
+</style>
+<div class="popupdiv">
+<form class="form-horizontal well span6" id="indexform" action="<?php echo $this->baseUrl(); ?>" method="post">
+    <table class="table">
+		<?php if($sessionhaserror) { ?>
+	        <tr>
+	        	<td colspan="2"><div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div></td>
+	        </tr>
+        <?php } ?>
+        <tr>
+            <td style="width:25%;"><label class="control-label">Date Paid: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><input type="text" name="paymentdate" id="paymentdate" class="datefield hastooltip width100" value="<?php echo changeMySQLDateToPageFormat($loanpayment->getPaymentDate()); ?>" title="<?php echo $this->translate("season_credit_paymentdate_tooltip"); ?>" />
+            <input type="hidden" name="entityname" value="LoanPayment" />
+            <input type="hidden" id="id" name="id" value="<?php echo encode($loanpayment->getID()); ?>" />
+            <input type="hidden" id="loanid" name="loanid" value="<?php echo $loanpayment->getLoanID(); ?>" />
+            <input type="hidden" name="<?php echo URL_FAILURE; ?>" value="<?php echo encode($this->baseUrl('finance/paycredit')); ?>" />			   				
+            <div id="inputdate_error"></div></td>
+        </tr>
+        <tr>
+            <td><label class="control-label">Amount Paid: <?php echo $this->translate("global_required_field_marker"); ?> </label></td>
+            <td><div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="amount" id="amount" class="width100 hastooltip isamount rightalign" value="<?php echo $loanpayment->getAmount(); ?>" title="<?php echo $this->translate("season_credit_paidamount_tooltip"); ?>" /></div><div id="amount_error"></div>
+            </td>
+        </tr>
+        <tr>
+            <td><label class="control-label">Notes:</label></td>
+            <td><textarea name="notes" id="notes" class="span3 hastooltip" style="width:80%;" title="<?php echo $this->translate("season_credit_notes_tooltip"); ?>"><?php echo $loanpayment->getNotes(); ?></textarea></td>
+        </tr>
+  </table>
+</form>
+</div>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

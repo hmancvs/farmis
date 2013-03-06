@@ -1,0 +1,73 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$title = "Testimonials";
+	$this->headTitle($this->translate("appname")." | ".$title);
+
+?>
+<style>
+#newsdetails {
+	width:100%; 
+	padding-bottom:10px; 
+	margin-top:25px
+}
+#latestband {
+	height:30px; 
+	margin-bottom:5px; 
+	width:100%; 
+	padding-top:6px; 
+	padding-bottom:6px; 
+	font-weight:bold;
+}
+.thumbinfo.new_pic {
+	width:80px;
+}
+.thumbinfo.new_pic img {
+	width:80px;	
+}
+#forum ul.comments li div.postdetail {
+	width:83%;
+}
+label#bestfarmis {
+	margin:5px; 
+	display:block; 
+	font-weight:bold; 
+	font-size:15px;
+}
+</style>
+<div class="row marginleft0">
+    <div class="span8 pull-left marginleft0 public_leftcolumn">
+        <div class="content discussion" id="forum">
+            <div class="well lighter" id="latestband"><h1><?php echo $title; ?></h1> </div>
+            <div id="newsdetails">
+            	<label class="calfont" id="bestfarmis" style="margin-bottom:15px;">FARMIS is the best. But you don't have to take our word for it:</label>
+                 <ul class="comments">
+                 	<li id="comment_1">
+                        <div class="thumbinfo new_pic"> 
+                            <a class="profilepopup" title="James Sulaiman"><img src="<?php echo $this->baseUrl('uploads/user_0/avatar/testuser1.jpg'); ?>" /></a>
+                        </div>        	
+                        <div class="postdetail">
+                            <a class="profilepopup" title="James Sulaiman"><h2>James Sulaiman</h2></a>                    
+                            <span>I have just created my FARMIS account to help me track the different activities on my farm. Am greatfull to you people of Infotrade for the good work.</span>                                
+                            <label><?php echo date('m/d/Y - g:i A', strtotime('2013-02-10 09:30:00')); ?></label>
+                        </div>
+                    </li>
+                    <li id="comment_2">
+                    	<div class="thumbinfo new_pic"> 
+                            <a class="profilepopup" title="Rose Mary Kateraine"><img src="<?php echo $this->baseUrl('uploads/user_0/avatar/testuser6.jpg'); ?>" /></a>
+                        </div>        	
+                        <div class="postdetail">
+                            <a href="javascript: void(0)" class="profilepopup" title="Rose Mary Kateraine"><h2>Rose Mary Kateraine</h2></a>                    
+                            <span> With the new FARMIS i appreciate the ease with which i could track all expenditures for the season in one place.</span>                                
+                            <label><?php echo date('m/d/Y - g:i A', strtotime('2013-01-24 13:05:00')); ?></label>
+                        </div>
+                    </li>
+                 </ul>
+              </div>
+        </div>
+    </div>
+    <?php require APPLICATION_PATH."/views/scripts/index/righthandband.phtml"; ?>
+</div>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

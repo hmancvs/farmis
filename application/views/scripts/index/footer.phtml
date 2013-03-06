@@ -1,0 +1,166 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+?>
+<style>
+#footertable td.section {
+	width:24%;
+	vertical-align:top;
+	padding:8px;
+}
+h2.footerheading {
+	color:#fff;
+	font-size:17px;
+	font-weight:bold;
+	border-bottom:1px solid #c8c8c5;
+	padding-bottom:5px;
+	margin-bottom:10px;
+	width:80%;
+	line-height:24px;
+}
+#newletterbg {
+	width:100%; 
+	background-color:#f1f1f1; 
+	min-height:50px; 
+	padding:10px 0 0 5px; 
+	khtml-border-radius: 3px; 
+	-moz-border-radius: 3px; 
+	-opera-border-radius: 3px; 
+	-webkit-border-radius: 3px; 
+	border-radius: 3px;
+}
+#receivemail {
+	display:inline-block; 
+	font-size:16px; 
+	line-height:24px; 
+	color:#e4eae4; 
+	padding:15px 0 10px 0; 
+	width:100%;
+}
+ul.footerlinks {
+	list-style:none;
+	margin:10px 0 0 5px;;
+	padding:0;
+}
+ul.footerlinks li {
+	display:block;
+	padding:0;
+	margin:0;
+	height:auto;
+	position:relative;
+}
+ul.footerlinks li > a {
+	font-size:16px;
+	padding:8px 0;
+	display:block;
+	width:95%;
+	font-family:'calibri','Telex',sans-serif;
+}
+ul.footerlinks.connect li {
+	padding-left:10px;	
+}
+ul.footerlinks.connect li img {
+	position:absolute; 
+	left:0; top:10px;
+}
+ul.footerlinks.connect li span {
+	padding-left:20px;
+}
+#bottomrightlinks {
+	list-style:none; 
+	margin:0; 
+	padding:0; 
+	position:absolute; 
+	bottom:5px;
+	left:5px;
+}
+#bottomrightlinks li {
+	float:left;
+	border-right:1px solid #908e8e;
+}
+#bottomrightlinks li:last-child {
+	border-right:none;	
+}
+#bottomrightlinks li a {
+	padding:5px 10px;
+}
+</style>
+<table class="noborder margin0" id="footertable" style="width:980px;">
+	<tr>
+    	<td class="section">
+        	<h2 class="footerheading calfont">Quick Links</h2>
+            <ul class="footerlinks">
+            	<li><a href="<?php echo $this->baseUrl('index'); ?>"><span>Home</span></a></li>
+                <li><a href="<?php echo $this->baseUrl('aboutus'); ?>"><span>About</span></a></li>
+                <li><a href="<?php echo $this->baseUrl('news'); ?>"><span>Latest News</span></a></li>
+                <li><a href="<?php echo $this->baseUrl('benefits'); ?>"><span>Benefits</span></a></li>
+                <li><a href="<?php echo $this->baseUrl('tour'); ?>"><span>Feature Tour</span></a></li>
+                <li><a href="<?php echo $this->baseUrl('howitworks'); ?>"><span>How it Works</span></a></li>
+                <!-- <li><a href="<?php //echo $this->baseUrl('signup'); ?>"><span>Signup and Pricing</span></a></li>-->
+                <li><a href="<?php echo $this->baseUrl('forum'); ?>"><span>Community Forum</span></a></li>
+                <li><a href="<?php echo $this->baseUrl('faqs'); ?>"><span>Help Center and FAQs</span></a></li>
+            </ul>
+        </td>
+        <td class="section">
+        	<h2 class="footerheading calfont">Partners</h2>
+            <ul class="footerlinks">
+            	<li><a href="http://infotradeuganda.com" target="_blank"><span>InfoTrade Uganda</span></a></li>
+                <li><a href="http://fituganda.com" target="_blank"><span>FIT Uganda</span></a></li>
+                <li><a href="http://mis.infotradeuganda.com" target="_blank"><span>AGMIS</span></a></li>
+                <li><a href="http://www.nogamu.org.ug" target="_blank"><span>NOGAMU</span></a></li>
+                <li><a href="http://www.grameenfoundation.org" target="_blank"><span>Grameen Foundation</span></a></li>
+                <li><a href="http://www.ricnet.info" target="_blank"><span>RICNET</span></a></li>
+            </ul>
+        </td>
+        <td class="section" style="width:23%;">
+        	<h2 class="footerheading calfont">Connect with Us</h2>
+            <ul class="footerlinks connect">
+            	<li><a href="http://www.facebook.com/infotrade.uganda" target="_blank"><img src="<?php echo $this->baseUrl('images/facebook.png'); ?>" /><span>Facebook Page</span></a></li>
+                <li><a href="https://twitter.com/InfotradeUganda" target="_blank"><img src="<?php echo $this->baseUrl('images/twitter.png'); ?>" /><span>Twitter</span></a></li>
+                <li><a href="http://www.youtube.com/user/FarmisUg" target="_blank"><img src="<?php echo $this->baseUrl('images/youtube.png'); ?>" /><span>YouTube</span></a></li>
+                <li><a href="<?php echo $this->baseUrl('rss'); ?>" target="_blank"><img src="<?php echo $this->baseUrl('images/rss.png'); ?>" /><span>RSS Feed</span></a></li>
+                <li><a href="<?php echo $this->baseUrl('contactus'); ?>"><img src="<?php echo $this->baseUrl('images/contactus.png'); ?>" /><span>Contact Us</span></a></li>
+                <li><a href="<?php echo $this->baseUrl('contactus/tellfriend'); ?>"><img src="<?php echo $this->baseUrl('images/contacts.png'); ?>" /><span>Tell A Friend</span></a></li>
+            </ul>
+        </td>
+        <td class="section" style="border-left:2px solid #838181; padding-left:20px; width:auto;">
+        	<h2 class="footerheading calfont">FARMIS Newsletter</h2>
+            <div id="newletterbg">
+            	<table style="width:98%;">
+                	<tr>
+                    	<td style="vertical-align:top;"><input type="text" style="width:160px;" name="subscribe_email" id="subscribe_email" class="span2" placeholder="Email" value="" /></td>
+                        <td style="vertical-align:top;"><a href="javascript: void(0)" id="newletter_trigger" class="btn btn-primary" style="padding:2px 5px 4px 5px; font-size:12px;">Subscribe</a></td>
+                    </tr>
+                    <tr>
+                    	<td colspan="2" class="padding0"><div id="process_error" style="margin-top:4px;"></div></td>
+                    </tr>
+                    <?php if(!isEmptyString($session->getVar('newsletter_success'))){ ?>
+                   		<tr><td colspan="2" class="padding0"><div class="alert alert-success clear"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar('newsletter_success'); ?></div></td></tr>
+                    <?php } ?>
+                    <?php if(!isEmptyString($session->getVar('newsletter_error'))){ ?>
+                   		<tr><td colspan="2" class="padding0"><div class="alert alert-error clear"><?php echo $session->getVar('newsletter_error'); ?></div></td></tr>
+                    <?php } ?>                  
+                </table>
+            </div>
+            <span class="calfont" id="receivemail">Receive emails announcing new features and promotions. We will only send emails when we have something usefull to share.</span>
+        </td>
+    </tr>
+    <tr>
+    	<td colspan="3" style="padding:0; height:30px; padding-right:40px;">
+        	<p style="color:#8ca77f; text-align:center; "><?php echo sprintf($this->translate("copyright"), date("Y"), 'Infotrade Uganda'); ?>.</p>
+        </td>
+        <td style="padding:15px 0 0 15px;">
+        	<div style="position:relative; display:block;">
+            	<ul id="bottomrightlinks">
+                    <li><a href="<?php echo $this->baseUrl('aboutus/termsofservice'); ?>"><span>Terms of Use</span></a></li>
+                    <li><a href="<?php echo $this->baseUrl('aboutus/privacypolicy'); ?>"><span>Privacy Policy</span></a></li>
+                    <li><a href="<?php echo $this->baseUrl('faqs'); ?>" title="Frequently Asked Questions"><span>FAQs</span></a></li>
+                </ul>
+            </div>
+        </td>
+    </tr>
+</table>
+<?php
+	$session->setVar('newsletter_success', '');
+	$session->setVar('newsletter_error', '');
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

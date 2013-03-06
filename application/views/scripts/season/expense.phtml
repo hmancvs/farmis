@@ -1,0 +1,221 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$refid = '';
+	$refvalue = '';
+	$type = $request->type;
+	switch($type){
+		case 'SeasonTillage':
+			$id = decode($request->refid);
+			$tillage = new SeasonTillage();
+			$tillage->populate($id);
+			$refid = 'tillageid';
+			$refvalue = $tillage->getID();
+			break;
+		case 'SeasonPlanting':
+			$id = decode($request->refid);
+			$plant = new SeasonPlanting();
+			$plant->populate($id);
+			$refid = 'plantingid';
+			$refvalue = $plant->getID();
+			break;
+		case 'SeasonTracking':
+			$id = decode($request->refid);
+			$treat = new SeasonTracking();
+			$treat->populate($id);
+			$refid = 'trackingid';
+			$refvalue = $treat->getID();
+			break;
+		case 'SeasonActivity':
+			$id = decode($request->refid);
+			$activity = new SeasonActivity();
+			$activity->populate($id);
+			$refid = 'activityid';
+			$refvalue = $activity->getID();
+			break;
+		case 'SeasonHarvest':
+			$id = decode($request->refid);
+			$harvest = new SeasonHarvest();
+			$harvest->populate($id);
+			$refid = 'harvestid';
+			$refvalue = $harvest->getID();
+			break;
+		case 'Sales':
+			$id = decode($request->refid);
+			$sale = new Sales();
+			$sale->populate($id);
+			$refid = 'saleid';
+			$refvalue = $sale->getID();
+			break;
+		default:
+			break;
+	}
+	// debugMessage($type);
+	
+	$baseurl = $this->baseUrl("season/expensecreate");
+	$expense = new SeasonInputDetail();
+	$expense->setInputDate(date('Y-m-d'));
+	$expense->setQuantity(1);
+	if(!isEmptyString($request->id)){
+		$expense->populate(decode($request->id));
+	}
+	
+	#in case of errors in session, populate the fields from session
+	if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
+		$expense->processPost($session->getVar(FORM_VALUES));	
+	}
+	
+	$title = "Add Expense"/*$this->translate("season_pagetitle_expense")*/; 
+	$this->headTitle($title);
+	
+?>
+<script>
+	$(document).ready(function() {
+		$("#indexform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				inputdate: "required",
+				type:  "required",
+				name:  "required",
+				quantity: {
+					required: true,
+					validate_number: true
+				},
+				amount: {
+					required: true,
+					validate_amount: true
+				}
+			}, 
+			// the messages for each of the fields being validated
+			messages: {		
+				inputdate: "Please select a Date<?php //echo $this->translate("inventory_servicedate_error"); ?>",
+				type:  "Please select a Type<?php //echo $this->translate("inventory_servicetype_error"); ?>",
+				name:  "Please enter description<?php //echo $this->translate("inventory_servicedescription_error"); ?>",
+				amount: {
+					required: "Please enter description<?php //echo $this->translate("inventory_servicedescription_error"); ?>"
+				}
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						error.appendTo("#"+element.attr("name")+"_error")
+						break;
+				}			
+			}
+		});
+		
+		$.validator.addMethod("validate_number", function(value, element) {				
+			if(!IsValidAmount(value)){
+				return false;
+			}
+			return true;
+		}, "Invalid Number");
+		
+		$.validator.addMethod("validate_amount", function(value, element) {				
+			if(!IsValidAmount(value)){
+				return false;
+			}
+			return true;
+		}, "Invalid Amount");
+		
+		// datepickerOpts = new Date();   
+		$("#inputdate").datepicker(datepickerOpts);
+		
+		$(".hastooltip").each(function(){		
+			var theid = $(this).attr('id');
+			var thepath = '<?php echo $this->baseUrl('images/questionmark.png'); ?>';
+			if($(this).attr('title') != "undefined" || $(this).attr('title') != ""){
+				$('<a href="javascript: void(0);" class="qcontainer" id="q_'+theid+'"><img src="'+thepath+'" /></a>').insertAfter(this);
+				$("#q_"+theid).attr('title', $(this).attr('title')).addClass('qtooltip');
+			}	    
+		});
+		$(".hastooltip_custom").each(function(){		
+			var theid = $(this).attr('id');
+			var thepath = '<?php echo $this->baseUrl('images/questionmark.png'); ?>';
+			if($(this).attr('title') != "undefined" || $(this).attr('title') != ""){
+				$("#tooltip_"+theid).html('<a href="javascript: void(0);" class="qcontainer" id="q_'+theid+'"><img src="'+thepath+'" /></a>').addClass('customtooltip');
+				$("#q_"+theid).attr('title', $(this).attr('title')).addClass('qtooltip');
+			}	    
+		}); 
+	
+		// $('.hastooltip').tipsy({fade: true, gravity: 'w', html: true, trigger: 'focus', offset: 15});
+		$('.qtooltip, label:has(input#type-1), label:has(input#type-2)').tipsy({fade: true, gravity: 'w', html: true, trigger: 'hover', offset: -5});
+		$(".hastooltip").attr('title','');
+		
+		// reset tab index
+		var tabindex = 1;
+		$('input,select,textarea').each(function() {
+			if (this.type != "hidden") {
+				var $input = $(this);
+				$input.attr("tabindex", tabindex);
+				tabindex++;
+			}
+		});
+	}); 
+</script>
+<style>
+
+
+</style>
+<div class="popupdiv">
+<form class="form-horizontal well span6" id="indexform" action="<?php echo $this->baseUrl(); ?>" method="post">
+    <table class="table">
+		<?php if($sessionhaserror) { ?>
+	        <tr>
+	        	<td colspan="2"><div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div></td>
+	        </tr>
+        <?php } ?>
+        <tr>
+            <td style="width:25%;"><label class="control-label">Date: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><input type="text" name="inputdate" id="inputdate" class="datefield hastooltip width100" value="<?php echo changeMySQLDateToPageFormat($expense->getInputDate()); ?>" title="<?php echo $this->translate("season_expensedate_tooltip"); ?>" />
+            <input type="hidden" name="entityname" value="SeasonInputDetail" />
+            <input type="hidden" id="id" name="id" value="<?php echo encode($expense->getID()); ?>" />
+            <input type="hidden" id="<?php echo $refid; ?>" name="<?php echo $refid; ?>" value="<?php echo $refvalue; ?>" />
+            <input type="hidden" name="<?php echo URL_FAILURE; ?>" value="<?php echo encode($this->baseUrl('season/expense')); ?>" />			   				
+            <div id="inputdate_error"></div></td>
+        </tr>
+        <tr>
+            <td><label class="control-label">Expense Type: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><?php
+                    $inputtypes = getAllExpenseTypes();
+                    $typesdropdown = new Zend_Form_Element_Select('type',
+                                        array(
+                                            'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $inputtypes),								
+                                            'view' => new Zend_View(),
+                                            'decorators' => array('ViewHelper'),
+                                            'class' => array('hastooltip', 'span3'),
+                                            'title' => $this->translate("season_expensetype_tooltip")
+                                        )
+                                    );
+                    $typesdropdown->setValue($expense->getType()); 
+                    echo $typesdropdown->render(); 
+               ?><div id="type_error"></div>
+            </td>
+        </tr>
+        <tr>
+            <td><label class="control-label">Item Description: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><input type="text" name="name" id="name" class="span3 hastooltip" value="<?php echo $expense->getName(); ?>" title="<?php echo $this->translate("season_expensename_tooltip"); ?>" /><div id="name_error"></div>
+            </td>
+        </tr>
+        <tr>
+            <td><label class="control-label">Source / Supplier: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><input type="text" name="source" id="source" class="span3 hastooltip" value="<?php echo $expense->getSource(); ?>" title="<?php echo $this->translate("season_expensesource_tooltip"); ?>" /><div id="source_error"></div>
+            </td>
+        </tr>
+        <tr>
+            <td><label class="control-label">Quantity: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td colspan="3"><input type="text" name="quantity" id="quantity" class="centeralign isnumber hastooltip width80" value="<?php echo $expense->getQuantity(); ?>" title="<?php echo $this->translate("season_expensequantity_tooltip"); ?>" /><div id="quantity_error"></div>
+            </td>
+        </tr>
+        <tr>
+            <td><label class="control-label">Total Amount: <?php echo $this->translate("global_required_field_marker"); ?> </label></td>
+            <td><div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="amount" id="amount" class="width100 hastooltip isamount rightalign" value="<?php echo $expense->getAmount(); ?>" title="<?php echo $this->translate("season_expenseamount_tooltip"); ?>" /></div><div id="amount_error"></div>
+            </td>
+        </tr>
+  </table>
+</form>
+</div>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

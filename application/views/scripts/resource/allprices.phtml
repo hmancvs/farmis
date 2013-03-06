@@ -1,0 +1,54 @@
+
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+		
+	$title = "Current Market Prices";
+	// meta data
+	$this->headTitle($title); 
+	
+	$user = new UserAccount();
+	$user->populate($userid);
+		
+	//if(isFarmer()){
+		$farmer = new Farmer();
+		$farmer->populate($farmerid);
+	//}
+	
+	$farmid = $farmer->getFarm()->getID();
+	$farm = $farmer->getFarm();
+	$thefarmid = $farmid;
+	
+?>
+<script>
+$(document).ready(function(){
+	// auto populate contact details 
+	$("#marketprices").html('<div style="padding-top:100px;" class="centeralign blocked"><label class="centeralign blocked">loading...</label><br />'+$("#wait").html()+'</div>');
+	$.get("<?php echo $this->baseUrl('graph/allpricesexport/pgc/true'); ?>", 
+	   {			
+		cachebuster: new Date().getTime()}, 			   
+		function(data){			
+			// alert(data);			
+			$('#marketprices').html(data);
+			equalHeight($("#leftcolumn, #centercolumn"));
+			$('#centercolumn').css({'height':'1775px'});	
+		}
+	);
+	
+});
+</script>
+<style>
+
+</style>	
+<?php require APPLICATION_PATH."/views/scripts/index/leftcolumn.phtml"; ?>
+    <div id="centercolumn">
+        <div class="widgetsection" style="min-height:800px; height:auto;">
+            <h3 style="color:#282727;"><?php echo $title; ?></h3>
+            <div style="padding-left:10px;">
+               <span id="marketprices"></span>
+            </div>
+        </div>
+    </div>
+</div>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

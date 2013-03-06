@@ -1,0 +1,218 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$inventory = new Inventory(); 
+	
+	// default title is to enable adding any payee
+	$title = $this->translate("inventory_pagetitle_new"); 
+	$posturl = $this->baseUrl("inventory/create");
+	$button_title = $this->translate("global_button_save")." Item"; 
+	
+	// set the payee if provided in the url 
+	if (!isEmptyString($request->id)) {
+		$inventory->populate(decode($request->id));
+		$title = $this->translate("inventory_pagetitle_edit"); 
+		$button_title = $this->translate("global_button_save_changes");
+		$posturl = $this->baseUrl("inventory/edit");	
+		//$itemno = substr($inventory->getRef(), -3);
+	} else {
+		$farm = new Farm();
+		$farm->populate(decode($request->farmid));
+		
+		$inventory->setFarmID($farm->getID());
+		$inventory->setType(1);
+	}
+	
+	$thefarmid = $inventory->getFarmID();
+	
+	#in case of errors in session, populate the fields from session
+	if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
+		$inventory->processPost($session->getVar(FORM_VALUES));	
+	}
+		
+	$this->headTitle($title);  
+	
+?>
+<script>
+	$(document).ready(function() {
+		$("#indexform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				itemname: "required",
+				type: "required",
+				categoryid: "required"
+			}, 
+			// the messages for each of the fields being validated
+			messages: {		
+				itemname: "<?php echo $this->translate("inventory_itemname_error"); ?>",
+				type: "<?php echo $this->translate("inventory_type_error"); ?>",
+				categoryid: "<?php echo $this->translate("inventory_categoryid_error"); ?>"
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						error.appendTo("#"+element.attr("name")+"_error")
+						break;
+				}			
+			}
+		});
+		
+		// datepickerOpts = new Date();   
+		$("#purchasedate").datepicker(datepickerOpts);
+		
+		$("#unitcost, #quantity").keyup(function(){
+			var price = $("#unitcost").val();
+			var qty = $("#quantity").val();
+			linetotal = 0;
+			if(!isEmptyString(price) && !isEmptyString(qty) && parseInt(price)>0 && parseInt(qty)>0){
+				var linetotal = qty * price;
+			}
+			$("#totalcost").val(linetotal);
+		});
+		$("#unitcost, #quantity").trigger('keyup');
+		
+	}); 
+</script>
+<h1><?php echo $this->translate('farm_title'); ?></h1>
+<div id="tabs">
+    <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
+    <div class="span9 tab-content" id="center">  
+		<?php require APPLICATION_PATH."/views/scripts/farm/tabstop.phtml"; ?>
+        <div id="inventory">
+        <form id="indexform" class="form-horizontal" action="<?php echo $posturl; ?>" method="post">
+			<?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+                <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+            <?php } ?>
+            <?php if($sessionhaserror) { ?>
+                <div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+            <?php } ?>
+            <div class="row margin0" style="">
+            	<span class="pull-left well lighter margin0" style="width:72%; min-height:230px; margin-bottom:10px;">
+                	<h3 class="well-legend"><?php echo $title; ?></h3>
+                	<table class="table noborder margin0" style="margin-top:15px;">
+                    	<tr>
+                            <td width="20%;"><label class="control-label"><?php echo $this->translate("inventory_itemname_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                            <td colspan="3"><input type="text" name="itemname" id="itemname" class="span3 hastooltip" value="<?php echo $inventory->getItemName(); ?>" placeholder="" title="<?php echo $this->translate("inventory_itemname_tooltip"); ?>" /><div id="itemname_error"></div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><label class="control-label"><?php echo $this->translate("inventory_description_label"); ?>: </label></td>
+                            <td colspan="3"><textarea name="description" id="description" class="span4 hastooltip expanding" style="min-height:60px; width:90%;" title="<?php echo $this->translate("season_description_tooltip"); ?>"><?php echo $inventory->getDescription(); ?></textarea></td>
+                        </tr>
+                        <tr>
+                        	<td><label class="control-label"><?php echo $this->translate("inventory_type_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                            <td colspan="3"><?php
+                                    $alltypes = getInventoryTypes();
+                                    $typesdropdown = new Zend_Form_Element_Select('type',
+                                                        array(
+                                                            'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $alltypes),								
+                                                            'view' => new Zend_View(),
+                                                            'decorators' => array('ViewHelper'),
+                                                            'class' => array('hastooltip', 'span3'),
+                                                            'title' => $this->translate("inventory_type_tooltip")
+                                                        )
+                                                    );
+                                    $typesdropdown->setValue($inventory->getType()); 
+                                    echo $typesdropdown->render(); 
+                               ?><div id="type_error"></div>
+                            </td>
+                        </tr>
+                        <tr>
+                        	<td><label class="control-label"><?php echo $this->translate("inventory_categoryid_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                            <td colspan="3"><?php
+                                    $allcats = getInventoryCategories();
+                                    $catsdropdown = new Zend_Form_Element_Select('categoryid',
+                                                        array(
+                                                            'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $allcats),								
+                                                            'view' => new Zend_View(),
+                                                            'decorators' => array('ViewHelper'),
+                                                            'class' => array('hastooltip', 'span3'),
+                                                            'title' => $this->translate("inventory_categoryid_tooltip")
+                                                        )
+                                                    );
+                                    $catsdropdown->setValue($inventory->getCategoryID()); 
+                                    echo $catsdropdown->render(); 
+                               ?><div id="categoryid_error"></div>
+                            </td>
+                        </tr>
+                        
+                    </table>
+                </span>
+                <span class="pull-right padding0" style="width:24%; margin-left:5px;">
+                	<div class="well margin0" style="height:160px;">
+                            <h3 class="well-legend">Quick Links</h3>
+                            <table class="table">                       
+                               <tr>		                    
+                                    <td class="formactions">
+                                    	<button type="submit" class="btn btn-primary savethenview"><i class="icon-ok icon-white"></i> <?php echo $button_title; ?></button>
+                                        <a href="javascript: void(0);" class="btn"><i class="icon-remove"></i> <?php echo $this->translate('global_button_cancel'); ?></a>
+                                        <input type="hidden" name="entityname" value="Inventory" />
+                                        <input type="hidden" id="id" name="id" value="<?php echo encode($inventory->getID()); ?>" />
+                                        <input type="hidden" id="farmid" name="farmid" value="<?php echo $inventory->getFarmID(); ?>" />
+                                        <input type="hidden" id="<?php echo SUCCESS_MESSAGE; ?>" name="<?php echo SUCCESS_MESSAGE; ?>" value="<?php echo $this->translate("global_save_success"); ?>" /> 
+                                    </td>
+                               </tr>
+                            </table>                           
+                        </div>
+                </span>
+            </div>
+            <div class="row margin0" style="margin-bottom:10px;">
+                <span class="pull-left" style="width:100%; margin-right:5px;">
+                    <div id="location_left" class="well lighter margin0" style="min-height:190px;"> 
+                        <h3 class="well-legend">Item Details</h3>
+                        <table class="table noborder">
+                            <tr>
+                                <td style="width:45%; padding-left:0;">
+                                    <table class="table">
+                                        <tr>
+                                            <td style="width:35%;"><label class="control-label"><?php echo $this->translate("inventory_purchasedate_label"); ?>: </label></td>
+                                            <td><input type="text" name="purchasedate" id="purchasedate" class="datefield width100" value="<?php echo changeMySQLDateToPageFormat($inventory->getPurchaseDate()); ?>" /><div id="purchasedate_error"></div></td>
+                                        </tr>
+                                        <tr>
+                                            <td><label class="control-label"><?php echo $this->translate("inventory_quantity_label"); ?>:</label></td>
+                                            <td><input style="width:50px;" type="text" name="quantity" id="quantity" class="centeralign isnumber width80" value="<?php echo $inventory->getQuantity(); ?>" placeholder="qty" />&nbsp;<input type="text" style="width:90px;" name="quantityunit" id="quantityunit" class="hastooltip width80" title="<?php echo $this->translate("inventory_quantity_tooltip"); ?>" value="<?php echo $inventory->getQuantityUnit(); ?>"placeholder="unit e.g, pieces" /><div id="quantity_error"></div></td>
+                                        </tr>
+                                        <tr>
+                                            <td><label class="control-label"><?php echo $this->translate("inventory_unitcost_label"); ?>:</label></td>
+                                            <td><div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="unitcost" id="unitcost" class="width100 hastooltip isamount" value="<?php echo $inventory->getUnitCost(); ?>" title="<?php echo $this->translate("inventory_unitcost_tooltip"); ?>" /></div><div id="unitcost_error"></div></td>
+                                        </tr>
+                                        <tr>
+                                            <td><label class="control-label"><?php echo $this->translate("inventory_totalcost_label"); ?>:</label></td>
+                                            <td><div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="totalcost" id="totalcost" class="width100 hastooltip isamount" value="<?php echo $inventory->getTotalCost(); ?>" title="<?php echo $this->translate("inventory_totalcost_tooltip"); ?>" /></div><div id="totalcost_error"></div></td>
+                                        </tr>
+                                    </table>
+                                </td>
+                                <td>
+                                    <table class="table">
+                                        <tr>
+                                            <td style="width:35%;"><label class="control-label"><?php echo $this->translate("inventory_modelno_label"); ?>: </label></td>
+                                            <td><input style="width:115px;" type="text" name="modelno" id="modelno" class="span2 hastooltip" value="<?php echo $inventory->getModelNo(); ?>" title="<?php echo $this->translate("inventory_modelno_tooltip"); ?>" /></td>
+                                        </tr>
+                                        <tr>
+                                            <td><label class="control-label"><?php echo $this->translate("inventory_serialno_label"); ?>: </label></td>
+                                            <td><input style="width:115px;" type="text" name="serialno" id="serialno" class="span2 hastooltip" value="<?php echo $inventory->getSerialNo(); ?>" title="<?php echo $this->translate("inventory_serialno_tooltip"); ?>" /></td>
+                                        </tr>
+                                        <tr>
+                                            <td><label class="control-label"><?php echo $this->translate("inventory_vendor_label"); ?>:</label></td>
+                                            <td><input type="text" name="vendor" id="vendor" class="width150 hastooltip" value="<?php echo $inventory->getVendor(); ?>" placeholder="" title="<?php echo $this->translate("inventory_vendor_tooltip"); ?>" /><div id="vendor_error"></div></td>
+                                        </tr>
+                                        <tr>
+                                            <td><label class="control-label"><?php echo $this->translate("inventory_status_label"); ?>:</label></td>
+                                            <td colspan="3"><input type="text" name="status" id="status" class="width150 hastooltip" value="<?php echo $inventory->getStatus(); ?>" placeholder="" title="<?php echo $this->translate("inventory_status_tooltip"); ?>" /><div id="status_error"></div></td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </span>
+            </div>
+        </form>
+        </div>
+        <?php require APPLICATION_PATH."/views/scripts/farm/tabsbottom.phtml"; ?>
+    </div>
+</div>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

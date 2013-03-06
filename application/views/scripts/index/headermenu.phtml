@@ -1,0 +1,236 @@
+<div class="xcontainer">
+    <ul class="mainnav" id="middlebar">
+        <?php if(isEmptyString($session->getVar('userid'))){ ?>
+            <li id="home" class="<?php echo ($request->getControllerName() == 'index') ? 'active' : ''; ?>">
+                <a href="<?php echo $this->baseUrl('index'); ?>"><span>Home</span></a>	
+            </li>
+        <?php } else { ?>
+        	<li id="home" class="<?php echo ($request->getControllerName() == 'dashboard') ? 'active' : ''; ?>">
+                <a href="<?php echo $this->baseUrl('dashboard'); ?>"><span>Dashboard</span></a>	
+            </li>
+        <?php } ?>
+        <?php if(!$isInnerPage){ ?>
+            <li id="about" class="<?php echo ($request->getControllerName() == 'aboutus') ? 'active' : ''; ?>">
+                <a href="<?php echo $this->baseUrl('aboutus'); ?>"><span>About</span></a>	
+                <ul class="submenu nav nav-pills nav-stacked dropdown-menu">            
+                    <li><a title="Background" href="#">Background</a></li>                
+                    <li><a title="Vision and Mission" href="#">Vision and Mission</a></li>
+                </ul>			
+            </li>
+            <li id="benefits" class="<?php echo ($request->getControllerName() == 'benefits') ? 'active' : ''; ?>">
+                <a href="<?php echo $this->baseUrl('benefits'); ?>"><span>Benefits</span></a>	
+            </li>
+            <li id="tour" class="<?php echo ($request->getControllerName() == 'tour') ? 'active' : ''; ?>">
+                <a href="<?php echo $this->baseUrl('tour'); ?>"><span>Feature Tour</span></a>	
+            </li>
+            <li id="howitworks" class="<?php echo ($request->getControllerName() == 'howitworks') ? 'active' : ''; ?>">
+                <a href="<?php echo $this->baseUrl('howitworks'); ?>"><span>How it Works</span></a>	
+            </li>
+        <?php } ?>
+        <?php if(isEmptyString($session->getVar('userid'))){ ?>
+            <li id="signup" class="<?php echo ($request->getControllerName() == 'signup' || $request->getControllerName() == 'billing') ? 'active' : ''; ?>">
+                <a href="<?php echo $this->baseUrl('signup'); ?>"><span>Signup and Pricing</span></a>	
+            </li>
+        <?php } ?>
+        <?php if(!isEmptyString($session->getVar('userid')) && $isInnerPage){ ?>
+            <li id="profile" class="<?php echo (($request->getControllerName() == 'farmer'  && $request->getActionName() != 'list') || $request->getControllerName() == 'profile') ? 'active' : ''; ?>">
+                <a href="<?php echo $this->baseUrl('farmer/view/id/'.encode($session->getVar('farmerid'))); ?>"><span>My Profile</span></a>	
+            </li>
+        <?php } ?>    
+        <?php if(isFarmer() && $isInnerPage){ ?>
+            <li id="farm" class="<?php echo ($request->getControllerName() == 'farm' || $request->getControllerName() == 'season' || $request->getControllerName() == 'inventory' || $request->getControllerName() == 'finance') ? 'active' : ''; ?>">
+                <?php if($hasfarm){ ?>
+                    <?php if($hasmultiplefarms){ ?>
+                        <a href="<?php echo $this->baseUrl('farm/list'); ?>" class="" id=""><span>Manage Farms</span></a>
+                    <?php } else { ?>
+                        <a href="<?php echo $this->baseUrl('farm/view/id/'.encode($farmid)); ?>" class="" id=""><span>Manage Farm</span></a>
+                    <?php } ?>
+                    
+                <?php } else { ?>
+                    <a href="<?php echo $this->baseUrl('farm/index/farmerid/'.encode($session->getVar('farmerid'))); ?>"><span>Setup Farm</span></a>
+                <?php } ?>
+            </li>
+        <?php } ?>
+        <?php if(isAdmin() && $isInnerPage){ ?>
+            <li id="farmgroup" class="<?php echo ($request->getControllerName() == 'farmer' && $request->getActionName() == 'list') ? 'active' : ''; ?>"><a href="<?php echo $this->baseUrl('farmer/list'); ?>" class="" id=""><span>Farmers</span></a></li>
+            <li id="farmgroup" class="<?php echo ($request->getControllerName() == 'farmgroup') ? 'active' : ''; ?>">
+                <a href="<?php echo $this->baseUrl('farmgroup/list'); ?>"><span>Farm Groups</span></a>
+            </li>
+        <?php } ?>
+        <?php if(isFarmGroupAdmin() && $isInnerPage){ 
+			$farmgroup = new FarmGroup();
+			$farmgroup->populate($farmer->getFarmGroupID());
+		?>
+			<li id="farmgroup" class="<?php echo ($request->getControllerName() == 'farmgroup') ? 'active' : ''; ?>"><a href="<?php echo $this->baseUrl('farmgroup/view/id/'.encode($farmer->getFarmGroupID())); ?>" class="" id=""><span>My Farm Group</span></a></li>
+            <li id="farmgroup" class="<?php echo ($request->getControllerName() == 'farmer' && $request->getActionName() == 'list') ? 'active' : ''; ?>"><a href="<?php echo $this->baseUrl('farmer/list/farmgroupid/'.$farmer->getFarmGroupID()); ?>" class="" id=""><span>My Farmers</span></a></li>
+		<?php } ?>  
+        <?php if($isInnerPage){ ?>
+            <li id="resources" class="<?php echo ($request->getControllerName() == 'resource' || $request->getControllerName() == 'contact' || $request->getControllerName() == 'commodity' || ($request->getControllerName() == 'message') && !isFarmer() ) ? 'active' : ''; ?>">
+                <a href="<?php echo $this->baseUrl('resource'); ?>"><span>Resources</span></a>	
+            </li>
+            <li id="reports" class="<?php echo ($request->getControllerName() == 'report') ? 'active' : ''; ?>">
+                <a href="<?php echo $this->baseUrl('report/overview'); ?>"><span>Reports</span></a>	
+            </li>
+            <?php if(isFarmer()){ ?>
+            <li id="inbox" class="<?php echo ($request->getControllerName() == 'message') ? 'active' : ''; ?>">
+            	<a href="<?php echo $this->baseUrl('message/list'); ?>"><span>Inbox</span></a>	
+            </li>
+            <?php } ?>
+        <?php } ?>
+        <!--<li id="help">
+            <a href="<?php // echo $this->baseUrl('help'); ?>"><span>Help</span></a>	
+        </li>
+        <li id="contactus">
+            <a href="<?php //echo $this->baseUrl('contactus'); ?>"><span>Contact Us</span></a>	
+        </li>-->
+        <?php if(isEmptyString($session->getVar('userid'))){ ?>
+        <li id="forum" class="<?php echo ($request->getControllerName() == 'communityforum' || $request->getControllerName() == 'forum') ? 'active' : ''; ?>">
+            <a href="<?php echo $this->baseUrl('forum'); ?>"><span>Community Forum</span></a>	
+        </li>
+        <?php } else { ?>
+        <li id="forum" class="<?php echo ($request->getControllerName() == 'communityforum' || $request->getControllerName() == 'forum') ? 'active' : ''; ?>">
+            <a href="<?php echo $this->baseUrl('communityforum/list'); ?>"><span>Community Forum</span></a>	
+        </li>
+        <?php } ?>
+    </ul>
+</div>
+<style>
+.subnavbar {
+    margin: 0;
+	padding:0;
+}
+.subnavbar-inner {
+	height: 50px;
+	background:none;
+	background:url('../images/menubg.png') top left repeat-x;
+}
+ul.mainnav {
+    display: inline-block;
+    height: 50px;
+    margin: 0;
+    padding: 0;
+	width:100%;
+}
+.loggedin ul.mainnav {
+	height:auto;
+	position:relative;
+	right:-15px;
+	float:right;
+}
+ul.mainnav > li {
+    float: left;
+    height: 50px;
+    list-style: none outside none;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+	vertical-align:middle;
+	position:relative;
+}
+.loggedin ul.mainnav > li {
+	height:auto;
+}
+ul.mainnav li > a {
+	color:#C0C0C0;
+	font-weight:bold;
+	font-family:'calibri','Telex',sans-serif;
+    display: block;
+    font-size: 18px;
+    font-weight: normal;
+    height: auto;
+    padding: 10px 14px 12px 14px;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.2);
+}
+.subnavbar.loggedin#thenav ul.mainnav li > a {
+	color:#f9f9f9;
+	padding: 7px 14px 8px 14px;
+	font-size:18px;
+}
+#accountdrop.loggedin {
+	background-color: #f5f5f5;
+	background-image: -moz-linear-gradient(top, #ffffff, #e6e6e6);
+	background-image: -ms-linear-gradient(top, #ffffff, #e6e6e6);
+	background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#ffffff), to(#e6e6e6));
+	background-image: -webkit-linear-gradient(top, #ffffff, #e6e6e6);
+	background-image: -o-linear-gradient(top, #ffffff, #e6e6e6);
+	background-image: linear-gradient(top, #ffffff, #e6e6e6);
+	background-repeat: repeat-x;
+	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffff', endColorstr='#e6e6e6', GradientType=0);
+	border-color: #e6e6e6 #e6e6e6 #bfbfbf;
+	border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
+	filter: progid:dximagetransform.microsoft.gradient(enabled=false);
+	border: 1px solid #cccccc;
+	border-bottom-color: #b3b3b3;
+	-webkit-border-radius: 4px;
+	-moz-border-radius: 4px;
+	border-radius: 4px;
+	-webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+	-moz-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+	padding:5px 12px 5px 12px;
+	color:#666666;
+}
+#accountdrop.loggedin .caret {
+	border-bottom-color: #000000;
+    border-top-color: #000000;
+}
+ul.mainnav li > a span {
+    display: inline-block;
+}
+ul.mainnav li:hover a, ul.mainnav li.active a  {
+	color:#f1f1f1;   
+	background-color:#585858 ;
+	border:solid 2px #787878;
+	padding: 10px 12px 12px 12px;
+	-webkit-border-radius: 3px;
+	-moz-border-radius: 3px;
+	border-radius: 3px;
+	background-image: -webkit-gradient(linear, left top, left bottom, from(#808080), to(#585858));
+	background-image: -moz-linear-gradient(top, #808080, #585858);
+	background-image: linear-gradient(#808080, #585858);
+	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr=#808080, endColorstr=#585858);
+	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr=#808080, endColorstr=#585858)";
+	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#808080', endColorstr='#585858', GradientType=0);
+}
+.subnavbar.loggedin#thenav ul.mainnav li:hover > a, .subnavbar.loggedin#thenav ul.mainnav li.active > a {
+	padding: 6px 12px 7px 12px;
+}
+ul.mainnav ul.submenu  {
+	width:98%;
+	border:10px solid #292929;
+	opacity:1;
+	margin-top:-35px;
+	display:none;
+}
+ul.mainnav ul.submenu.dropdown-menu, #myaccountlist {
+	-webkit-border-radius: 6px;
+  	-moz-border-radius: 6px;
+  	border-radius: 6px;
+	border-top-left-radius:0;
+	border-top-right-radius:0;	
+	display:none;
+	position:absolute;
+	z-index:90;
+	margin:0;
+	top:50px;
+	left:0;
+}
+ul.mainnav ul.submenu li {
+	color:#3a66c2;
+	width:97%;
+	display:block;
+	margin:3px;
+}
+ul.mainnav ul.submenu li a {
+	color:#317EAC ;
+	text-align:left;
+	font-weight:normal;
+	padding:2px;
+	padding-left:10px;
+	font-size:12px;
+}
+ul.mainnav ul.submenu li:hover  {
+	background-color:#016799;
+}
+
+</style>

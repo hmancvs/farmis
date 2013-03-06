@@ -1,0 +1,79 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	// the usermaking the payment
+	$useraccount = new UserAccount();
+	$id = decode($request->id);
+	// $id = 13;
+	$useraccount->populate($id);
+	// debugMessage($useraccount->toArray());	
+	
+	if ($this->result) {
+		$title = $this->translate("useraccount_pagetitle_activation_success"); 
+		$this->headTitle($title);
+	} else {
+		$title = $this->translate("useraccount_pagetitle_activation_failure"); 
+		$this->headTitle($title);
+	}
+	
+	// $this->result = true;
+
+?>
+<style>
+label.controlright.controlright {
+	text-align:right;
+}
+</style>
+<span class="span7 well" style="margin-left:200px;">
+<?php if($this->result){ ?>
+<h1><?php echo $title; ?></h1>
+<span class="span7 marginleft0">
+	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a>Your account on <?php echo $this->translate("appname");?> has been successfully activated. </div>
+    <form id="profileform-personal" class="form-horizontal">
+	<table class="table well">    
+	    <tr>
+	        <td><br />
+	            Below are your unique identification credentials. Please note them down or in future visit your profile for more details:<br><br />                
+                <table class="table table-striped span6">
+                	<tr>
+                    	<td width="35%" class="nowrapping"><label class="control-label controlright">Farmer Identification Number (FIN):</label></td>
+                        <td><b><?php echo $useraccount->getFarmer()->getRegNo(); ?></b></td>
+                    </tr>
+                    <tr>
+                    	<td><label class="control-label controlright">Phone Number:<br /><span class="pagedescription">(used to login)</span></label></td>
+                        <td><?php echo $useraccount->getPhone(); ?></td>
+                    </tr>
+                    <tr>
+                    	<td><label class="control-label controlright">Email Address:<br /><span class="pagedescription">(used to login)</span></label></td>
+                        <td><?php echo $useraccount->getEmail(); ?></td>
+                    </tr>
+                    <tr>
+                    	<td><label class="control-label controlright">Username<br /><span class="pagedescription">(used to login)</span>:</label></td>
+                        <td><?php echo $useraccount->getUsername(); ?></td>
+                    </tr>
+                </table>
+                <span style="display:block; width:100%; text-align:center; vertical-align:middle; height:50px;">
+                	You can now click button below to login using either your email, username or phone.<br /><br />
+	            	<a class="positiveaction btn btn-primary btn-large" href="<?php echo $this->baseUrl("user/logout")?>"><i class="icon-lock icon-white"></i> Login</a>
+                </span>
+                <br /><br>
+	        </td>
+	    </tr>
+	</table>
+    </form>
+</span>	  
+<?php } else { ?>
+<h1><?php echo $title; ?></h1>
+<span class="span7 marginleft0">
+    <table class="table well">    
+        <tr>
+            <td><br /><br />
+            	<div class="alert alert-error" style="height:auto; min-height:30px;"><?php echo $this->message; ?></div>
+            </td>
+        </tr>
+    </table> 		
+<?php } ?>
+</span>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

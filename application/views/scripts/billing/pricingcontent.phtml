@@ -1,0 +1,91 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$controllername = $request->getControllerName();
+	$heightstring = ' height:450px;';
+	if($controllername == 'signup'){
+		$heightstring = ' height:350px;';
+	}
+?>
+<div class="content" style="padding:0; margin:0;">
+    <h2 class="calfont" style="font-size:20px; margin-top:10px; margin-bottom:10px;"><?php echo "Subscription Plans, Pricing and Payment Processing"; ?></h2>
+    <div class="row margin0 blocked maxwidth">
+        <div class="widgetsection height300" style="width:47%; float:left; <?php echo $heightstring; ?>">
+            <h3>Basic Farmis</h3>
+            <div style="margin-top:5px; padding:5px; padding-left:0;">
+                <ul class="calfont">
+                    <li>The Basic Plan gets you a feel of <a href="<?php echo $this->baseUrl('howitworks'); ?>" title="How FARMIS Works">How it works</a></li> 
+                    <li>For a period of 30 days, create your profile, complete your primary and secondary profiling, and test out the different features for free. No costs, obligations or contracts.</li>
+                    <li>This plan is limited to 1 User, 10Mb Space, 1 Farm, 1 Season, Up to 10 Activities, Activity Calendar and a few limited reports</li>
+                    <li>You are required to validate your Mobile Number within the 30 days</li>
+                    <li>At end of 30 days, you must upgrade to <b>Premium Plan</b> and effect a payment so as to continue accessing the system.</li>
+                    <li>You are free to cancel your subscription at any time.</li>
+                </ul>
+            </div>
+        </div>
+        <div class="widgetsection height300" style="width:47%; float:right; <?php echo $heightstring; ?>">
+            <h3>Premium Farmis</h3>
+            <div style="margin-top:5px; padding:5px; padding-left:0;">
+                <ul class="calfont">
+                    <li>For only <b>Ugx 9,200</b>, The Premium Plan allows you full time access to all Farmis features payable 6 months in advance.</li> 
+                    <li>Benefits include; season crop card, Farmis membership certificate, sms alerts, detailed reports, <a href="<?php echo $this->baseUrl('benefits'); ?>">...more</a></li> 
+                    <li>You start using this plan immediately after your 30 day free trial period elapses and payment has been successfully processed. </li>
+                    <li>You must have a valid and registered ugandan mobile phone number before you can proceed to upgrade from Basic to Premium Plan.</li>
+                    <li>You are free to cancel your subscription at any time. However, no refunds are remitted back to the subscriber upon cancellation of this plan.</li>
+                </ul>
+            </div>
+        </div>
+    </div> 
+    <div class="row margin0 blocked maxwidth">
+        <div class="widgetsection height300" style="width:98%; float:left;">
+            <h3>Payment Processing</h3>
+            <div style="margin-top:5px; padding:5px;">
+            	<h2>Method 1: Mobile Money</h2>
+            	<p>To effect a payment after your 30 day trial, follow the instructions below;</p>
+                <div>
+                	<ul class="nav">
+                    	<li style="width:33%; float:left; margin-right:10px;">
+                        	<span>
+                                <label style="font-weight:bold; font-size:14px; margin-bottom:5px;">MTN Mobile Money</label>
+                                <ul style="margin-left:20px;">
+                                    <li>Go To Mobile Money Menu</li>
+                                    <li>Select Pay Bill</li>
+                                    <li>Select Pay Goods and Services</li>
+                                    <li>Enter code as [INFOTRADE]</li>
+                                    <li>Enter Amount as [9200]</li>
+                                    <li>Enter Reference as [your Farmis Ref Number]</li>
+                                    <li>Confirm Payment and enter your PIN</li>
+                                    <li>You will recieve a confirmation shortly</li>
+                                </ul>
+                            </span>
+                        </li>
+                        <li style="width:33%; float:left; margin-right:10px;">
+                        	<span>
+                                <label style="font-weight:bold; font-size:14px; margin-bottom:5px;">Warid Pesa</label>
+                                <ul style="margin-left:20px;">
+                                	<li>Go to Mobile Money Menu or dial *144#</li>
+                                    <li>Select Pay Bill</li>
+                                    <li>Select Others(8)</li>
+                                    <li>Enter code as 808555</li>
+                                    <li>Enter Amount as [9200]</li>
+                                    <li>Enter Reference as [your Farmis Ref Number]</li>
+                                    <li>Confirm Payment and enter your PIN</li>
+                                    <li>You will recieve a confirmation shortly</li>
+                                </ul>
+                            </span>
+                        </li>
+                        <li style="display:inline; float:left;">
+                        	<span style="display:inline;">
+                                <b>Airtel Money</b>
+                                <p>Coming soon</p>
+                            </span>
+                        </li>
+                    </ul>
+               </div>
+            </div>
+        </div>
+    </div>
+</div>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

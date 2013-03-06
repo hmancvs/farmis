@@ -1,0 +1,122 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$farmid = decode($request->farmid);
+	$farmcrop = new FarmCrop(); 
+	
+	$farm = new Farm(); 
+	$farm->populate($farmid);
+	$farmcrop->setFarmID($farm->getID());
+	$farmcrop->setFarmerID($farm->getFarmerID());
+	$farmcrop->setUserID($farm->getFarmer()->getUserID());
+	
+	#in case of errors in session, populate the fields from session
+	if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
+		$farmcrop->processPost($session->getVar(FORM_VALUES));	
+	}
+	
+	$title = $this->translate("farm_pagetitle_new"); 
+	$this->headTitle($title);
+	
+?>
+<script>
+	$(document).ready(function() {
+		$("#indexform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				cropid: "required"
+			}, 
+			// the messages for each of the fields being validated
+			messages: {		
+				cropid:  "Please select a Crop"
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						error.appendTo("#"+element.attr("name")+"_error")
+						break;
+				}			
+			}
+		});
+		
+		// tooltips in popup
+		$(".hastooltip").each(function(){		
+			var theid = $(this).attr('id');
+			var thepath = '<?php echo $this->baseUrl('images/questionmark.png'); ?>';
+			if($(this).attr('title') != "undefined" || $(this).attr('title') != ""){
+				$('<a href="javascript: void(0);" class="qcontainer" id="q_'+theid+'"><img src="'+thepath+'" /></a>').insertAfter(this);
+				$("#q_"+theid).attr('title', $(this).attr('title')).addClass('qtooltip');
+			}	    
+		}); 
+		$('.qtooltip').tipsy({fade: true, gravity: 'w', html: true, trigger: 'hover', offset: -5});
+    	$(".hastooltip").attr('title','');
+		
+		// reset tab index
+		var tabindex = 1;
+		$('input,select,textarea').each(function() {
+			if (this.type != "hidden") {
+				var $input = $(this);
+				$input.attr("tabindex", tabindex);
+				tabindex++;
+			}
+		});
+		
+		disableField("country");
+	}); 
+</script>
+<style>
+body {
+	overflow:hidden;
+}
+ul.croplist li {
+	float:left; 
+	width:32%; 
+	margin-right:5px; 
+	position:relative;
+}
+ul.croplist li label {
+	display:inline-block; 
+	width:85%; 
+	margin-left:12px; 
+	margin-top:2px;
+}
+ul.croplist li input {
+	position:absolute; 
+	left:0; 
+	top:0;
+}
+</style>
+<form class="form-horizontal popup well span6" id="indexform" action="<?php echo $this->baseUrl("farmer/create"); ?>" method="post">
+    <table class="table">
+		<?php if($sessionhaserror) { ?>
+	        <tr>
+	        	<td colspan="2"><div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div></td>
+	        </tr>
+        <?php } ?>
+        <tr><td style="vertical-align:top"><label class="control-label">Select Crop(s): </label></td></tr>
+        <tr><td>
+			<?php 
+                $commodities = getFarmisCommodities($farm->getCropIDs());
+				// debugMessage($farm->getCropIDs());
+            ?>
+                <ul class="nav croplist">
+                    <?php foreach($commodities as $key => $value){ ?>
+                        <li><label for="cropids-<?php echo $key; ?>"><input type="checkbox" class="checkbox" id="cropids-<?php echo $key; ?>" name="cropids[]" value="<?php echo $key; ?>" />&nbsp; <?php echo $value; ?></label></li>
+                    <?php } ?>
+                </ul>
+                <div id="cropid_error"></div>
+               	<input type="hidden" name="entityname" value="FarmCrop" />
+			    <input type="hidden" id="id" name="id" value="<?php echo encode($farmcrop->getID()); ?>" />
+                <input type="hidden" id="userid" name="userid" value="<?php echo $farmcrop->getUserID(); ?>" />
+                <input type="hidden" id="farmerid" name="farmerid" value="<?php echo $farmcrop->getFarmerID(); ?>" />
+                <input type="hidden" id="farmid" name="farmid" value="<?php echo $farmcrop->getFarmID(); ?>" />
+			    <input type="hidden" name="<?php echo URL_FAILURE; ?>" value="<?php echo encode($this->baseUrl('farm/addcrop')); ?>" />			   				
+                <input type="hidden" name="<?php echo URL_SUCCESS; ?>" value="<?php echo encode($this->baseUrl('farm/addcropsuccess')); ?>" />
+            </td>
+		</tr>
+  </table>
+</form>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

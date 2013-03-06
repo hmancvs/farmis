@@ -1,0 +1,187 @@
+<?php 
+	$farmerid = decode($request->id);
+	$farmer = new Farmer();
+	$farmer->populate($farmerid);
+	$id = $farmer->getID();
+?>
+ <table style="margin-top:10px; height:auto; width:100%;">
+                        <tr>
+                            <td style="width:72%; vertical-align:top;">
+                                <table style="width:100%; height:190px; border-bottom:1px solid #e9e9e9;">
+                                    <tr>
+                                        <td style="vertical-align:top; padding-left:10px; padding-top:10px;"><span><img src="<?php echo $this->baseUrl('images/logo_gray.png'); ?>" /></span></td>
+                                        <td style="vertical-align:top; padding-left:10px; padding-top:10px;"><span><img src="<?php echo $this->baseUrl('images/logo_infotrade.png'); ?>" /></span></td>
+                                    </tr>
+                                </table>
+                                <table id="summary" class="table xtable-condensed noborder contenttable" style="margin:10px 0 0 0; width:99%;">
+                                    <thead>
+                                        <tr>
+                                            <td colspan="2"><h2>Profile Summary</h2></td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td style="width:50%;"><label class="control-label">Name of Farmer:</label>
+                                            <?php echo $farmer->getName(); ?></td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td><label class="control-label nowrapping">Farmer Identification (FIN ID#):</label>
+                                            <?php echo $farmer->getRegNo(); ?></td>
+                                            <td><label class="control-label"><?php echo $this->translate("farmer_gender_label"); ?>:</label>
+                                            <?php echo $farmer->getGenderLabel(); ?></td>
+                                        </tr>
+                                        <tr>
+                                            <td><label class="control-label"><?php echo $this->translate("farmer_dateofbirth_label"); ?>:</label>
+                                            <?php echo $farmer->getUser()->getBirthDateFormatted(); ?></td> 
+                                            <td><label class="control-label">Date Registered:</label>
+                                            <?php echo isEmptyString($farmer->getUser()->getActivationDate()) ? '--' : changeMySQLDateToPageFormat($farmer->getUser()->getActivationDate()); ?></td> 
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <table id="addresss" class="table table-condensed noborder contenttable" style="margin:10px 0 0 0; width:99%;">
+                                    <thead>
+                                        <tr>
+                                            <td colspan="4"><h2>Address</h2></td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td style="width:35%;"><label class="control-label">Country:</label>
+                                            <?php echo isEmptyString($farmer->getUser()->getAddress()->getCountry()) ? '--' : $farmer->getUser()->getAddress()->getCountryName(); ?>
+                                            <td style="width:35%;"><label class="control-label">District:</label>
+                                            <?php echo isEmptyString($farmer->getUser()->getLocationID()) ? '--' : $farmer->getUser()->getLocation()->getName(); ?></td>
+                                            <td><label class="control-label">County:</label>
+                                            <?php echo isEmptyString($farmer->getUser()->getAddress()->getCountyID()) ? '--' : $farmer->getUser()->getAddress()->getCounty()->getName(); ?></td>
+                                        </tr>
+                                        <tr>
+                                            <td><label class="control-label">Sub-county:</label>
+                                            <?php echo isEmptyString($farmer->getUser()->getAddress()->getSubCountyID()) ? '--' : $farmer->getUser()->getAddress()->getSubCounty()->getName(); ?></td>
+                                            <td><label class="control-label">Parish:</label>
+                                            <?php echo isEmptyString($farmer->getUser()->getAddress()->getParishID()) ? '--' : $farmer->getUser()->getAddress()->getParish()->getName(); ?></td>
+                                            <td><label class="control-label">Village:</label>
+                                            <?php echo isEmptyString($farmer->getUser()->getAddress()->getVillageID()) ? '--' : $farmer->getUser()->getAddress()->getVillage()->getName(); ?></td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="3"><label class="control-label">Postal/Street Address</label>
+                                            <?php echo isEmptyString($farmer->getUser()->getAddress()->getStreetAddress()) ? '--' : nl2br($farmer->getUser()->getAddress()->getStreetAddress()); ?></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <table id="Biography" class="table table-condensed noborder contenttable" style="margin:10px 0 0 0; width:99%;">
+                                    <thead>
+                                        <tr>
+                                            <td colspan="3"><h2>Biography</h2></td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="3"><label class="control-label">About:</label>
+                                                <span style="min-height:40px; display:block; width:100%;"><?php echo isEmptyString($farmer->getUser()->getBio()) ? '--' : nl2br($farmer->getUser()->getBio()); ?></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="3"><label class="control-label">Education Level:</label>
+                                            <?php echo $farmer->getEducationLevelText(); ?></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="width:30%"><label class="control-label"><?php echo $this->translate("farmer_maritalstatus_label"); ?>:</label>
+                                            <?php echo isEmptyString($farmer->getMaritalStatusText()) ? '--': $farmer->getMaritalStatusText(); ?></td>  
+                                            <td style="width:30%"><label class="control-label"><?php echo $this->translate("farmer_nochildren_label"); ?>:</label>
+                                            <?php echo isEmptyString($farmer->getNumberOfChildren()) ? '--': $farmer->getNumberOfChildren(); ?></td>
+                                            <td><label class="control-label"><?php echo $this->translate("farmer_nodependants_label"); ?>:</label>
+                                            <?php echo isEmptyString($farmer->getNumberOfDependants()) ? '--': $farmer->getNumberOfDependants(); ?></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </td>
+                            <td style="vertical-align:top; border-left:1px solid #e1e1e1;">
+                                <table style="width:100%;">
+                                    <tr>
+                                        <td>
+                                            <div id="profileinfo" style="padding:4px;"> 
+                                                <img id="profileimage" src="<?php echo $farmer->getUser()->getMediumPicturePath(); ?>" />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="paddding0" style="padding-top:20px; padding-left:5px;">
+                                            <table id="other" class="table table-condensed noborder contenttable">
+                                                <thead>
+                                                    <tr>
+                                                        <td colspan="4"><h2>Farm Group</h2></td>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td style="height:90px;"><label class="control-label">Name:</label>
+                                                        <?php echo isEmptyString($farmer->getFarmGroupID()) ? '--' : $farmer->getFarmGroup()->getName(); ?></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                            <table id="contacts" class="table table-condensed noborder contenttable" style="margin-top:10px;">
+                                                <thead>
+                                                    <tr>
+                                                        <td colspan="4"><h2>Contacts</h2></td>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td style="width:45%;"><label class="control-label">Phone:</label>
+                                                        <?php echo isEmptyString($farmer->getUser()->getPhone()) ? '--' : $farmer->getUser()->getPhone(); ?></td>
+                                                        <td><label class="control-label">Alt Phone:</label>
+                                                        <?php echo isEmptyString($farmer->getUser()->getAltPhone()) ? '--' : $farmer->getUser()->getAltPhone(); ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td colspan="2"><label class="control-label">Email:</label>
+                                                        <?php echo isEmptyString($farmer->getUser()->getEmail()) ? '--' : $farmer->getUser()->getEmail(); ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td colspan="2"><label class="control-label">Alt Email:</label>
+                                                        <?php echo isEmptyString($farmer->getUser()->getEmail2()) ? '--' : $farmer->getUser()->getEmail2(); ?></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                            <table id="keen" class="table table-condensed noborder contenttable" style="margin-top:10px;">
+                                                <thead>
+                                                    <tr>
+                                                        <td colspan="4"><h2>Next of Keen</h2></td>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td><label class="control-label">Name:</label>
+                                                        <?php echo isEmptyString($farmer->getNextofkin_Name()) ? '--': $farmer->getNextofkin_Name(); ?>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><label class="control-label">Phone:</label>
+                                                        <?php echo isEmptyString($farmer->getNextofkin_phone()) ? '--': $farmer->getNextofkin_phone(); ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td colspan="2"><label class="control-label">Email:</label>
+                                                        <?php echo isEmptyString($farmer->getNextofkin_email()) ? '--': $farmer->getNextofkin_email(); ?></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                            <table id="other" class="table table-condensed noborder contenttable" style="margin-top:10px;">
+                                                <thead>
+                                                    <tr>
+                                                        <td colspan="4"><h2>Signature</h2></td>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td style="height:100px;">
+                                                            <div class="profileinfo pull-left" id="signinfo"> 
+                                                                <a href="<?php echo $this->baseUrl('farmer/picture/id/'.encode($farmer->getID()).'/type/sign'); ?>" class="editpic" title="Upload Signature Image"><img id="profileimage" src="<?php echo $farmer->getSignaturePath(); ?>" width="180" height="90" /><pre id="signlink" class="hide absoluteupload"><i class="icon-pencil"></i> Upload Image</pre></a>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                   </table>

@@ -1,0 +1,61 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$title = "How it Works";
+	$this->headTitle($this->translate("appname")." | ".$title); 
+
+?>
+<style>
+.content h4 {
+	margin-top:5px;
+	margin-bottom:15px;
+	font-size:16px;	
+}
+</style>
+<div class="row marginleft0">
+    <div class="span8 pull-left marginleft0 public_leftcolumn">
+        <div class="content">
+            <h1><?php echo $title; ?></h1> 
+            <p>FARMIS is the easy way to manage your agricultural business online allowing you to quickly evaluate your income and expenses.</p>
+            
+            <p>If you are a farmer, trader, producer, farmer group or organization FARMIS helps you create and maintain all your records in one place. It also provides you interactive reports at the click of a button. Using Farmis is easy; simply follow the following simple steps</p>
+			
+            <h2>Farmers</h2>
+            <h4 class="calfont themedlabel">&bull; Getting Started.</h4>
+			<p>1. Create an account by clicking <a href="<?php echo $this->baseUrl('signup'); ?>" title="Sign Up for FARMIS Today">sign up</a> in the top right corner.</p>
+            <p>2. Fill in the simple registration form provided</p>
+            <p>3. Activate your account. Two options available</p>
+            	<p>&nbsp;&nbsp;&nbsp;a) <b>Email:</b> Check your email inbox and click on activation sent to you to confirm ownership of the account. You should be able to Login with your email address and password.</p>
+                <p>&nbsp;&nbsp;&nbsp;b) <b>Mobile Phone:</b> Check your mobile phone inbox for a 10digit confirmation code. Enter this code at the last step of the registration process to confirm ownership of </p>
+			
+            <h4 class="calfont themedlabel">&bull; Primary Profiling</h4>
+            <p>At this stage, the farmer is required to complete their profile by specifying the information shown in a screen that will be shown on the user's dashboard below.</p>
+            <p class="centeralign blocked"><img src="<?php echo $this->baseUrl('images/primary.png'); ?>" /></p>
+            <p>At validate contact step, the farmer is required to validate the phone number on their profile. A 6 digit code is sent to their mobile inbox for verification. </p>
+            <p>Upon providing the above details, the output of this stage is the Farmer Baseline Summary report. Click on link provided to generate this report. </p>
+            
+            <h4 class="calfont themedlabel">&bull; Secondary Profiling</h4>
+            <p>At this stage, the farmer is required to setup preliminary information about their farm as a business in a screen that will be shown on the user's dashboard below.</p>
+            <p class="centeralign blocked"><img src="<?php echo $this->baseUrl('images/secondary.png'); ?>" /></p>
+            <p>Upon providing the above details, the output of this stage is the Farmer Baseline Detail report showing all the crops and preseason estimates. Click on link provided to generate this report. </p>
+                
+            <h4 class="calfont themedlabel">&bull; New Season Setup</h4>
+            <p>After completing the different profiles above, the farmer can now start tracking their business activities and expenses. Watch our guided <a href="<?php echo $this->baseUrl('tour'); ?>">tour video </a> for more guidance on how to get started with activities. We recommend that you still follow the order suggested to you on the dashboard.</p>
+            <p class="centeralign blocked"><img src="<?php echo $this->baseUrl('images/season.png'); ?>" /></p>
+            <p>At the end of the season, you will be able to generate a season profit and loss statement from the sales and running expenses so as to determine if your business is profitable. More performance reports and indicators are provided so as to assist the farmer in making meaningful decisions for their business.</p>
+            <br />
+			<h2>Farmer Groups</h2>
+			<p>1. Create a Farmer Group Account – <a href="<?php echo $this->baseUrl('signup/farmgroup'); ?>" title="Signup as Farm Group">Click here</a> to download the application form. After filling it out, scan and send it to us and we will approve it after verification.</p>
+            <p>2. You will receive an invite in your email with guidelines showing you how to set up account</p>
+            <p>3. Set up your farmer group account online</p>
+            <p>4. Click 'My Farmers' to add farmers to your farmer group. For every farmer added to the platform, the farmer group takes a 25% commission.</p>
+            <p>5. The above features and services for a farmer, can also be utilised for all the farmers maintained in the farm group. The Farm Group account ships with more management features to track all the activities going on for each farmer.</p>
+            <p>5. Get paid. Your farmer records will be verified every month and a payment made to you there after.</p>
+			
+        </div>
+    </div>
+    <?php require APPLICATION_PATH."/views/scripts/index/righthandband.phtml"; ?>
+</div>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

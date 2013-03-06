@@ -1,0 +1,257 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$inventory = new Inventory();
+	$inventory->populate(decode($request->id));	
+	$request->setParam('tab', 'inventory'); 
+	
+	$thefarmid = $inventory->getFarmID();
+	
+	$title = "Inventory Item"; 
+	$this->headTitle($title);  
+	
+?>
+<script>
+	$(document).ready(function() {
+		
+	}); 
+</script>
+<style>
+</style>
+<h1><?php echo $this->translate('farm_title'); ?></h1>
+<div id="tabs">
+    <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
+    <div class="span9 tab-content" id="center">
+    	<?php require APPLICATION_PATH."/views/scripts/farm/tabstop.phtml"; ?>
+		<div id="inventory">
+            <form id="viewform" class="form-horizontal">
+                <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+                    <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+                <?php } ?>
+                <div class="row margin0" style="padding:2px; margin-bottom:10px;">
+                    <span class="pull-left well lighter margin0" style="width:72%; min-height:160px;">
+                        <h3 class="well-legend"><?php echo $title; ?></h3>
+                        <table class="table noborder margin0">
+                            <tr>
+                                <td style="padding:0 10px 0 0; width:70%;">
+                                    <table class="table noborder margin0" style="margin-top:15px;">
+                                        <tr>
+                                            <td width="25%;"><label class="control-label"><?php echo $this->translate("inventory_itemname_label"); ?>:</label></td>
+                                            <td colspan="3"><?php echo $inventory->getItemName(); ?></td>
+                                        </tr>
+                                        <tr>
+                                            <td><label class="control-label"><?php echo $this->translate("inventory_description_label"); ?>: </label></td>
+                                            <td colspan="3"><?php echo nl2br($inventory->getDescription()); ?></td>
+                                        </tr>
+                                        <tr>
+                                            <td><label class="control-label"><?php echo $this->translate("inventory_type_label"); ?>:</label></td>
+                                            <td colspan="3"><?php $alltypes = getInventoryTypes(); echo $alltypes[$inventory->getType()]; ?></td>
+                                        </tr>
+                                        <tr>
+                                            <td><label class="control-label"><?php echo $this->translate("inventory_categoryid_label"); ?>:</label></td>
+                                            <td colspan="3"><?php echo $inventory->getCategory()->getName(); ?></td>
+                                        </tr>
+                            		</table>
+                                </td>
+                                <td style="vertical-align:top; padding-left:0; padding-top:20px;">
+                                    <div class="<?php echo $inventory->hasProfileImage() ? 'imagecontainer':''; ?>">
+                                        <a href="<?php echo $this->baseUrl('inventory/picture/id/'.encode($inventory->getID())); ?>" title="Upload Image"><img style="width:200px;" src="<?php echo $inventory->getLargePicturePath(); ?>" /></a>
+                                    </div>
+                                </td>
+                        	</tr>
+                        </table>
+                    </span>
+                    <span class="pull-right padding0" style="width:24%; margin-left:5px;">
+                        <div class="well margin0" style="height:160px;">
+                            <h3 class="well-legend">Quick Links</h3>
+                            <table class="table noborder" >                       
+                               <tr>		                    
+                                    <td class="formactions">
+                                        <a class="btn btn-primary" href="<?php echo $this->baseUrl('inventory/index/id/'.encode($inventory->getID())); ?>" id="update"><i class="icon-pencil icon-white"></i> Update</a>   
+                                        <a href="javascript: void(0)" id="deleteline" title="Delete Entry" class="btn deleteline noimgbutton" action="<?php echo $this->baseUrl('inventory/delete/id/'.$inventory->getID()."/successurl/".encode($this->baseUrl('farm/view/tab/inventory/view/id/'.encode($inventory->getFarmID())))); ?>"><i class="icon-trash"></i></a>
+                                        <div class="hide" id="prompt"><label class="blockcontainer">Are you sure you want to delete this item from your Inventory? <br /><br /> Click <b>OK</b> to confirm, and <b>Cancel</b> to ignore</label></div>
+                                        <a class="btn btn-primary" href="<?php echo $this->baseUrl('farm/view/tab/inventory/view/id/'.encode($inventory->getFarmID())); ?>" id="update"><i class="icon-list icon-white"></i> List Items</a>
+                                               
+                                    </td>
+                               </tr>
+                            </table>                           
+                        </div>
+                    </span>
+                </div>
+                <div class="row margin0" style="padding:2px; margin-bottom:10px;">
+                    <span class="pull-left" style="width:100%; margin-right:5px;">
+                        <div id="location_left" class="well lighter margin0" style="min-height:190px;"> 
+                            <h3 class="well-legend">Item Details</h3>
+                            <table class="table noborder">
+                            	<tr>
+                                	<td style="width:45%; padding-left:0;">
+                                    	<table class="table">
+                                        	<tr>
+                                            	<td style="width:35%;"><label class="control-label"><?php echo $this->translate("inventory_purchasedate_label"); ?>: </label></td>
+                                                <td><?php echo isEmptyString($inventory->getPurchaseDate()) ? '--' : changeMySQLDateToPageFormat($inventory->getPurchaseDate()); ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td><label class="control-label"><?php echo $this->translate("inventory_quantity_label"); ?>:</label></td>
+                                                <td><?php echo $inventory->getQuantityText(); ?></td>
+                                            </tr>
+                                            <?php if($inventory->getQuantity() > 1){ ?>
+                                            <tr>
+                                                <td><label class="control-label"><?php echo $this->translate("inventory_unitcost_label"); ?>:</label></td>
+                                                <td><?php echo isEmptyString($inventory->getUnitCost()) || $inventory->getUnitCost() == 0 ? '--' : formatNumber($inventory->getUnitCost())."&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>"; ?></td>
+                                            </tr>
+                                            <?php } ?>
+                                            <tr>
+                                                <td><label class="control-label"><?php echo $inventory->getQuantity() == 1 ? "Cost Price" : $this->translate("inventory_totalcost_label"); ?>:</label></td>
+                                                <td><?php echo isEmptyString($inventory->getTotalCost()) || $inventory->getTotalCost() == 0 ? '--' : formatNumber($inventory->getTotalCost())."&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>"; ?></td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                    <td>
+                                    	<table class="table">
+                                        	<tr>
+                                            	<td style="width:35%;"><label class="control-label"><?php echo $this->translate("inventory_modelno_label"); ?>: </label></td>
+                                                <td><?php echo isEmptyString($inventory->getModelNo()) ? '--' :$inventory->getModelNo(); ?></td>
+                                            </tr>
+                                            <tr>
+                                            	<td><label class="control-label"><?php echo $this->translate("inventory_serialno_label"); ?>: </label></td>
+                                                <td><?php echo isEmptyString($inventory->getSerialNo()) ? '--' :$inventory->getSerialNo(); ?></td>
+                                            </tr>
+                                        	<tr>
+                                                <td><label class="control-label"><?php echo $this->translate("inventory_vendor_label"); ?>:</label></td>
+                                                <td><?php echo isEmptyString($inventory->getVendor()) ? '--' : $inventory->getVendor(); ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td><label class="control-label"><?php echo $this->translate("inventory_status_label"); ?>:</label></td>
+                                                <td colspan="3"><?php echo isEmptyString($inventory->getStatus()) ? '--' : $inventory->getStatus(); ?></td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </span>
+                </div>
+                <div class="row margin0" style="padding:2px; margin-bottom:10px;">
+                    <span class="pull-left" style="width:100%; margin-right:5px;">
+                        <div class="well lighter margin0" style="min-height:100px; position:relative;">
+                        	<?php
+								$servicelines = $inventory->getServiceDetails();
+								// debugMessage($expenselines->toArray());
+								$count = $servicelines->count();
+								$exp_label = '';
+								if($count > 0){
+									$exp_label = '<span class="pagedescription">('.$count.')</span>';
+								}
+							?>
+                            <h3 class="well-legend">Service History <?php echo $exp_label; ?></h3>
+                            <div class="margin0" style="position:absolute; right:10px; top:5px;">
+                                <a href="<?php echo $this->baseUrl('inventory/service/type/Inventory/pgc/true/refid/'.encode($inventory->getID())); ?>" class="btn btn-mini addpopup" title="Add Service" rel="Add Service" id="newservice" formtitle="indexform" successurl="<?php echo $this->baseUrl('inventory/view/id/'.encode($inventory->getID())); ?>" action="<?php echo $this->baseUrl('inventory/servicecreate/successurl/'.encode($this->baseUrl('inventory/addservicessuccess/successmessage/global_save_success/'))); ?>"><i class="icon-plus"></i> Add </a>                                   
+                            </div>
+                            <?php if($count == 0){ ?>
+                                <br /><span class="pagedescription">None currently available.</span>
+                            <?php } else { ?>
+                                <ul id="datalist" class="nav nav-stacked">
+                                <?php 
+                                    $x = 1;
+                                    foreach($servicelines as $service){
+                                ?>
+                                    <li>
+                                        <table class="table noborder margin0">
+                                            <tr>                                
+                                                <td width="15%"><?php echo changeMySQLDateToPageFormat($service->getServiceDate()); ?></a></td>
+                                                <td class="padding0">
+                                                    <div style="position:relative;">
+                                                        <div class="threadicons" style="position:absolute; right:5px; top:5px;">
+                                                            <a href="<?php echo $this->baseUrl('inventory/service/pgc/true/type/Inventory/refid/'.encode($inventory->getID()).'/id/'.encode($service->getID())); ?>" class="addpopup btn btn-mini" title="Edit Service" rel="Edit Service" id="editservice_<?php echo $service->getID(); ?>" formtitle="indexform" successurl="<?php echo $this->baseUrl('inventory/view/id/'.encode($inventory->getID())); ?>" action="<?php echo $this->baseUrl('inventory/servicecreate/successurl/'.encode($this->baseUrl('inventory/addservicessuccess/successmessage/global_save_success/'))); ?>"><i class="icon-pencil"></i></a></a>
+                                                            <a href="javascript: void(0)" id="deleteline_multiple" title="Delete Entry" class="btn btn-mini deleteline noimgbutton" action="<?php echo $this->baseUrl('inventory/delete/id/'.$service->getID()."/entityname/InventoryService/successurl/".encode($this->baseUrl('inventory/view/id/'.encode($inventory->getID())))); ?>"><i class="icon-trash"></i></a>
+                                                        </div>
+                                                        <table class="itemlist table noborder margin0">
+                                                            <tr>
+                                                                <td style="width:140px;"><label class="control-label">Type:</label>
+                                                                    <span><?php echo $service->getTypeText(); ?></span></td>
+                                                                <td style="width:275px;"><label class="control-label">Description </label>
+                                                                    <span><?php echo $service->getDescription(); ?></span></td>
+                                                                <td><label class="control-label">Costs</label>
+                                                                    <span><?php echo formatNumber($service->getCost()); ?></span></td>
+                                                            </tr>
+                                                        </table>
+                                                    </div>
+                                                </td>
+                                             </tr>
+                                        </table>
+                                     </li>
+                                <?php } ?>
+                                </ul>
+                            <?php } ?>
+                        </div>
+                    </span>
+                </div>
+                <div class="row margin0" style="padding:2px; margin-bottom:10px;">
+                    <span class="pull-left" style="width:100%; margin-right:5px;">
+                        <div class="well lighter margin0" style="min-height:100px; position:relative;"> 
+                            <?php
+								$notelines = $inventory->getNotesDetails();
+								// debugMessage($expenselines->toArray());
+								$count = $notelines->count();
+								$notes_label = '';
+								if($count > 0){
+									$notes_label = '<span class="pagedescription">('.$count.')</span>';
+								}
+							?>
+                            <h3 class="well-legend">Notes | Comments <?php echo $notes_label; ?></h3>
+                            <div class="margin0" style="position:absolute; right:10px; top:5px;">
+                                <a href="<?php echo $this->baseUrl('season/notes/type/Inventory/pgc/true/refid/'.encode($inventory->getID())); ?>" class="btn btn-mini addpopup" title="Add Notes" rel="Add Notes" id="newnote" formtitle="indexform" successurl="<?php echo $this->baseUrl('inventory/view/id/'.encode($inventory->getID())); ?>" action="<?php echo $this->baseUrl('season/notescreate/successurl/'.encode($this->baseUrl('season/addnotessuccess/successmessage/global_save_success/'))); ?>"><i class="icon-plus"></i> Add</a>                                            
+                            </div>
+                            <?php if($count == 0){ ?>
+                                <br /><span class="pagedescription">None currently available.</span>
+                            <?php } else { ?>
+                                <ul id="datalist" class="nav nav-stacked">
+                                <?php 
+                                    $x = 1;
+                                    foreach($notelines as $note){
+										$farmer = $note->getNotedBy()->getFarmer();
+                                ?>
+                                    <li>
+                                        <table class="table noborder margin0">
+                                            <tr>                                
+                                                <td class="" style="width:90%;">
+                                                	<table class="itemlist table noborder margin0">
+                                                        <tr>
+                                                            <td style="width:75px; padding-top:10px;">
+                                                                <div id="thumbinfo" class="<?php echo $farmer->hasProfileImage() ? 'new_pic': ''; ?>"> 
+                                                                    <a href="<?php //echo $this->baseUrl("farmer/view/id/".encode($line['id'])); ?>" title="<?php echo $this->translate("person_button_view_profile"); ?>"><img src="<?php echo $farmer->getUser()->getThumbnailPicturePath(); ?>" /></a>
+                                                                </div>
+                                                            </td>
+                                                            <td style="padding-left:15px;"><label class="control-label"><?php echo date('M j, Y g:i A', strtotime($note->getDateNoted())); ?></label>
+                                                            	<span><?php echo nl2br($note->getDescription()); ?></span>
+                                                            
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                                <td class="padding0">
+                                                	<div style="position:relative;">
+                                                        <div class="threadicons" style="position:absolute; right:5px; top:5px;">
+                                                            <!--<a href="<?php //echo $this->baseUrl('season/expense/pgc/true/type/Inventory/refid/'.encode($inventory->getID()).'/id/'.encode($note->getID())); ?>" class="addpopup btn btn-mini" title="Edit Note" rel="Edit Note" id="editnote_<?php //echo $note->getID(); ?>" formtitle="indexform" successurl="<?php //echo $this->baseUrl('inventory/view/id/'.encode($inventory->getID())); ?>" action="<?php //echo $this->baseUrl('season/expensecreate/successurl/'.encode($this->baseUrl('season/addexpsuccess/successmessage/global_save_success/'))); ?>"><i class="icon-pencil"></i></a></a>-->
+                                                            <a href="javascript: void(0)" id="deleteline_multiple" title="Delete Entry" class="btn btn-mini deleteline noimgbutton" action="<?php echo $this->baseUrl('season/delete/id/'.$note->getID()."/entityname/Notes/successurl/".encode($this->baseUrl('inventory/view/id/'.encode($inventory->getID())))); ?>" message="Are you sure you want to delete this note?"><i class="icon-trash"></i></a>
+                                                        </div>
+                                            
+                                                    </div>
+                                                </td>
+                                             </tr>
+                                        </table>
+                                     </li>
+                                <?php } ?>
+                                </ul>
+                            <?php } ?>
+                        </div>
+                    </span>
+                </div>
+            </form>
+        </div>
+        <?php require APPLICATION_PATH."/views/scripts/farm/tabsbottom.phtml"; ?> 
+    </div>
+</div>    
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

@@ -1,0 +1,374 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$has_subgrp = false;
+	$farmer = new Farmer(); 
+	if(!isEmptyString($request->farmgroupid)){
+		$farmgrp = new FarmGroup(); 
+		$farmgrp->populate($request->farmgroupid);
+		$farmer->setFarmGroupID($request->farmgroupid);
+		$subgroups = getSubGroups($farmer->getFarmGroupID());
+		if(count($subgroups) > 0){
+			$has_subgrp = true;
+		}
+	} 
+	$farmer->setRegNo($farmer->getNextRegNo());
+	$farmer->setRegDate(changeMySQLDateToPageFormat(date('Y-m-d')));
+	$farmer->setRefNo($farmer->getNextRefNo());
+	
+	#in case of errors in session, populate the fields from session
+	if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
+		$farmer->processPost($session->getVar(FORM_VALUES));	
+	}
+	
+	$title = $this->translate("farmer_pagetitle_new"); 
+	$this->headTitle($title);
+	
+?>
+<script>
+	$(document).ready(function() {
+		$("#indexform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				firstname: "required",
+				lastname: "required",		
+				email: {
+					"required": false, 
+					email: true
+				},
+				gender: "required",
+				districtid: "required",
+				/*farmgroupid: "required",*/
+				regdate: "required",
+				refno: {
+					required: true,
+					validate_number: true,
+					maxlength:8,
+					minlength:4
+				},
+				phone: {
+					required: false, 					
+					validnumber: true,
+					maxlength: 10,
+					minlength: 10,
+					validate_ug: true
+				}
+			}, 
+			// the messages for each of the fields being validated
+			messages: {		
+				firstname: "<?php echo $this->translate("farmer_firstname_error"); ?>",
+				lastname: "<?php echo $this->translate("farmer_lastname_error"); ?>",		
+				email: {
+					"email": "<?php echo $this->translate("useraccount_email_invalid_error"); ?>"
+				},
+				gender: "<?php echo $this->translate("farmer_gender_error"); ?>",
+				districtid: "<?php echo $this->translate("farmer_district_error"); ?>",
+				/*farmgroupid: "Please select a Farm Group",*/
+				regdate: "Please select Registration Date",
+				refno: {
+					required: "Please enter a Reference Number",
+					validate_number: "Invalid Ref No specified",
+					maxlength: "Should not be more than 8 digits",
+					minlength: "Should not be less than 4 digits"
+				},
+				phone: {
+					validnumber: "Please enter a valid Phone Number",
+					maxlength: "Phone Number must have 10 Digits",
+					minlength: "Phone Number must have 10 Digits",
+					validate_ug: "<?php echo $this->translate("globale_phonenumber_format"); ?>"
+				}
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						error.appendTo("#"+element.attr("name")+"_error")
+						break;
+				}			
+			}
+		});
+		
+		// add the validation for wholesale price to be less than retail price
+		$.validator.addMethod("validnumber", function(value, element, params) { 
+			if (IsValidAmount(value)) {
+				return true; 
+			}
+			return false;        
+		}, "Please enter a valid Phone Number");
+		$.validator.addMethod("validate_ug", function(value, element, params) { 
+			if(!isUgNumber(value) && !isEmptyString(value)) {
+				return false; 
+			}
+			return true;        
+		}, "<?php echo $this->translate("globale_phonenumber_format"); ?>");
+		
+		
+		// tooltips in popup
+		$(".hastooltip").each(function(){		
+			var theid = $(this).attr('id');
+			var thepath = '<?php echo $this->baseUrl('images/questionmark.png'); ?>';
+			if($(this).attr('title') != "undefined" || $(this).attr('title') != ""){
+				$('<a href="javascript: void(0);" class="qcontainer" id="q_'+theid+'"><img src="'+thepath+'" /></a>').insertAfter(this);
+				$("#q_"+theid).attr('title', $(this).attr('title')).addClass('qtooltip');
+			}	    
+		}); 
+		$('.qtooltip').tipsy({fade: true, gravity: 'w', html: true, trigger: 'hover', offset: -5});
+    	$(".hastooltip").attr('title','');
+		
+		// reset tab index
+		var tabindex = 1;
+		$('input,select').each(function() {
+			if (this.type != "hidden") {
+				var $input = $(this);
+				$input.attr("tabindex", tabindex);
+				tabindex++;
+			}
+		});
+		
+		var dateofregOpts = datepickerOpts;
+		dateofregOpts.yearRange = "-5";
+		dateofregOpts.maxDate = new Date();
+		$("#regdate").datepicker(dateofregOpts);
+		
+		$(".readonly").each(function(){
+			$(this).attr('readonly','readonly');
+		});
+		$("#refno").keyup(function(){
+			$("#regno").val('<?php echo FARMER_REG_PREFIX.'/'.$farmer->getFarmGroup()->getRefNo(); ?>/'+$(this).val());
+		});
+		$("#refno").trigger('keyup');
+		
+		$('#farmgroupid').trigger("change");
+			
+		<?php if($has_subgrp){ ?>
+		// chained select to load the subcounties for a county
+		$('#farmgroupid').selectChain({
+			target: $('#subgroupid'),
+			url: '<?php echo $this->baseUrl('farmer/selectchain/'.SELECT_CHAIN_TYPE.'/farmgroup_children/')?>',
+			data: 'currentvalue=',
+			type: 'get'
+		});
+		$('#farmgroupid').trigger("change");
+		<?php } ?>
+		
+		//when button is clicked  
+        $('#check_phone_availability').click(function(){ 
+			check_phone_availability();  
+        });
+		$('#phone').change(function(){ 
+			check_phone_availability();  
+        });
+		
+		//function to check phone availability  
+		function check_phone_availability(){  
+			//get the username
+			var checking_html = 'Checking availability...';   
+			var phone = $('#phone').val();  
+			if(!isEmptyString(phone) && isUgNumber(phone)){
+				$('#phone_availability_result').html(checking_html);  
+				
+				//use ajax to run the check  
+				$.post("<?php echo $this->baseUrl('signup/checkphone'); ?>", { phone: phone },  
+					function(result){  
+						//if the result is 1  
+						// alert(result); return false;
+						if(result == 1){  
+							//show that the phone is available
+							$('#phone_availability_result').html(phone + ' is NOT available!').addClass('alert').addClass('alert-error').removeClass('alert-success'); 
+						} else {  
+							//show that the phone is NOT available  
+							$('#phone_availability_result').html(phone + ' is available').addClass('alert').addClass('alert-success').removeClass('alert-error');
+						}  
+				});  
+			}
+		} 
+		
+		$("#firstname").focus();
+	}); 
+</script>
+<style>
+body {
+	overflow:hidden;
+}
+.form-horizontal.well {
+	margin:0;
+	padding-top:0;
+	padding-bottom:0;
+	width:93%;
+}
+.form-horizontal .control-label {
+	font-size: 11px;
+	padding-top:3px;
+	width: 130px;
+}
+.form-horizontal .control-label.gender {
+	width: 60px;
+	display:inline-block;
+}
+.form-horizontal input {
+	height:15px;
+}
+.form-horizontal select {
+	height:25px;
+	font-size: 12px;
+}
+.form-horizontal .table td {
+	vertical-align: middle;
+}
+.form-horizontal .table tr:last-child td {
+	height:10px;
+}
+.form-horizontal .table tbody {
+	border-top:none;
+}
+/*.radio.inline, .checkbox.inline {
+	display:inline-block;
+	margin-bottom: 1px;
+    padding-top: 0;
+}*/
+.radio input[type="radio"], .checkbox input[type="checkbox"] {
+	margin-top:1px;
+}
+
+</style>
+<form class="form-horizontal well span6" id="indexform" action="<?php echo $this->baseUrl("farmer/create"); ?>" method="post">
+    <table class="table">
+		<?php if($sessionhaserror) { ?>
+	        <tr>
+	        	<td colspan="2"><div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div></td>
+	        </tr>
+        <?php } ?>
+        <tr>
+            <td><label class="control-label" for="firstname"><?php echo $this->translate("farmer_firstname_label"); ?>:<?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><input type="text" name="firstname" id="firstname" class="span3 hastooltip" value="<?php echo $farmer->getFirstName(); ?>" title="<?php echo $this->translate("farmer_firstname_tooltip"); ?>"  /><div id="firstname_error"></div>
+            	<input type="hidden" name="entityname" value="Farmer" />
+			    <input type="hidden" id="id" name="id" value="<?php echo encode($farmer->getID()); ?>" />
+                <input type="hidden" id="addedbyid" name="addedbyid" value="<?php echo $userid; ?>" />
+                <input type="hidden" id="selfregistered" name="selfregistered" value="0" />
+                <input type="hidden" id="added_by_farmgroup" name="added_by_farmgroup" value="1" />
+                <input type="hidden" name="<?php echo URL_SUCCESS; ?>" value="<?php echo encode($this->baseUrl('farmer/addsuccess')); ?>" />
+                <input type="hidden" name="<?php echo URL_FAILURE; ?>" value="<?php echo encode($this->baseUrl('farmer/adderror')); ?>" />
+                <input type="hidden" name="<?php echo SUCCESS_MESSAGE; ?>" value="farmer_add_success" />
+            </td>
+        </tr>
+        <tr>
+            <td><label class="control-label"><?php echo $this->translate("farmer_lastname_label"); ?>:<?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><input type="text" name="lastname" id="lastname" class="span3 hastooltip" value="<?php echo $farmer->getLastName(); ?>" title="<?php echo $this->translate("farmer_lastname_tooltip"); ?>" /><div id="lastname_error"></div></td>
+        </tr>
+        <tr class="gender">
+        	<td><label class="control-label"><?php echo $this->translate("farmer_gender_label"); ?>:<?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><?php						  
+				  $genderradio = new Zend_Form_Element_Radio('gender',
+						  array(
+								  'multiOptions' => array('1' => 'Male', '2' => 'Female'), 
+								  'view' => new Zend_View(),
+								  'disableLoadDefaultDecorators' => true,
+								  'separator' => '&nbsp;&nbsp;&nbsp;&nbsp;',
+								  'decorators' => array('ViewHelper',
+													  array('HtmlTag', array('tag' => 'div', 'class' => array('inline', 'radio', 'zendradio'))) // use a sorrounding DIV with classes which are copied to the label by JQuery
+												  )
+						  )
+				  );
+				  $genderradio->setValue('');
+				  echo $genderradio->render();
+			  ?>
+			  <div id="gender_error"></div></td>
+		</tr>
+        <tr>
+            <td><label class="control-label"><?php echo $this->translate("farmer_group_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td>
+            	<?php if(isEmptyString($farmer->getFarmGroupID())) { ?>
+					<?php
+                        $groupdropdown = new Zend_Form_Element_Select('farmgroupid',
+                                            array(
+                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), getAllFarmGroups()),								
+                                                'view' => new Zend_View(),
+                                                'decorators' => array('ViewHelper'),
+                                                'class' => array('width250', 'hastooltip'),
+                                                'title' => $this->translate("farmer_farmgroupid_tooltip")
+                                            )
+                                        );
+                        $groupdropdown->setValue(''); 
+                        echo $groupdropdown->render(); 
+                   ?>
+                <?php } else { ?>
+                	<?php echo $farmer->getFarmGroup()->getName(); ?><input type="hidden" id="farmgroupid" name="farmgroupid" value="<?php echo $farmer->getFarmGroupID(); ?>" />
+                <?php } ?>
+                <div id="farmgroupid_error"></div>
+            </td>
+        </tr>
+        <?php if($has_subgrp){ ?>
+        <tr>
+        	<td><label class="control-label"><?php echo $this->translate("farmer_subgroup_label"); ?>: </label></td>
+            <td>
+            	<?php
+					$groupdropdown = new Zend_Form_Element_Select('subgroupid',
+										array(
+											'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $subgroups),								
+											'view' => new Zend_View(),
+											'decorators' => array('ViewHelper'),
+											'class' => array('width250', 'hastooltip'),
+											'title' => $this->translate("farmer_subgroupid_tooltip")
+										)
+									);
+					$groupdropdown->setValue(''); 
+					echo $groupdropdown->render(); 
+			   ?>
+            </td>
+        </tr>
+        <?php } ?>
+        <tr>
+        	<td><label class="control-label"><?php echo $this->translate("farmer_location_label"); ?>:<?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><?php
+					$districtlist = new LookupType(); 
+					$districtlist->setName("ALL_DISTRICTS");
+					$districts = $districtlist->getOptionValuesFromQuery();
+					
+					$defaultdistrict = '';
+					if(!isEmptyString($farmer->getFarmGroupID())){
+						if(!isEmptyString($farmer->getFarmGroup()->getAddress()->getDistrictID())){
+							$defaultdistrict = $farmer->getFarmGroup()->getAddress()->getDistrictID();
+						}
+					}
+					$districtdropdown = new Zend_Form_Element_Select('districtid',
+										array(
+											'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $districts),								
+											'view' => new Zend_View(),
+											'decorators' => array('ViewHelper'),
+											'class' => array('filterselect', 'width250', 'hastooltip'),
+											'title' => $this->translate("farmer_district_tooltip")
+										)
+									);
+					$districtdropdown->setValue($defaultdistrict); 
+					echo $districtdropdown->render(); 
+			   ?><div id="districtid_error"></div></td>
+        </tr>
+        <tr>
+            <td><label class="control-label"><label class="control-label">Phone: </label></td>
+            <td><div class="input-prepend">
+                    <span class="add-on"><?php echo '+'.COUNTRY_CODE_UG; ?></span><input name="phone" id="phone" type="text" maxlength="10" class="span2 hastooltip" style="width:110px; height:18px;" value="" title="<?php echo $this->translate("farmer_phone_tooltip"); ?>" />
+                    
+                    <label class='lineblocked'><a href="javascript: void(0);" class="btn btn-primary btn-mini" id='check_phone_availability' title="Check Availability">Check</a></label><label class="pagedescription" style="font-size:10px;">e.g &nbsp; <span class="green">0772123456</span></label>
+                     <div id="phone_error"></div><div id="phone_availability_result" style="margin-top:5px;"></div>
+            </td>
+        </tr>
+        <tr>
+            <td><label class="control-label" for="email"><?php echo $this->translate("farmer_email_label"); ?>: </label></td>
+            <td><input type="text" name="email" id="email" value="" class="hastooltip span3" title="<?php echo $this->translate("farmer_inviteemail_tooltip"); ?>" />
+                <div id="email_error"></div>
+            </td>
+        </tr>  
+        <tr>
+            <td><label class="control-label"><?php echo $this->translate("farmgroup_refno_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><input type="text" name="refno" id="refno" value="<?php echo $farmer->getRefNo(); ?>" class="xhastooltip width100" title="<?php //echo $this->translate("farmgroup_refno_tooltip"); ?>" />&nbsp;&nbsp;
+            <input type="text" name="regno" id="regno" value="<?php echo $farmer->getRegNo(); ?>" class="readonly hastooltip width100" title="<?php echo $this->translate("farmgroup_regno_tooltip"); ?>" /><div id="refno_error"></div><div id="regno_error"></div></td>
+        </tr>
+        <tr>
+            <td><label class="control-label"><?php echo $this->translate("farmgroup_dateregistered_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><input type="text" name="regdate" id="regdate" class="datefield width100" value="<?php echo changeMySQLDateToPageFormat($farmer->getRegDate()); ?>" /></td>
+        </tr>
+  </table>
+</form>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

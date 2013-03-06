@@ -1,0 +1,1155 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$id = decode($request->id);
+	if(isEmptyString($id)){
+		$id = $farmid;
+	}
+	
+	if(isEmptyString($request->tab)){
+		$request->setParam('tab', 'summary'); 
+	}
+	
+	$farm = new Farm();
+	$farm->populate($id);
+	if(!isEmptyString($farm->getID())){
+		// $farm->cleanUpAddress();
+	}
+	
+	$thefarmid = $farm->getID();
+	$theaddress = $farm->getAddresses()->get(0);
+	
+	if(!isEmptyString($request->farmerid)){
+		$farmer = new Farmer();
+		$farmer->populate(decode($request->farmerid));
+		
+		$farm->setFarmerID($farmer->getID());
+		$hasfarm = false;
+		$hasmultiplefarms = false;
+		$countfarms = $farmer->getFarms()->count();
+		if($countfarms > 1){
+			$hasmultiplefarms = true;
+		}
+		$theaddress->setDistrictID($farmer->getUser()->getLocationID());
+		// debugMessage($theaddress->getDistrictID());
+	}
+	$currentfarmer = $farm->getFarmerID();
+	
+	// debugMessage($farm->toArray());
+	$button_title = $this->translate("farm_button_save");
+	$posturl = $this->baseUrl("farm/edit"); 
+		
+	$title = "Update Farm";
+	if(isEmptyString($farm->getID())){
+		$title = "Setup Farm Business";
+	}
+	
+	$isme = false;
+	if($farmerid == $farm->getFarmerID()){
+		$isme = true;
+	}
+	
+	$this->headTitle($title);
+	
+?>
+<script>
+$(document).ready(function() {
+	
+	<?php if($request->tab == 'summary'){ ?>
+		$("#profileform-summary").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				businessname: "required",
+				districtid:  "required"
+			}, 
+			// the messages for each of the fields being validated
+			messages: {		
+				businessname: "<?php echo $this->translate("farm_businessname_error"); ?>",
+				districtid:  "<?php echo $this->translate("global_district_error"); ?>"
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						error.appendTo("#"+element.attr("name")+"_error")
+						break;
+				}			
+			}
+		});
+	<?php } ?>
+	
+	<?php if($request->tab == 'land'){ ?>
+		$('#farm').tabs();
+		<?php if(!isEmptyString($request->farm)){ ?>
+			$("#farm").tabs({ selected:'<?php echo $request->farm; ?>', fx: {opacity: 'toggle'} });	   
+		<?php } ?>
+		
+		$("#profileform-land").validate();
+		
+		$("#profileform-land").submit(function(){
+			$("#profileform-land").validate();
+		});
+	<?php } ?>
+
+	// disable editing counntry	
+	disableField("country");
+	
+	// basics custom failure and success url
+	$("#profileform-summary .savethenview").click(function() {
+		$("#profileform-summary .successurl").val('<?php echo encode($this->baseUrl('farm/view/tab/summary')); ?>');
+		$("#profileform-summary .failureurl").val('<?php echo encode($this->baseUrl('farm/index/id/'.encode($farm->getID()).'/tab/summary')); ?>');
+	});
+	
+	// personal custom failure and success url
+	$("#profileform-land .savethenview").click(function() {
+		$("#profileform-land .successurl").val('<?php echo encode($this->baseUrl('farm/view/tab/land')); ?>');
+		$("#profileform-land .failureurl").val('<?php echo encode($this->baseUrl('farm/index/id/'.encode($farm->getID()).'/tab/land')); ?>');
+	}); 
+	
+	// personal custom failure and success url
+	$("#profileform-preseason .savethenview").click(function() {
+		$("#profileform-preseason .successurl").val('<?php echo encode($this->baseUrl('farm/view/tab/preseason')); ?>');
+		$("#profileform-preseason .failureurl").val('<?php echo encode($this->baseUrl('farm/index/id/'.encode($farm->getID()).'/tab/preseason')); ?>');
+	}); 
+	
+	<?php if($request->tab == 'summary') { ?>
+		// chained select to load the counties for a district
+		$('#districtid').selectChain({
+			target: $('#countyid'),
+			url: '<?php echo $this->baseUrl('farm/selectchain/'.SELECT_CHAIN_TYPE.'/district_counties/')?>',
+			data: 'currentvalue=<?php echo $theaddress->getCountyID(); ?>',
+			type: 'get'
+		});
+		<?php if(!isEmptyString($theaddress->getDistrictID())){ ?>
+			$('#districtid').trigger("change");
+		<?php } ?>
+		<?php if(!isEmptyString($theaddress->getDistrictID())){ ?>
+			$('#districtid').val('<?php echo $theaddress->getDistrictID(); ?>');
+			$('#districtid').trigger("change");
+		<?php } ?>
+		// chained select to load the subcounties for a county
+		$('#countyid').selectChain({
+			target: $('#subcountyid'),
+			url: '<?php echo $this->baseUrl('farm/selectchain/'.SELECT_CHAIN_TYPE.'/county_subcounties/')?>',
+			data: 'currentvalue=<?php echo $theaddress->getSubcountyID(); ?>',
+			type: 'get'
+		});
+		<?php if(!isEmptyString($theaddress->getCountyID())){ ?>
+			$('#countyid').trigger("change");
+		<?php } ?>
+		
+		// chained select to load the subcounties for a county
+		$('#subcountyid').selectChain({
+			target: $('#parishid'),
+			url: '<?php echo $this->baseUrl('farm/selectchain/'.SELECT_CHAIN_TYPE.'/subcounty_parishes/')?>',
+			data: 'currentvalue=<?php echo $theaddress->getParishID(); ?>',
+			type: 'get'
+		});
+		<?php if(!isEmptyString($theaddress->getSubcountyID())){ ?>
+			$('#subcountyid').trigger("change");
+		<?php } ?>
+		
+		// chained select to load the subcounties for a county
+		$('#parishid').selectChain({
+			target: $('#villageid'),
+			url: '<?php echo $this->baseUrl('farm/selectchain/'.SELECT_CHAIN_TYPE.'/parish_villages/')?>',
+			data: 'currentvalue=<?php echo $theaddress->getVillageID(); ?>',
+			type: 'get'
+		});
+		<?php if(!isEmptyString($theaddress->getParishID())){ ?>
+			$('#parishid').trigger("change");
+		<?php } ?>
+	<?php } ?>	
+	
+	$("#landunits").change(function(){
+		$("#activeland").html($('option:selected', this).html());
+		if($('option:selected', this).val() == ''){
+			$("#activeland").html('--&nbsp;&nbsp;')
+		}
+	});
+	$("#landunits").change();
+	
+	$("#numberoffields").change(function(){
+		var maxfields = '<?php echo MAX_NO_FARMS_LANDS; ?>';
+		var nooffields = $(this).val();
+		// alert(nooffields);
+	});
+	$("#numberoffields").change();
+	
+	// when a user clicks add new display the first hidden firm which is not shown
+	$(".addline").click(function() {
+		showNewLine($(this).attr('id'));
+	});		
+	function showNewLine(type) {
+		$(".hidden_row_"+type+":first").removeClass("hidden_row_"+type).addClass("visible_row_"+type);	
+		
+		// remove disabled attr from the fields
+		$("tr.visible_row_"+type+" input").attr("disabled", false);
+		$("tr.visible_row_"+type+" select").attr("disabled", false);	
+			
+		//if the maximum no of rows is added, hide the link to add another row
+		if ($("tr.visible_row_"+type+"").size() == 5) {
+			$("#"+type).hide();	
+		} else {
+			$("#"+type).show();	
+		}				
+	}
+	
+	// delete rules
+	$(".removeline").click(function() {
+		removeLine($(this).attr('id'), $(this).attr('rel'));
+	});
+	function removeLine(lineid, type) {
+		var row_to_hide = lineid;
+		// confirm popup
+		bootbox.confirm("Are you sure you want to delete this entry? <br /><br /> Click <b>'OK'</b> to confirm, and <b>'Cancel'</b> to ignore", function(confirmed) {
+			if(confirmed){
+				$(".visible_row_"+type).has('a#'+row_to_hide).addClass("hidden_row_"+type).removeClass("visible_row_"+type);
+				// $("input, select").attr("disabled", true);	
+				$("tr."+row_to_hide+" input").val('').attr("disabled", true);
+				$("tr."+row_to_hide+" select").val('').attr("disabled", true);	
+				//if the maximum no of rows is added, hide the link to add another row
+				if ($("tr.visible_row_"+type).size() == 5) {
+					$("#"+type).hide();		
+				} else {
+					$("#"+type).show();	
+				}	
+				// $(".units, .qty").trigger('keyup');
+			} else {
+				return false;
+			}
+		});
+	}
+	
+	// enable/disable previous season estimates
+	$("#hashistory-1").click(function(){
+		enableContainerByClass('lastseason');
+		// alert('has ');
+	});
+	$("#hashistory-0").click(function(){
+		disableContainerByClass('lastseason');
+		// alert('doesnt have ');
+	});
+	<?php if($farm->hasPreviousSeason()){ ?>
+		$("#hashistory-1").click();
+	<?php } ?>
+	<?php if(!$farm->hasPreviousSeason()){ ?>
+		$("#hashistory-0").click();
+	<?php } ?>
+	
+}); 
+</script>
+<style>
+.form-horizontal .control-label {
+	white-space:nowrap;
+	text-align:left;
+	width:auto;
+}
+.form-horizontal div.radio.inline {
+	padding-left:0;
+	margin-left:5px;
+}
+.form-horizontal div.zendradio .radio {
+	padding-left:15px;
+	margin-left:0;
+}
+select.country {
+	width:170px;
+}
+select.unitselect {
+	width:85px;
+}
+</style>
+<h1><?php echo $title; ?></h1>
+<div id="tabs">
+    <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
+    <div class="span9 tab-content" id="center">   
+        <div id="summary">
+        	<h2>Overview</h2>
+            <form id="profileform-summary" class="form-horizontal" action="<?php echo $posturl; ?>" method="post">
+            <?php if($request->tab == 'summary'){ ?>
+        	<div class="row" style="margin-left:0px;">
+                <span class="span6 marginleft0" style="width:74%;">
+                    <div id="row1_left" class="well row marginleft0" style="min-height:60px; padding-left:10px;">                        
+                        <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+                            <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+                        <?php } ?>	
+                        <?php if($sessionhaserror) { ?>
+                            <div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+                        <?php } ?>
+                        <table class="table"> 
+                        	<tr>
+                                <td width="30%"><label class="control-label"><?php echo $this->translate("farm_name_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                                <td colspan="2"><input type="text" name="businessname" id="businessname" value="<?php echo $farm->getName(); ?>" class="hastooltip" style="width:80%;" title="<?php echo $this->translate("farm_businessname_tooltip"); ?>" /><div id="businessname_error"></div></td>
+                            </tr>
+                            <tr>
+                                <td><label class="control-label"><?php echo $this->translate("farm_description_label"); ?>:</label></td>
+                                <td colspan="2">
+									<textarea name="description" id="description" class="span5 expanding hastooltip" style=" min-height:60px; width:80%;" title="<?php echo $this->translate("farm_description_tooltip"); ?>"><?php echo $farm->getDescription(); ?></textarea>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><label class="control-label">Practicing Farming Since:</label></td>
+                                <td>
+                                    <div class="blocked">
+                                        <?php
+                                            $years = getAllYears("63","0");
+                                            $yeardp = new Zend_Form_Element_Select('bizstartyear',
+                                                                array(
+                                                                    'multiOptions' => array_merge_maintain_keys(array('' => 'Year'), $years),	
+                                                                    'view' => new Zend_View(),
+                                                                    'decorators' => array('ViewHelper'),
+                                                                    'class' => array('birth'),
+                                                                    'title' => 'Select Year'		
+                                                                )
+                                                            );
+                                            $yeardp->setValue($farm->getBizStartYear()); 
+                                            echo $yeardp->render(); 
+                                        ?>
+                                        <?php
+                                            $monthdp = new Zend_Form_Element_Select('bizstartmonth',
+                                                                array(
+                                                                    'multiOptions' => array_merge_maintain_keys(array('' => 'Month'), getAllMonthsAsShortNames()),	
+                                                                    'view' => new Zend_View(),
+    
+                                                                    'decorators' => array('ViewHelper'),
+                                                                    'class' => array('span2x'),
+                                                                    'style' => "width:75px;",
+                                                                    'title' => 'Select Month'		
+                                                                )
+                                                            );
+                                            $monthdp->setValue($farm->getBizStartMonth()); 
+                                            echo $monthdp->render(); 
+                                        ?>
+                                        <div id="bizstartyear_error"></div><div id="bizstartmonth_error"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><label class="control-label">Total No of Labourers: </label></td>
+                                <td><input name="numberofemployees" id="numberofemployees" type="text" class="span1 hastooltip" value="<?php echo $farm->getNumberOfEmployees(); ?>" title="<?php echo $this->translate("farm_numberofemployees_tooltip"); ?>" /></td>
+                            </tr>
+                            <tr>
+                            	<td><label class="control-label">Farming Tools Used</label></td>
+								<td><?php
+                                          $listdropdown = new Zend_Form_Element_Multiselect('farmingtoolsids',
+                                                  array(
+													  'multiOptions' => getFarmingTools(),
+													  'view' => new Zend_View(),
+													  'decorators' => array(array('ViewHelper')),
+													  'class' => array('chzn-select','multipleselect','span4','hastooltip_custom'),
+													  'title' => $this->translate("farmer_farmingtools_tooltip")
+                                                  )
+                                          );
+                                          
+                                          $listdropdown->setValue($farm->getFarmingToolsIDs());
+                                          $listdropdown->setAttrib("data-placeholder", 'Select all in category');
+                                          echo $listdropdown->render();
+                                      ?><span id="tooltip_farmingtoolsids"></span>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </span>
+                <span class="span3 pull-right" style="width:22%;">
+                    <div id="row1_right" class="well row" style="min-height:150px;">
+                        <h3 class="well-legend">Quick Links</h3>
+                        <table class="table">                       
+                           <tr>		                    
+                                <td class="formactions">
+                                	<button type="submit" class="btn btn-primary savethenview"><i class="icon-ok icon-white"></i> <?php echo $this->translate('global_button_save_changes'); ?></button>
+                                    <a href="javascript:doNothing();" class="btn"><i class="icon-remove"></i> <?php echo $this->translate('global_button_cancel'); ?></a>
+                                    <input type="hidden" name="entityname" value="Farm" />
+                                    <input type="hidden" id="id" name="id" value="<?php echo encode($farm->getID()); ?>" />
+                                    <input type="hidden" id="farmerid" name="farmerid" value="<?php echo $currentfarmer; ?>" />
+                                    <?php if(!isEmptyString($request->farmerid)){ ?>
+                						<input type="hidden" id="isdefault" name="isdefault" value="<?php echo $hasmultiplefarms == true ? 0 : 1; ?>" />
+                                    <?php } ?>
+                                    <input type="hidden" class="successurl" id="<?php echo URL_SUCCESS; ?>" name="<?php echo URL_SUCCESS; ?>" title="summary" />
+                                    <input type="hidden" class="failureurl" id="<?php echo URL_FAILURE; ?>" name="<?php echo URL_FAILURE; ?>" title="summary" />
+                                    <input type="hidden" id="<?php echo SUCCESS_MESSAGE; ?>" name="<?php echo SUCCESS_MESSAGE; ?>" value="Profile updated successfully" />    
+                                    <input type="hidden" name="regdate" id="regdate" value="<?php echo $farm->getRegDate(); ?>" />
+								</td>
+                           </tr>
+                        </table>
+                    </div>                    
+                </span>
+            </div>
+            <div class="well row marginleft0" style="min-height:100px; width:97%;">
+                    <h3 class="well-legend">Location</h3>
+                    <table class="table">                       
+                       <tr>
+                            <td width="35%"><label class="control-label"><?php echo $this->translate("global_country_label"); ?>:</label>
+								<?php
+                                    $countries = getCountries();
+                                    $countrydropdown = new Zend_Form_Element_Select('country',
+                                                        array(
+                                                            'multiOptions' => array_merge_maintain_keys(array('' => "<Select One>", "UG"=>"Uganda"), $countries),
+                                                            'view' => new Zend_View(), 
+                                                            'decorators' => array('ViewHelper'),
+                                                            'class' => array('country', 'xchzn-select', 'disabledfield')                                                            )
+                                                    );
+                                    $countrydropdown->setValue($farm->getAddress()->getCountry()); 
+                                    echo $countrydropdown->render(); 
+                                ?><input type="hidden" name="country" id="country" value="<?php echo $farm->getAddress()->getCountry(); ?>" />
+                                <span id="tooltip_country"></span><div id="country_error"></div>
+                            </td>
+                            <td width="30%"><label class="control-label"><?php echo $this->translate("global_district_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                                <?php
+									$districtlist = new LookupType(); 
+									$districtlist->setName("ALL_DISTRICTS");
+									$districts = $districtlist->getOptionValuesFromQuery();
+									
+									$districtdropdown = new Zend_Form_Element_Select('districtid',
+														array(
+															'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $districts),								
+															'view' => new Zend_View(),
+															'decorators' => array('ViewHelper'),
+															'class' => array('filterselect', 'country')
+														)
+													);
+									$districtdropdown->setValue($theaddress->getDistrictID()); 
+									echo $districtdropdown->render(); 
+							   ?>
+							   <span id="tooltip_districtid"></span><div id="districtid_error"></div>
+                            </td>
+                            <td width="35%"><label class="control-label"><?php echo $this->translate("global_county_label"); ?>:</label>
+                                <select name="countyid" id="countyid" class="country">
+                                  <option value="">&lt;Select One&gt;</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><label class="control-label"><?php echo $this->translate("global_subcounty_label"); ?>:</label>
+                                <select name="subcountyid" id="subcountyid" class="country">
+                                  <option value="">&lt;Select One&gt;</option>
+                                </select>
+                            </td>
+                            <td><label class="control-label"><?php echo $this->translate("global_parish_label"); ?>:</label>
+                                <select name="parishid" id="parishid" class="country">
+                                  <option value="">&lt;Select One&gt;</option>
+                                </select>
+                            </td>
+                            <td><label class="control-label"><?php echo $this->translate("global_village_label"); ?>:</label>
+                            	<select name="villageid" id="villageid" class="country">
+                                  <option value="">&lt;Select One&gt;</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="3"><label class="control-label"><?php echo $this->translate("contact_address_label"); ?>:</label>
+                              	<textarea name="streetaddress" id="streetaddress" class="span4 expanding" style="min-height:60px;"><?php echo $farm->getAddress()->getStreetAddress(); ?></textarea>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            <?php } ?>
+            </form>    
+        </div>
+        <div id="land">
+        	<h2>Land Usage</h2>
+            <form id="profileform-land" class="form-horizontal" action="<?php echo $posturl; ?>" method="post">
+            	<?php if($request->tab == 'land'){ ?>
+                <div class="row" style="margin-left:0px;">
+                    <span class="span6 marginleft0"  style="width:74%;">
+                        <div class="well row marginleft0" style="min-height:60px; padding-left:10px;">                        
+                           <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+                                <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+                            <?php } ?>	
+                            <?php if($sessionhaserror) { ?>
+                                <div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+                            <?php } ?>
+                            <table class="table"> 
+                                <tr>
+                                    <td width="25%"><label class="control-label"><?php echo $this->translate("farm_landsize_label"); ?>:</label></td>
+                                    <td><input name="landsize" id="landsize" type="text" class="span1 isdecimal hastooltip" value="<?php echo $farm->getLandSize(); ?>" title="<?php echo $this->translate("farm_landsize_tooltip"); ?>" />&nbsp;&nbsp;
+										<?php
+                                            $landunits = getLandMeasureUnits();
+                                            $landunitdropdown = new Zend_Form_Element_Select('landunits',
+                                                                array(
+                                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $landunits),								
+                                                                    'view' => new Zend_View(),
+                                                                    'decorators' => array('ViewHelper'),
+                                                                    'class' => array('filterselect', 'hastooltip', 'unitselect'),
+                                                                    'title' => $this->translate("farm_landunits_tooltip")
+                                                                )
+                                                            );
+                                            $landunitdropdown->setValue($farm->getLandUnits()); 
+                                            echo $landunitdropdown->render(); 
+                                       ?><div id="landsize_error"></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><label class="control-label"><?php echo $this->translate("farm_landsizeactive_label"); ?>:</label></td>
+                                    <td><input name="landactivesize" id="landactivesize" type="text" class="span1 isdecimal hastooltip" value="<?php echo $farm->getLandActiveSize(); ?>" title="<?php echo $this->translate("farm_landsize_tooltip"); ?>" /> <span class="pagedescription" id="activeland"></span><div id="landactivesize_error"></div></td>
+                                </tr>
+                                <tr>
+                                    <td class="nowrapping"><label class="control-label"><?php echo $this->translate("farm_landacquiremethod_label"); ?>:</label></td>
+                                    <td>
+										<?php
+                                            $landmethods = getLandAcquireMethods();
+                                            $landmethoddropdown = new Zend_Form_Element_Select('landacquiremethod',
+                                                                array(
+                                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $landmethods),								
+                                                                    'view' => new Zend_View(),
+                                                                    'decorators' => array('ViewHelper'),
+                                                                    'class' => array('filterselect', 'hastooltip', 'span2'),
+                                                                    'title' => $this->translate("farm_landacquiremethod_tooltip")
+                                                                )
+                                                            );
+                                            $landmethoddropdown->setValue($farm->getLandAcquireMethod()); 
+                                            echo $landmethoddropdown->render(); 
+                                       ?>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><label class="control-label">No of Farm Lands / <br />Farming Fields:</label></td>
+                                    <td>
+                                    	<?php
+                                            $fieldcount = array("1"=>"1","2"=>"2","3"=>"3","4"=>"4");
+                                            $fieldsdropdown = new Zend_Form_Element_Select('numberoffields',
+                                                                array(
+                                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $fieldcount),								
+                                                                    'view' => new Zend_View(),
+                                                                    'decorators' => array('ViewHelper'),
+                                                                    'class' => array('filterselect', 'hastooltip', 'unitselect'),
+                                                                    'title' => $this->translate("farm_numberoffields_tooltip")
+                                                                )
+                                                            );
+                                            $fieldsdropdown->setValue($farm->getNumberOfFields()); 
+                                            echo $fieldsdropdown->render(); 
+                                       ?><div id="numberoffields_error"></div></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </span>
+                    <span class="span3 pull-right" style="width:22%;">
+                        <div class="well row" style="min-height:150px;">
+                            <h3 class="well-legend">Quick Links</h3>
+                            <table class="table">                       
+                                <tr>		                    
+                                    <td class="formactions">
+                                        <button type="submit" class="btn btn-primary savethenview"><i class="icon-ok icon-white"></i> <?php echo $this->translate('global_button_save_changes'); ?></button>
+                                        <a href="javascript:doNothing();" class="btn"><i class="icon-remove"></i> <?php echo $this->translate('global_button_cancel'); ?></a>
+                                        <input type="hidden" name="entityname" value="Farm" />
+                                        <input type="hidden" id="id" name="id" value="<?php echo encode($farm->getID()); ?>" /> 
+                                        <input type="hidden" class="successurl" id="<?php echo URL_SUCCESS; ?>" name="<?php echo URL_SUCCESS; ?>" title="land" />
+                                        <input type="hidden" class="failureurl" id="<?php echo URL_FAILURE; ?>" name="<?php echo URL_FAILURE; ?>" title="land" />
+                                        <input type="hidden" id="<?php echo SUCCESS_MESSAGE; ?>" name="<?php echo SUCCESS_MESSAGE; ?>" value="Profile updated successfully" />    
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </span>
+                </div>
+                <div class="well row marginleft0" style="min-height:75px; width:97%;"> 
+                    <h3 class="well-legend">Details of Farm Lands</h3>
+                    <table class="table">                       
+                        <tr>
+                        	<td>
+                                
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <?php } ?>
+            </form>    
+        </div>
+        <div id="commodities">
+        	<h2>Crops</h2>
+            <form id="profileform-farmers" class="form-horizontal commodities">
+            <?php if($request->tab == 'commodities'){ ?>
+        	<div class="row" style="margin-left:0px;">
+            	<?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+                    <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+                <?php } ?>  
+                <?php require APPLICATION_PATH."/views/scripts/farm/cropscolumn.phtml"; ?>
+            </div>
+            <?php } ?>
+            </form>    
+        </div>
+        <div id="preseason">
+        	<h2>Preseason Estimates</h2>
+            <form id="profileform-preseason" class="form-horizontal preseason" action="<?php echo $posturl; ?>" method="post">
+            <?php if($request->tab == 'preseason'){ 
+				$farmpreseason = new FarmPreseason(); 
+				$availablecrops = getCommoditiesForFarmer($farm->getFarmerID());
+				
+				// $historyid = $farm->getPreseasons()->get(0)->getID();
+				$historyid = $farm->getHistoryID();
+				// debugMessage();
+				if(!isEmptyString($historyid)){
+					$farmpreseason->populate($historyid);
+				} else { 
+					$farmpreseason->setFarmID($farm->getID());
+					$farmpreseason->setFarmerID($farm->getFarmerID());
+					$farmpreseason->setUserID($farm->getFarmer()->getUserID());
+				}
+			?>
+        		<?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+                    <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+                <?php } ?>
+                <?php if($sessionhaserror) { ?>
+                    <div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+                <?php } ?>
+                <div class="row margin0" style="padding:2px; margin-bottom:10px;">
+                	 <span class="pull-left well lighter margin0" style="width:72%; height:150px; position:relative;">
+                		<table class="table margin0" style="margin-top:15px;">
+                            <tr>
+                            	<td colspan="3">
+                                	<label class="control-label">Do you have production estimates from previous season?</label>
+                                   
+                                    <?php						  
+										  $historyradio = new Zend_Form_Element_Radio('hashistory',
+												  array(
+														  'multiOptions' => array('1' => 'Yes', '0' => 'No'), 
+														  'view' => new Zend_View(),
+														  'disableLoadDefaultDecorators' => true,
+														  'separator' => '&nbsp;&nbsp;&nbsp;&nbsp;',
+														  'class' => array('firstplant'),
+														  'decorators' => array('ViewHelper',
+																			  array('HtmlTag', array('tag' => 'div', 'class' => array('inline', 'radio', 'zendradio'))) // use a sorrounding DIV with classes which are copied to the label by JQuery
+																		  )
+												  )
+										  );
+										  $historyradio->setValue($farm->getHasHistory());
+										  echo $historyradio->render();
+									  ?>
+                                </td>
+                            </tr>
+                            <tr class="lastseason">
+                                <td style="width:30%;">
+                                    <label class="control-label">Season Started: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                                    <div class="blocked">
+                                        <?php
+                                            $years = getAllYears("5","0");
+                                            $yeardp = new Zend_Form_Element_Select('startyear',
+                                                                array(
+                                                                    'multiOptions' => array_merge_maintain_keys(array('' => 'Year'), $years),	
+                                                                    'view' => new Zend_View(),
+                                                                    'decorators' => array('ViewHelper'),
+                                                                    'class' => array('birth'),
+                                                                    'title' => 'Select Year'		
+                                                                )
+                                                            );
+                                            $yeardp->setValue($farmpreseason->getStartYear()); 
+                                            echo $yeardp->render(); 
+                                        ?>
+                                        <?php
+                                            $monthdp = new Zend_Form_Element_Select('startmonth',
+                                                                array(
+                                                                    'multiOptions' => array_merge_maintain_keys(array('' => 'Month'), getAllMonthsAsShortNames()),	
+                                                                    'view' => new Zend_View(),
+    
+                                                                    'decorators' => array('ViewHelper'),
+                                                                    'class' => array('span2x'),
+                                                                    'style' => "width:75px;",
+                                                                    'title' => 'Select Month'		
+                                                                )
+                                                            );
+                                            $monthdp->setValue($farmpreseason->getStartMonth()); 
+                                            echo $monthdp->render(); 
+                                        ?>
+                                        <div id="startyear_error"></div><div id="startmonth_error"></div>
+                                    </div>
+                                </td>
+                                <td style="width:30%;"><label class="control-label">Season Ended: <?php echo $this->translate("global_required_field_marker"); ?></label>		
+                                <div class="blocked">
+                                    <?php
+                                        $years = getAllYears("5","0");
+                                        $yeardp = new Zend_Form_Element_Select('endyear',
+                                                            array(
+                                                                'multiOptions' => array_merge_maintain_keys(array('' => 'Year'), $years),	
+                                                                'view' => new Zend_View(),
+                                                                'decorators' => array('ViewHelper'),
+                                                                'class' => array('birth')
+                                                            )
+                                                        );
+                                        $yeardp->setValue($farmpreseason->getEndYear()); 
+                                        echo $yeardp->render(); 
+                                    ?>
+                                    <?php
+                                        $monthdp = new Zend_Form_Element_Select('endmonth',
+                                                            array(
+                                                                'multiOptions' => array_merge_maintain_keys(array('' => 'Month'), getAllMonthsAsShortNames()),	
+                                                                'view' => new Zend_View(),
+                                                                'decorators' => array('ViewHelper'),
+                                                                'class' => array('span2x'),
+                                                                'style' => "width:75px;"
+                                                            )
+                                                        );
+                                        $monthdp->setValue($farmpreseason->getEndMonth()); 
+                                        echo $monthdp->render(); 
+                                    ?>
+                                    <div id="endyear_error"></div><div id="endmonth_error"></div>
+                                </div>        
+                                </td>
+                                <td></td>
+                            </tr>
+                        </table>
+                     </span>
+                     <span class="pull-right padding0" style="width:24%; margin-left:5px;">
+                        <div class="well margin0" style="height:150px;">
+                            <h3 class="well-legend">Quick Links</h3>
+                            <table class="table">                       
+                               <tr>		                    
+                                    <td class="formactions">
+                                        <button type="submit" class="btn btn-primary savethenview"><i class="icon-ok icon-white"></i> Save Changes</button>
+                                        <a href="<?php echo $this->baseUrl('farm/view/id/'.encode($farm->getID())); ?>" class="btn"><i class="icon-remove"></i> <?php echo $this->translate('global_button_cancel'); ?></a>
+                                        <input type="hidden" name="entityname" value="Farm" />
+                                        <input type="hidden" id="id" name="id" value="<?php echo encode($farm->getID()); ?>" />
+                                        <input type="hidden" id="userid" name="userid" value="<?php echo $farmpreseason->getUserID(); ?>" />
+                                        <input type="hidden" id="farmerid" name="farmerid" value="<?php echo $farmpreseason->getFarmerID(); ?>" />
+                                        <input type="hidden" id="farmid" name="farmid" value="<?php echo $farmpreseason->getFarmID(); ?>" />
+                                        <input type="hidden" id="createdby" name="createdby" value="<?php echo $userid; ?>" />
+                                        <input type="hidden" id="historyid" name="historyid" value="<?php echo $farm->getHistoryID(); ?>" />
+                                        <input type="hidden" id="<?php echo SUCCESS_MESSAGE; ?>" name="<?php echo SUCCESS_MESSAGE; ?>" value="<?php echo $this->translate("global_save_success"); ?>" /> 
+                                        <input type="hidden" class="successurl" id="<?php echo URL_SUCCESS; ?>" name="<?php echo URL_SUCCESS; ?>" title="preseason" />
+                                        <input type="hidden" class="failureurl" id="<?php echo URL_FAILURE; ?>" name="<?php echo URL_FAILURE; ?>" title="preseason" />
+                                    </td>
+                               </tr>
+                            </table>                           
+                        </div>
+                    </span>
+                </div>
+                <div class="row margin0 lastseason" style="padding:2px; margin-bottom:10px;">
+					<?php 
+                        $preseasondetails = $farm->getpreseasons()->get(0)->getDetails();
+                        $nooflines = $preseasondetails->count();
+                        $e = 0; $x = 0;
+                        foreach($preseasondetails as $detail){
+                            $class = "visible_row_input";
+                    ?>
+                    <span class="pull-left well lighter margin0 <?php echo $class; ?> row_input_<?php echo $e; ?>" id="row_input_<?php echo $e; ?>" style="width:97%; min-height:180px; height:auto; margin-bottom:10px;">
+                        <h3 class="well-legend" style="padding-bottom:10px; position:relative;">Crop <?php echo $e+1; ?>: 
+                        <span style="display:inline-block; margin-left:5px;">
+                            <?php
+                                
+                                $cropdropdown = new Zend_Form_Element_Select('cropid_'.$e,
+                                                    array(
+                                                        'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $availablecrops),								
+                                                        'view' => new Zend_View(),
+                                                        'decorators' => array('ViewHelper'),
+                                                        'class' => array('hastooltip', 'width150'),
+                                                        'title' => $this->translate("season_commodity_tooltip")
+                                                    )
+                                                );
+                                $cropdropdown->setValue($detail->getCropID()); 
+                                echo $cropdropdown->render();
+                           ?><div id="details_cropid_<?php echo $e; ?>_error"></div>
+                        </span>
+                        <input type="hidden" name="details[<?php echo $e; ?>][id]" id="details_id_<?php echo $e; ?>" value="<?php echo $detail->getid(); ?>" />
+                        <a href="javascript: doNothing();" title="<?php echo $this->translate("global_button_remove"); ?>" id="row_input_<?php echo $e; ?>" class="removeline close button btn" rel="input">&times;</a>
+                    </h3>
+                        <table class="table noborder margin0" style="margin-top:10px;">
+                            <tr>
+                                <td style="width:33%;"> <label class="control-label">Source of Inputs:</label>
+                                   <input style="width:80%;" class="hastooltip" type="text" name="details[<?php echo $e; ?>][inputsource]" id="details_inputsource_<?php echo $e; ?>" value="<?php echo $detail->getinputsource(); ?>" title="<?php echo $this->translate("season_inputsource_tooltip"); ?>" /><div id="details_inputsource_<?php echo $e; ?>_error"></div>
+                                </td>
+                                <td style="width:33%;">
+                                   <label class="control-label">Acrage Cultivated:</label>
+                                    <input style="width:50px;" type="text" name="details[<?php echo $e; ?>][fieldsize]" id="details_fieldsize_<?php echo $e; ?>" class="centeralign isnumber" value="<?php echo $detail->getfieldsize(); ?>" />
+                                    &nbsp;
+                                    <?php
+                                        $areavalues = getAreaUnits();
+                                        $unitdropdown = new Zend_Form_Element_Select('fieldsizeunit_'.$e,
+                                                            array(
+                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $areavalues),								
+                                                                'view' => new Zend_View(),
+                                                                'decorators' => array('ViewHelper'),
+                                                                'class' => array('hastooltip', 'span2'),
+                                                                'title' => $this->translate("season_plant_fieldsize_tooltip")
+                                                            )
+                                                        );
+                                        $unitdropdown->setValue($detail->getfieldsizeunit()); 
+                                        echo $unitdropdown->render(); 
+                                   ?><div id="details_fieldsize_<?php echo $e; ?>_error"></div>
+                                </td>
+                                <td><label class="control-label">Quantity Planted:</label>
+                                    <input type="text" name="details[<?php echo $e; ?>][totalplanted]" id="details_totalplanted_<?php echo $e; ?>" class="centeralign isnumber" style="width:50px;" value="<?php echo $detail->gettotalplanted(); ?>" />
+                                    <?php
+                                        $univalues = getHarvestQuantityUnits();
+                                        $unitdropdown = new Zend_Form_Element_Select('totalplantedunit_'.$e,
+                                                            array(
+                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
+                                                                'view' => new Zend_View(),
+                                                                'decorators' => array('ViewHelper'),
+                                                                'class' => array('hastooltip', 'span2','width100'),
+                                                                'title' => $this->translate("season_harvest_totalharvest_tooltip")
+                                                            )
+                                                        );
+                                        $unitdropdown->setValue($detail->gettotalplantedunit()); 
+                                        echo $unitdropdown->render(); 
+                                    ?>
+                                    <div id="details_totalplanted_<?php echo $e; ?>_error"></div>
+                                   
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                   <label class="control-label">Quantity Harvest:</label>
+                                   <input style="width:50px;" type="text" name="details[<?php echo $e; ?>][totalharvest]" id="details_totalharvest_<?php echo $e; ?>" class="centeralign isnumber" value="<?php echo $detail->gettotalharvest(); ?>" />&nbsp;
+                                    <?php
+                                        $univalues = getHarvestQuantityUnits();
+                                        $unitdropdown = new Zend_Form_Element_Select('totalharvestunit_'.$e,
+                                                            array(
+                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
+                                                                'view' => new Zend_View(),
+                                                                'decorators' => array('ViewHelper'),
+                                                                'class' => array('hastooltip', 'span2','width100'),
+                                                                'title' => $this->translate("season_harvest_totalharvest_tooltip")
+                                                            )
+                                                        );
+                                        $unitdropdown->setValue($detail->gettotalharvestunit()); 
+                                        echo $unitdropdown->render(); 
+                                    ?>
+                                    <div id="details_totalharvest_<?php echo $e; ?>_error"></div>
+                                </td>
+                                <td>
+                                   <label class="control-label">Quantity Sold:</label>
+                                   <input style="width:50px;" type="text" name="details[<?php echo $e; ?>][quantitysold]" id="details_quantitysold_<?php echo $e; ?>" class="centeralign isnumber" value="<?php echo $detail->getquantitysold(); ?>" />&nbsp;
+                                    <?php
+                                        $univalues = getHarvestQuantityUnits();
+                                        $unitdropdown = new Zend_Form_Element_Select('quantitysoldunit_'.$e,
+                                                            array(
+                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
+                                                                'view' => new Zend_View(),
+                                                                'decorators' => array('ViewHelper'),
+                                                                'class' => array('hastooltip', 'span2'),
+                                                                'title' => $this->translate("season_sale_quantity_tooltip"),
+                                                                'style' => 'width: 80px;'
+                                                            )
+                                                        );
+                                        $unitdropdown->setValue($detail->getquantitysold()); 
+                                        echo $unitdropdown->render(); 
+                                    ?>
+                                    <div id="details_quantitysold_<?php echo $e; ?>_error"></div>
+                                </td>
+                                <td><label class="control-label">Sales Price Type:</label>
+                                    <?php 
+                                        $pricetypes = getPricingTypes();
+                                        $typedropdown = new Zend_Form_Element_Select('saletype_'.$e,
+                                                            array(
+                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $pricetypes),								
+                                                                'view' => new Zend_View(),
+                                                                'decorators' => array('ViewHelper'),
+                                                                'class' => array('hastooltip', 'width150'),
+                                                                'title' => $this->translate("season_saletype_tooltip")
+                                                            )
+                                                        );
+                                        $typedropdown->setValue($detail->getsaletype()); 
+                                        echo $typedropdown->render();
+                                   ?><div id="details_saletype_<?php echo $e; ?>_error"></div>
+                                
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                   <label class="control-label">Unit Selling Price:</label>
+                                   <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo $e; ?>][unitprice]" id="details_unitprice_<?php echo $e; ?>" class="width100 hastooltip isamount rightalign" value="<?php echo $detail->getunitprice(); ?>" title="<?php echo $this->translate("season_sale_unitprice_tooltip"); ?>" /></div>
+                                   <div id="unitprice_error"></div>
+                                </td>
+                                <td>
+                                   <label class="control-label">Total Revenue (Approx):</label>
+                                   <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo $e; ?>][totalsalesamount]" id="details_totalsalesamount_<?php echo $e; ?>" class="width100 hastooltip isamount rightalign" value="<?php echo $detail->gettotalsalesamount(); ?>" title="<?php echo $this->translate("season_sale_totalamount_tooltip"); ?>" /></div>
+                                   <div id="totalsalesamount_error"></div>
+                                </td>
+                                <td>
+                                	<label class="control-label">Cost of Production (Inputs):</label>
+                                   	<div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo $e; ?>][totalexpenseamount]" id="details_totalexpenseamount_<?php echo $e; ?>" class="width100 hastooltip isamount rightalign" value="<?php echo $detail->gettotalexpenseamount(); ?>" title="<?php echo $this->translate("season_sale_productioncost_tooltip"); ?>" /></div>
+                                   <div id="totalexpenseamount_error"></div>
+                                </td>
+                            </tr>
+                        </table>
+                    </span>
+					<?php $e++; $x++; } ?>
+                    <?php 
+                        $defaultlines = 0;
+                        if($nooflines >= 0){
+                            $defaultlines = $nooflines + 1;
+                        }
+                        for($i = $e; $i<5; $i++){
+                            // debugMessage($i);
+                            $class = "hidden_row_input";
+                            /*if($i >= $defaultlines){
+                                $class = "hidden_row_input";
+                            }*/
+                        
+                    ?>
+                        <span class="pull-left well lighter margin0 <?php echo $class; ?> row_input_<?php echo $i; ?>" id="row_input_<?php echo $i; ?>" style="width:97%; min-height:180px; height:auto; margin-bottom:10px;">
+                        <h3 class="well-legend" style="padding-bottom:10px; position:relative;">Crop <?php echo $i+1; ?>: 
+                        	<span style="display:inline-block; margin-left:5px;">
+                            	<?php
+									$cropdropdown = new Zend_Form_Element_Select('cropid_'.md5($i),
+														array(
+															'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $availablecrops),								
+															'view' => new Zend_View(),
+															'decorators' => array('ViewHelper'),
+															'class' => array('hastooltip', 'width150'),
+															'title' => $this->translate("season_commodity_tooltip")
+														)
+													);
+									$cropdropdown->setValue(''); 
+									echo $cropdropdown->render();
+							   ?><div id="details_cropid_<?php echo $i; ?>_error"></div>
+                            </span>
+                            <td class="centeralign"><a href="javascript: doNothing();" title="<?php echo $this->translate("global_button_remove"); ?>" id="row_input_<?php echo $i; ?>" class="removeline close button btn" rel="input">&times;</a></td>
+                        </h3>
+                        <table class="table noborder margin0" style="margin-top:10px;">
+                            <tr>
+                                <td style="width:34%;"><label class="control-label">Source of Inputs:</label>
+                                   <input style="width:80%;" class="hastooltip" type="text" name="details[<?php echo md5($i); ?>][inputsource]" id="details_inputsource_<?php echo $i; ?>" value="" title="<?php echo $this->translate("season_inputsource_tooltip"); ?>" /><div id="details_inputsource_<?php echo $i; ?>_error"></div>
+                                </td>
+                                <td style="width:33%;"><label class="control-label">Acrage Cultivated:</label>
+                                	<input style="width:50px;" type="text" name="details[<?php echo md5($i); ?>][fieldsize]" id="details_fieldsize_<?php echo $i; ?>" class="centeralign isnumber" value="" />
+                                    &nbsp;
+                                    <?php
+                                        $areavalues = getAreaUnits();
+                                        $unitdropdown = new Zend_Form_Element_Select('fieldsizeunit_'.md5($i),
+                                                            array(
+                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $areavalues),								
+                                                                'view' => new Zend_View(),
+                                                                'decorators' => array('ViewHelper'),
+                                                                'class' => array('hastooltip', 'width100'),
+                                                                'title' => $this->translate("season_plant_fieldsize_tooltip")
+                                                            )
+                                                        );
+                                        $unitdropdown->setValue(''); 
+                                        echo $unitdropdown->render(); 
+                                   ?><div id="details_fieldsize_<?php echo $i; ?>_error"></div>
+                                </td>
+                                <td><label class="control-label">Quantity Planted:</label>
+                                    <input type="text" name="details[<?php echo $i; ?>][totalplanted]" id="details_totalplanted_<?php echo $i; ?>" class="centeralign isnumber" style="width:50px;" value="" />
+                                    <?php
+                                        $univalues = getHarvestQuantityUnits();
+                                        $unitdropdown = new Zend_Form_Element_Select('totalplantedunit_'.$i,
+                                                            array(
+                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
+                                                                'view' => new Zend_View(),
+                                                                'decorators' => array('ViewHelper'),
+                                                                'class' => array('hastooltip', 'span2','width100'),
+                                                                'title' => $this->translate("season_harvest_totalharvest_tooltip")
+                                                            )
+                                                        );
+                                        $unitdropdown->setValue(''); 
+                                        echo $unitdropdown->render(); 
+                                    ?>
+                                    <div id="details_totalplanted_<?php echo $i; ?>_error"></div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                   <label class="control-label">Quantity Harvest:</label>
+                                   <input style="width:50px;" type="text" name="details[<?php echo md5($i); ?>][totalharvest]" id="details_totalharvest_<?php echo $i; ?>" class="centeralign isnumber" value="" />&nbsp;
+									<?php
+                                        $univalues = getHarvestQuantityUnits();
+                                        $unitdropdown = new Zend_Form_Element_Select('totalharvestunit_'.md5($i),
+                                                            array(
+                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
+                                                                'view' => new Zend_View(),
+                                                                'decorators' => array('ViewHelper'),
+                                                                'class' => array('hastooltip', 'span2','width100'),
+                                                                'title' => $this->translate("season_harvest_totalharvest_tooltip")
+                                                            )
+                                                        );
+                                        $unitdropdown->setValue(''); 
+                                        echo $unitdropdown->render(); 
+                                    ?>
+                                    <div id="details_totalharvest_<?php echo $i; ?>_error"></div>
+                                </td>
+                                <td>
+                                   <label class="control-label">Quantity Sold:</label>
+                                   <input style="width:50px;" type="text" name="details[<?php echo md5($i); ?>][quantitysold]" id="details_quantitysold_<?php echo $i; ?>" class="centeralign isnumber" value="" />&nbsp;
+									<?php
+                                        $univalues = getHarvestQuantityUnits();
+                                        $unitdropdown = new Zend_Form_Element_Select('quantitysoldunit_'.md5($i),
+                                                            array(
+                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
+                                                                'view' => new Zend_View(),
+                                                                'decorators' => array('ViewHelper'),
+                                                                'class' => array('hastooltip', 'span2'),
+                                                                'title' => $this->translate("season_sale_quantity_tooltip"),
+                                                                'style' => 'width: 80px;'
+                                                            )
+                                                        );
+                                        $unitdropdown->setValue(''); 
+                                        echo $unitdropdown->render(); 
+                                    ?>
+                                    <div id="details_quantitysold_<?php echo $i; ?>_error"></div>
+                                </td>
+                                <td><label class="control-label">Sales Price Type:</label>
+                                	<?php 
+										$pricetypes = getPricingTypes();
+                                        $typedropdown = new Zend_Form_Element_Select('saletype_'.md5($i),
+                                                            array(
+                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $pricetypes),								
+                                                                'view' => new Zend_View(),
+                                                                'decorators' => array('ViewHelper'),
+                                                                'class' => array('hastooltip', 'width150'),
+                                                                'title' => $this->translate("season_saletype_tooltip")
+                                                            )
+                                                        );
+                                        $typedropdown->setValue(''); 
+                                        echo $typedropdown->render();
+                                   ?><div id="details_saletype_<?php echo $i; ?>_error"></div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                   <label class="control-label">Unit Selling Price:</label>
+                                   <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo md5($i); ?>][unitprice]" id="details_unitprice_<?php echo $i; ?>" class="width100 hastooltip isamount rightalign" value="" title="<?php echo $this->translate("season_sale_unitprice_tooltip"); ?>" /></div>
+                                   <div id="unitprice_error"></div>
+                                </td>
+                                <td>
+                                   <label class="control-label">Total Revenue (Approx):</label>
+                                   <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo md5($i); ?>][totalsalesamount]" id="details_totalsalesamount_<?php echo $i; ?>" class="width100 hastooltip isamount rightalign" value="" title="<?php echo $this->translate("season_sale_totalamount_tooltip"); ?>" /></div>
+                                   <div id="totalsalesamount_error"></div>
+                                </td>
+                                <td>
+                                	<label class="control-label">Cost of Production (Inputs):</label>
+                                   	<div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo $i; ?>][totalexpenseamount]" id="details_totalexpenseamount_<?php echo $i; ?>" class="width100 hastooltip isamount rightalign" value="" title="<?php echo $this->translate("season_sale_productioncost_tooltip"); ?>" /></div>
+                                   <div id="totalexpenseamount_error"></div>
+                                </td>
+                            </tr>
+                        </table>
+                    </span>
+                    <?php $x++; } ?>
+                    <span class="nohistory" style="display:block; width:96%; height:auto; padding-left:5px;">
+                    	<a href="javascript: void(0)" title="Add another" class="addline btn btn-primary btn-mini pull-left" id="input"><i class="icon-plus icon-white"></i> Add Crop</a>
+                    </span>
+                </div>
+            <?php } ?>
+            </form>    
+        </div>
+        <div id="seasons">
+        	<h2>Manage Seasons</h2>
+            <form id="profileform-farmers" class="form-horizontal seasons">
+            <?php if($request->tab == 'seasons'){ ?>
+        	
+            <?php } ?>
+            </form>    
+        </div>
+        <div id="calendar">
+        	<h2>Activity Calendar</h2>
+            <form id="profileform-calendar" class="form-horizontal calendar">
+            <?php if($request->tab == 'calendar'){ ?>
+        	
+            <?php } ?>
+            </form>    
+        </div>
+        <div id="finance">
+        	<h2>Finance Dashboard</h2>
+            <form id="profileform-finance" class="form-horizontal finance">
+            <?php if($request->tab == 'finance'){ ?>
+        	<div class="row" style="margin-left:0px;">
+                <span class="marginleft0 span9" style="width:94%;">
+                    <ul class="sectionitems">
+                    	<li>
+                            <a class="list" href="<?php echo $this->baseUrl("finance/credithistory/id/".encode($farm->getID()))?>" title="Credit History"><img src="<?php echo $this->baseUrl('images/topmenu_market.png'); ?>" /><br /><h2>Credit History</h2></a>
+                        </li>
+                        <li>
+                            <a class="list" title=""><img src="<?php echo $this->baseUrl('images/topmenu_market.png'); ?>" /><br /><h2>TBD</h2></a>
+                        </li>
+                        <li>
+                            <a class="list" title=""><img src="<?php echo $this->baseUrl('images/topmenu_market.png'); ?>" /><br /><h2>TBD</h2></a>
+                        </li>
+                    </ul>
+                </span>
+            </div>
+            <?php } ?>
+            </form>    
+        </div>
+        <div id="calendar">
+        	<h2>Activity Calendar</h2>
+            <form id="profileform-calendar" class="form-horizontal calendar">
+            <?php if($request->tab == 'calendar'){ ?>
+        	<div class="row" style="margin-left:0px;">
+                <span class="span6 marginleft0" style="width:96%;">
+                	<div id='calendarcontainer' class=" padding0 margin0" style="margin-top:10px;"></div>
+                    <?php
+						foreach($timeline as $activity){
+					?>
+					<ul id="<?php echo $activity['uniqueid']; ?>" class="nav nav-stacked datalist hide" style="width:360px;">
+						<li>
+							<table class="table noborder margin0">
+								<tr>                                
+									<td class="padding0">
+										<div style="position:relative;">
+											<div style="position:absolute; top:5px; right:15px;">
+												<a class="btn btn-primary btn-mini wrap"  href="<?php echo $activity['url']; ?>" title="View all details">View</a>
+												<a class="btn btn-primary btn-mini wrap"  href="<?php echo $activity['editurl']; ?>" title="Update Activity">Update</a>
+											</div>
+											<table class="itemlist table noborder margin0">
+												<tr>
+													<td style="width:65px;"><label class="control-label pull-left">Ref#:</label></td>
+													<td><span><?php echo $activity['ref']; ?></span></td>    
+												</tr>      
+												<tr>
+													<td><label class="control-label pull-left">Details:</label></td>
+													<td><span><?php echo snippet($activity['description'], 300, '...'); ?></span></td>    
+												</tr>
+												<tr>
+													<td><label class="control-label pull-left">Status:</label></td>
+													<td><span><?php echo $activity['status']; ?></span></td>    
+												</tr>
+												<?php if(in_array($activity['type'], array("1","2","3","4","5","6")) && $activity['expenses'] > 0){ ?>
+													<tr>
+														<td><label class="control-label pull-left">Expenses:</label></td>
+														<td><span><?php echo formatNumber($activity['expenses']); ?></span></td>    
+													</tr>  
+												<?php } ?> 
+												<?php if($activity['type'] == "7" && $activity['sale'] > 0){ ?>
+													<tr>
+														<td><label class="control-label pull-left">Revenue:</label></td>
+														<td><span><?php echo formatNumber($activity['sale']); ?></span></td>    
+													</tr>  
+												<?php } ?>      
+											</table>
+										</div>
+									</td>
+								</tr>
+							</table>
+						</li>
+					</ul>
+					<?php } ?>
+                </span>
+            </div>
+            <?php } ?>
+            </form>    
+        </div>
+        <div id="inventory">
+        	<h2>Inventory</h2>
+            <form id="profileform-resources" class="form-horizontal">
+        	<div class="row" style="margin-left:0px;">
+                <span class="marginleft0 span9" style="width:685px;">
+                    <div class="well row marginleft0" style="min-height:60px; padding-left:10px;">                        
+                        <table class="table"> 
+                        
+                        </table>
+                    </div>
+                </span>
+            </div>
+            </form>    
+        </div>        
+        <div id="account">
+        	<h2>My Account</h2>
+            <form id="profileform-account" class="form-horizontal account">
+            <?php if($request->tab == 'account'){ ?>
+        	<div class="row" style="margin-left:0px;">
+                <span class="marginleft0 span9" style="width:94%;">
+                    <div class="well row marginleft0" style="min-height:60px; padding-left:10px;">  
+                        <table class="table"> 
+                        
+                        </table>
+                    </div>
+                </span>
+            </div>
+            <?php } ?>
+            </form>    
+        </div>
+	</div>
+</div>
+<?php
+	$session->setVar(SUCCESS_MESSAGE, '');
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

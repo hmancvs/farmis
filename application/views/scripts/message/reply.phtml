@@ -1,0 +1,212 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+		
+	$button_title = $this->translate('message_button_send');
+	
+	$message = new Message();
+	$message->populate(decode($request->id));	
+	
+	// mark this message as read if it has not yet been read by the owner
+	if(!$message->getMessageDetails()->hasReadMessage() && ($userid == $message->getRecipient()->getID())){		
+		$message->getMessageDetails()->markAsRead(array($message->getMessageDetails()->getID()), '1');
+		// update session with number of messages unread
+		$remaining = $message->getMessageDetails()->countUnReadMessages($userid);		
+		$session->setVar('unread', $remaining);
+		$newmsghtml = '<a title="Messages" href="'.$this->baseUrl('message/list').'"><img src="'.$this->baseUrl('images/email.png').'">Messages (<label class="unread">'.$session->getVar('unread').' Unread</label>)</a>';
+		$session->setVar('newmsghtml', $newmsghtml);		 
+	}
+	// debugMessage('result is '.$message->getMessageDetails()->getIsRead() );		
+	
+	# Page title
+	$title = "Notification Details";
+	$this->headTitle($title);
+?>
+<script type="text/javascript"> 
+$(document).ready(function() {	
+	
+	$("#replyform").validate();
+	
+	// update read messages li
+	//alert(unread);
+	$("#messages").html('<?php echo $session->getVar('newmsghtml'); ?>');
+	
+	// force reply to empty string
+	$("#contents").val('');
+	
+	// send message
+	$("#send").click(function(){
+		
+		<?php $session->setVar('msgreturn', 'json'); ?>			
+		// post comment if form is valid
+		if ($("#replyform").valid() == true) {			
+			
+			// save the message
+			$.post(  
+				'<?php echo $this->baseUrl("message/create"); ?>',  
+				$("#replyform").serialize(),  
+				function(data){  
+					// alert(data);											
+					messsage = $.parseJSON(data);																		
+					// create variables for the list items to be inserted in dom
+					var src = '<?php echo $message->getRecipient()->getThumbnailPicturePath(); ?>';
+					var del = '<?php echo $this->baseUrl('images/cancel_down.png'); ?>';
+					var wait = '<?php echo $this->baseUrl('images/loader.gif'); ?>';
+					var alt = '<?php echo $session->getVar('fullname'); ?>';
+					var fullname = '<?php echo $session->getVar('fullname'); ?>';
+					var plan = '<?php echo $session->getVar('membershipplanname'); ?>'
+					// html string of comment list item to be appended to the ul
+					var postedhtml = "<li style='display:none;' id='message_"+messsage.id+"'><img src="+src+" alt="+alt+" /><div><h2>"+fullname+", "+plan+" Member</h2><span>"+messsage.contents+"</span><label>Sent on "+messsage.datecreated+"</label><a href='javascript: doNothing();' title='Delete Message' class='delete_message' id='remove_message_"+messsage.id+"'><img src="+del+" /></a><input type='hidden' class='remove_message_"+messsage.id+"' title='"+messsage.id+"' value='"+messsage.id+"' /></div><img class='loading hidden' id='waiting_old_"+messsage.id+"' src="+wait+" /></li>";
+					// alert(postedhtml);	
+					
+					// insert message to the bottom of the list  as the 2nd last child
+					$(postedhtml).insertBefore("ul.comments li:last-child");			
+					$("ul.comments li:last-child").prev().fadeIn("slow");
+					// remove readonly from textarea
+					$("#contents").val('').removeAttr('readonly').css({'background': '#FFFFFF'});					
+					// hide the loading image and show comment that was sent					
+					$("#waiting_new").hide();/*	*/
+					
+					// when user tries to delete new message, call delete functionality again. 
+				}  
+			); // close the $.post 							
+			// hide the textarea and send button when user clicks send message
+			$("#waiting_new").show();
+			// make textarea readonly while message is being saved
+			$("#contents").attr('readonly','readonly').css({'background-color': '#F0F0B3'});					
+		}
+	});	
+	
+	// delete message
+	$(".delete_message").click(function(){		
+		var messageid = $('input.'+$(this).attr('id')).val();		
+		// confirm that user wants to delete the message
+		if(window.confirm("Are you sure you want to delete this message. \n Click 'OK' to confirm or 'Cancel' to stay on this page")){						
+			// set mesage id and entity to be deleted
+			$("#idfordelete").val(messageid);
+			
+			$.post(  
+				"<?php echo $this->baseUrl("message/delete"); ?>",  
+				$("#replyform").serialize(), 
+				function(data){
+					if(data.search("success") != -1){
+						// alert(data);						
+						// remove message from list item from the DOM
+						$("ul.comments li#message_"+messageid).fadeOut('slow', function(){ $(this).remove(); });
+						// hide loading image 						
+						$("#waiting_old_"+messageid).hide();	
+					} else {
+						alert('An error occured in removing the comment. Please try again');
+					}
+				}  
+			); // close the $.post 	
+			$("#waiting_old_"+messageid).show();	
+							
+			return true;
+		} else {
+			return false;
+		}
+	});	
+	
+}); 
+</script>
+<style>
+ul.comments li div:not(.loading) {		
+	width:83%;
+}
+textarea.expanding {
+	width:350px;	
+}
+<?php if($message->getSenderID() == 1){ ?> 
+#rightcolumn {
+	display:none;
+}
+/*img.header, img.footer {
+	display:none;
+}*/
+<?php } ?> 
+</style>
+
+<?php if($message->getSenderID() == 1){ ?> 
+<div>
+    <?php require APPLICATION_PATH."/views/scripts/index/leftcolumn.phtml"; ?>
+    <div id="centercolumn" class="content">
+		<?php if(isNotAnEmptyString($session->getVar(SUCCESS_MESSAGE))){ ?>
+            
+        <?php } ?>
+         <div class="widgetsection height300" style="">
+            <h3><?php echo isEmptyString($message->getSubject()) ? 'Message Details' : $message->getSubject(); ?></h3>
+            <div style="padding:0 20px 0 10px;">
+            	<label class="control-label" style="margin-bottom:10px; margin-top:10px; font-size:15px; display:block; text-align:left;">From: <?php echo $this->translate("company_signoff"); ?></label>
+				<p style="margin-bottom:10px;">
+                	<?php if($message->getContents() != sprintf($this->translate('useraccount_email_subject_signup'), $this->translate('appname'))){ ?>
+						<?php echo $message->getContents(); ?>
+                    <?php } else { ?>
+                  		  
+                    <?php } ?>
+                </p>
+                <a href="<?php echo $this->baseUrl("message/list"); ?>" id="back" class="btn btn-primary" title="Return To Inbox"><i class="icon-envelope icon-white"></i> Back To Inbox</a>
+            </div>
+         </div>
+    </div>
+</div>    
+<?php } else { ?>
+    <h1><?php echo $title; ?></h1>
+    <?php if(isNotAnEmptyString($session->getVar(SUCCESS_MESSAGE))){ ?>
+  		<div class="successmessage"><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+    <?php } ?>
+	<form id="replyform" method="post">
+        <ul class="comments">
+        <?php 
+            $messagethread = $message->getMessageHistory();		
+            foreach($messagethread as $themessage){
+                // debugMessage($themessage->toArray());
+                
+        ?>
+            <li id="message_<?php echo $themessage->getID(); ?>">
+                <a href="<?php echo $this->baseUrl('message/index/'.PAGE_CONTENTS_ONLY.'/true/userid/'.encode($themessage->getSenderID())); ?>" class="profilepopup" title="<?php echo $themessage->getSender()->getName(); ?>, <?php echo $themessage->getSender()->getMembershipPlan()->getName(); ?> Member"><img src="<?php echo $themessage->getSender()->getThumbnailPicturePath(); ?>" alt="<?php echo $themessage->getSender()->getName(); ?>" /></a>
+                <div>
+                    <a href="<?php echo $this->baseUrl('message/index/'.PAGE_CONTENTS_ONLY.'/true/userid/'.encode($themessage->getSenderID())); ?>" class="profilepopup" title="<?php echo $themessage->getSender()->getName(); ?>, <?php echo $themessage->getSender()->getMembershipPlan()->getName(); ?> Member"><h2><?php echo $themessage->getSender()->getName(); ?>, <?php echo $themessage->getSender()->getMembershipPlan()->getName(); ?> Member</h2></a>
+                    <span><?php echo nl2br($themessage->getContents()); ?></span>                                
+                    <label>Sent on <?php echo date('m/d/Y - g:i A', strtotime($themessage->getDateCreated())); ?></label>
+                    <?php if($userid == $themessage->getSenderID()){ ?>
+                        <a href="javascript: doNothing();" title="Delete Message" class="delete_message" id="remove_message_<?php echo $themessage->getID(); ?>"><img src="<?php echo $this->baseUrl('images/cancel_down.png'); ?>" /></a>
+                        <input type="hidden" class="remove_message_<?php echo $themessage->getID(); ?>" title="<?php echo $themessage->getID(); ?>" value="<?php echo $themessage->getID(); ?>" />
+                    <?php } ?>
+                </div>
+                <img class="loading hidden" id="waiting_old_<?php echo $themessage->getID(); ?>" src="<?php echo $this->baseUrl('images/loader.gif'); ?>" />
+            </li>
+            <?php } ?>
+            <li class="commentdetails" id="newmessage" >
+                <img src="<?php echo $message->getRecipient()->getThumbnailPicturePath(); ?>" alt="<?php echo $session->getVar('fullname'); ?>" />
+                <div>
+                    <h2><?php echo $session->getVar('fullname'); ?>, <?php echo $session->getVar('membershipplanname'); ?> Member</h2>
+                    <span id="beforesend"><textarea id="contents" name="contents" class="expanding {required: true, maxlength:<?php echo $config->workarea->maxprivatemessagelength; ?> , messages:{required: '<?php echo $this->translate("message_contents_error"); ?>', maxlength: '<?php echo sprintf($this->translate("message_contents_length_error"), $config->workarea->maxprivatemessagelength); ?>'}}"></textarea></span>                    
+                 </div>
+                 <img class="loading hidden" id="waiting_new" src="<?php echo $this->baseUrl('images/loader.gif'); ?>" />           
+            </li>
+        </ul>
+        <div class="sectionfooter"></div>
+        <div class="actionbuttons"> 
+            <a href="javascript: doNothing();" id="send" class="positiveaction sendmessage" title="Send Message"><img src="<?php echo $this->baseUrl('images/tick.png'); ?>" />Send Message</a>
+            <a href="<?php echo $this->baseUrl("message/list"); ?>" id="back" class="positiveaction" title="Return To Inbox"><img src="<?php echo $this->baseUrl('images/arrow_undo.png'); ?>" />Back To Inbox</a>        
+            <input type="hidden" name="senderid" id="senderid" value="<?php echo $userid; ?>" />
+            <input type="hidden" name="parentid" id="parentid" value="<?php echo $message->getCurrentParentID(); ?>" />
+            <input type="hidden" name="entityname" value="Message" />
+            <input type="hidden" name="idfordelete" id="idfordelete" value="" />                                   
+            <?php		
+                // get the current message recipientids 
+                $recipientids = $message->getRecipientIds();
+                // unset current user from recipients and add sender to reply. Current user will not send message to them selves
+                unset($recipientids[$userid]);
+                $recipientids[] = $message->getSenderID();
+                foreach($recipientids as $recipientid){			
+            ?>
+            <input type="hidden" name="recipientids[<?php echo md5($recipientid); ?>]" id="recipientids" value="<?php echo $recipientid; ?>" />  
+            <?php } ?>    
+        </div>
+    <?php } ?>
+    
+</form>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

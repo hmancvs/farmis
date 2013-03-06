@@ -1,0 +1,222 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$title = "Help Center";
+	$this->headTitle($this->translate("appname")." | ".$title);
+
+?>
+<script>
+	$(document).ready(function(){
+		$('#helpcategories a').click(function(){
+			$("table.list").hide();
+			var id = $(this).attr('id');
+			$("table.list."+id).show();
+			if(id == 'all'){
+				$("table.list").show();
+			}
+		});
+		
+	}); 
+</script>
+<style>
+.content h4 {
+	margin-top:5px;
+	margin-bottom:15px;
+	font-size:16px;	
+}
+td.qn {
+	font-weight:bold;
+}
+.table td.ansline1 {
+	color:#333333;
+	font-weight:bold;
+}
+#helpcategories {
+	width:100%;
+}
+#helpcategories li {
+	width:28%;
+	margin-right:0;
+	font-size:18px;
+	display:inline-block;
+}
+#helpcategories li a {
+	
+}
+.table {
+	margin-bottom:2px;
+}
+</style>
+<div class="row marginleft0">
+    <div class="span8 pull-left marginleft0 public_leftcolumn">
+        <div class="content" id="help">
+            <h1><?php echo $title; ?></h1> 
+            <h2>Frequently Asked Questions (FAQs)</h2>
+            <table class="table noborder margin0" style="margin-left:5px;">
+                <tbody>
+                    <tr>
+                        <td style="padding-left:0;">
+                            <h3 style="font-size:15px; padding-left:0;">Categories</h3>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left:0;">
+                            <ul id="helpcategories" class="nav margin0 padding0">
+                                <li><a id="all" href="javascript:void(0);">All Categories</a></li>
+                                <li style="width:35%;"><a id="cat2" href="javascript:void(0);">Benefits</a></li>
+                                <li><a id="cat3" href="javascript:void(0);">Billing</a></li>
+                                <li><a id="cat1" href="javascript:void(0);">Membership</a></li>
+                                <li style="width:35%;"><a id="cat4" href="javascript:void(0);">Security and Privacy</a></li>
+                                <li><a id="cat5" href="javascript:void(0);">Using FARMIS</a></li>
+                            </ul>
+                        </td>
+                    </tr>                  
+                </tbody>
+            </table>
+            <table class="table table-bordered table-condesed list cat1">
+                <tbody>
+                    <tr>
+                        <td style="width:15px;" class="qn">Q:</td>
+                        <td class="ansline1">What is Farmis? 
+                        <label class="regulardescription">Category: Membership</label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="qn">A:</td>
+                        <td class="ans"><p>Farmis refers to Farmer Records Management Information System. It is an online system that allows farmers better store their records and use these same records to access services that would otherwise have been hard to access e.g. agricultural loans.</p></td>
+                    </tr>                  
+                </tbody>
+            </table>
+            <table class="table table-bordered table-condesed list cat1">
+                <tbody>
+                    <tr>
+                        <td class="qn">Q:</td>
+                        <td class="ansline1">What does Farmis do?
+                        <label class="regulardescription">Category: Membership</label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="qn">A:</td>
+                        <td class="ans"><p>Farmis provides a platform that captures data on all the various activities the farmer undertakes right from purchasing of inputs, to planting, adding fertilizers, harvest and even post-harvest. With Farmis, all this can be accessed anytime at the click of a button. </p>
+                            <p>Farmers who use Farmis get access to various services that are available for Farmis members including;</p>
+                            • &nbsp;Access to credit services,<br />
+                            • &nbsp;Access to cooperatives for contract farming<br />
+                            • &nbsp;Access to genuine inputs at affordable prices,<br />
+                            • &nbsp;Market linkages to major bulk buyers,<br />
+                            • &nbsp;Promotional services through the radio, and<br />
+                            • &nbsp;Access to relevant farming tips.<br /><br />
+</td>
+                    </tr>                  
+                </tbody>
+            </table>
+            <table class="table table-bordered table-condesed list cat3">
+                <tbody>
+                    <tr>
+                        <td class="qn">Q:</td>
+                        <td class="ansline1">How much does it cost to join Farmis?
+                        <label class="regulardescription">Category: Billing</label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="qn">A:</td>
+                        <td class="ans"><p>For the first month, no obligations! Simply fill out a simple registration form and you will have free access to a number of Farmis services for a month. If you would like to continue using Farmis after the first month, you simply pay a fee of Shs. 1200 per month ($0.9) payable in collective sum for 6 months subscription – that is 1,200x6 = Shs.7,200 ($2.6).</p> 
+                        <p>In addition, every farmer will be allocated a farmer crop card to enter their records before taking them for data entry at the district farmer association offices.This will give you access to all the benefits Farmis offers.</p></td>
+                    </tr>                  
+                </tbody>
+            </table>
+            <table class="table table-bordered table-condesed list cat3">
+                <tbody>
+                    <tr>
+                        <td class="qn">Q:</td>
+                        <td class="ansline1">How do I make payments for subscription?
+                        <label class="regulardescription">Category: Billing</label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="qn">A:</td>
+                        <td class="ans"><p>You can pay for Farmis using mobile money. Every farmer is allocated an ID, please make sure you include this ID in the message when making payments through mobile money.</p>
+                        To send subscription, simply follow these guidelines;
+                       
+                        </p></td>
+                    </tr>                  
+                </tbody>
+            </table>
+            <table class="table table-bordered table-condesed list cat5">
+                <tbody>
+                    <tr>
+                        <td class="qn">Q:</td>
+                        <td class="ansline1">If am not in Uganda can I still use Farmis?
+                        <label class="regulardescription">Category: Using Farmis</label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="qn">A:</td>
+                        <td class="ans"><p>Farmis is available to users outside Uganda. Please contact us and we will advise on steps to take.</p></td>
+                    </tr>                  
+                </tbody>
+            </table>
+            <table class="table table-bordered table-condesed list cat4">
+                <tbody>
+                    <tr>
+                        <td class="qn">Q:</td>
+                        <td class="ansline1">Does Farmis share my farming records?
+                        <label class="regulardescription">Category: Security</label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="qn">A:</td>
+                        <td class="ans"><p>No, all information you provide is STRICTLY CONFIDENTIAL. For more information about our Privacy Policy, <a href="<?php echo $this->baseUrl('aboutus/privacypolicy'); ?>">click here</a></p></td>
+                    </tr>                  
+                </tbody>
+            </table>
+            <table class="table table-bordered table-condesed list cat2">
+                <tbody>
+                    <tr>
+                        <td class="qn">Q:</td>
+                        <td class="ansline1">Our farmers do not have skills in record keeping. How can they benefit from Farmis?
+                        <label class="regulardescription">Category: Benefits</label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="qn">A:</td>
+                        <td class="ans"><p>We provide training in basics of record keeping to farmer groups, associations, cooperatives and societies. If you would like your group to receive training in proper record keeping please contact us and we will set up one for you.</p></td>
+                    </tr>                  
+                </tbody>
+            </table>
+            <table class="table table-bordered table-condesed list cat2">
+                <tbody>
+                    <tr>
+                        <td class="qn">Q:</td>
+                        <td class="ansline1">How does Farmis help me to gain access to agricultural loans?
+                        <label class="regulardescription">Category: Benefits</label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="qn">A:</td>
+                        <td class="ans"><p>Farmis has set up partnership with major banks that provide agricultural loans in Uganda. Normally, when a farmer walks into a bank and requests for a loan, the bank requests for records to show performance for previous farming activity in order to determine whether to give the farmer credit or not.</p> 
+<p>By partnering with Farmis, banks have made this easy allowing farmers to simply print out detailed baseline, and profit and loss reports which the Farmis system provides and presenting this to the bank. However, in order to fully benefit from this service, the farmer MUST ensure that all records at all farming levels are regularly entered into the Farmis system.</p></td>
+                    </tr>                  
+                </tbody>
+            </table>
+            <table class="table table-bordered table-condesed list cat5">
+                <tbody>
+                    <tr>
+                        <td class="qn">Q:</td>
+                        <td class="ansline1">Am a farmer, but I do not have basic computer skills, how do I benefit from Farmis?
+                        <label class="regulardescription">Category: Using Farmis</label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="qn">A:</td>
+                        <td class="ans"><p>We have partnered with District Farmer Associations (DFA) and other organized groups to help their farmers carry out most of the data entry tasks.</p>
+                        <p>Farmers will be provided with booklets (crop card) by their DFA or association to help them keep daily records of all transactions. Every month, the farmer will take this booklet to the DFA for data entry at no extra cost to the farmer.</p></td>
+                    </tr>                  
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <?php require APPLICATION_PATH."/views/scripts/index/righthandband.phtml"; ?>
+</div>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

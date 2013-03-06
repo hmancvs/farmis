@@ -1,0 +1,23 @@
+<script type="text/javascript">
+	$(document).ready(function() {
+		$("#commentform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				comment: "required"
+			}, 
+			// the messages for each of the fields being validated
+			messages: {	
+				comment: "<?php echo $this->translate("visionstatementcomment_button_addcomment_error"); ?>"
+			}
+		}); 
+	}); 
+</script>
+<table>
+  <tr>
+    <td><textarea id="comment" name="comment" class="expanding"><?php //echo $visionstatementcomment->getComment(); ?>
+</textarea>
+      <br />
+      <div id="comment_details"></div></td>
+  </tr>
+</table>
+

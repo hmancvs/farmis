@@ -1,0 +1,276 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$season = new Season(); 
+	$season->populate(decode($request->id));
+	$croplines = $season->getSeasonDetails();
+	$noofcrops = $croplines->count();
+	
+	$thefarmid = $season->getFarmID();
+	
+	// default title is to enable adding any payee
+	$title = $season->getName()." - ".$season->getRef(); 
+		
+	$this->headTitle($title);  
+?>
+<script>
+	$(document).ready(function() {
+		equalHeight($("#row1_left, #row1_right"));
+		
+	}); 
+</script>
+<style>
+.croplist li {
+	width:100%;
+}
+</style>
+<h1><?php echo $this->translate('farm_title'); ?></h1>
+<div id="tabs">
+    <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
+    <div class="span9 tab-content" id="center">
+    	<?php require APPLICATION_PATH."/views/scripts/farm/tabstop.phtml"; ?>
+		<div id="seasons">
+            <form id="profileform-farmers" class="form-horizontal seasons">
+            <?php if($request->tab == 'seasons'){ ?>
+                <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+                    <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+                <?php } ?>
+                <div class="row margin0" style="padding:2px; margin-bottom:0;">
+                    <span class="pull-left well lighter margin0" style="width:71%; height:140px;">
+                        <h3 class="well-legend"><?php echo $title; ?></h3>
+                        <table class="table noborder margin0" style="margin-top:15px;">
+                            <tr>
+                                <td style="width:20%"><label class="control-label"><?php echo $this->translate("season_startdate_label"); ?>:</label></td>
+                                <td style="width:30%"><?php echo $season->getFullStartDate(); ?></td>
+                                <td style="width:20%"><label class="control-label"><?php echo $this->translate("season_enddate_label"); ?>:</label></td>
+                                <td><?php echo $season->getFullEndDate(); ?></td>
+                            </tr>
+                            <tr>
+                                <td><label class="control-label">Current Status:</label></td>
+                                <td><?php echo $season->getStatusText(); ?></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                        </table>
+                    </span>
+                    <span class="pull-right padding0" style="width:25%; margin-left:5px;">
+                        <div class="well margin0" id="row1_right" style="height:140px; margin-bottom:10px;">
+                            <h3 class="well-legend">Quick Links</h3>
+                            <table class="table">                       
+                               <tr>		                    
+                                    <td class="formactions" style="padding-right:0;">
+                                        <?php if($season->getFarmerID() == $farmerid){ ?>
+                                            <a class="btn btn-primary" href="<?php echo $this->baseUrl('season/index/id/'.encode($season->getID())); ?>" title="Update Season" id="update"><i class="icon-pencil icon-white"></i> Update</a>
+                                            <a href="javascript: void(0)" id="deleteline" title="Delete Season" class="btn deleteline noimgbutton" action="<?php echo $this->baseUrl('season/delete/id/'.$season->getID()."/entityname/Season/successurl/".encode($this->baseUrl('farm/view/tab/seasons/id/'.encode($season->getFarmID())))); ?>"><i class="icon-trash"></i></a>            
+                                            <div class="btn-group">
+                                                <button class="btn btn-primary dropdown-toggle centeralign" data-toggle="dropdown" id="" href="javascript: void(0)" style="width:110px; padding-left:0;"><i class="icon-plus icon-white"></i> Log Activity</button>
+                                                <button class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="padding-bottom:11px;"><span class="caret"></span></button>
+                                                <ul class="dropdown-menu">
+                                                    <li><a href="<?php echo $this->baseUrl('season/input/sid/'.encode($season->getID())."/type/1"); ?>"><i class="icon-plus"></i> Season Inputs</a></li>
+                                                    <li><a href="<?php echo $this->baseUrl('season/tillage/sid/'.encode($season->getID())); ?>"><i class="icon-plus"></i> Tillage</a></li>
+                                                    <li><a href="<?php echo $this->baseUrl('season/plant/sid/'.encode($season->getID())); ?>"><i class="icon-plus"></i> Planting</a></li>
+                                                    <li><a href="<?php echo $this->baseUrl('season/treat/sid/'.encode($season->getID())); ?>"><i class="icon-plus"></i> Treatment & Pesticides</a></li>
+                                                    <li><a href="<?php echo $this->baseUrl('season/harvest/sid/'.encode($season->getID())); ?>"><i class="icon-plus"></i> Harvesting</a></li>
+                                                    <li><a href="<?php echo $this->baseUrl('season/sale/sid/'.encode($season->getID())); ?>"><i class="icon-plus"></i> Season Sales</a></li>
+                                                </ul>
+                                            </div>
+                                        <?php } ?>
+                                    </td>
+                               </tr>
+                            </table>                           
+                        </div>
+                    </span>
+                </div>
+                <div class="row margin0" style="padding:2px; margin-bottom:10px;">
+                    <span class="pull-left well lighter margin0" id="row2_left" style="width:97%; min-height:180px; height:auto;">
+                        <h3 class="well-legend">Crop Details</h3>
+                        <table class="table noborder margin0" style="margin-top:10px;">
+                            <tr>
+                                <td>
+                                    <ul class="croplist">
+                                        <?php 
+                                            foreach($croplines as $crop) {
+                                                $plant = $crop->getSeasonPlants()->get(0);
+												// debugMessage($plant->toArray());
+                                                $hasplanted = false;
+                                                if(!isEmptyString($plant->getID())){
+                                                    $hasplanted = true;
+                                                }
+                                        ?>
+                                            <li>
+                                                <table class="table noborder margin0">
+                                                    <tr>
+                                                        <td width="25%;" class="padding0">
+                                                            <div class="imagecontainer" style="width:90%; min-height:90px; padding:2px;">
+                                                                <img style="width:100%;" src="<?php echo $crop->getCrop()->getImagePath(); ?>" />
+                                                            </div></td>
+                                                        <td class="padding4" style="padding-top:0;">
+                                                            <table class="table noborder margin0">
+                                                                <tr>
+                                                                	<td class="padding0" style="width:50%;">
+                                                                        <table class="table noborder margin0">
+                                                                            <tr>
+                                                                                <td colspan="2" class="widgetlabel padding0"><label class="control-label"><?php echo $crop->getCrop()->getName(); ?></label></td>
+                                                                            </tr>
+                                                                        <?php if($hasplanted){ ?>
+                                                                        	<tr>
+                                                                                <td class="" style="padding-left:0; width:40%;">Land Size:</td>
+                                                                                <td class="" style=""><?php echo $plant->getFieldSize()."&nbsp;<span class='pagedescription'>(".$plant->getFieldSizeUnitText().")</span>"; ?></td>
+                                                                            </tr>
+                                                                            <tr>
+                                                                                <td class="" style="padding-left:0;">Quantity Planted:</td>
+                                                                                <td class="" style=""><?php echo isEmptyString($plant->getTotalPlanted()) ? '--' : $plant->getTotalPlanted() ; ?></td>
+                                                                            </tr>
+                                                                        <?php } else { ?>
+                                                                            <tr>
+                                                                                <td class="" style="padding-left:0; width:50%;">Land Size:</td>
+                                                                                <td class="" style=""><?php echo $season->getFieldSize()."&nbsp;<span class='pagedescription'>(".$season->getFieldSizeUnitText().")</span>"; ?></td>
+                                                                            </tr>
+                                                                        <?php } ?>        
+                                                                        </table>
+                                                                    </td>
+                                                                    <td class="padding0">
+                                                                       
+                                                                    </td>
+                                                                </tr>
+                                                            </table>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </li>
+                                        <?php } ?>
+                                   </ul>
+                                </td>
+                            </tr>
+                        </table>
+                    </span>
+                </div>
+                <div class="row margin0" style="padding:2px; margin-bottom:10px;">
+                    <span class="pull-left well lighter margin0" id="row2_left" style="width:97%; min-height:50px; height:auto;">
+                        <h3 class="well-legend"><?php echo $this->translate("season_credit_finance_title"); ?></h3>
+                        <table class="table noborder margin0" style="margin-top:10px;">
+                            <tr>
+                                <td style="width:20%;"><label class="control-label"><?php echo $this->translate("season_credit_type_label"); ?>:</label></td>
+                                <td style="width:30%;"><?php $data = getCapitalSources(); echo $data[$season->getFinanceType()]; ?></td>
+                                <td style="width:20%;"><label class="control-label">Net Startup Capital:</label></td>
+                                <td><?php echo formatMoney($season->getNetCapital()); ?></td>
+                            </tr>
+                            <?php if($season->getFinanceType() == 5){ ?>
+                            <tr>
+                                <td style="width:20%;"><label class="control-label"><?php echo $this->translate("season_credit_client_label"); ?>:</label></td>
+                                <td colspan="3"><?php echo $season->getLoan()->getTheClient(); ?></td>
+                            </tr>
+                            <tr>
+                                <td><label class="control-label"><?php echo $this->translate("season_credit_value_label"); ?>:</label></td>
+                                <td colspan="3"><?php echo isEmptyString($season->getLoan()->getPrice()) ? '--' : nl2br($season->getLoan()->getPrice()); ?></td>
+                            </tr>
+                            <tr>
+                                <td><label class="control-label"><?php echo $this->translate("season_credit_terms_label"); ?>:</label></td>
+                                <td colspan="3"><?php echo isEmptyString($season->getLoan()->getContract()) ? '--' : nl2br($season->getLoan()->getContract()); ?></td>
+                            </tr>
+                            <?php } ?>
+                            <tr>
+                                <td class="padding0" colspan="4">
+                                <?php if($season->getFinanceType() == 3 || $season->getFinanceType() == 4){ ?>
+                                    <table>
+                                        <tbody id="hasloan">
+                                            <tr>
+                                                <td style="width:27%;"><label class="control-label"><?php echo $this->translate("season_credit_principal_label"); ?>:</label>
+                                                <?php echo formatMoney($season->getLoan()->getPrincipal()); ?></td>
+                                                <td style="width:27%;"><label class="control-label"><?php echo $this->translate("season_credit_interestrate_label"); ?>:</label>
+                                                <?php echo $season->getLoan()->getInterestRate().'&nbsp;<span class="pagedescription">(%)</span>'; ?>&nbsp;</td>
+                                                <td style="width:27%;"><label class="control-label"><?php echo $this->translate("season_credit_payperiod_label"); ?>:</label>
+                                                <?php echo isEmptyString($season->getLoan()->getPayBackPeriodText()) ? '--' : $season->getLoan()->getPayBackPeriodText(); ?></td>
+                                                <td><label class="control-label"><?php echo $this->translate("season_credit_repayment_label"); ?>:</label>
+                                                <?php echo formatMoney($season->getLoan()->getPayBackAmount()); ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td><label class="control-label"><?php echo $this->translate("season_credit_regularpay_label"); ?>:</label>
+                                                <?php echo $season->getLoan()->getInstallmentText(); ?></td>
+                                                <td><label class="control-label"><?php echo $this->translate("season_credit_datereceived_label"); ?>:</label>
+                                                <?php echo isEmptyString($season->getLoan()->getcreditdate()) ? '--' : changeMySQLDateToPageFormat($season->getLoan()->getcreditdate()); ?></td>
+                                                <td colspan="2">
+                                                <?php if($season->getFinanceType() == 4){ ?>
+                                                    <label class="control-label"><?php echo $this->translate("season_credit_source_label"); ?>:</label>
+                                                    <?php echo $season->getLoan()->getFinancialSourceValue(); ?>
+                                                <?php } ?>
+                                                <?php if($season->getFinanceType() == 3){ ?>
+                                                    <label class="control-label"><?php echo $this->translate("season_credit_source_label"); ?>:</label>
+                                                    <?php echo isEmptyString($season->getLoan()->getFinanceSourceText()) ? '--' : $season->getLoan()->getFinanceSourceText(); ?>
+                                                <?php } ?>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                <?php } ?>
+                                </td>
+                            </tr>
+                        </table>
+                    </span>
+                </div>
+                <div class="row margin0" style="padding:2px;">
+                    <span class="pull-left well lighter margin0" style="width:97%; min-height:200px; position:relative;">
+                        <h3 class="well-legend margin0">Activity Timeline</h3>
+                        <a style="position:absolute; right:30px; top:10px; font-size:16px; font-weight:bold;" href="<?php echo $this->baseUrl('farm/view/tab/calendar/id/'.encode($season->getFarmID())); ?>" id="calendar" title="View Season Calendar">View Calendar</a>
+                        <?php 
+                            $timeline = sort_multi_array($season->getTimeLineDetails(), 'order');
+                            $acount = count($timeline);
+                            if($acount == 0) { ?>
+                            <div class="alert alert-info margin10">No activities have been logged. Click on 'Log Activity' to record activities.</div>
+                        <?php } else { ?>
+                            <ul id="datalist" class="nav nav-stacked">
+                            <?php 				  		
+                                foreach($timeline as $activity){
+                            ?>
+                                <li>
+                                    <table class="table noborder margin0">
+                                        <tr>                                
+                                            <td width="15%"><?php echo $activity['date']; ?></a></td>
+                                            <td class="padding0">
+                                                <div style="position:relative;">
+                                                    <table class="itemlist table noborder margin0">
+                                                        <tr>
+                                                            <td colspan="4"><h2 style="font-size:15px;"><a href="<?php echo $activity['url']; ?>"><?php echo $activity['activityname']; ?></a></h2>
+                                                            </td>
+                                                            <td class="actionbuttons" rowspan="4" style="padding-top:5px;">
+                                                                <a class="btn btn-primary btn-mini wrap" style="position:absolute; top:5px; right:20px;" href="<?php echo $activity['url']; ?>">Details</a>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="width:150px;">
+                                                                <label class="control-label">Ref#:</label>
+                                                                <span><?php echo $activity['ref']; ?></span></td>
+                                                            <td style="width:180px;">
+                                                                <label class="control-label">Details </label>
+                                                                <span><?php echo snippet($activity['description'], 300, '...'); ?></span></td>
+                                                            <td style="width:100px;">
+                                                                <label class="control-label">Status</label><span><?php echo $activity['status']; ?></span></td>
+                                                            <td>
+                                                                <?php if(in_array($activity['type'], array("1","2","3","4","5","6")) && $activity['expenses'] > 0){ ?>
+                                                                    <label class="control-label">Expenses</label><span><?php echo formatNumber($activity['expenses']); ?></span>
+                                                                <?php } ?>
+                                                                <?php if($activity['type'] == "7" && $activity['sale'] > 0){ ?>
+                                                                    <label class="control-label">Revenue</label><span><?php echo formatNumber($activity['sale']); ?></span>
+                                                                <?php } ?>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </li>
+                            <?php } ?>    
+                            </ul>
+                        <?php } ?> 
+                    </span>
+                </div>
+            <?php } ?>
+        	</form>
+    	</div>
+        <?php require APPLICATION_PATH."/views/scripts/farm/tabsbottom.phtml"; ?> 
+    </div>
+</div>    
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

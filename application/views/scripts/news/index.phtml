@@ -1,0 +1,111 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$title = "Latest News";
+	$this->headTitle($this->translate("appname")." | ".$title);
+	
+	$latestnews = new News();
+	$latestnews = $latestnews->getFeaturedNewsItem();
+	// debugMessage($latestnews->toArray());
+
+	$news = new News();
+	$news = $news->getNewsArchive();
+	$countnews = $news->count();
+	// debugMessage($news->toArray());
+	
+?>
+<style>
+#latestdiv {
+	width:103%; 
+	padding-bottom:25px; 
+	border-bottom:1px solid #D3D3D3;
+}
+#newsdetails {
+	width:103%; 
+	padding-bottom:10px; 
+	margin-top:25px
+}
+#summaryinfo, .summaryinfo {
+	display:block; 
+	width:100%; 
+	margin-top:5px; 
+	color:#666666;
+}
+#thedate, .thedate {
+	color:#8C8C8C; 
+	font-size:14px; 
+	margin-bottom:10px;
+}
+#latestttle, .latestttle {
+	font-size:15px; 
+	color:#000000; 
+	margin-bottom:0;
+}
+.latestttle a {
+	color:#000000; 
+}
+#latestband {
+	height:30px; 
+	margin-bottom:5px; 
+	width:100%; 
+	padding-top:6px; 
+	padding-bottom:6px; 
+	font-weight:bold;
+}
+</style>
+<div class="row marginleft0">
+    <div class="span8 pull-left marginleft0 public_leftcolumn">
+        <div class="content">
+            <div class="well lighter" id="latestband"><h1><?php echo $title; ?></h1> </div>
+              <div id="latestdiv">
+                <table class="table noborder margin0" style="">
+                    <?php if(!isEmptyString($latestnews->getID())){ ?>
+                        <tr>
+                            <td style="width:25%">
+                                <img src="<?php echo $this->baseUrl($latestnews->getNewsImage()); ?>" style="width:200px;" />
+                            </td>
+                            <td style="padding-top:0; padding-bottom:0;">
+                                <h2 class="latesttitle"><a style="color:#000000;" href="<?php echo $this->baseUrl('news/item/id/'.encode($latestnews->getID())); ?>" title="<?php echo $latestnews->getHeadline(); ?>"><?php echo $latestnews->getHeadline(); ?></a></h2>
+                                <label classs="thedate"><?php echo date('M d, Y', strtotime($latestnews->getDatePublished())); ?></label>
+                                <span class="summaryinfo">
+                                    <?php echo $latestnews->getSummary(); ?> ...<a href="<?php echo $this->baseUrl('news/item/id/'.encode($latestnews->getID())); ?>">Read more</a></p> 
+                                </span>
+                            </td>
+                        </tr>
+                    <?php } else { ?>
+                        <tr>
+                            <td colspan="2">No news item currently featured</td>
+                        </tr>
+                    <?php } ?>
+                </table>
+              </div>
+              <div id="newsdetails">
+              <?php if($countnews == 0) { ?>
+                    <table class="table noborder margin0" style="">
+                        <tr>
+                            <td style="padding-top:0; padding-bottom:0;">There are currently no news items</td>
+                        </tr>
+                    </table>
+              <?php } else { ?>
+                    <?php 
+                        foreach($news as $newsitem){
+                    ?>
+                    <table class="table noborder margin0" style="">
+                        <tr>
+                            <td style="padding-top:0; padding-bottom:0;">
+                                <h2 class="latestttle"><a href="<?php echo $this->baseUrl('news/item/id/'.encode($newsitem->getID())); ?>" title="<?php echo $newsitem->getHeadline(); ?>"><?php echo $newsitem->getHeadline(); ?></a></h2>
+                                <label class="thedate"><?php echo date('M d, Y', strtotime($newsitem->getDatePublished())); ?></label>
+                                <span class="summaryinfo"><?php echo $newsitem->getSummary(); ?> ...<a href="<?php echo $this->baseUrl('news/item/id/'.encode($newsitem->getID())); ?>">Read more</a></span>
+                            </td>
+                        </tr>
+                    </table>
+                    <?php } ?>
+              <?php } ?>
+              </div>
+        </div>
+    </div>
+    <?php require APPLICATION_PATH."/views/scripts/index/righthandband.phtml"; ?>
+</div>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

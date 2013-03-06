@@ -1,0 +1,393 @@
+<tr id="advanced_row">
+    <td colspan="2">
+        <div id="notaccordion">
+            <h3 id="head_names"><a href="javascript: void(0);"><span class="caret"></span> Search By Name</a></h3>
+            <div id="div_names">
+                <table> 
+                    <tr>
+                        <td><label class="control-label"><?php echo $this->translate("person_firstname_label"); ?>:</label></td>
+                        <td><label class="control-label"><?php echo $this->translate("person_lastname_label"); ?>:</label></td>
+                        <td><label class="control-label"><?php echo $this->translate("person_clanname_label"); ?>:</label></td>
+                        <td><label class="control-label"><?php echo $this->translate("person_othernames_label"); ?>:</label></td>
+                        <td><label class="control-label"><?php echo $this->translate("person_screenname_label"); ?>:</label></td>
+                        <td width="99%"><label class="control-label"><?php echo $this->translate("person_alias_label"); ?>:</label></td>
+                    </tr>
+                    <tr>
+                        <td><input name="firstname" id="firstname" type="text" class="span2" value="<?php echo $request->getParam('firstname'); ?>" title="" /></td>
+                        <td><input name="lastname" id="lastname" type="text" class="span2" value="<?php echo $request->getParam('lastname'); ?>" title="" /></td>
+                        <td><input name="clanname" id="clanname" type="text" class="span2" value="<?php echo $request->getParam('clanname'); ?>" title="" /></td>
+                        <td><input name="othernames" id="othernames" type="text" class="span2" value="<?php echo $request->getParam('othernames'); ?>" title="" /></td>
+                        <td><input name="screenname" id="screenname" type="text" class="span2" value="<?php echo $request->getParam('screenname'); ?>" title="" /></td>
+                        <td><input name="alias" id="alias" type="text" class="span2" value="<?php echo $request->getParam('alias'); ?>" title="" /></td>
+                    </tr>
+                </table>
+            </div>
+            <h3 id="head_ancestry"><a href="javascript: void(0);"><span class="caret"></span> Search Ancestry</a></h3>
+            <div id="div_ancestry">
+                <table> 
+                    <tr>
+                        <td><label class="control-label"><?php echo $this->translate("person_clanid_label"); ?>:</label></td>
+                        <td><label class="control-label"><?php echo $this->translate("person_ssigaid_label"); ?>:</label></td>
+                        <td><label class="control-label">Obutaka (Ssaza):</label></td>
+                        <td><label class="control-label">Obutaka (Ggombolola):</label></td>
+                        <td width="99%"><label class="control-label">Obutaka (Village):</label></td>
+                    </tr>
+                    <tr>
+                        <td><?php
+                              $clanlookup = new LookupType();
+                              $clanlookup->setName("ALL_CLANS");
+                              $clans = array_merge_maintain_keys(array('' => 'All'), $clanlookup->getOptionValuesFromQuery());
+                              $clandropdown = new Zend_Form_Element_Select('pclanid',
+                                      array(
+                                              'multiOptions' => $clans,
+                                              'view' => new Zend_View(),
+                                              'decorators' => array(array('ViewHelper')),
+                                              'class' => array('clan'),
+                                              'title' => 'Filter People By Clan'
+                                      )
+                              );
+                              
+                              $clandropdown->setValue($request->getParam('pclanid')); 
+                              echo $clandropdown->render();
+                          ?>
+                        </td>
+                        <td><?php
+                                $ssigalist = new LookupType(); 
+                                $ssigalist->setName("ALL_MASIGA");
+                                $ssigas = array_merge_maintain_keys(array('' => 'All Amassiga'), $ssigalist->getOptionValuesFromQuery());
+                                $ssigadropdown = new Zend_Form_Element_Select('pssigaid',
+                                                    array(
+                                                        'multiOptions' => $ssigas,
+                                                        'decorators' => array('ViewHelper'),
+                                                        'view' => new Zend_View(),
+                                                        'class' => array('span3','ssiga'),
+                                                        'title' => 'Filter People By Ssiga'
+                                                    )
+                                                );
+                                $ssigadropdown->setValue($request->getParam('pssigaid')); 
+                                echo $ssigadropdown->render(); 
+                              ?></td>
+                        <td><?php
+                                $ssazalist = new LookupType(); 
+                                $ssazalist->setName("ALL_SSAZAS");
+                                $massaza = array_merge_maintain_keys(array('' => 'All Amassaza'), $ssazalist->getOptionValuesFromQuery());
+                                // $massaza = array("Busiro"=> "Busiro","Bbudu"=> "Bbudu","Kooki"=> "Kooki");
+                                $ssazadropdown = new Zend_Form_Element_Select('bssaza',
+                                                    array(
+                                                        'multiOptions' => $massaza,
+                                                        'view' => new Zend_View(), 
+                                                        'decorators' => array('ViewHelper'),
+                                                        'class' => array('span3','ssazas'),
+                                                        'title' => 'Filter People By their Ssaza Origin'
+                                                    )
+                                                );
+                                $ssazadropdown->setValue($request->getParam('bssaza')); 
+                                echo $ssazadropdown->render(); 
+                            ?></td>
+                        <td><?php
+                                $parishlist = new LookupType(); 
+                                $parishlist->setName("ALL_PLACES"); // $parishlist->setName("ALL_PARISHES");
+                                $parishes = array_merge_maintain_keys(array('' => 'All Ggombololas'), $parishlist->getOptionValuesFromQuery());
+                                // $parishes = array("parish1"=> "parish1","parish2"=> "parish2","parish3"=> "parish3");
+                                $parishdropdown = new Zend_Form_Element_Select('bparish',
+                                                    array(
+                                                        'multiOptions' => $parishes,
+                                                        'view' => new Zend_View(), 
+                                                        'decorators' => array('ViewHelper'),
+                                                        'class' => array('span3','ssazas'),
+                                                        'title' => 'Filter People By their Ggombolola Origin'
+                                                    )
+                                                );
+                                $parishdropdown->setValue($request->getParam('bparish')); 
+                                echo $parishdropdown->render(); 
+                            ?></td>
+                        <td><?php
+                                $villagelist = new LookupType(); 
+                                $villagelist->setName("ALL_PLACES"); // $villagelist->setName("ALL_VILLAGES");
+                                $villages = array_merge_maintain_keys(array('' => 'All Villages'), $villagelist->getOptionValuesFromQuery());
+                                // $villages = array("village1"=> "village1","village2"=> "village2","village3"=> "village3");
+                                $villagedropdown = new Zend_Form_Element_Select('bvillage',
+                                                    array(
+                                                        'multiOptions' => $villages,
+                                                        'view' => new Zend_View(), 
+                                                        'decorators' => array('ViewHelper'),
+                                                        'class' => array('span3','ssazas'),
+                                                        'title' => 'Filter People By their Village Origin'
+                                                    )
+                                                );
+                                $villagedropdown->setValue($request->getParam('bvillage')); 
+                                echo $villagedropdown->render(); 
+                            ?></td>
+                    </tr>
+                </table>
+            </div>
+            <h3 id="head_family"><a href="javascript: void(0);"><span class="caret"></span> Search Family</a></h3>
+            <div id="div_family">
+                <table> 
+                    <tr>
+                        <td><label class="control-label">Has Parent:</label></td>
+                        <td><label class="control-label">Parent's Name:</label></td>
+                        <td><label class="control-label">Has Spouse:</label></td>
+                        <td><label class="control-label">Spouse's Name:</label></td>
+                        <td><label class="control-label">Has Sibling:</label></td>
+                        <td><label class="control-label">Sibling's Name:</label></td>
+                        <td><label class="control-label">Has Child:</label></td>
+                        <td width="99%"><label class="control-label childnames">Child's Name:</label></td>
+                    </tr>
+                    <tr>
+                        <td>
+                        <?php
+                            $yesnovalues = array(""=> "All","1"=> "Yes","0"=> "No");
+                            $par_dropdown = new Zend_Form_Element_Select('hasparent',
+                                                array(
+                                                    'multiOptions' => $yesnovalues,
+                                                    'view' => new Zend_View(), 
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array('span1','yesnoselect'),
+                                                    'title' => 'Does person have a parent?'
+                                                )
+                                            );
+                            $par_dropdown->setValue($request->getParam('hasparent')); 
+                            echo $par_dropdown->render(); 
+                        ?></td>
+                        <td><input name="p_parentsname" id="p_parentsname" type="text" class="span2" value="<?php echo $request->getParam('p_parentsname'); ?>" title="" /></td>
+                        <td>
+                        <?php
+                            $sp_dropdown = new Zend_Form_Element_Select('hasspouse',
+                                                array(
+                                                    'multiOptions' => $yesnovalues,
+                                                    'view' => new Zend_View(), 
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array('span1','yesnoselect'),
+                                                    'title' => 'Does person have a Spouse?'
+                                                )
+                                            );
+                            $sp_dropdown->setValue($request->getParam('hasspouse')); 
+                            echo $sp_dropdown->render(); 
+                        ?></td>
+                        <td><input name="p_spousename" id="p_spousename" type="text" class="span2" value="<?php echo $request->getParam('p_spousename'); ?>" title="" /></td>
+                        <td>
+                        <?php
+                            $sb_dropdown = new Zend_Form_Element_Select('hassibling',
+                                                array(
+                                                    'multiOptions' => $yesnovalues,
+                                                    'view' => new Zend_View(), 
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array('span1','yesnoselect'),
+                                                    'title' => 'Does person have a Sibling?'
+                                                )
+                                            );
+                            $sb_dropdown->setValue($request->getParam('hassibling')); 
+                            echo $sb_dropdown->render(); 
+                        ?></td>
+                        <td><input name="p_siblingname" id="p_siblingname" type="text" class="span2" value="<?php echo $request->getParam('p_siblingname'); ?>" title="" /></td>
+                        <td>
+                        <?php
+                            $ch_dropdown = new Zend_Form_Element_Select('haschild',
+                                                array(
+                                                    'multiOptions' => $yesnovalues,
+                                                    'view' => new Zend_View(), 
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array('span1','yesnoselect'),
+                                                    'title' => 'Does person have a Child?'
+                                                )
+                                            );
+                            $ch_dropdown->setValue($request->getParam('haschild')); 
+                            echo $ch_dropdown->render(); 
+                        ?></td>
+                        <td><input name="p_childname" id="p_childname" type="text" class="span2" value="<?php echo $request->getParam('p_childname'); ?>" title="" /></td>
+                    </tr>
+                </table>
+            </div>
+            <h3 id="head_events"><a href="javascript: void(0);"><span class="caret"></span> Search Events</a></h3>
+            <div id="div_events">
+                <table> 
+                    <tr>
+                        <td width="80"><label class="control-label">Life Status:</label></td>
+                        <td width="80"><label class="control-label">Current Age:</label></td>
+                        <td width="160" id="eventtitles"><label class="control-label">Born:</label></td>
+                        <td><label class="control-label ">Birth Location:</label></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <?php
+                                $allstatuses = array('' => 'All', '1'=>'Living', '2'=>'Deceased', '3'=>'Unknown');
+                                $statusdropdown = new Zend_Form_Element_Select('plifestatus',
+                                                    array(
+                                                        'multiOptions' => $allstatuses,
+                                                        'view' => new Zend_View(),
+                                                        'decorators' => array('ViewHelper'),
+                                                        'class' => array('lifestatus','span2'),
+                                                        'title' => 'Filter People By Status'		
+                                                    )
+                                );  
+                                $statusdropdown->setValue($request->getParam('plifestatus')); 
+                                echo $statusdropdown->render();
+                            ?>
+                        </td>
+                        <td>
+                            <?php
+                                $ageranges = array(""=> "Any","1"=> "1 to 12yrs","2"=> "13 to 18yrs","3"=> "19 to 30yrs","4"=> "31 to 50yrs","5"=>"Above 50");
+                                $age_dropdown = new Zend_Form_Element_Select('agerange',
+                                                    array(
+                                                        'multiOptions' => $ageranges,
+                                                        'view' => new Zend_View(), 
+                                                        'decorators' => array('ViewHelper'),
+                                                        'class' => array('span1','agerange'),
+                                                        'title' => 'Does person have a parent?'
+                                                    )
+                                                );
+                                $age_dropdown->setValue($request->getParam('agerange')); 
+                                echo $age_dropdown->render(); 
+                            ?></td>
+                        <td>
+                            <?php 
+                                $datetypelookup = new LookupType();
+                                $datetypelookup->setName("ALL_DATE_TYPES");
+                                $alldatetypes = $datetypelookup->getOptionValuesAndDescription();
+                                $dtypes = $alldatetypes;
+                                ksort($dtypes); unset($dtypes[7]); unset($dtypes[8]); unset($dtypes[9]); unset($dtypes[11]);
+                                $datetypedp = new Zend_Form_Element_Select('bstarttype',
+                                                    array(
+                                                        'multiOptions' => $dtypes,	
+                                                        'view' => new Zend_View(),
+                                                        'decorators' => array('ViewHelper'),
+                                                        'class' => array('starttype','nullindexone')
+                                                    )
+                                                );
+                                $datetypedp->setValue($request->getParam('bstarttype')); 
+                                echo $datetypedp->render(); 
+                           ?>
+                           <input name="birthyear" id="birthyear" type="text" class="span1" value="<?php echo $request->getParam('birthyear'); ?>" title="Enter Year" placeholder="Year" />
+                           <span id="b_ends">
+                               <?php 
+                                    $dtypes = $alldatetypes;
+                                    $rangedatestypes = array();
+                                    $rangedatestypes[8] = $dtypes[8]; $rangedatestypes[9] = $dtypes[9]; 
+                                    // ksort($dtypes); unset($dtypes[2]); unset($dtypes[3]); 
+                                    $datetypedp = new Zend_Form_Element_Select('bendtype',
+                                                        array(
+                                                            'multiOptions' => $rangedatestypes,	
+                                                            'view' => new Zend_View(),
+                                                            'decorators' => array('ViewHelper'),
+                                                            'class' => array('bendtype','nullindexone')
+                                                        )
+                                                    );
+                                    $datetypedp->setValue($request->getParam('bendtype')); 
+                                    echo $datetypedp->render(); 
+                               ?>
+                               <input name="bendyear" id="bendyear" type="text" class="span1" value="<?php echo $request->getParam('bendyear'); ?>" title="Enter Year" placeholder="Year" />
+                           </span>
+                        </td>
+                        <td><input name="placeofbirth" id="placeofbirth" type="text" class="span2" value="<?php echo $request->getParam('placeofbirth'); ?>" title="" /></td>
+                    </tr>
+                    <tr class="deathrow">
+                        <td></td>
+                        <td></td>
+                        <td><label class="control-label">Death:</label></td>
+                        <td><label class="control-label ">Death Location:</label></td>
+                    </tr>
+                    <tr class="deathrow">
+                        <td></td>
+                        <td></td>
+                        <td>
+                            <?php 
+                                $dtypes = $alldatetypes;
+                                ksort($dtypes); unset($dtypes[7]); unset($dtypes[8]); unset($dtypes[9]);  unset($dtypes[11]);
+                                $datetypedp = new Zend_Form_Element_Select('dstarttype',
+                                                    array(
+                                                        'multiOptions' => $dtypes,	
+                                                        'view' => new Zend_View(),
+                                                        'decorators' => array('ViewHelper'),
+                                                        'class' => array('starttype','nullindexone')
+                                                    )
+                                                );
+                                $datetypedp->setValue($request->getParam('dstarttype')); 
+                                echo $datetypedp->render(); 
+                           ?>
+                           <input name="deathyear" id="deathyear" type="text" class="span1" value="<?php echo $request->getParam('deathyear'); ?>" title="Enter Year" placeholder="Year" />
+                           <span id="d_ends">
+                               <?php 
+                                    $dtypes = $datetypelookup->getOptionValuesAndDescription();
+                                    $rangedatestypes = array();
+                                    $rangedatestypes[8] = $dtypes[8]; $rangedatestypes[9] = $dtypes[9];
+                                    // ksort($dtypes); unset($dtypes[2]); unset($dtypes[3]); 
+                                    $datetypedp = new Zend_Form_Element_Select('dendtype',
+                                                        array(
+                                                            'multiOptions' => $rangedatestypes,	
+                                                            'view' => new Zend_View(),
+                                                            'decorators' => array('ViewHelper'),
+                                                            'class' => array('nullindexone')
+                                                        )
+                                                    );
+                                    $datetypedp->setValue($request->getParam('dendtype')); 
+                                    echo $datetypedp->render(); 
+                               ?>
+                               <input name="dendyear" id="dendyear" type="text" class="span1" value="<?php echo $request->getParam('dendyear'); ?>" title="Enter Year" placeholder="Year" />
+                           </span>
+                        </td>
+                        <td><input name="placeofdeath" id="placeofdeath" type="text" class="span2" value="<?php echo $request->getParam('placeofdeath'); ?>" title="" /></td>
+                    </tr>
+                </table>
+            </div>
+            <h3 id="head_contacts"><a href="javascript: void(0);"><span class="caret"></span> Search Contacts</a></h3>
+            <div id="div_contacts">
+                <table> 
+                    <tr>
+                        <td><label class="control-label">Country:</label></td>
+                        <td><label class="control-label">Ssaza:</label></td>
+                        <td><label class="control-label">City:</label></td>
+                        <td><label class="control-label">Village:</label></td>
+                        <td width="99%"><label class="control-label">Phone Number:</label></td>
+                    </tr>
+                    <tr>
+                        <td><?php
+                                $countries = getCountries();
+                                unset($countries['UG']);
+                                $thecountries = array_merge_maintain_keys(array('' => "All","XX"=>"Buganda","UG"=>"Uganda"), $countries);
+                                $countrydropdown = new Zend_Form_Element_Select('pcountry',
+                                                    array(
+                                                        'multiOptions' => $thecountries,
+                                                        'view' => new Zend_View(), 
+                                                        'decorators' => array('ViewHelper'),
+                                                        'class' => array('span3','country'),
+                                                        'title' => 'Filter People By Country in Address'
+                                                    )
+                                                );
+                                $countrydropdown->setValue($request->getParam('pcountry')); 
+                                echo $countrydropdown->render(); 
+                            ?>
+                        </td>
+                        <td><?php
+                                $ssigalist = new LookupType(); 
+                                $ssigalist->setName("ALL_MASIGA");
+                                $ssigas = array_merge_maintain_keys(array('' => 'All Amassiga'), $ssigalist->getOptionValuesFromQuery());
+                                $ssazadropdown = new Zend_Form_Element_Select('pssaza',
+                                                    array(
+                                                        'multiOptions' => array_merge_maintain_keys(array('' => "All"), $ssigas),
+                                                        'view' => new Zend_View(), 
+                                                        'decorators' => array('ViewHelper'),
+                                                        'class' => array('span3','ssazas'),
+                                                        'title' => 'Filter People By Ssaza in Address'
+                                                    )
+                                                );
+                                $ssazadropdown->setValue($request->getParam('pssaza')); 
+                                echo $ssazadropdown->render(); 
+                            ?></td>
+                        <td><input name="pcity" id="pcity" type="text" class="span2" value="<?php echo $request->getParam('pcity'); ?>" title="" /></td>
+                        <td><input name="pvillage" id="pvillage" type="text" class="span2" value="<?php echo $request->getParam('pvillage'); ?>" title="" /></td>
+                        <td><input name="pphonenumber" id="pphonenumber" type="text" class="span2" value="<?php echo $request->getParam('pphonenumber'); ?>" title="" /></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <div style="margin-top:3px;">
+            <span class="pull-left">
+                <button type="submit" class="btn btn-primary"><i class="icon-search icon-white"></i>&nbsp;Search or Filter</button>
+            </span>
+            <span class="pull-right">
+                <button type="submit" class="btn btn-primary"><i class="icon-search icon-white"></i>&nbsp;Search or Filter</button>
+            </span>
+        </div>
+    </td>
+</tr>

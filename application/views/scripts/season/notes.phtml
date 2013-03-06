@@ -1,0 +1,152 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$refid = '';
+	$refvalue = '';
+	$type = $request->type;
+	switch($type){
+		case 'Inventory':
+			$id = decode($request->refid);
+			$inventory = new Inventory();
+			$inventory->populate($id);
+			$refid = 'inventoryid';
+			$refvalue = $inventory->getID();
+			$typevalue = 4;
+			break;
+		case 'SeasonTillage':
+			$id = decode($request->refid);
+			$tillage = new SeasonTillage();
+			$tillage->populate($id);
+			$refid = 'tillageid';
+			$refvalue = $tillage->getID();
+			$typevalue = 5;
+			break;
+		case 'SeasonPlanting':
+			$id = decode($request->refid);
+			$plant = new SeasonPlanting();
+			$plant->populate($id);
+			$refid = 'plantingid';
+			$refvalue = $plant->getID();
+			$typevalue = 6;
+			break;
+		case 'SeasonTracking':
+			$id = decode($request->refid);
+			$treat = new SeasonTracking();
+			$treat->populate($id);
+			$refid = 'trackingid';
+			$refvalue = $treat->getID();
+			$typevalue = 7;
+			break;
+		case 'SeasonActivity':
+			$id = decode($request->refid);
+			$activity = new SeasonActivity();
+			$activity->populate($id);
+			$refid = 'activityid';
+			$refvalue = $activity->getID();
+			$typevalue = 8;
+			break;
+		case 'SeasonHarvest':
+			$id = decode($request->refid);
+			$harvest = new SeasonHarvest();
+			$harvest->populate($id);
+			$refid = 'harvestid';
+			$refvalue = $harvest->getID();
+			$typevalue = 9;
+			break;
+		case 'Sales':
+			$id = decode($request->refid);
+			$sale = new Sales();
+			$sale->populate($id);
+			$refid = 'saleid';
+			$refvalue = $sale->getID();
+			$typevalue = 10;
+			break;
+		case 'SeasonInput':
+			$id = decode($request->refid);
+			$input = new SeasonInput();
+			$input->populate($id);
+			$refid = 'inputid';
+			$refvalue = $input->getID();
+			$typevalue = 11;
+			break;
+		default:
+			break;
+	}
+	// debugMessage($type);
+	
+	$baseurl = $this->baseUrl("season/notescreate");
+	$note = new Notes();
+	$note->setDateNoted(date('Y-m-d h:m:s', strtotime('now')));
+	$note->setNotedByID($userid);
+	$note->setType($typevalue);
+	// debugMessage($note->toArray());
+	// exit();
+	if(!isEmptyString($request->id)){
+		$note->populate(decode($request->id));
+	}
+	
+	#in case of errors in session, populate the fields from session
+	if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
+		$note->processPost($session->getVar(FORM_VALUES));	
+	}
+	
+	$title = "Add Notes"/*$this->translate("season_pagetitle_expense")*/; 
+	$this->headTitle($title);
+	
+?>
+<script>
+	$(document).ready(function() {
+		$("#indexform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				description: "required",
+			}, 
+			// the messages for each of the fields being validated
+			messages: {		
+				description: "Please enter comments<?php //echo $this->translate("inventory_servicedate_error"); ?>",
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						error.appendTo("#"+element.attr("name")+"_error")
+						break;
+				}			
+			}
+		});
+		
+		// datepickerOpts = new Date();   
+		$("#inputdate").datepicker(datepickerOpts);
+	}); 
+</script>
+<style>
+
+
+</style>
+<div class="popupdiv">
+<form class="form-horizontal well span6" id="indexform" action="<?php echo $this->baseUrl(); ?>" method="post">
+    <table class="table">
+		<?php if($sessionhaserror) { ?>
+	        <tr>
+	        	<td colspan="2"><div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div></td>
+	        </tr>
+        <?php } ?>
+        <tr>
+            <td><!--<label class="control-label">Notes<?php //echo $this->translate("season_notes_label"); ?>: </label>-->
+            <textarea name="description" id="description" class="span4 hastooltip expanding" style="min-height:60px; width:95%;" placeholder="type notes or comments" title="<?php echo $this->translate("season_notes_tooltip"); ?>"><?php echo $note->getDescription(); ?></textarea>
+            
+            <input type="hidden" name="entityname" value="Notes" />
+            <input type="hidden" id="id" name="id" value="<?php echo encode($note->getID()); ?>" />
+            <input type="hidden" id="type" name="type" value="<?php echo $note->getType(); ?>" />
+            <input type="hidden" id="datenoted" name="datenoted" value="<?php echo $note->getDateNoted(); ?>" />
+            <input type="hidden" id="notedbyid" name="notedbyid" value="<?php echo $note->getNotedByID(); ?>" />
+            <input type="hidden" id="<?php echo $refid; ?>" name="<?php echo $refid; ?>" value="<?php echo $refvalue; ?>" />
+            <input type="hidden" name="<?php echo URL_FAILURE; ?>" value="<?php echo encode($this->baseUrl('season/notes')); ?>" />			   				
+            <div id="description_error"></div></td>
+        </tr>
+  </table>
+</form>
+</div>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

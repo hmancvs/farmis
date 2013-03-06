@@ -1,0 +1,533 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+
+	$farmgroup = new FarmGroup();
+	$farmgroup->populate(decode($request->id));
+	// debugMessage($farmgroup->toArray());
+	
+	$total_farmers = $farmgroup->getListOfFarmers()->count();
+	$thefarmers = $farmgroup->getFeaturedFarmers(10);
+	$farmer_count = $thefarmers->count();
+	
+	$button_title = $this->translate("farmgroup_button_save");
+	$posturl = $this->baseUrl("farmgroup/edit"); 
+	
+	// set the default tab
+	if (isEmptyString($request->tab)) {
+		$request->setParam('tab','basics'); 
+	}
+	
+	$controller = $request->getControllerName();
+	$action = $request->getActionName();
+	if($controller == 'farmer' && isEmptyString($request->tab)){
+		$request->setParam('tab', 'basics'); 
+	}
+	
+	$subgroups = $farmgroup->getListOfSubGroups();
+	$hassubgroups = false;
+	if($farmgroup->hasSubGroups()){
+		$hassubgroups = true;
+	}
+	
+	$title = "Update Farm Group";
+	$this->headTitle($title);
+	
+?>
+<script>
+$(document).ready(function() {
+	// override default tab
+	<?php if(!isEmptyString($request->tab)){ ?>
+		$("#tabs").tabs({ selected:'<?php echo $request->tab; ?>', fx: {opacity: 'toggle'} });	   
+	<?php } ?>
+	$('#tabs').tabs({
+		// the selected tab
+		selected: '<?php echo $request->tab; ?>'
+	});
+	
+	$("#tabs ul#leftnav li a").click(function(e){
+		curentclass = $(this).attr('class');
+		$(".form-horizontal."+curentclass).html("<a id='loading' class='xhidden' style='text-align:center; display:block; margin-top:75px;'><span style='display:block; margin-bottom:15px; font-weight:bold;'>Loading...</span><img style='margin-left:-10px;' src='<?php echo $this->baseUrl('images/farmisloader.gif'); ?>' /></a>").css({'display':'block'});
+		var url = '';
+		var action = '<?php echo $action; ?>';
+		if(action == 'view' || action == 'picture'){ 
+			var url = "<?php echo $this->baseUrl("farmgroup/view/id/".encode($farmgroup->getID())."/tab/"); ?>"+curentclass;
+		}
+		if(action == 'index'){
+			var url = "<?php echo $this->baseUrl("farmgroup/index/id/".encode($farmgroup->getID())."/tab/"); ?>"+curentclass;
+		}
+		location.href = url;  
+	});
+	
+	$("#tabs").tabs().addClass('ui-tabs-vertical ui-helper-clearfix');
+	$("#tabs li").removeClass('ui-corner-top').addClass('ui-corner-left');
+	
+	$("#profileform-basics").validate({		
+		// define the validation rules one field at a time
+		rules: {
+			orgname: "required",
+			type:  "required",
+			refno: {
+				required: true,
+				validate_number: true,
+				maxlength:6,
+				minlength:4
+			},
+			email: {
+				required: false,
+				email: true
+			},
+			contactemail2: {
+				required: false,
+				email: true
+			},
+			contactemail3: {
+				required: false,
+				email: true
+			}
+		}, 
+		// the messages for each of the fields being validated
+		messages: {		
+			orgname: "<?php echo $this->translate("farmgroup_orgname_error"); ?>",
+			type: "<?php echo $this->translate("farmgroup_type_error"); ?>",
+			refno: {
+				required: "Please enter a Reference Number",
+				validate_number: "Invalid Ref No specified",
+				maxlength: "Should not be more than 6 digits",
+				minlength: "Should not be less than 4 digits"
+			},
+			email: {
+				email: "Invalid Email"
+			},
+			contactemail2: {
+				email: "Invalid Email"
+			},
+			contactemail3: {
+				email: "Invalid Email"
+			}
+		},
+		// custom error positions
+		errorPlacement: function(error, element) {
+			switch(element.attr("name")){					
+				default:
+					error.appendTo("#"+element.attr("name")+"_error")
+					break;
+			}			
+		}
+	});
+	
+	// validate that refno has not been taken
+	
+	
+	// basics custom failure and success url
+	$("#profileform-basics .savethenview").click(function() {
+		$("#profileform-basics .successurl").val('<?php echo encode($this->baseUrl('farmgroup/view/tab/basics')); ?>');
+		$("#profileform-basics .failureurl").val('<?php echo encode($this->baseUrl('farmgroup/index/id/'.encode($farmgroup->getID()).'/tab/basics')); ?>');
+	});
+	$("#profileform-basics .savethennext").click(function() {
+		$("#profileform-basics .successurl").val('<?php echo encode($this->baseUrl('farmgroup/index/tab/contacts')); ?>');
+		$("#profileform-basics .failureurl").val('<?php echo encode($this->baseUrl('farmgroup/index/id/'.encode($farmgroup->getID()).'/tab/basics')); ?>');
+	});
+	
+	// personal custom failure and success url
+	$("#profileform-contacts .savethenview").click(function() {
+		$("#profileform-contacts .successurl").val('<?php echo encode($this->baseUrl('farmgroup/view/tab/contacts')); ?>');
+		$("#profileform-contacts .failureurl").val('<?php echo encode($this->baseUrl('farmgroup/index/id/'.encode($farmgroup->getID()).'/tab/contacts')); ?>');
+	}); 
+	$("#profileform-contacts .savethennext").click(function() {
+		$("#profileform-contacts .successurl").val('<?php echo encode($this->baseUrl('farmgroup/index/tab/farmers')); ?>');
+		$("#profileform-contacts .failureurl").val('<?php echo encode($this->baseUrl('farmgroup/index/id/'.encode($farmgroup->getID()).'/tab/contacts')); ?>');
+	});
+	
+	<?php if($request->tab == 'basics'){ ?>
+		// chained select to load the counties for a district
+		$('#districtid').selectChain({
+			target: $('#countyid'),
+			url: '<?php echo $this->baseUrl('farmer/selectchain/'.SELECT_CHAIN_TYPE.'/district_counties/')?>',
+			data: 'currentvalue=<?php echo $farmgroup->getAddress()->getCountyID(); ?>',
+			type: 'get'
+		});
+		$('#districtid').trigger("change");
+		
+		// chained select to load the subcounties for a county
+		$('#countyid').selectChain({
+			target: $('#subcountyid'),
+			url: '<?php echo $this->baseUrl('farmgroup/selectchain/'.SELECT_CHAIN_TYPE.'/county_subcounties/')?>',
+			data: 'currentvalue=<?php echo $farmgroup->getAddress()->getSubcountyID(); ?>',
+			type: 'get'
+		});
+		$('#countyid').trigger("change");
+		
+		// chained select to load the subcounties for a county
+		$('#subcountyid').selectChain({
+			target: $('#parishid'),
+			url: '<?php echo $this->baseUrl('farmgroup/selectchain/'.SELECT_CHAIN_TYPE.'/subcounty_parishes/')?>',
+			data: 'currentvalue=<?php echo $farmgroup->getAddress()->getParishID(); ?>',
+			type: 'get'
+		});
+		$('#subcountyid').trigger("change");
+		
+		// chained select to load the subcounties for a county
+		$('#parishid').selectChain({
+			target: $('#villageid'),
+			url: '<?php echo $this->baseUrl('farmgroup/selectchain/'.SELECT_CHAIN_TYPE.'/parish_villages/')?>',
+			data: 'currentvalue=<?php echo $farmgroup->getAddress()->getVillageID(); ?>',
+			type: 'get'
+		});
+		$('#parishid').trigger("change");
+	<?php } ?>
+	
+	$("#isinvited-1").attr('checked', false);
+	$("#isinvited-2").attr('checked', false);
+	
+	
+	var dateofregOpts = datepickerOpts;
+	dateofregOpts.yearRange = "-5";
+	dateofregOpts.maxDate = new Date();   
+	<?php if(isAdmin()){ ?>
+	$("#regdate").datepicker(dateofregOpts);
+	<?php } ?>
+	
+	equalHeight($("#row1_left, #row1_right"));
+	$("#refno").keyup(function(){
+		$("#regno").val('<?php echo FARMGROUP_REG_PREFIX; ?>/'+$(this).val());
+	});
+	$("#refno").trigger('keyup');
+	$(".readonly").each(function(){
+		$(this).attr('readonly','readonly');
+	});
+				
+}); 
+</script>
+<style>
+.form-horizontal .control-label {
+	white-space:nowrap;
+	text-align:left;
+	width:auto;
+}
+.form-horizontal div.radio.inline {
+	padding-left:0;
+	margin-left:5px;
+}
+.form-horizontal div.zendradio .radio {
+	padding-left:15px;
+	margin-left:0;
+}
+select.country {
+	width:180px;
+}
+</style>
+<h1><?php echo $title; ?></h1>
+<?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+<?php } ?>
+<?php if($sessionhaserror) { ?>
+	<div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+<?php } ?>
+<div id="tabs">
+    <div class="span3 marginleft0" id="left">    
+        <div class="well" id="profiletop">
+            <div id="profileinfo" style="width:170px; margin-bottom:10px;"> 
+				<?php if(isAdmin() || $farmerid == $farmgroup->getManagerID()){ ?>
+                    <a href="<?php echo $this->baseUrl('farmgroup/picture/id/'.encode($farmgroup->getID())); ?>" class="editpic" title="Update Image"><img id="profileimage" src="<?php echo $farmgroup->getMediumLogoPath(); ?>" /><pre id="uploadlink" class="hide absoluteupload"><i class="icon-pencil"></i> Upload Image</pre></a>
+                <?php } else { ?>
+                    <img id="profileimage" src="<?php echo $farmgroup->getMediumLogoPath(); ?>" alt="Update Profile Image" />
+                <?php } ?>
+            </div>
+        </div>
+        <ul id="leftnav" style="width:97%;">
+            <li id="tab_basics"><a href="#basics" class="basics">Basic Info</a></li>
+            <?php if($farmgroup->hasSubGroups()){ ?>
+            <li id="tab_subgroups"><a href="#subgroups" class="subgroups">Sub Groups</a></li>
+            <?php } ?>
+            <li id="tab_farmers"><a href="#farmers" class="farmers">Farmers</a></li>
+            <li id="tab_resources"><a href="#resources" class="resources">Resources</a></li>
+            <li id="tab_subscription"><a href="#subscription" class="subscription">Subscription</a></li>
+            <?php if(isFarmGroupAdmin()){ ?>
+            <li id="tab_account"><a href="#account" class="account">My Account</a></li>
+            <?php } ?>
+        </ul>
+    </div>
+    <div class="span9 tab-content" id="center">   
+        <div id="basics">
+        	<h2>Basic Info</h2>
+            <form id="profileform-basics" class="form-horizontal basics" action="<?php echo $posturl; ?>" method="post">
+            <?php if($request->tab == 'basics'){ ?>
+                <div class="row" style="margin-left:0px;">
+                    <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+                        <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+                    <?php } ?>
+                    <span class="span6 marginleft0" style="width:72%;">
+                        <div class="well row marginleft0" id="row1_left" style="min-height:60px; padding-left:10px;">                        
+                            <table class="table"> 
+                                <tr>
+                                    <td width="100"><label class="control-label"><?php echo $this->translate("farmgroup_name_label"); ?>:<?php echo $this->translate("global_required_field_marker"); ?></label></label></td>
+                                    <td colspan="3"><input type="text" name="orgname" id="orgname" value="<?php echo $farmgroup->getOrgName(); ?>" class="hastooltip span3" style="width:260px;" title="<?php echo $this->translate("farmgroup_name_tooltip"); ?>" /><div id="orgname_error"></div></td>
+                                </tr>
+                                <?php if(isAdmin()){ ?>
+                                <tr>
+                                    <td><label class="control-label">Parent Group: </label></td>
+                                    <td colspan="3">
+                                        <?php
+                                            $groupdropdown = new Zend_Form_Element_Select('parentid',
+                                                                array(
+                                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), getAllFarmGroups()),								
+                                                                    'view' => new Zend_View(),
+                                                                    'decorators' => array('ViewHelper'),
+                                                                    'class' => array('span4', 'hastooltip'),
+                                                                    'title' => $this->translate("farmer_subfarmgroupid_tooltip")
+                                                                )
+                                                            );
+                                            $groupdropdown->setValue($farmgroup->getParentID()); 
+                                            echo $groupdropdown->render(); 
+                                       ?>
+                                    </td>
+                                </tr>
+                                <?php } ?>
+                                <tr>
+                                    <td><label class="control-label"><?php echo $this->translate("farmgroup_type_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></label></td>
+                                    <td><?php
+                                            $alltypes = getFarmGroupTypes();
+                                            $typedropdown = new Zend_Form_Element_Select('type',
+                                                                array(
+                                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $alltypes),
+                                                                    'view' => new Zend_View(),
+                                                                    'decorators' => array('ViewHelper'),
+                                                                    'class' => array('lifestatus','width110'),
+                                                                )
+                                            );  
+                                            $typedropdown->setValue($farmgroup->getType()); 
+                                            echo $typedropdown->render();
+                                        ?><div id="type_error"></div></td>
+                                    <td><label class="control-label"><?php echo $this->translate("farmgroup_shortname_label"); ?>:</label></td>
+                                    <td><input type="text" name="shortname" id="shortname" value="<?php echo $farmgroup->getShortName(); ?>" class="width110" /></td>
+                                </tr>
+                                <tr>
+                                    <td><label class="control-label"><?php echo $this->translate("farmgroup_refno_label"); ?>:</label></td>
+                                    <td>
+                                    	<?php if(isAdmin()){ ?>
+                                        	<input type="text" name="refno" id="refno" class="width100" maxlength="6" value="<?php echo $farmgroup->getRefNo(); ?>" />
+                                        <?php } else { ?>
+                                        	<input type="hidden" name="refno" id="refno" value="<?php echo $farmgroup->getRefNo(); ?>" />
+                                            <?php echo isEmptyString($farmgroup->getRefNo()) ? '--': $farmgroup->getRefNo(); ?>
+                                        <?php } ?>
+                                        <div id="refno_error"></div>
+                                    </td>
+                                    <td colspan="2"></td>
+                                </tr>
+                                <tr>
+                                    <td style="width:120px;"><label class="control-label"><?php echo $this->translate("farmgroup_regno_label"); ?>:</label></td>
+                                    <td style="width:150px;">
+                                        <?php if(isAdmin()){ ?>
+                                        	<input type="text" name="regno" id="regno" class="readonly width150" style="width:120px;" value="<?php echo $farmgroup->getRegNo(); ?>" />
+                                        <?php } else { ?>
+                                        	<input type="hidden" name="regno" id="regno" value="<?php echo $farmgroup->getRegNo(); ?>" />
+                                            <?php echo isEmptyString($farmgroup->getRegNo()) ? '--': $farmgroup->getRegNo(); ?>
+                                        <?php } ?>
+                                        <div id="regno_error"></div>
+                                    </td>
+                                    <td style="width:100px;"><label class="control-label"><?php echo $this->translate("farmgroup_dateregistered_label"); ?>:</label></td>
+                                    <td>
+                                    	<?php if(isAdmin()){ ?>
+                                        	<input type="text" name="regdate" id="regdate" class="datefield width100" value="<?php echo changeMySQLDateToPageFormat($farmgroup->getRegDate()); ?>" />
+                                        <?php } else { ?>
+                                        	<input type="hidden" name="regdate" id="regdate" value="<?php echo changeMySQLDateToPageFormat($farmgroup->getRegDate()); ?>" />
+                                            <?php echo isEmptyString($farmgroup->getRegDate()) ? '--': changeMySQLDateToPageFormat($farmgroup->getRegDate()); ?>
+                                        <?php } ?>   
+                                        <div id="regdate_error"></div> 
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </span>
+                    <span class="span3 pull-right" style="width:24%; margin-right:0;">
+                        <div class="well row" id="row1_right" style="min-height:150px;">
+                            <h3 class="well-legend">Quick Links</h3>
+                            <table class="table">                       
+                               <tr>		                    
+                                    <td class="formactions">
+                                        <button type="submit" class="btn btn-primary savethenview"><i class="icon-ok icon-white"></i> <?php echo $this->translate('global_button_save_changes'); ?></button>
+                                        <a href="javascript:doNothing();" class="btn"><i class="icon-remove"></i> <?php echo $this->translate('global_button_cancel'); ?></a>
+                                        <input type="hidden" name="entityname" value="FarmGroup" />
+                                        <input type="hidden" id="id" name="id" value="<?php echo encode($farmgroup->getID()); ?>" />                                					
+                                        <input type="hidden" id="theaddressid" name="theaddressid" value="<?php echo $farmgroup->getAddress()->getID(); ?>" />
+                                        <input type="hidden" class="successurl" id="<?php echo URL_SUCCESS; ?>" name="<?php echo URL_SUCCESS; ?>" title="basics" />
+                                        <input type="hidden" class="failureurl" id="<?php echo URL_FAILURE; ?>" name="<?php echo URL_FAILURE; ?>" title="basics" />
+                                        <input type="hidden" id="<?php echo SUCCESS_MESSAGE; ?>" name="<?php echo SUCCESS_MESSAGE; ?>" value="Profile updated successfully" />
+                                    </td>
+                               </tr>
+                            </table>
+                        </div>
+                    </span>
+                </div>
+                <div class="well row marginleft0" style="min-height:100px; width:97%;">
+                    <h3 class="well-legend">About</h3>
+                    <table class="table">                       
+                       <tr>		                    
+                            <td valign="top"><textarea name="notes" id="notes" class="span5 expanding hastooltip" style="width:90%; min-height:100px;" title="<?php echo $this->translate("farmgroup_bio_tooltip"); ?>"><?php echo $farmgroup->getNotes(); ?></textarea></td>
+                       </tr>
+                    </table>
+                </div>
+                <div class="well row marginleft0" style="min-height:100px; width:97%;">
+                    <h3 class="well-legend">Contact Information</h3>             
+                    <table class="table norborder">
+                        <tr>
+                            <td><label class="control-label themedlabel"><?php echo $this->translate("farmgroup_membershipclerk_label"); ?></label></td>
+                            <td><label class="control-label themedlabel"><?php echo $this->translate("farmgroup_bizclerk_label"); ?></label></td>
+                            <td><label class="control-label themedlabel"><?php echo $this->translate("farmgroup_dataclerk_label"); ?></label></td>
+                        </tr>
+                        <tr>
+                        	<td style="width:33%;" class="padding0">
+                            	<table class="table margin0">
+									<tr>
+                                        <td><label class="control-label"><?php echo $this->translate("farmgroup_name_label"); ?>:</label>
+                                            <input name="contactname2" id="contactname2" type="text" class="width180 hastooltip" value="<?php echo $farmgroup->getContactName2(); ?>" title="<?php echo $this->translate("farmgroup_contactperson_tooltip"); ?>" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><label class="control-label"><?php echo $this->translate("farmgroup_phone_label"); ?>:</label>
+                            			<div class="input-prepend">
+                                        	<span class="add-on"><?php echo '+'.COUNTRY_CODE_UG; ?></span><input name="contactphone2" id="contactphone2" type="text" maxlength="10" class="span2 hastooltip isnumber" style="width:110px;" value="<?php echo getShortPhone($farmgroup->getContactPhone2()); ?>" title="<?php echo $this->translate("farmer_phone_tooltip"); ?>" />
+                                        </div>
+                                        <div id="contactphone2_error"></div></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label class="control-label"><?php echo $this->translate("farmgroup_email_label"); ?>:</label>
+                                        <input name="contactemail2" id="contactemail2" type="text" class="width180 hastooltip" value="<?php echo $farmgroup->getContactEmail2(); ?>" title="<?php echo $this->translate("farmgroup_email_tooltip"); ?>" /><div id="contactemail2_error"></div></td>
+                                    </tr>
+                                </table>
+                            </td>
+                            <td style="width:33%;" class="padding0">
+                            	<table class="table margin0">
+                                	<tr>
+                                        <td><label class="control-label"><?php echo $this->translate("farmgroup_name_label"); ?>:</label>
+                                            <input name="contactname3" id="contactname3" type="text" class="width180 hastooltip" value="<?php echo $farmgroup->getContactName3(); ?>" title="<?php echo $this->translate("farmgroup_contactperson_tooltip"); ?>" />
+                                        </td>
+                                    </tr>
+                                     <tr>
+                                        <td><label class="control-label"><?php echo $this->translate("farmgroup_phone_label"); ?>:</label>
+                            			<div class="input-prepend">
+                                        	<span class="add-on"><?php echo '+'.COUNTRY_CODE_UG; ?></span><input name="contactphone3" id="contactphone3" type="text" maxlength="10" class="span2 hastooltip isnumber" style="width:110px;" value="<?php echo getShortPhone($farmgroup->getContactPhone3()); ?>" title="<?php echo $this->translate("farmer_phone_tooltip"); ?>" />
+                                        </div>
+                                        <div id="contactphone3_error"></div></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label class="control-label"><?php echo $this->translate("farmgroup_email_label"); ?>:</label>
+                                        <input name="contactemail3" id="contactemail3" type="text" class="width180 hastooltip" value="<?php echo $farmgroup->getContactEmail3(); ?>" title="<?php echo $this->translate("farmgroup_email_tooltip"); ?>" /><div id="contactemail3_error"></div></td>
+                                    </tr>
+                                </table>
+                            </td>
+                            <td class="padding0">
+                            	<table class="table margin0">
+                                	<tr>
+                                        <td><label class="control-label"><?php echo $this->translate("farmgroup_name_label"); ?>:</label>
+                                            <?php if(!isEmptyString($farmgroup->getManagerID()) && !isEmptyString($farmgroup->getManager()->getUserID())){ ?>
+                                                <a title="View Profile" href="<?php echo $this->baseUrl("farmer/view/id/".encode($farmgroup->getManagerID())); ?>"><?php echo $farmgroup->getManager()->getName(); ?></a>
+                                                <input type="hidden" name="contactname" id="contactname" value="<?php echo $farmgroup->getManager()->getName(); ?>" />
+                                            <?php } else { ?>
+                                                <input name="contactname" id="contactname" type="text" class="width180 hastooltip" value="<?php echo $farmgroup->getContactName(); ?>" title="<?php echo $this->translate("farmgroup_contactperson_tooltip"); ?>" />
+                                            <?php } ?>
+                                         </td>
+                                    </tr>
+                                    <tr>
+                                        <td><label class="control-label"><?php echo $this->translate("farmgroup_phone_label"); ?>:</label>
+                                        <div class="input-prepend">
+                                        	<span class="add-on"><?php echo '+'.COUNTRY_CODE_UG; ?></span><input name="phone" id="phone" type="text" maxlength="10" class="span2 hastooltip isnumber" style="width:110px;" value="<?php echo getShortPhone($farmgroup->getPhone()); ?>" title="<?php echo $this->translate("farmer_phone_tooltip"); ?>" />
+                                        </div>
+                                        <div id="phone_error"></div></td>
+                                    </tr>
+                                    <tbody id="invite">
+                                        <tr>
+                                            <td><label class="control-label" for="email"><?php echo $this->translate("farmgroup_email_label"); ?>: </label>
+                                                <?php if(!isEmptyString($farmgroup->getManagerID()) && !isEmptyString($farmgroup->getManager()->getUserID())){ ?>
+                                                    <?php echo $farmgroup->getEmail(); ?>
+                                                    <input type="hidden" name="email" id="email" value="<?php echo $farmgroup->getEmail(); ?>" />
+                                                <?php } else { ?>
+                                                    <input name="email" id="email" type="text" class="width180 hastooltip" value="<?php echo $farmgroup->getEmail(); ?>" title="<?php echo $this->translate("farmgroup_email_tooltip"); ?>" />
+                                                <?php } ?>
+                                                <div id="email_error"></div>
+                                            </td>
+                                        </tr>  
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+            	</div>
+            	<div class="well row marginleft0" style="min-height:100px; width:97%;">
+                    <h3 class="well-legend">Address</h3>
+                    <table class="table">                       
+                       <tr>
+                            <td width="35%"><label class="control-label"><?php echo $this->translate("global_country_label"); ?>:</label>
+								<?php
+                                    $countries = getCountries();
+                                    $countrydropdown = new Zend_Form_Element_Select('country',
+                                                        array(
+                                                            'multiOptions' => array_merge_maintain_keys(array('' => "<Select One>", "UG"=>"Uganda"), $countries),
+                                                            'view' => new Zend_View(), 
+                                                            'decorators' => array('ViewHelper'),
+                                                            'class' => array('country', 'xchzn-select', 'disabledfield')                                                            )
+                                                    );
+                                    $countrydropdown->setValue($farmgroup->getAddress()->getCountry()); 
+                                    echo $countrydropdown->render(); 
+                                ?><input type="hidden" name="country" id="country" value="<?php echo $farmgroup->getAddress()->getCountry(); ?>" />
+                                <span id="tooltip_country"></span><div id="country_error"></div>
+                            </td>
+                            <td width="30%"><label class="control-label"><?php echo $this->translate("global_district_label"); ?>:</label>
+                                <?php
+									$districtlist = new LookupType(); 
+									$districtlist->setName("ALL_DISTRICTS");
+									$districts = $districtlist->getOptionValuesFromQuery();
+									
+									$districtdropdown = new Zend_Form_Element_Select('districtid',
+														array(
+															'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $districts),								
+															'view' => new Zend_View(),
+															'decorators' => array('ViewHelper'),
+															'class' => array('filterselect', 'country')
+														)
+													);
+									$districtdropdown->setValue($farmgroup->getAddress()->getDistrictID()); 
+									echo $districtdropdown->render(); 
+							   ?>
+							   <span id="tooltip_districtid"></span><div id="districtid_error"></div>
+                            </td>
+                            <td width="35%"><label class="control-label"><?php echo $this->translate("global_county_label"); ?>:</label>
+                                <select name="countyid" id="countyid" class="country">
+                                  <option value="">&lt;Select One&gt;</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><label class="control-label"><?php echo $this->translate("global_subcounty_label"); ?>:</label>
+                                <select name="subcountyid" id="subcountyid" class="country">
+                                  <option value="">&lt;Select One&gt;</option>
+                                </select>
+                            </td>
+                            <td><label class="control-label"><?php echo $this->translate("global_parish_label"); ?>:</label>
+                                <select name="parishid" id="parishid" class="country">
+                                  <option value="">&lt;Select One&gt;</option>
+                                </select>
+                            </td>
+                            <td><label class="control-label"><?php echo $this->translate("global_village_label"); ?>:</label>
+                            	<select name="villageid" id="villageid" class="country">
+                                  <option value="">&lt;Select One&gt;</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="3"><label class="control-label"><?php echo $this->translate("farmgroup_address_label"); ?></label>
+                              	<textarea name="streetaddress" id="streetaddress" class="span4 expanding" style="min-height:60px;"><?php echo $farmgroup->getAddress()->getStreetAddress(); ?></textarea>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            <?php } ?>  
+            </form>
+        </div>
+        <?php require APPLICATION_PATH."/views/scripts/farmgroup/groupbottom.phtml"; ?>
+	</div>
+</div>
+<?php
+	$session->setVar(SUCCESS_MESSAGE, '');
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

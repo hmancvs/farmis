@@ -1,0 +1,28 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$message = new Message();
+	$message->populate(decode($request->id));	
+	
+	// create an array of the details to be return as json
+	$message_array = array(
+						'id' => $message->getID(),
+						'contents' => str_replace("\n", "<br>", $message->getContents()),					
+						'datecreated' => date('m/d/Y - g:i A', strtotime($message->getDateCreated()))						
+					); 
+	
+	/* if message was sent from popup window. Just show success message. */
+	/* else if message sent from reply page, return json string to be used to insert the message into the dom without reloading the page */
+	// debugMessage('current ssess value is '.$session->getVar('returnjson'));
+?>
+<?php if($session->getVar('msgreturn') == "json"){ ?>	
+    
+	<?php echo json_encode($message_array); ?>	
+
+<?php } else { 
+	
+	$session->setVar(SUCCESS_MESSAGE, 'Your message has been successfully sent to '.$message->getAllMessageRecipients());
+?>
+	<?php echo 'success'; ?>
+<?php } ?>
+

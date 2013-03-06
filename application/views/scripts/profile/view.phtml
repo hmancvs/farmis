@@ -1,0 +1,175 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+		
+	# Set id of the record to populate. If no value in request, use session userid
+	if(isEmptyString($request->id)){
+		$id = $userid;
+	} else {
+		$id = decode($request->id);
+	}
+	
+	$useraccount = new UserAccount(); 
+	$useraccount->populate($id);
+	// debugMessage($useraccount->toArray());
+	$title = sprintf($this->translate("useraccount_pagetitle_view"), $useraccount->getName());
+	$isadmin = true; 
+	if($userid != $useraccount->getID()){
+		# admin user is view another profile
+		//$isadmin = true; 
+		//$title = sprintf($this->translate("useraccount_pagetitle_view")." - admin ", $useraccount->getName());
+	} 
+	
+	$this->headTitle($title); 
+?>
+<script>
+	$(document).ready(function() {
+		// if user deactivates account, confirm action
+		$("#deactivate").click(function(){		
+			// Confirm that the user wants to change their password			
+		});
+		
+		// set empty tds				
+		$("table.formtable td.value").each(function(){
+			if($(this).html() == ''){
+				$(this).html('---');
+			}			
+		});
+	});
+</script>
+
+<h2><?php echo $title; ?></h2>
+<table class="formtable">
+	<tr class="sectionheading">
+		<td colspan="2"><?php echo $this->translate("useraccount_section_general"); ?></td>
+	</tr>
+	<tr>
+		<td class="label"><?php echo $this->translate("useraccount_salutation_label"); ?>:</td>
+		<td class="value"><?php echo $person->getSalutationText(); ?></td>
+	</tr>
+	<tr>
+		<td class="label"><?php echo $this->translate("useraccount_firstname_label"); ?>:</td>
+		<td class="value"><?php echo $useraccount->getFirstName(); ?></td>
+	</tr>
+	<tr>
+		<td class="label"><?php echo $this->translate("useraccount_lastname_label"); ?>:</td>
+		<td class="value"><?php echo $useraccount->getLastName(); ?></td>
+	</tr>
+	<tr>
+		<td class="label"><?php echo $this->translate("useraccount_othername_label"); ?>:</td>
+		<td class="value"><?php echo $useraccount->getOtherName(); ?></td>
+	</tr>
+	<tr>
+		<td class="label"><?php echo $this->translate("useraccount_gender_label"); ?>:</td>
+		<td class="value"><?php echo $useraccount->getGenderText(); ?></td>
+	</tr>
+	<tr>
+		<td class="label"><?php echo $this->translate("useraccount_username_label"); ?>:</td>
+		<td class="value"><?php echo $useraccount->getUserName(); ?></td>
+	</tr>
+	<tr>
+		<td class="label"><?php echo $this->translate("useraccount_email_label"); ?>:</td>
+		<td class="value"><?php echo $useraccount->getEmail(); ?></td>
+	</tr>
+	<tr>
+		<td class="label"><?php echo $this->translate("useraccount_email2_label"); ?>:</td>
+		<td class="value"><?php echo $useraccount->getEmail2(); ?></td>
+	</tr>
+	<tr>
+		<td class="label"><?php echo $this->translate("useraccount_password_label"); ?>:</td>
+		<td class="value">
+			<?php if(!$isadmin){ ?>
+				<a href="<?php echo $this->baseUrl('profile/changepassword'); ?>" title="<?php echo $this->translate("useraccount_changepassword_label"); ?>"><?php echo $this->translate("useraccount_changepassword_label"); ?></a>&nbsp;				
+			<?php }else{ ?>
+				<a href="<?php echo $this->baseUrl('profile/resetpassword'); ?>" title="<?php echo $this->translate("useraccount_resetpassword_label"); ?>"><?php echo $this->translate("useraccount_resetpassword_label"); ?></a>
+			<?php } ?>
+		</td>
+	</tr>
+	<tr>
+		<td class="label"><?php echo $this->translate("useraccount_phone_label"); ?>:</td>
+		<td class="value"><?php echo $useraccount->getPhone(); ?></td>
+	</tr>
+	<tr>
+		<td class="label"><?php echo $this->translate("useraccount_phone2_label"); ?>:</td>
+		<td class="value"><?php echo $useraccount->getPhone2(); ?></td>
+	</tr>
+	<tr>
+		<td class="label"><?php echo $this->translate("useraccount_fax_label"); ?>:</td>
+		<td class="value"><?php echo $useraccount->getFax(); ?></td>
+	</tr>
+	<tr>
+		<td class="label"><?php echo $this->translate("useraccount_address_label"); ?>:</td>
+		<td class="value"><?php echo $useraccount->getAddress(); ?></td>
+	</tr>
+	<tr>
+		<td class="label"><?php echo $this->translate("useraccount_country_label"); ?>:</td>
+		<td class="value"><?php echo $useraccount->getCountry(); ?></td>
+	</tr>
+	<tr>
+		<td class="label"><?php echo $this->translate("useraccount_city_label"); ?>:</td>
+		<td class="value"><?php echo $useraccount->getCity(); ?></td>
+	</tr>
+	<tr>
+		<td class="label"><?php echo $this->translate("useraccount_state_label"); ?>:</td>
+		<td class="value"><?php echo $useraccount->getState(); ?></td>
+	</tr>
+	<tr>
+		<td class="label"><?php echo $this->translate("useraccount_zipcode_label"); ?>:</td>
+		<td class="value"><?php echo $useraccount->getZipcode(); ?></td>
+	</tr>
+	<tr>
+		<td class="label"><?php echo $this->translate("useraccount_website_label"); ?>:</td>
+		<td class="value"><?php echo $useraccount->getWebsiteUrl(); ?></td>
+	</tr>
+	<tr>
+		<td class="label"><?php echo $this->translate("useraccount_securityquestion_label"); ?>:</td>
+		<td class="value"><?php echo $useraccount->getSecurityQuestion(); ?></td>
+	</tr>
+	<tr>
+		<td class="label"><?php echo $this->translate("useraccount_securityanswer_label"); ?>:</td>
+		<td class="value"><?php echo $useraccount->getSecurityAnswer(); ?></td>
+	</tr>
+	<tr>
+		<td class="label"><?php echo $this->translate("useraccount_dateofbirth_label"); ?>:</td>
+		<td class="value"><?php echo changeMySQLDateToPageFormat($useraccount->getDateOfBirth()); ?></td>
+	</tr>
+	<tr>
+		<td class="label"><?php echo $this->translate("useraccount_biography_label"); ?>:</td>
+		<td class="value"><?php echo $useraccount->getBiography(); ?></td>
+	</tr>	
+	<tr>
+		<td class="label"><?php echo $this->translate("useraccount_photo_label"); ?>:</td>
+		<td class="value"><?php echo $useraccount->getPhoto(); ?></td>
+	</tr>
+	<tr>
+		<td class="label"><?php echo $this->translate("useraccount_notes_label"); ?>:</td>
+		<td class="value"><?php echo $useraccount->getNotes(); ?></td>
+	</tr>		
+	<?php if($isadmin){ ?>
+		<tr>
+			<td class="label"><?php echo $this->translate("useraccount_section_groups"); ?>:</td>
+			<td class="value"><?php echo $useraccount->displayGroups(); ?></td>
+		</tr>
+		<tr>
+			<td class="label"><?php echo $this->translate("useraccount_isactive_label"); ?>: </td>
+			<td class="value"><?php echo ($useraccount->isActivated()) ? $this->translate("global_yes_label") : $this->translate("global_no_label"); ?></td>
+		</tr>		
+	<?php } ?>
+</table>
+<table class="formactions">  
+	<tr>
+		<td>
+			<?php if ($acl->checkPermission('User Account', ACTION_DELETE)) { ?>
+				<a href="<?php echo $this->baseUrl('profile/delete/entityname/UserAccount/id/'.encode($useraccount->getID())); ?>" class="negativeaction delete" title="<?php echo $this->translate("useraccount_button_delete_label"); ?>"><img src="<?php echo $this->baseUrl('images/cross.png'); ?>" /><?php echo $this->translate("useraccount_button_delete_label"); ?></a>
+			<?php } ?>
+			<?php if ($acl->checkPermission('User Account', ACTION_EDIT)) { ?>
+				<a href="<?php echo $this->baseUrl('profile/index/id/'.encode($useraccount->getID())); ?>" class="positiveaction" title="<?php echo $this->translate("useraccount_button_edit_label"); ?>"><img src="<?php echo $this->baseUrl('images/edit.png'); ?>" /><?php echo $this->translate("useraccount_button_edit_label"); ?></a>
+			<?php } ?>
+			<?php if ($acl->checkPermission('User Account', ACTION_LIST)) { ?>
+				<a href="<?php echo $this->baseUrl('profile/list'); ?>" class="positiveaction" title="<?php echo $this->translate("useraccount_button_list_label"); ?>"><img src="<?php echo $this->baseUrl('images/arrow_undo.png'); ?>" /><?php echo $this->translate("useraccount_button_list_label"); ?></a>
+			<?php } ?>
+		</td>
+	</tr>  
+</table>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

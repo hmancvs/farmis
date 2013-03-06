@@ -1,0 +1,186 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$id = decode($request->id);
+	
+	$inventory = new Inventory();
+	$inventory->populate($id);
+	$thefarmid = $inventory->getFarmID();
+	
+	//$inventory->sendInviteNotification();
+	$title = "Upload Image"; 
+	if(!isEmptyString($request->crop)){
+		$title = "Resize/Crop Image"; 
+	}
+	
+	$posturl = $this->baseUrl("inventory/processpicture");
+	$this->headTitle($title);
+	
+?>
+<script>
+$(document).ready(function() {
+	
+	<?php if(isEmptyString($request->crop)){ ?>
+		// form validation
+		$("#pictureform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				profileimage: "required"
+			}, 
+			// the messages for each of the fields being validated
+			messages: {		
+				profileimage: "<?php echo $this->translate("global_fileupload_error"); ?>"
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						error.appendTo("#"+element.attr("name")+"_error")
+						break;
+				}			
+			}
+		});
+	<?php } ?>
+	
+	$('#photo').imgAreaSelect({ 
+		aspectRatio: '1.25:1', 
+		handles: true,
+        fadeSpeed: 200, 
+		minWidth: 100,
+		maxWidth: 350,
+		x1: 0, y1: 0, x2: 250, y2: 200,
+		/*onSelectChange: preview,*/
+		onSelectEnd: function (img, selection) {
+            $('input[name="x1"]').val(selection.x1);
+            $('input[name="y1"]').val(selection.y1);
+            $('input[name="x2"]').val(selection.x2);
+            $('input[name="y2"]').val(selection.y2);
+			$('input[name="h"]').val(selection.height);
+			$('input[name="w"]').val(selection.width);            
+        }
+	});
+	
+	// remove box style if has no profile picture
+	<?php //if($inventory->hasProfileImage()){ ?>
+		//$("#profileinfo").addClass('new_pic');
+	<?php //} ?>
+	
+}); 
+</script>
+<style>
+h3.well-legend {
+	color:#333333;
+	font-size:14px;
+}
+#contentcolumn {
+	height:auto;
+	min-height:0;
+}
+</style>
+<h1><?php echo $this->translate('farm_title'); ?></h1>
+<div id="tabs">
+    <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
+    <div class="span9 tab-content" id="center">  
+		<div id="summary"><form class="form-horizontal summary"></form></div> 
+        <div id="land"><form class="form-horizontal land"></form></div>  
+        <div id="seasons"><form class="form-horizontal seasons"></form></div> 
+        <div id="calendar"><form class="form-horizontal calendar"></form></div>
+        <div id="commodities"><form class="form-horizontal commodities"></form></div>
+        <div id="inventory">
+            <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+                <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+            <?php } ?>	
+            <?php if($sessionhaserror) { ?>
+                <div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+            <?php } ?>
+            <div class="row margin0" style="padding:2px; margin-bottom:10px;">
+            <?php if(isEmptyString($request->crop)){ ?>
+                <form id="pictureform" action="<?php echo $posturl; ?>" method="post" enctype="multipart/form-data">	
+            <?php } else { ?>	 
+                <form action="<?php echo $this->baseUrl("inventory/croppicture"); ?>" id="indexform" method="post">
+            <?php } ?>
+                <span class="pull-left well lighter margin0" style="width:72%; min-height:160px;">
+                    <h3 class="well-legend"><?php echo $title; ?></h3>
+                    <?php if(isEmptyString($request->crop)){ ?>
+                    <table class="table noborder margin0">
+                        <tr>
+                            <td style="vertical-align:top; width:30%;">
+                                <table class="table noborder margin0">
+                                    <tr>
+                                        <td>
+                                            <h3 class="well-legend">Current Image</h3>
+                                            <div class="imagecontainer">
+                                                <img id="xprofileimage" style="width:150px;" src="<?php echo $inventory->getLargePicturePath(); ?>" />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                            <td style="vertical-align:top;">
+                                <table class="table noborder margin0">
+                                    <tr>
+                                        <td style="vertical-align:top; border-bottom:2px dotted #e2e2e2; padding-bottom:50px;">
+                                            <h3 class="well-legend">Upload new Image</h3>
+                                            <label style="display:block; margin-top:5px;">You can upload a JPG or PNG file (Max size 2MB)</label>
+                                            <input class="file" type="file" name="profileimage" id="profileimage" />
+                                            <input type="hidden" id="id" name="id" value="<?php echo encode($inventory->getID()); ?>" />
+                                            <input type="hidden" id="type" name="type" value="<?php echo $request->type; ?>" />
+                                            <input type="hidden" class="successurl" id="<?php echo URL_SUCCESS; ?>" name="<?php echo URL_SUCCESS; ?>" value="<?php echo $this->baseUrl('inventory/view/id/'.encode($inventory->getID())); ?>" />
+                                            <input type="hidden" class="failureurl" id="<?php echo URL_FAILURE; ?>" name="<?php echo URL_FAILURE; ?>" value="<?php echo $this->baseUrl('inventory/picture/id/'.encode($inventory->getID())); ?>" />
+                                            <div id="profileimage_error"></div>
+                                        </td>
+                                    </tr>  
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                    <?php } else { ?>
+                    <?php //debugMessage($inventory->getLargePicturePath()); ?>
+                    <table class="table noborder margin0">
+                        <tr>
+                            <td style="vertical-align:top; border-bottom:2px dotted #e2e2e2; padding-bottom:15px; text-align:center;">
+                                <label style="margin:15px; margin-left:-2px; display:block; font-size:13px; font-style:normal;" class="pagedescription">Drag the handles on the image canvas below to resize and click <b>'Crop Image'</b> to save changes.</label>
+                                <img src="<?php echo $inventory->getLargePicturePath(); ?>" id="photo" />
+                                <input type="hidden" name="x1" value="0" />
+                                <input type="hidden" name="y1" value="0" />
+                                <input type="hidden" name="x2" value="200" />
+                                <input type="hidden" name="y2" value="200" />
+                                <input type='hidden' name='w' value='200' />
+                                <input type='hidden' name='h' value='200' />
+                                <input type="hidden" id="id" name="id" value="<?php echo encode($inventory->getID()); ?>" />
+                           </td>
+                        </tr>  
+                        <tr>
+                            <td>
+                            </td>
+                        </tr>       
+                    </table>
+                    <?php } ?>
+                </span>
+                <span class="pull-right padding0" style="width:24%; margin-left:5px;">
+                    <div class="well margin0" style="height:160px;">
+                        <h3 class="well-legend">Quick Links</h3>
+                        <table class="table noborder" >                       
+                           <tr>		                    
+                                <td class="formactions">
+									<?php if(isEmptyString($request->crop)){ ?>
+                                        <button style="" type="submit" class="btn btn-primary" id="upload" name="submit" title="Upload"><i class="icon-upload icon-white"></i>&nbsp; Upload</button>
+                                        <a href="javascript: void(0);" class="btn"><i class="icon-remove"></i> <?php echo $this->translate('global_button_cancel'); ?></a>     
+                                    <?php } else { ?>
+                                        <button style="display:inline-block;" type="submit" id="startcrop" class="btn btn-primary btn-large"><i class="icon-ok icon-white"></i> Crop Image</button>
+                                    <?php } ?>
+                                </td>
+                           </tr>
+                        </table>                           
+                    </div>
+                </span>
+                </form>	
+            </div>
+        </div>
+        <div id="setup"><form class="form-horizontal setup"></form></div>
+    </div>
+</div>
+<?php
+	$session->setVar(SUCCESS_MESSAGE, '');
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

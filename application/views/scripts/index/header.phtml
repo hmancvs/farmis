@@ -1,0 +1,100 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$user = new UserAccount();
+	$user->populate($session->getVar('userid'));
+	// if(isFarmer()){
+		$farmer = new Farmer();
+		$farmer->populate($session->getVar('farmerid'));
+		
+		$hasfarm = false;
+		$hasmultiplefarms = false;
+		$countfarms = $farmer->getFarms()->count();
+		if($countfarms == 1){
+			$hasfarm = true;
+			$farmid = $farmer->getFarms()->get(0)->getID();
+		}
+		if(!isEmptyString($farmer->getFarm()->getID())){
+			$hasfarm = true;
+			$farmid = $farmer->getFarm()->getID();
+		}
+		if($countfarms > 1){
+			$hasmultiplefarms = true;
+		}
+	//}
+	
+	
+	$thecontroller = $request->getControllerName();
+	$theaction = $request->getActionName();
+	$publiccontrollers = array("index", "signup","aboutus","howitworks","benefits","news","help","user","tour","forum","faqs","testimonials","billing"); 
+	if(isEmptyString($userid)){
+		$publiccontrollers[] = 'contactus';
+	}
+	
+	$logopath = $this->baseUrl('images/logo2.png');
+	$logostyle = ' style="width:100px;"';
+	if (in_array($thecontroller, $publiccontrollers)){
+		$logopath = $this->baseUrl('images/logopublic.png');
+		$logostyle = ' style="width:115px;"';
+	}
+?>
+
+<div class="container" style="position:relative;">
+  <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+    <span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span>
+  </a>
+  <a class="brand" id="thelogo" href="<?php echo $this->baseUrl('index'); ?>"><img <?php echo $logostyle; ?> src="<?php echo $logopath; ?>" /></a>
+  <div class="" style="margin-left:170px; position:relative;">
+    <div class="xnav-collapse">
+		<?php if(!isEmptyString($userid)){ ?>
+            <ul class="nav pull-right" id="headeractions" style="max-width:500px; float:right; width:250px; margin-top:8px;">
+                <li class="dropdown " style="float:right;">
+                    <a data-toggle="dropdown" id="accountdrop" class="dropdown-toggle <?php echo !in_array($thecontroller, $publiccontrollers) ? 'loggedin' : ''; ?>" href="#"><?php echo $farmer->getName(); ?> <b class="caret"></b></a>
+                    <ul class="dropdown-menu span3">
+                        <li>
+                            <span class="pull-left" style="width:30%; margin:5px 0 0 8px; padding:0;">
+                                <div id="thumbinfo" class="<?php echo $user->hasProfileImage() ? 'new_pic' : 'default_pic'; ?>"> 
+                                <?php if(!isEmptyString($user->getID())){ ?>
+                                    <a style="padding:0;" href="<?php echo $this->baseUrl("profile/view/id/".encode($user->getID())); ?>" title="My Profile"><img src="<?php echo $user->getThumbnailPicturePath(); ?>" /></a>
+                                <?php } ?>
+                                </div>	
+                            </span>
+                            <span class="pull-right" style="width:65%; margin:0; padding:0;">
+                                <ul class="navbar" style="margin:0; padding:0; list-style:none;">
+                                    <li><a href="<?php echo $this->baseUrl("profile/view/id/".encode($user->getID())); ?>" title="My Profile">My Profile</a></li>                                    <li><a href="<?php echo $this->baseUrl("profile/view/id/".encode($user->getID())."/tab/account"); ?>" title="Account Settings">Account Settings</a></li>
+                                    <li><a href="<?php echo $this->baseUrl("profile/view/id/".encode($user->getID())."/tab/privacy"); ?>" title="Privacy Settings">Privacy Settings</a></li>
+                                </ul>	
+                            </span></li>
+                        <li class="divider"></li>
+                        <li><a href="<?php echo $this->baseUrl("help"); ?>" title="Get Help">Get Help</a></li>
+                        <li><a href="<?php echo $this->baseUrl("contactus"); ?>" title="Contact Us">Contact Us</a></li>
+                        <li class="divider"></li>
+                        <li><a href="<?php echo $this->baseUrl("user/logout"); ?>" title="Logout">Logout</a></li>
+                    </ul>
+                </li>
+            </ul>    
+        <?php } else { ?>
+            <ul class="nav pull-right" id="headeractions" style="max-width:500px; float:right; width:250px;">
+                <li id="loginheader" style="float:right;">
+                    <a class="btn" style="display:inline-block; font-weight:bold; color:#9c9b9b; padding:6px 10px;" id="headersignup" type="submit" href="<?php echo $this->baseUrl('signup'); ?>"><i class="icon-user"></i> Signup</a>&nbsp;
+                    <a class="btn btn-primary" style="display:inline-block; font-weight:bold; padding:6px 10px;" id="headersignin" type="submit" href="<?php echo $this->baseUrl('user/login'); ?>"><i class="icon-lock icon-white"></i> Signin</a>
+                </li>
+            </ul>    
+        <?php } ?>
+    </div>
+    <?php if (in_array($thecontroller, $publiccontrollers)){ ?>
+    <div class="subnavbar pull-left <?php echo !in_array($thecontroller, $publiccontrollers) ? 'loggedin' : ''; ?>" id="thenav">
+        <?php require_once APPLICATION_PATH.'/views/scripts/index/headermenu.phtml'; ?>
+    </div>
+    <?php } ?>
+  </div>
+
+	<?php if (!in_array($thecontroller, $publiccontrollers)){ ?>
+        <div class="subnavbar pull-left <?php echo !in_array($thecontroller, $publiccontrollers) ? 'loggedin' : ''; ?>" id="thenav">
+            <?php require_once APPLICATION_PATH.'/views/scripts/index/headermenu.phtml'; ?>
+        </div>
+    <?php } ?>
+</div>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

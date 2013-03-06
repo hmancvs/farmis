@@ -1,0 +1,217 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	# Page title
+	$title = $this->translate("report_pagetitle_subscription");
+	$this->headTitle($title);
+	
+	# Create an instance of the class to handle the pagination
+	$paginate = new Pagination();	
+	$paginate->setView($this);
+	# set the search columns to be used on this list
+	$paginate->setSearchColumns(array("u.firstname", "u.surname", ""));
+	// $paginate->setFilterColumns(array(""));
+	$paginate->setDefaultSortBy("u.datecreated");
+	$paginate->setDefaultSortOrder("DESC");
+	$paginate->setStartAndEndDateFilterColumn("u.datecreated");
+
+	$paginate->processPost($request->getParams());	
+	$all_results_query = "SELECT u.id, concat(u.firstname, ' ',u.surname) AS `Writer Name`, DATE_FORMAT(u.expirydate, '".$config->dateandtime->mysqlformat."') AS `Next Renewal Date`, IF(u.`isactive` = '1', 'Yes', 'No') AS `Is Active` FROM useraccount AS u WHERE u.type = 1 ".$paginate->getSearchAndFilterSQL()." ".$paginate->getSortSQL();
+ 	// debugMessage($all_results_query);
+	$paginate->setItemCountFromSQLQuery($all_results_query);
+	
+	$current_results_query = $all_results_query." ".$paginate->getSQLLimit();
+	//echo $current_results_query;
+	$session->setVar(ALL_RESULTS_QUERY, $all_results_query);
+	$session->setVar(CURRENT_RESULTS_QUERY, $current_results_query);
+	# the query string to be appended to the return to list URL
+	$session->setVar('list_query_string'.$request->getControllerName(), $request->getParams());
+	
+	$conn = Doctrine_Manager::connection(); 
+	$result = $conn->fetchAll($current_results_query);
+	$has_no_data = (count($result) == 0) ? true : false; 
+	
+	# This variable stores the number of redundant columns returned in the query so that when we are printing
+	# we are able to know how many columns to ignore. This variable is sent in the print URL
+	$number_of_redundant_columns = 1;
+	
+	# the columns which contain numbers in the invoice query
+	# Please note that the column count begins at 0
+	$export_number_column_list = "3";
+?>
+<script>
+$(document).ready(function(){
+	// change the date format since the short format with / corrupts the urls
+	datepickerOpts.dateFormat = '<?php echo $config->dateandtime->javascriptmediumformat; ?>'; 
+	$("#startdate, #enddate").datepicker(datepickerOpts); 
+	$("#paymentform").validate({
+		errorPlacement: function(error, element) {
+			error.appendTo("#errormessage");
+		},
+		rules: {			
+			enddate: {					
+				enddateafterstartdate: true
+			}				
+		}
+	});
+	
+	// Approve and reject for agents
+	$(".activate, .deactivate").click(function(e){	
+		var title = $(this).attr('title');	
+		e.preventDefault();
+		var thehref = $(this).attr("href");
+		
+		switch(title){			
+			case 'Activate Profile':				
+				$("#dialog-confirm span#dialogtext_activate").show();		
+				break;
+			case 'Deactivate Profile':			
+				$("#dialog-confirm span#dialogtext_deactivate").show();				
+				break;
+		}		
+		
+		// confirm that user wants to request feedback
+		$("#dialog-confirm").dialog({
+			resizable: false,
+			width:400,
+			modal: true,
+			title: title,
+			buttons: {				
+				Cancel: function() {
+					$("#dialog-confirm").dialog("close");
+				},
+				"<?php echo $this->translate("useraccount_button_activate_label"); ?>": function() {
+					$('.ui-dialog-buttonpane').find('button:contains("<?php echo $this->translate("useraccount_button_activate_label"); ?>")').hide();
+					$('.ui-dialog-buttonpane').find('button:contains("Cancel")').hide();
+					$(".ui-dialog-titlebar-close").hide();
+					
+					$("#contents").hide();
+					$("#wait_activate").show();														
+					window.location.href = thehref;
+				},
+				"<?php echo $this->translate("useraccount_button_deactivate_label"); ?>": function() {								
+					$('.ui-dialog-buttonpane').find('button:contains("<?php echo $this->translate("useraccount_button_deactivate_label"); ?>")').hide();
+					$('.ui-dialog-buttonpane').find('button:contains("Cancel")').hide();
+					$(".ui-dialog-titlebar-close").hide();
+					
+					$("#contents").hide();
+					$("#wait_deactivate").show();					
+					window.location.href = thehref;
+				}					
+			},
+			open: function (event, ui) {				
+				switch(title){					
+					case 'Activate Profile':
+						$('.ui-dialog-buttonpane').find('button:contains("<?php echo $this->translate("useraccount_button_activate_label"); ?>")').show();
+						$('.ui-dialog-buttonpane').find('button:contains("<?php echo $this->translate("useraccount_button_deactivate_label"); ?>")').hide();	
+						break;
+					case 'Deactivate Profile':
+						$('.ui-dialog-buttonpane').find('button:contains("<?php echo $this->translate("useraccount_button_activate_label"); ?>")').hide();
+						$('.ui-dialog-buttonpane').find('button:contains("<?php echo $this->translate("useraccount_button_deactivate_label"); ?>")').show();	
+						break;
+				}			
+			},
+			close: function (event, ui) {
+				$("#dialog-confirm").dialog("close");
+			}				
+		});
+		// add auto grow for dialog confirm
+		$("#dialog-confirm").dialog('open').height('auto');	
+		
+	});
+});
+</script>
+<h1><?php echo $title; ?></h1>
+<form action="<?php echo $this->baseUrl("report/subscriptionsearch"); ?>" method="get" id="subscriptionreportform">
+	<table class="filtercontainer">
+		<tr>
+			<td>
+            	<table class="filtersection">
+                    <tr>
+                        <td><b>Start Date:</b> &nbsp;
+                        	<input name="startdate"  id="startdate" type="text"  class="datefield startdate" value="<?php echo $request->startdate; ?>" title="Filter Payments From" />&nbsp;&nbsp;
+                            <b>End Date:</b> &nbsp;
+                            <input name="enddate" id="enddate" type="text" class="datefield"  value="<?php echo $request->enddate; ?>"title="Filter Payments To" />&nbsp;&nbsp;
+							
+                        </td>
+                    </tr>                
+                </table>
+			</td>
+            <td>
+                <table>
+                    <tr>
+                        <td><input class="filterselect" type="text" name="searchterm" id="searchterm" value="<?php echo $request->searchterm; ?>" title="Search for user" /></td>
+                    </tr>
+                    <tr>
+                        <td><button type="submit" class="positiveaction" id="searchbutton" title="<?php echo $this->translate('list_searchbutton_title'); ?>"><img src="<?php echo $this->baseUrl("images/zoom_in.png"); ?>" alt="<?php echo $this->translate('list_searchbutton_title'); ?>"/><?php echo $this->translate('list_searchbutton_label'); ?></button>
+                        <div id="listcounter"><?php echo $this->listcountdropdown; ?></div></td>
+                    </tr>
+                </table>
+            </td>		
+		</tr>
+	</table>
+	<?php if (!isEmptyString($session->getVar(SUCCESS_MESSAGE))) { ?>
+        <label class="successmessage"><?php echo $session->getVar(SUCCESS_MESSAGE); ?></label>
+    <?php } ?>
+    <?php // show a message that there are no items to display
+        if ($has_no_data) {
+    ?>
+		<label class="informationmessage"><?php echo $this->translate("subscription_list_norecords"); ?></label>
+	<?php } else { ?>
+    
+	<div id="counter"><?php echo sprintf($this->translate("subscription_list_counter"), $paginate->getItemCounterText()); ?></div>  
+	<table class="list">	
+      	<thead>
+          <tr>
+            <td><?php echo $paginate->getSortLinkForColumn('u.firstname', 'Writer\'s Name'); ?></td>
+            <td><?php echo $paginate->getSortLinkForColumn('u.expirydate','Next Renewal Date'); ?></td>
+            <td><?php echo $paginate->getSortLinkForColumn('u.isactive','Is Active'); ?></td>
+            <td>Activate</td>
+            <td>Deactivate</td>
+          </tr>
+      	</thead>
+		<tbody>
+			<?php 				  		
+            	foreach($result as $line){
+            ?>
+            <tr>
+            	<td><?php echo $line['Writer Name']; ?></td>
+                <td><?php echo $line['Next Renewal Date']; ?></td>
+                <td align="center"><?php echo $line['Is Active']; ?></td>
+                <td align="center"><?php if ($line['Is Active'] == 'No') { ?>
+                		<a class="activate" href="<?php echo $this->baseUrl("profile/statuschange/id/".encode($line['id'])."/newstatus/1/".SUCCESS_MESSAGE.'/useraccount_activate_success'); ?>" title="Activate Profile">Activate</a>
+                	<?php } ?>
+                </td>
+                <td align="center"><?php if ($line['Is Active'] == 'Yes') { ?>                		
+                    	<a class="deactivate" href="<?php echo $this->baseUrl("profile/statuschange/id/".encode($line['id'])."/newstatus/0/".SUCCESS_MESSAGE.'/useraccount_deactivate_success'); ?>" title="Deactivate Profile">Deactivate</a>
+                    <?php } ?>
+                </td>
+            </tr>
+            <?php 						
+            	} // end processing results 
+            ?>
+		</tbody>
+	  </tr>
+	</table>
+	<?php echo $paginate->getPaginationLinks(); ?>
+<?php			
+	} // end check that there are results    	
+?>    
+</form>
+<div class="hidden" id="dialog-confirm">
+    <div id="contents"><br />           
+        <span class="hidden confirm" id="dialogtext_activate"><?php echo $this->translate("useraccount_profile_activate_confirmation"); ?></span>
+        <span class="hidden confirm" id="dialogtext_deactivate"><?php echo $this->translate("useraccount_profile_deactivate_confirmation"); ?></span>    
+    </div>   
+    <div id="wait_activate" style="text-align:center;" class="hidden">Activating profile ...<br /><br />
+        Please Wait ..... <br /><br />
+        <img src="<?php echo $this->baseUrl("images/loading.gif"); ?>" /> 
+    </div>  
+    <div id="wait_deactivate" style="text-align:center;" class="hidden">Deactivating agent ...<br /><br />
+        Please Wait ..... <br /><br />
+        <img src="<?php echo $this->baseUrl("images/loading.gif"); ?>" /> 
+    </div>    
+</div> 
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

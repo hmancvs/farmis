@@ -1,0 +1,33 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+		$result = $this->prices;
+		$has_no_data = (count($result) == 0) ? true : false;
+?>
+	<label class="blocked" style="margin-top:15px; margin-bottom:10px;"><b>As at <?php echo changeMySQLDateToPageFormat($result[0]['datecollected']); ?></b></label>
+	<table class="table table-bordered table-headed" style="width:75%;">
+      <thead>
+        <tr>
+          <td style="width:50%;">Commodity</td>
+          <td style="width:25%;">Wholesale Price</td>
+          <td style="width:25%;">Retail Price</td>
+        </tr>
+      </thead>
+      <tbody>
+        <?php 				  		
+            foreach($result as $line){						
+        ?>
+        <tr>
+          <td><?php echo $line['name']; ?></td>
+          <td class="rightalign"><?php echo $line['WholesalePrice']; ?></td>
+         
+          <td class="rightalign"><?php echo $line['RetailPrice']; ?></td>
+        </tr>
+        <?php 						
+            } // end processing results 
+        ?>
+      </tbody>
+    </table>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

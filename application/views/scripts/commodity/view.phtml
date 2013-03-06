@@ -1,0 +1,110 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	// default title is to enable adding any payee
+	$title = $this->translate("commodity_pagetitle_view");
+	
+	$commodity = new Commodity();
+	$commodity->populate(decode($request->id));
+	$title = $commodity->getName();
+
+	$this->headTitle($title);
+?>
+<script>
+	$(document).ready(function() {		
+		
+	}); 
+</script>
+<style>
+
+</style>
+<div>
+	<?php require APPLICATION_PATH."/views/scripts/index/leftcolumn.phtml"; ?>
+    <div id="centercolumn">
+        <form id="viewform" class="form-horizontal">
+			<?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+                <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+            <?php } ?>
+            <div class="row margin0" style="padding:2px; margin-bottom:10px;">
+            	<span class="pull-left well lighter margin0" style="width:70%;">
+                	<table class="table noborder margin0">
+                    	<tr>
+                            <td style="padding:10px 10px 0 0; width:60%;">
+                                <h3 class="well-legend"><?php echo $title; ?></h3>                   
+                                <table class="table smalltdpad" style="margin-top:10px;">                                	
+                                    <tr>
+                                        <td width="25%;"><label class="control-label"><?php echo $this->translate("commodity_name_label"); ?>:</label></td>
+                                        <td><?php echo $commodity->getName(); ?></td>
+                                    </tr>
+                                    <?php if(!isEmptyString($commodity->getParentID())){ ?>
+									<tr>
+                                        <td width="25%;"><label class="control-label"><?php echo $this->translate("commodity_parent_label"); ?>:</label></td>
+                                        <td><?php echo $commodity->getParent()->getName(); ?></td>
+                                    </tr>
+                                    <?php } ?>
+                                    <tr>
+                                        <td><label class="control-label"><?php echo $this->translate("commodity_category_label"); ?>:</label></td>
+                                        <td><?php echo $commodity->getCategory()->getName(); ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label class="control-label"><?php echo $this->translate("commodity_units_label"); ?>:</label></td>
+                                        <td><?php echo $commodity->getUnits()->getName(); ?></td>
+                                    </tr>
+                                    <tr>
+                                      <td><label class="control-label">Allow to Farmers:</label></td>
+                                      <td><?php echo $commodity->getAllowFarmer() == "0" ? 'No' : 'Yes'; ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label class="control-label"><?php echo $this->translate("commodity_description_label"); ?>:</label></td>
+                                        <td><?php echo $commodity->getDescription(); ?></td>
+                                    </tr>
+                                </table>
+                            </td>
+                            <td style="vertical-align:top; padding-top:40px;">
+                            	<div class="imagecontainer" style="width:100%; min-height:100px; padding:2px;">
+                                	<img style="width:100%;" src="<?php echo $commodity->getImagePath(); ?>" />
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </span>
+                <span class="pull-right padding0" style="width:23%; margin-left:5px;">
+                	<div class="well row" style="height:160px;">
+                        <h3 class="well-legend">Quick Links</h3>
+                        <table class="table">                       
+                           <tr>		                    
+                                <td class="formactions">
+                                <?php //if($commodity->getFarmerID() == $farmerid  || $commodity->getCreatedBy() == $userid || isAdmin()){ ?>
+                                    <a class="btn btn-primary" href="<?php echo $this->baseUrl('commodity/index/id/'.encode($commodity->getID())); ?>" id="update"><i class="icon-pencil icon-white"></i> Update</a>                                       
+                                <?php //} ?>
+                                <a class="btn btn-primary" href="<?php echo $this->baseUrl('commodity/list/id/'.encode($commodity->getID())); ?>" id="list"><i class="icon-list icon-white"></i> All Commodities</a>     
+                                </td>
+                           </tr>
+                        </table>                           
+                    </div>
+                </span>
+            </div>
+            <div class="row margin0" style="padding:2px; margin-bottom:10px;">
+            	<span class="pull-left" style="width:50%; margin-right:5px;">
+                	<div id="location_left" class="well lighter margin0" style="min-height:190px;"> 
+                        <h3 class="well-legend">Current Average Prices</h3>
+                        <table class="table noborder">                       
+                            
+                        </table>
+                    </div>
+                </span>
+                <span class="pull-right" style="width:49%;">
+                	<div id="location_right" class="well lighter margin0" style="min-height:190px;"> 
+                        <h3 class="well-legend">Latest News on <?php echo $commodity->getName(); ?></h3>
+                        <table class="table noborder">                       
+                            
+                        </table>
+                    </div>
+                </span>
+            </div>
+        </form>
+    </div>
+</div>    
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

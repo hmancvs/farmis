@@ -1,0 +1,18 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$controller = $request->getControllerName();
+?>
+<?php if($controller == 'inventory'){ ?>
+
+<?php } ?>
+<?php if($controller == 'season'){ ?>
+	<?php 
+        echo $calendar.$finance.$inventory.$setup.$account;
+    ?>
+<?php } ?>
+<?php if($controller == 'finance'){ ?>
+	<?php 
+        echo $inventory.$account;
+    ?>
+<?php } ?>

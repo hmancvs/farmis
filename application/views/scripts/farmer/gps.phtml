@@ -1,0 +1,61 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<?php 
+	require_once APPLICATION_PATH.'/includes/header.php';
+
+	$title = "GPS Test";
+	
+?><head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo $title; ?></title>
+    <script type="text/javascript" src="<?php echo $this->baseUrl('javascript/2.jquery-1.7.1.min.js'); ?>"></script>
+    <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyD5m-H5m0gaaw1EfpFXa2R9HIkbXN-dGsA&sensor=false"></script>
+    <script type="text/javascript" src="<?php echo $this->baseUrl('javascript/5.gmap3.min.js'); ?>"></script>
+	<script type="text/javascript">
+		/*function initialize() {
+			var mapOptions = {
+			  center: new google.maps.LatLng(0.308828, 32.551072),
+			  zoom: 16,
+			  mapTypeId: google.maps.MapTypeId.ROADMAP
+			};
+			var map = new google.maps.Map(document.getElementById("map"), mapOptions);
+      	}	*/
+	$(document).ready(function() {	
+		var pos = [0.308828, 32.551072];
+		$("#map").gmap3(
+			{action:'addMarker',
+				latLng: pos,
+				map:{
+					center: true,
+					zoom: 14
+				},
+				infowindow:{
+					options:{
+						content: 'Farmis Test Farm!'
+					}
+				}
+			}
+		);
+	});
+   </script> 
+</head>
+
+<style>
+#map {
+	width: 100%;
+	height: 600px;
+}
+</style>
+<body data-spy="scroll" data-target=".subnav" data-offset="50" class="publicbody" style="background:none;">
+        <table style="margin:0 auto; background:none; width:940px;">
+        <tr>
+        	<td colspan="2" style="padding-bottom:10px; padding-top:10px; text-align:center; border-bottom: 3px solid #E2E2E2; background:none repeat scroll 0 0 #F4F4F4;">
+            	<a class="brand" id="thelogo" style="" href="<?php echo $this->baseUrl('index'); ?>">GPS TEST</a>
+            </td>
+        </tr>
+        <tr>
+        	<td colspan="2" style="text-align:center; display:block;"><div id="map"></div></td>
+        </tr>
+</table>
+</body>
+</html>

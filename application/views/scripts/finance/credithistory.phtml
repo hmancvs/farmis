@@ -1,0 +1,151 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$farm = new Farm(); 
+	$farm->populate(decode($request->id));
+	
+	$request->setParam('tab', 'finance'); 
+	
+	$thefarmid = $farm->getID();
+	
+	$title = "Credit History"; 
+	$this->headTitle($title);  
+	
+?>
+<script>
+	$(document).ready(function() {
+		
+	}); 
+</script>
+<style>
+</style>
+<h1><?php echo $this->translate('farm_title'); ?></h1>
+<div id="tabs">
+    <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
+    <div class="span9 tab-content" id="center">
+    	<?php require APPLICATION_PATH."/views/scripts/farm/tabstop.phtml"; ?>
+		<div id="finance">
+            <form id="viewform" class="form-horizontal">
+                <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+                    <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+                <?php } ?>
+                <div class="row margin0" style="padding:2px; margin-bottom:10px;">
+                    <span class="pull-left well lighter margin0" style="width:96%; min-height:160px; position:relative;">
+                        <h3 class="well-legend"><?php echo $title; ?></h3>
+                        <div class="margin0" style="position:absolute; right:10px; top:10px;">
+                        	<a class="btn btn-mini" href="<?php echo $this->baseUrl('farm/view/id/'.encode($farm->getID()).'/tab/finance'); ?>" title="Finance Dashboard"><i class="icon-list"></i> Finance Dashboard</a>                                       
+                        </div>
+                        <?php 
+							$loans = $farm->getCreditDetails();
+							
+							$lcount = $loans->count();
+							if($lcount == 0) { ?>
+							<div class="alert alert-info" style="margin-top:20px;">No credit transactions currently available. Visit your season activities to upload.</div>
+						<?php } else { ?>                
+							<label class="labeldescription" style="margin-top:10px;">Viewing <?php echo $lcount; ?> <?php echo $lcount == 1 ? 'credit transaction' : 'credit transactions'; ?></label>
+							
+							<ul id="datalist" class="nav nav-stacked">
+								<?php 
+									foreach($loans as $loan){
+								?>
+								<li style="min-height:130px;">
+									<table class="table noborder margin0">
+                                        <tr>                                
+                                            <td><h2 style="font-size:15px;"><a href="<?php echo $this->baseUrl('season/view/id/'.encode($loan->getSeasonID())); ?>"><?php echo 'Loan Credit: Ref# - '.$loan->getSeason()->getRef(); ?></a></h2></a></td>
+                                        </tr>
+                                        <tr>
+                                        	<td colspan="2" class="padding0">
+                                                <table class="table noborder margin0">
+                                                    <tbody id="hasloan">
+                                                        <tr>
+                                                            <td style="width:20%;"><label class="control-label"><?php echo $this->translate("season_credit_datereceived_label"); ?>:</label>
+                                                            <?php echo isEmptyString($loan->getcreditdate()) ? '--' : changeMySQLDateToPageFormat($loan->getcreditdate()); ?></td>
+                                                            <td style="width:20%;"><label class="control-label"><?php echo $this->translate("season_credit_principal_label"); ?>:</label>
+                                                            <?php echo formatMoney($loan->getPrincipal()); ?></td>
+                                                            <td style="width:20%;"><label class="control-label"><?php echo $this->translate("season_credit_interestrate_label"); ?>:</label>
+                                                            <?php echo isEmptyString($loan->getInterestRate()) ? '--' : $loan->getInterestRate().'&nbsp;<span class="pagedescription">(%)</span>'; ?></td>
+                                                            <td><label class="control-label"><?php echo $this->translate("season_credit_repayment_label"); ?>:</label>
+                                                            <?php echo formatMoney($loan->getPayBackAmount()); ?></td>
+                                                            
+                                                        </tr>
+                                                        <tr>
+                                                            <td><label class="control-label"><?php echo $this->translate("season_credit_payperiod_label"); ?>:</label>
+                                                            <?php echo $loan->getPayBackPeriodText(); ?></td>
+                                                            <td><label class="control-label"><?php echo $this->translate("season_credit_regularpay_label"); ?>:</label>
+                                                            <?php echo formatMoney($loan->getInstallment()); ?></td>
+                                                            <td colspan="2"><label class="control-label"><?php echo $this->translate("season_credit_source_label"); ?>:</label>
+                                                            <?php echo $loan->getfinancesourcetext(); ?></td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                        <tr>                                
+                                            <td>
+                                            <div style="position:relative; width:95%; float:right;">
+                                            	<h2 class="" style="font-size:14px; margin:0;">Re-Payment History:</h2></a>
+                                                <div style="position:absolute; top:10px; right:15px;">
+                                                    <a href="<?php echo $this->baseUrl('finance/paycredit/pgc/true/loanid/'.encode($loan->getID())); ?>" class="btn btn-primary btn-mini addpopup" title="New Loan Debit" rel="New Loan Debit" id="newdebit" formtitle="indexform" successurl="<?php echo $this->baseUrl('finance/credithistory/id/'.encode($farm->getID())); ?>" action="<?php echo $this->baseUrl('finance/processpaycredit/successurl/'.encode($this->baseUrl('finance/paycreditsuccess/successmessage/global_save_success/'))); ?>"><i class="icon-plus icon-white"></i> Debit Loan</a>
+                                                </div>
+                                            	<ul id="datalist" class="nav nav-stacked" style="margin-top:2px; border-top:1px solid #DDDDDD; border-bottom:2px solid #DDDDDD;">
+                                                	<?php 
+														$payments = $loan->getPaymentDetails();
+														$pcount = $payments->count();
+														if($pcount == 0) { ?>
+														<div class="alert alert-info" style="margin-top:10px;">No payment transactions available. Click 'Debit Loan' to add new.</div>
+													<?php } else { ?>                
+														<label class="labeldescription" style="margin-top:10px; padding-left:10px;">Viewing <?php echo $pcount; ?> <?php echo $pcount == 1 ? 'payment' : 'payments'; ?></label>
+                                                	
+														<?php 
+                                                            
+                                                            foreach($payments as $payment){
+                                                        ?>
+                                                            <li style="position:relative;">
+                                                            	<div class="threadicons" style="position:absolute; right:5px; top:5px; float:right;">
+                                                                    <a href="<?php echo $this->baseUrl('finance/paycredit/pgc/true/id/'.encode($payment->getID())); ?>" class="addpopup btn btn-mini" title="Edit Entry" rel="Edit Entry" id="editentry_<?php echo $payment->getID(); ?>" formtitle="indexform" successurl="<?php echo $this->baseUrl('finance/credithistory/id/'.encode($farm->getID())); ?>" action="<?php echo $this->baseUrl('finance/processpaycredit/successurl/'.encode($this->baseUrl('finance/paycreditsuccess/successmessage/global_save_success/'))); ?>"><i class="icon-pencil"></i></a></a>
+                                                                    <a href="javascript: void(0)" id="deleteline_multiple" title="Delete Entry" class="btn btn-mini deleteline noimgbutton" action="<?php echo $this->baseUrl('finance/delete/id/'.$payment->getID()."/entityname/LoanPayment/successurl/".encode($this->baseUrl('finance/credithistory/id/'.encode($farm->getID())))); ?>"><i class="icon-trash"></i></a>
+                                                                </div>
+                                                                <table class="table noborder margin0">
+                                                                    <tr>                                
+                                                                        <td style="" class="topbottom0"><h2 style="font-size:14px; padding-left:8px;"><a>Loan Debit: <?php echo $payment->getLoanEntry()->getFinancialSourceText(); ?></a></h2></a></td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td colspan="2" class="topbottom0">
+                                                                            <table class="table noborder margin0">
+                                                                                <tbody id="hasloan">
+                                                                                    <tr>
+                                                                                        <td style="width:125px;"><label class="control-label">Payment Date:</label>
+                                                                                        <?php echo changeMySQLDateToPageFormat($payment->getPaymentDate()); ?></td>
+                                                                                        <td style="width:130px;"><label class="control-label">Payment Amount:</label>
+                                                                                        <?php echo formatMoney($payment->getAmount()); ?></td>
+                                                                                        <td style=""><label class="control-label">Notes:</label>
+                                                                                        <?php echo isEmptyString($payment->getNotes()) ? '--' : $payment->getNotes(); ?></td>
+                                                                                    </tr>
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </td>
+                                                                    </tr>
+                                                                </table>
+                                                            </li>
+                                                        <?php } ?>  
+                                                    <?php } ?>      
+                                                </ul>
+                                            </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+								</li>
+								<?php } ?>
+                                 
+							</ul>
+						<?php } ?>    
+                    </span>
+                </div>
+            </form>
+        </div>
+        <?php require APPLICATION_PATH."/views/scripts/farm/tabsbottom.phtml"; ?> 
+    </div>
+</div>    
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

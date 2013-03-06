@@ -1,0 +1,187 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	# Page title
+	$title = $this->translate("communityforum_pagetitle_startcommunityforum"); 
+	$this->headTitle($title);
+	
+	$posturl = $this->baseUrl("communityforum/create");
+	$button_title = $this->translate('communityforum_button_save');
+	
+	$communityforum = new CommunityForum();
+
+	#in case of errors in session, populate the fields from session
+	if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
+		$communityforum->processPost($session->getVar(FORM_VALUES));	
+	}
+	
+	if(isEmptyString($request->tab)){
+		$request->setParam('tab', 'newtopic'); 
+	}
+?>
+<script>
+$(document).ready(function() {			
+	$("#communityforumform").validate({		
+		// define the validation rules one field at a time		
+		rules: {
+			topic: {
+				required: true,
+				maxlength: 160
+			},	
+			content: {
+				required: true,
+				maxlength: 1000
+			},
+			category: "required"				
+		}, 
+		// the messages for each of the fields being validated
+		messages: {	
+			topic: {
+				required: "<?php echo $this->translate("communityforum_topic_error"); ?>", 					
+				maxlength: "Maximum characters reached"
+			},
+			content: {
+				required: "<?php echo $this->translate("communityforum_content_error"); ?>",
+				maxlength: "Maximum characters reached"
+			},
+			category: "<?php echo $this->translate("communityforum_category_error"); ?>"				
+		},
+		// custom error positions
+		errorPlacement: function(error, element) {
+			switch(element.attr("name")){					
+				default:
+					error.appendTo("#"+element.attr("name")+"_error")
+					break;
+			}			
+		}
+	});
+	
+	<?php if(!isEmptyString($request->tab)){ ?>
+		$("#tabs").tabs({ selected:'<?php echo $request->tab; ?>', fx: {opacity: 'toggle'} });	   
+	<?php } ?>
+	$('#tabs').tabs({
+		// the selected tab
+		selected: '<?php echo $request->tab; ?>'
+	});
+	$("#topiclist a").click(function(e){
+		window.location.href = "<?php echo $this->baseUrl('communityforum/list'); ?>";
+	});
+	
+	var t_characters = 160;
+	$("#topic_balance").append(t_characters);
+	$("#topic").keyup(function(){
+		var t_remaining = t_characters - $(this).val().length;
+		$("#topic_balance").html(t_remaining);
+		if(t_remaining < 0){
+			$("#topic_balance, #t_remaining").css("color","red");
+		} else {
+			$("#topic_balance, #t_remaining").css("color","#666666");
+		}
+	});
+	
+	var c_characters = 1000;
+	$("#content_balance").append(c_characters);
+	$("#content").keyup(function(){
+		var c_remaining = c_characters - $(this).val().length;
+		$("#content_balance").html(c_remaining);
+		if(c_remaining < 0){
+			$("#content_balance, #c_remaining").css("color","red");
+		} else {
+			$("#content_balance, #c_remaining").css("color","#666666");
+		}
+	});
+	
+	
+}); 
+</script>
+<style>
+textarea.expanding {
+	width:455px;	
+}
+#category {
+	width:465px;
+	vertical-align:middle;
+	height:40px;
+	padding-top:8px;
+}
+</style>
+<div class="row marginleft0" id="forum">
+    <div class="span8 pull-left marginleft0 public_leftcolumn">
+        <div class="content">
+            <h2 style="font-size:20px;"><?php echo $title; ?></h2>
+            <div id="tabs" class="discussion">   
+                <ul>      
+					<li id="topiclist"><a href="#topics"><?php echo $this->translate('communityforum_section_topics'); ?></a></li>
+					<li id="create"><a href="#newtopic"><img src="<?php echo $this->baseUrl("images/add.png"); ?>" />&nbsp; <?php echo $this->translate('communityforum_section_newtopic'); ?></a></li>    
+                </ul>
+                <div id="topics">
+                    <div id="loading"><br />         
+                      Please Wait ..... <br /><br />
+                      <img src="<?php echo $this->baseUrl("images/loading.gif"); ?>" /> <br /><br />
+                    </div>
+                </div>
+                <div id="newtopic">
+                    <form id="communityforumform" action="<?php echo $posturl; ?>" method="post">
+                      <table style="width:90%;">
+                        <?php if ($sessionhaserror) { ?>
+                        <tr>
+                          <td class="error"><?php echo $session->getVar(ERROR_MESSAGE); ?></td>
+                        </tr>
+                        <?php } ?>
+                        <tr>
+                            <td><b><?php echo $this->translate("communityforum_topic_label"); ?>:</b><?php echo $this->translate("global_required_field_marker"); ?><br /><br />
+                            <input style="width:455px; height:30px;" type="text" id="topic" name="topic" value="<?php echo $communityforum->getTopic(); ?>" /><label id="topic_balance" class="remaining"></label><span class="remaining" id="t_remaining">chars left</span><div id="topic_error"></div></td>
+                        </tr> 
+                        <tr>
+                            <td colspan="2">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td><b><?php echo $this->translate("communityforum_category_label"); ?>:</b><?php echo $this->translate("global_required_field_marker"); ?><br /><br />
+                                <?php		
+                                    $catlookup = new LookupType(); 				
+                                    $catlookup->setName("FORUM_CATEGORIES");				
+                                    $catdropdown = new Zend_Form_Element_Select('category',
+                                                        array(
+                                                            'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $catlookup->getOptionValuesAndDescription()),						
+                                                            'view' => new Zend_View(),
+                                                            'decorators' => array(array('ViewHelper', array('escape' => true))),
+                                                            'class' => array('xchzn-select')					
+                                                        )
+                                                    );
+                                                    
+                                    $catdropdown->setValue($communityforum->getCategory());
+                                    echo $catdropdown->render(); 
+                                ?><div id="category_error"></div>
+                            </td>
+                        </tr> 
+                        <tr>
+                            <td colspan="2">&nbsp;</td>
+                        </tr>   
+                        <tr>
+                            <td><b><?php echo $this->translate("communityforum_content_label"); ?>:</b><?php echo $this->translate("global_required_field_marker"); ?><br /><br />
+                                <textarea id="content" name="content" class="expanding" placeholder="briefly describe your topic" style="min-height:65px;"><?php echo $communityforum->getContent(); ?></textarea><label id="content_balance" class="remaining"></label><span class="remaining" id="c_remaining">chars left</span><div id="content_error"></div>
+                </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <a href="<?php echo $this->baseUrl('communityforum/list'); ?>" title="<?php echo $this->translate("global_button_cancel"); ?>"><?php echo $this->translate("global_button_cancel"); ?></a>&nbsp;
+                                <button type="submit" name="submit" id="submit" class="btn btn-primary"><i class="icon-ok icon-white"></i> Post</button>
+                                <input type="hidden" name="entityname" value="CommunityForum" />
+                                <input type="hidden" id="id" name="id" value="<?php echo encode($communityforum->getID()); ?>" />
+                            </td>
+                        </tr>
+                      </table>
+                    </form>
+                </div>
+			</div>            
+		</div>            
+    </div>
+    <?php require APPLICATION_PATH."/views/scripts/index/righthandband.phtml"; ?>
+</div>
+<?php
+	$clearsessionformvalues = true; 
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

@@ -1,0 +1,21 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$controller = $request->getControllerName();
+	
+?>
+<?php if($controller == 'inventory'){ ?>
+	<?php 
+		echo $summary.$land.$commodities.$preseason.$seasons.$calendar.$finance;
+	?>
+<?php } ?>
+<?php if($controller == 'season'){ ?>
+	<?php 
+        echo $summary.$land.$commodities.$preseason;
+    ?>
+<?php } ?>
+<?php if($controller == 'finance'){ ?>
+	<?php 
+		echo $summary.$land.$commodities.$preseason.$seasons.$calendar;
+	?>
+<?php } ?>

@@ -1,0 +1,118 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$refid = '';
+	$refvalue = '';
+	$type = $request->type;
+	switch($type){
+		case 'Inventory':
+			$id = decode($request->refid);
+			$inventory = new Inventory();
+			$inventory->populate($id);
+			$refid = 'inventoryid';
+			$refvalue = $inventory->getID();
+			break;
+		default:
+			break;
+	}
+	// debugMessage($type);
+	
+	$baseurl = $this->baseUrl("inventory/servicecreate");
+	$inventoryservice = new InventoryService();
+	$inventoryservice->setInventoryID($inventory->getID());
+	$inventoryservice->setServiceDate(date('Y-m-d'));
+	if(!isEmptyString($request->id)){
+		$inventoryservice->populate(decode($request->id));
+	}
+
+	#in case of errors in session, populate the fields from session
+	if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
+		$inventoryservice->processPost($session->getVar(FORM_VALUES));	
+	}
+	
+	$title = "New Service"; 
+	$this->headTitle($title);
+	
+?>
+<script>
+	$(document).ready(function() {
+		$("#indexform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				servicedate: "required",
+				type:  "required",
+				description:  "required"
+			}, 
+			// the messages for each of the fields being validated
+			messages: {		
+				servicedate: "Please select a Date<?php //echo $this->translate("inventory_servicedate_error"); ?>",
+				type:  "Please select a Type<?php //echo $this->translate("inventory_servicetype_error"); ?>",
+				description:  "Please enter Description<?php //echo $this->translate("inventory_servicedescription_error"); ?>"
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						error.appendTo("#"+element.attr("name")+"_error")
+						break;
+				}			
+			}
+		});
+		
+		// datepickerOpts = new Date();   
+		$("#servicedate").datepicker(datepickerOpts);
+	}); 
+</script>
+<style>
+
+
+</style>
+<div class="popupdiv">
+<form class="form-horizontal well span6" id="indexform" action="<?php echo $this->baseUrl("inventory/servicecreate"); ?>" method="post">
+    <table class="table">
+		<?php if($sessionhaserror) { ?>
+	        <tr>
+	        	<td colspan="2"><div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div></td>
+	        </tr>
+        <?php } ?>
+        <tr>
+            <td style="width:25%;"><label class="control-label"><?php echo $this->translate("inventory_servicedate_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><input type="text" name="servicedate" id="servicedate" class="datefield width100" value="<?php echo changeMySQLDateToPageFormat($inventoryservice->getServiceDate()); ?>" />
+            <input type="hidden" name="entityname" value="InventoryService" />
+            <input type="hidden" id="id" name="id" value="<?php echo encode($inventoryservice->getID()); ?>" />
+            <input type="hidden" id="inventoryid" name="inventoryid" value="<?php echo $inventoryservice->getInventoryID(); ?>" />
+            <input type="hidden" name="<?php echo URL_FAILURE; ?>" value="<?php echo encode($this->baseUrl('inventory/service')); ?>" />			   				
+            <div id="servicedate_error"></div></td>
+        </tr>
+        <tr>
+            <td><label class="control-label"><?php echo $this->translate("inventory_servicetype_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><?php
+                    $alltypes = getServiceTypes();
+                    $typesdropdown = new Zend_Form_Element_Select('type',
+                                        array(
+                                            'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $alltypes),								
+                                            'view' => new Zend_View(),
+                                            'decorators' => array('ViewHelper'),
+                                            'class' => array('hastooltip', 'span3'),
+                                            'title' => $this->translate("inventory_servicetype_tooltip")
+                                        )
+                                    );
+                    $typesdropdown->setValue($inventoryservice->getType()); 
+                    echo $typesdropdown->render(); 
+               ?><div id="type_error"></div>
+            </td>
+        </tr>
+        <tr>
+            <td><label class="control-label"><?php echo $this->translate("inventory_servicedescription_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></label></td>
+            <td><textarea name="description" id="description" class="span4 hastooltip expanding" style="min-height:60px; width:90%;" title="<?php echo $this->translate("season_description_tooltip"); ?>"><?php echo $inventoryservice->getDescription(); ?></textarea><div id="description_error"></div></td>
+        </tr>
+        <tr>
+            <td><label class="control-label"><?php echo $this->translate("inventory_servicecost_label"); ?>: </label></td>
+            <td><div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="cost" id="cost" class="width100 hastooltip isamount" value="<?php echo $inventoryservice->getCost(); ?>" title="<?php echo $this->translate("inventory_servicecost_tooltip"); ?>" /></div><div id="cost_error"></div></td>
+        </tr>
+  </table>
+</form>
+</div>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

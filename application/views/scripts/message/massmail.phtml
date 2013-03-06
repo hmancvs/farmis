@@ -1,0 +1,150 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$message = new Message(); 
+	
+	// default title is to enable adding any payee
+	$title = $this->translate("message_pagetitle_massmail"); 
+	$posturl = $this->baseUrl("message/processmassmail");
+	
+	#in case of errors in session, populate the fields from session
+	if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
+		
+	}
+	
+	$this->headTitle($title);  
+?>
+<script>
+	$(document).ready(function() {
+		
+		$("#massmailform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				from: "required",
+				sendername: "required",	
+				groupid: "required",
+				subject: "required",
+				contents: "required"			
+			}, 
+			// the messages for each of the fields being validated
+			messages: {				
+				from: "<?php echo $this->translate("message_massmail_from_error"); ?>",
+				sendername: "<?php echo $this->translate("message_massmail_sendername_error"); ?>",
+				groupid: "<?php echo $this->translate("message_massmail_groupid_error"); ?>",	
+				subject: "<?php echo $this->translate("message_subject_error"); ?>",
+				contents: "<?php echo $this->translate("message_contents_error"); ?>"	
+			},
+			// update error location for the terms error
+			errorPlacement: function(error, element) {				
+				switch(element.attr("name")){					
+					case 'field':
+						error.appendTo("#field_error");
+						break;										
+					default:
+						error.insertAfter(element);
+						break;
+				}				
+			}
+		});
+		
+	}); 
+</script>
+<style>
+table.formtable {
+	border:none;
+	margin-bottom:15px;	
+}
+table.formtable td {
+	border:none;	
+	min-height:38px;
+	vertical-align:top;
+}
+table.formtable td.label {
+	width:90px;
+	background:none;
+	text-align:left;			
+}
+.fieldinfo {
+	color:#7F7F7F;
+	text-align:left;
+	font-size:12px;
+	margin-right:5px;
+	font-weight:normal;
+}
+textarea.expanding {
+	width:535px;
+	min-height:250px;
+}
+input[type="text"] {
+	width:410px;
+}
+select.chzn-select {
+	width:260px;	
+}
+#groupid {
+	height:28px;
+}
+#actions {
+	margin-left:10px;
+}
+</style>
+<h1><?php echo $title; ?></h1>
+<?php if ($sessionhaserror) { ?>
+	<label class="error"><?php echo $session->getVar(ERROR_MESSAGE); ?></label></td>
+<?php } ?>
+<?php if(isNotAnEmptyString($session->getVar(SUCCESS_MESSAGE))){ ?>
+	<label class="successmessage"><?php echo $session->getVar(SUCCESS_MESSAGE); ?></label>
+<?php } ?>
+<form id="massmailform" action="<?php echo $posturl; ?>" method="post">
+	<table class="formtable">
+    	<tr>            	
+            <td class="pagedescription" colspan="2"><?php echo $this->translate("required_field_info"); ?></td>
+        </tr>        
+        <tr>
+        	<td class="label"><?php echo $this->translate("message_sender_email_label"); ?>: <?php echo $this->translate("required_field_marker"); ?></td>
+            <td><input type="text" name="from" id="from" value="<?php echo $config->notification->coachadminemail; ?>" /></td>
+        </tr>
+        <tr>
+        	<td class="label"><?php echo $this->translate("message_sender_name_label"); ?>: <?php echo $this->translate("required_field_marker"); ?></td>
+            <td><input type="text" name="sendername" id="sendername" value="<?php echo $config->notification->coachadminname; ?>" /></td>
+        </tr>
+        <tr>
+        	<td class="label"><?php echo $this->translate("message_recipient_label"); ?>: <?php echo $this->translate("required_field_marker"); ?></td>
+            <td>
+				<?php 
+					$lookupaclgroups = new LookupType();
+					$lookupaclgroups->setName("ALL_ACL_GROUPS"); 
+	
+					$cb = new Zend_Form_Element_Select('groupid',
+								array(
+									'multiOptions' => array_merge_maintain_keys(array('' => 'All Types'), $lookupaclgroups->getOptionValuesFromQuery()),								'view' => new Zend_View(), 
+									'view' => new Zend_View(),
+									'decorators' => array('ViewHelper'),
+									'class' => array('filterselect'),
+									'title' => 'Filter Users By Type'
+								)
+							);
+					$cb->setValue(''); 
+					echo $cb->render();	
+				?></td>
+        </tr>       
+        <tr>
+        	<td class="label"><?php echo $this->translate("message_subject_label"); ?>: <?php echo $this->translate("required_field_marker"); ?></td>
+            <td><input type="text" name="subject" id="subject" /></td>
+        </tr>
+        <tr>
+        	<td colspan="2" class="label"><?php echo $this->translate("message_contents_label"); ?>: <?php echo $this->translate("required_field_marker"); ?></td>
+        </tr>
+		<tr>
+        	<td colspan="2"><textarea class="expanding" name="contents" id="contents"></textarea></td>            
+        </tr>
+    </table>
+    <div id="actions">
+    	<a href="<?php echo $this->baseUrl('member/list'); ?>" class="negativeaction" title="<?php echo $this->translate("global_button_cancel"); ?>"><img src="<?php echo $this->baseUrl('images/arrow_undo.png'); ?>" /><?php echo $this->translate("global_button_cancel"); ?></a>
+        <button class="positiveaction" type="submit" title="<?php echo $this->translate('message_button_sendmassmail'); ?>"><img src="<?php echo $this->baseUrl('images/email.png'); ?>" /><?php echo $this->translate('message_button_sendmassmail'); ?></button>
+</div>
+</form>
+<?php
+	$clearsessionformvalues = true; 
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

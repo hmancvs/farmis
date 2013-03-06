@@ -1,0 +1,138 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$controllername = $request->getControllerName();
+	$controlleraction = $request->getActionName();
+	
+	$user = new UserAccount();
+	$user->populate($userid);
+	
+	// query for user's lattest 3 messages
+	$q = new Doctrine_RawSql();
+	$q->select('{m.*}, {mr.*}');
+	$q->from('message m INNER JOIN messagerecipient mr ON (m.id = mr.messageid)');
+	$q->where("(mr.recipientid = '".$userid."') ORDER BY m.datecreated DESC LIMIT 3");
+	$q->addComponent('m', 'Message m');
+	$q->addComponent('mr', 'm.recipients mr');
+	$latestmsg = $q->execute();
+	// debugMessage($latestmsg->toArray());
+	
+	$c = new Doctrine_RawSql();
+	$c->select('{m.*}, {mr.*}');
+	$c->from('message m INNER JOIN messagerecipient mr ON (m.id = mr.messageid)');
+	$c->where("(mr.recipientid = '".$userid."' AND mr.isread = 0) ORDER BY m.datecreated");
+	$c->addComponent('m', 'Message m');
+	$c->addComponent('mr', 'm.recipients mr');
+		
+	$unread_messages = $c->execute()->count();
+	$showforum = false;
+	if($controllername == 'communityforum' || $controllername == 'forum'){
+		$showforum = true;
+		$all_categories = getForumCategoryList();
+	}
+	
+?>
+
+<div class="public_rightcolumn row widget">
+	<?php if($showforum){ ?>
+    <div class="widgetsection height200 ">
+            <h3>Notifications <a href="<?php echo $this->baseUrl('message/list'); ?>" title="View all" style="text-decoration:none;"><span class="pagedescription" style="color:red; font-size:14px;">(<?php echo $unread_messages; ?> Unread)</span></a></h3>
+            <div>
+			<?php if($latestmsg->count() == 0){ ?>
+                <div style="padding:5px 5px; margin:15px 0;" class="alert alert-info centeralign">No notifications available</div>
+            <?php } else { ?>
+                <ul class="datalist nav nav-stacked" style="border-top:1px solid #DDDDDD; margin-top:2px;">
+                    <?php
+                        foreach($latestmsg as $message){ 
+                            switch ($message->getComment()->getType()){		
+                                    case '1':
+                                        // path to communityforum comment thread
+                                        $reply_path = $this->baseUrl("communityforum/view/id/".encode($message->getComment()->getCommunityForumID())."/messageid/".encode($message->getID()));
+                                        break;
+                                    default:
+                                        $reply_path = $this->baseUrl("message/reply/id/".encode($message->getID()));
+                            }
+                            // debugMessage($message->toArray());
+                        
+                    ?>
+                        <li style="position:relative;">
+                            <div class="latest_message"> 
+								<?php if(!isEmptyString($message->getCommentID()) || $message->getSenderID() == 1){ ?>
+                                    <img src="<?php echo $this->baseUrl('images/flag.png'); ?>" />
+                                <?php } else { ?> 
+                                    <img src="<?php echo $message->getSender()->getThumbnailPicturePath(); ?>" alt="<?php echo $message->getSender()->getName(); ?>" /> 
+                                <?php } ?> 
+                                <a href="<?php echo $reply_path; ?>" title="View detail" style="font-size:12px;">
+                                <?php if($message->getSenderID() == 1){ ?>
+                                    <label><?php echo $this->translate("company_signoff"); ?></label> - <?php echo isEmptyString($message->getSubject()) ? snippet($message->getContents(), 45, '...' ) : $message->getSubject(); ?></a> 
+                                <?php } else { ?> 
+                                   <label><?php echo $message->getSender()->getName(); ?></label> - <?php echo snippet($message->getContents(), 45, '...' ); ?>
+                                <?php } ?>
+                                </a> 
+                            </div>
+                            <label class="message_date pagedescription"><?php echo date('M j, Y - g:i A', strtotime($message->getDateCreated())); ?></label>
+                        </li>
+                    <?php } ?>
+                </ul>
+			<?php } ?>  
+            <label class="centeralign blocked"><a class="btn btn-primary btn-mini" href="<?php echo $this->baseUrl('message/list'); ?>" title="View all Notifications">See All Notifications</a></label>
+            </div>
+        </div>
+    <?php } ?>
+    <?php if($showforum){ ?>
+    	<div class="widgetsection height300 ">
+            <h3>Forum Categories</h3>
+            <div style="margin-top:5px;">
+            	<?php if(count($all_categories) == 0){ ?>
+                	<div style="padding:5px 5px; margin:15px 0;" class="alert alert-info centeralign">No categories available</div>
+                <?php } else { ?>
+                <ul class="nav nav-tabs nav-stacked">
+					<?php 
+                        foreach($all_categories as $line){
+                    ?>
+                        <li><a id="<?php echo $line['Category ID']; ?>" href="<?php echo $this->baseUrl('communityforum/list/d'.HTML_TABLE_COLUMN_SEPARATOR.'category/'.$line['Category ID']); ?>" title="<?php echo $line['Category']; ?>"><?php echo $line['Category']; ?> <span class="pagedescription">(<?php echo $line['No of Posts']; ?>)</span></a></li>		
+                    <?php } ?>
+                </ul>
+                <?php } ?>
+            </div>
+        </div>
+    <?php } ?>
+    <?php if(isEmptyString($session->getVar('userid'))){ ?>
+        <div class="widgetsection height300 ">
+            <h3>Join FARMIS Today</h3>
+            <div>
+               <label class="padding5 bolded centeralign">Register your Farm Today and the join the thousands of beneficiary Farmers. You are most welcome!</label>
+               <div class="join_bg"></div>
+               <label class="blocked centeralign" style="margin-top:-15px;"><a href="<?php echo $this->baseUrl('signup'); ?>" title="Register" class="btn btn-primary btn-large">Start your 30 Day Trial Today</a></label>
+            </div>
+        </div>
+        <div class="widgetsection height300 ">
+            <h3>8555 SMS Market Info</h3>
+            <div>
+                <label class="padding5 bolded centeralign">For only Ugx 2,000, receive weekly market information on your mobile phone for a period of 6 months.</label>
+                <div class="sms_bg"></div>
+                <label class="padding5 bolded centeralign">To subscribe, send Join[space] Commodity[Space] Location and send to 8555</label>
+            </div>
+        </div>
+    <?php } ?>
+    <div class="widgetsection height200" style="min-height:0; height:135px;">
+        <h3>Feedback</h3>
+        <div>
+            <table style="margin:0; padding:0; width:100%;">
+                <tr>
+                    <td>
+                        <span class="calfont" style="padding:10px; padding-bottom:0; font-size:14px; display:block; line-height:20px;">
+                            If You have any queries, questions or feedback please contact us.</p>
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="text-align:center; padding-bottom:5px;"><a href="<?php echo $this->baseUrl('contactus'); ?>" class="btn btn-primary">Contact Us Today</a></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

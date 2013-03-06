@@ -1,0 +1,303 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$sale = new Sales();
+	$season = new Season(); 
+	$scounter = "";
+	if(!isEmptyString($request->sid)){
+		$season->populate(decode($request->sid));
+		$sale->setSeasonID($season->getID());
+		$sale->setFarmID($season->getFarmID());
+		$sale->setFarmerID($season->getFarmerID());
+		$sale->setType(1);
+		$sale->setStartDate(date('Y-m-d'));
+		$sale->setStatus(3);
+		$scounter = $sale->getNextReferencePointer();
+		$sale->setQuantityUnit('1');
+		$successurl = encode($this->baseUrl("season/sale/sid/".$request->sid));
+	}
+	
+	// default title is to enable adding any payee
+	$title = $this->translate("season_sale_pagetitle_new"); 
+	$posturl = $this->baseUrl("season/salecreate");
+	$button_title = $this->translate("global_button_save"); 
+	
+	// set the payee if provided in the url 
+	if (!isEmptyString($request->id)) {
+		$sale->populate(decode($request->id));
+		$title = $this->translate("season_sale_pagetitle_edit"); 
+		$button_title = $this->translate("global_button_save_changes");
+		$scounter = substr($sale->getRef(), -3);
+		$successurl = encode($this->baseUrl("season/sale/id/".$request->id));
+	}
+	$thefarmid = $sale->getSeason()->getFarmID();
+	
+	#in case of errors in session, populate the fields from session
+	if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
+		$sale->processPost($session->getVar(FORM_VALUES));	
+	}
+	
+	// $saletypes = getAllTillageTypes();
+	$this->headTitle($title);  
+	
+?>
+<script>
+	$(document).ready(function() {
+		$("#indexform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				startdate: "required",
+				status: "required",
+				quantity: {
+					required: true
+				},
+				totalamount: {
+					required: true
+				},
+				cropid: "required"
+			}, 
+			// the messages for each of the fields being validated
+			messages: {		
+				startdate: "<?php echo $this->translate("season_startdate_error"); ?>",
+				status: "<?php echo $this->translate("season_status_error"); ?>",
+				quantity:  {
+					required: "<?php echo $this->translate("season_quantity_error"); ?>"
+				},
+				totalamount: {
+					required: "<?php echo $this->translate("season_totalamount_error"); ?>"
+				},
+				cropid: "<?php echo $this->translate("season_cropid_error"); ?>"
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						if(element.hasClass("useid_error")){
+							error.appendTo("#"+element.attr("id")+"_error");
+						} else {
+							error.appendTo("#"+element.attr("name")+"_error");
+						}
+						break;
+				}			
+			}
+		});
+		
+		// datepickerOpts = new Date();   
+		$("#startdate, #enddate").datepicker(datepickerOpts);
+		
+		// compute activity reference
+		$("#startdate").change(function(){
+			var label = '';
+			var counter = '<?php echo $scounter; ?>';
+			var date = new Date($(this).val());
+			var year = date.getFullYear();
+			var month = date.getShortMonthName();
+			var label = "<?php echo ACTIVITY_SALES_PREFIX; ?>"+month+"/"+year+"/"+counter;
+			$("#reflabel").html(label);
+			$("#ref").val(label);
+		});
+		$("#startdate").change();
+		
+		$("#unitprice, #quantity").keyup(function(){
+			var price = $("#unitprice").val();
+			var qty = $("#quantity").val();
+			linetotal = 0;
+			if(!isEmptyString(price) && !isEmptyString(qty) && parseInt(price)>0 && parseInt(qty)>0){
+				var linetotal = qty * price;
+			}
+			$("#totalamount").val(linetotal);
+		});
+		$("#unitprice, #quantity").trigger('keyup');
+	}); 
+</script>
+<h1><?php echo $this->translate('farm_title'); ?></h1>
+<div id="tabs">
+    <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
+    <div class="span9 tab-content" id="center">
+    	<?php require APPLICATION_PATH."/views/scripts/farm/tabstop.phtml"; ?>
+		<div id="seasons">
+            <form id="indexform" class="form-horizontal seasons" action="<?php echo $posturl; ?>" method="post">
+            <?php if($request->tab == 'seasons'){ ?>
+                <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+                    <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+                <?php } ?>
+                <?php if($sessionhaserror) { ?>
+                    <div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+                <?php } ?>
+                <div class="row margin0" style="padding:2px; margin-bottom:10px;">
+                    <span class="pull-left well lighter margin0" style="width:72%; min-height:160px;">
+                        <h3 class="well-legend"><?php echo $title; ?></h3>
+                        <table class="table margin0" style="margin-top:15px;">
+                            <tr>
+                                <td style="width:25%;"><label class="control-label"><?php echo $this->translate("season_activityref_label"); ?>: </label></td>
+                                <td style="width:30%;"><span id="reflabel"></span><input type="hidden" id="ref" name="ref" value="<?php echo $sale->getRef(); ?>" /></td>
+                                <td style="width:20%;"><label class="control-label"><?php echo $this->translate("season_ref_label"); ?>: </label></td>
+                                <td><a href="<?php $this->baseUrl('season/view/id/'.encode($sale->getSeasonID())); ?>" title="Season details"><?php echo $sale->getSeason()->getRef(); ?></a></td>
+                            </tr>
+                            <tr>
+                                <td><label class="control-label"><?php echo $this->translate("season_sale_startdate_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                                <td><input type="text" name="startdate" id="startdate" class="datefield width100" value="<?php echo changeMySQLDateToPageFormat($sale->getStartDate()); ?>" /><div id="startdate_error"></div></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td><label class="control-label"><?php echo $this->translate("season_status_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                                <td colspan="3">
+                                    <?php
+                                        $allstatuses = getStatusValues();
+                                        $statusesdropdown = new Zend_Form_Element_Select('status',
+                                                            array(
+                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $allstatuses),								
+                                                                'view' => new Zend_View(),
+                                                                'decorators' => array('ViewHelper'),
+                                                                'class' => array('hastooltip', 'span2'),
+                                                                'title' => $this->translate("season_status_tooltip")
+                                                            )
+                                                        );
+                                        $statusesdropdown->setValue($sale->getStatus()); 
+                                        echo $statusesdropdown->render(); 
+                                   ?><div id="status_error"></div>
+                                </td>
+                            </tr>
+                            
+                        </table>
+                    </span>
+                    <span class="pull-right padding0" style="width:24%; margin-left:5px;">
+                        <div class="well margin0" style="height:160px;">
+                                <h3 class="well-legend">Quick Links</h3>
+                                <table class="table noborder" >                       
+                                   <tr>		                    
+                                        <td class="formactions">
+                                            <button type="submit" class="btn btn-primary savethenview"><i class="icon-ok icon-white"></i> <?php echo $button_title; ?></button>
+                                            <a href="<?php echo $this->baseUrl('season/view/id/'.encode($season->getID())); ?>" class="btn"><i class="icon-remove"></i> <?php echo $this->translate('global_button_cancel'); ?></a>
+                                            <input type="hidden" name="entityname" value="Sales" />
+                                            <input type="hidden" id="id" name="id" value="<?php echo encode($sale->getID()); ?>" />
+                                            <input type="hidden" id="seasonid" name="seasonid" value="<?php echo $sale->getSeasonID(); ?>" />
+                                            <input type="hidden" id="farmerid" name="farmerid" value="<?php echo $sale->getFarmerID(); ?>" />
+                                            <input type="hidden" id="farmid" name="farmid" value="<?php echo $sale->getFarmID(); ?>" />
+                                            <input type="hidden" id="type" name="type" value="<?php echo $sale->getType(); ?>" />
+                                            <input type="hidden" id="<?php echo SUCCESS_MESSAGE; ?>" name="<?php echo SUCCESS_MESSAGE; ?>" value="<?php echo $this->translate("global_save_success"); ?>" /> 
+                                            <input type="hidden" id="<?php echo URL_SUCCESS; ?>" name="<?php echo URL_SUCCESS; ?>" value="<?php echo encode($this->baseUrl("season/saleview")); ?>" /> 
+                                            <input type="hidden" id="<?php echo URL_FAILURE; ?>" name="<?php echo URL_FAILURE; ?>" value="<?php echo $successurl; ?>" /> 
+                                        </td>
+                                   </tr>
+                                </table>                           
+                            </div>
+                    </span>
+            	</div>
+                <div class="row margin0" style="padding:2px; margin-bottom:10px;">
+                    <span class="pull-left" style="width:100%; margin-right:5px;">
+                        <div id="location_left" class="well lighter margin0" style="min-height:150px;"> 
+                            <h3 class="well-legend">Harvest Details</h3>
+                            <table class="maxwidth">
+                                <tr>
+                                    <td style="width:40%; padding-left:0;">
+                                        <table class="table">
+                                            <tr>
+                                                <td style="width:30%;"><label class="control-label"><?php echo $this->translate("season_commodity_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                                                <td><?php
+														$availablecrops = getSeasonCommodities($sale->getSeasonID());
+														if(isEmptyString($sale->getID())){
+															$key1 = array_shift(array_keys($availablecrops));
+															$sale->setCropID($key1);
+														}
+														$cropdropdown = new Zend_Form_Element_Select('cropid',
+																			array(
+																				'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $availablecrops),								
+																				'view' => new Zend_View(),
+																				'decorators' => array('ViewHelper'),
+																				'class' => array('hastooltip', 'width150'),
+																				'title' => $this->translate("season_commodity_tooltip")
+																			)
+																		);
+														$cropdropdown->setValue($sale->getCropID()); 
+														echo $cropdropdown->render();
+												   ?><div id="cropid_error"></div></td>
+                                            </tr>
+                                            <tr>
+                                                <td><label class="control-label"><?php echo $this->translate("season_sale_quantity_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                                                <td><input style="width:50px;" type="text" name="quantity" id="quantity" class="centeralign isnumber" value="<?php echo $sale->getQuantity(); ?>" />&nbsp;
+                                                    <?php
+                                                        $univalues = getHarvestQuantityUnits();
+                                                        $unitdropdown = new Zend_Form_Element_Select('quantityunit',
+                                                                            array(
+                                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
+                                                                                'view' => new Zend_View(),
+                                                                                'decorators' => array('ViewHelper'),
+                                                                                'class' => array('hastooltip', 'span2'),
+                                                                                'title' => $this->translate("season_sale_quantity_tooltip"),
+                                                                                'style' => 'width: 80px;'
+                                                                            )
+                                                                        );
+                                                        $unitdropdown->setValue($sale->getQuantityUnit()); 
+                                                        echo $unitdropdown->render(); 
+                                                    ?>
+                                                    <div id="quantity_error"></div>
+                                                </td>
+                                            </tr>
+                                            <td><label class="control-label"><?php echo $this->translate("season_sale_unitprice_label"); ?>:</label></td>
+                                            <td>
+                                            	<div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="unitprice" id="unitprice" class="width100 hastooltip isamount rightalign" value="<?php echo $sale->getUnitPrice(); ?>" title="<?php echo $this->translate("season_sale_unitprice_tooltip"); ?>" /></div><div id="unitprice_error"></div>
+                                            </td>
+                                            <tr>
+                                                <td><label class="control-label"><?php echo $this->translate("season_sale_amount_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                                                <td><div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="totalamount" id="totalamount" class="width100 hastooltip isamount rightalign" value="<?php echo $sale->getTotalAmount(); ?>" title="<?php echo $this->translate("season_sale_totalamount_tooltip"); ?>" /></div><div id="totalamount_error"></div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                    <td style="padding-top:12px; padding-left:10px;">
+                                        <table class="table">
+                                            <tr>
+                                                <td style="width:30%;"><label class="control-label"><?php echo $this->translate("season_sale_clientname_label"); ?>:</label></td>
+                                                <td><input type="text" name="clientname" id="clientname" class="span2 width150 hastooltip" value="<?php echo $sale->getClientName(); ?>" title="<?php echo $this->translate("season_sale_clientname_tooltip"); ?>" /></td>
+                                            </tr>
+                                            <tr>
+                                                <td><label class="control-label"><?php echo $this->translate("season_sale_clienttype_label"); ?>:</label></td>
+                                                <td>
+                                                    <?php
+                                                        $alltypes = getSaleToTypes();
+                                                        $saletodropdown = new Zend_Form_Element_Select('clienttype',
+                                                                            array(
+                                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $alltypes),								
+                                                                                'view' => new Zend_View(),
+                                                                                'decorators' => array('ViewHelper'),
+                                                                                'class' => array('hastooltip','width150'),
+                                                                                'title' => $this->translate("season_sale_clienttype_tooltip")
+                                                                            )
+                                                                        );
+                                                        
+                                                        $saletodropdown->setValue($sale->getClientType());
+                                                        echo $saletodropdown->render();
+                                                   ?>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td><label class="control-label"><?php echo $this->translate("season_sale_clientphone_label"); ?>:</label></td>
+                                                <td>
+                                                <div class="input-prepend">
+                                                    <span class="add-on"><?php echo '+'.COUNTRY_CODE_UG; ?></span><input name="clientphone" id="clientphone" type="text" maxlength="10" class="span2 hastooltip isnumber" style="width:110px;" value="<?php echo $sale->getClientPhone(); ?>" title="<?php echo $this->translate("season_sale_clientphone_tooltip"); ?>" placeholder="e.g 0772123456" />
+                                                </div>
+                                                <div id="phone_error"></div></td>
+                                            </tr>
+                                            <tr>
+                                                <td><label class="control-label"><?php echo $this->translate("season_sale_contract_label"); ?>: </label>
+                                                <span class='pagedescription'>(if any)</span></td>
+                                                <td><textarea name="contract" id="contract" class="span4 hastooltip expanding" style="min-height:60px; width:85%;" title="<?php echo $this->translate("season_contract_tooltip"); ?>"><?php echo $sale->getContract(); ?></textarea></td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </span>
+                </div>
+            <?php } ?>    
+            </form>
+		</div>
+		<?php require APPLICATION_PATH."/views/scripts/farm/tabsbottom.phtml"; ?> 
+    </div>
+</div>    
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

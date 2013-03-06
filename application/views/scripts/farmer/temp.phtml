@@ -1,0 +1,30 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	
+					
+	//$farmer->sendInviteNotification();
+	$title = "Map Demo"; 
+	
+	$this->headTitle($title);
+	
+?>
+<script>
+$(document).ready(function() {
+	
+	
+}); 
+</script>
+<style>
+
+</style>
+<h1><?php echo $title; ?></h1>
+<?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+<?php } ?>
+
+
+<?php
+	$session->setVar(SUCCESS_MESSAGE, '');
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

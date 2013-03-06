@@ -1,0 +1,59 @@
+
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+		
+	$title = "Resources";
+	// meta data
+	$this->headTitle($title); 
+	
+	$user = new UserAccount();
+	$user->populate($userid);
+		
+	if(isFarmer()){
+		$farmer = new Farmer();
+		$farmer->populate($farmerid);
+		
+		$farmid = $farmer->getFarms()->get(0)->getID();
+		$showlink = false;
+		$inventoryurl = 'javascript: void(0)';
+		if(!isEmptyString($farmid)){
+			$inventoryurl = $this->baseUrl("farm/view/id/".encode($farmid)."/tab/inventory");
+		}
+	}
+	
+?>
+<style>
+
+</style>
+<?php require APPLICATION_PATH."/views/scripts/index/leftcolumn.phtml"; ?>
+    <div id="centercolumn">
+        <div class="widgetsection" style="min-height:460px; height:auto;">
+            <h3 style="color:#282727;"><?php echo $title; ?></h3>
+            <div>
+                <span class="marginleft0">
+                    <ul class="sectionitems">
+                        <li>
+                            <a class="list" href="<?php echo $this->baseUrl('contact/list'); ?>" title="Business Directory"><img src="<?php echo $this->baseUrl('images/topmenu_market.png'); ?>" /><br /><h2>Business Directory</h2></a>
+                        </li>
+                        <?php if(isFarmer()){ ?>
+                        <li>
+                            <a class="list" href="<?php echo $inventoryurl; ?>" title="Inventory"><img src="<?php echo $this->baseUrl('images/topmenu_market.png'); ?>" /><br /><h2>Inventory</h2></a>
+                        </li>
+                        <?php } ?>
+                        <?php if(isAdmin()){ ?>
+                        <li>
+                            <a class="list" href="<?php echo $this->baseUrl('commodity/list'); ?>" title="Manage Commodities"><img src="<?php echo $this->baseUrl('images/topmenu_market.png'); ?>" /><br /><h2>Manage Commodities</h2></a>
+                        </li>
+                        <?php } ?>
+                        <li>
+                            <a class="list" href="<?php echo $this->baseUrl("resource/allprices"); ?>" title="Market Prices"><img src="<?php echo $this->baseUrl('images/topmenu_market.png'); ?>" /><br /><h2>Current Market Prices</h2></a>
+                        </li>
+                    </ul>
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

@@ -1,0 +1,65 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$title = $this->translate("useraccount_pagetitle_resetpassword_invalid_activationkey");	
+	$this->headTitle($title);
+
+?>
+<style>
+/*#mainmenu, .submenu, #header #toplinks, #rightcolumn {
+	display:none;
+}*/
+#contentcolumn {
+	background-color: transparent;
+	border:none;
+	height:250px;
+	width:100%;
+	margin:40px 0 20px 0;
+ *margin-top:82px;
+	padding-top:5px;
+	padding-bottom:40px;
+}
+h2 {
+	border-bottom: 1px solid #DDDDDD;
+	margin-bottom:15px;
+	font-size:14px;
+}
+table.formtable, table.formtable td {
+	border:none;
+}
+table.formtable td.loginlabel {
+	margin-top: 10px;
+}
+table.formtable {
+	border:1px solid #DBD9E4;
+	margin-left: 246px;
+	margin-top:0;
+	width:450px;
+ *width:450px;
+	background-color: #FFF;
+}
+td.loginlabel {
+	vertical-align:middle;
+	text-align: right;
+	white-space: nowrap;
+	font-weight:bold;
+	color:#777777;
+}
+</style><br />
+<table class="formtable">
+    <thead>
+        <tr>
+            <td>&nbsp;</td>
+            <td><?php echo $title; ?></td>
+        </tr>
+    </thead>
+   	<tr>
+    	<td colspan="2"><br />
+    		<label class="error"><?php echo $this->translate("useraccount_recoverpassword_invalid_actkey_error"); ?></label><br /><br />		
+			<a href="<?php echo $this->baseUrl("user/recoverpassword"); ?>">Click here</a> to request for a new password reset code<br /><br />
+        </td>
+    </tr>    
+</table>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

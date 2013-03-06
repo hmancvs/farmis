@@ -1,0 +1,80 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$title = "Farmis News";
+	$this->headTitle($this->translate("appname")." | ".$title);
+	
+	$id = decode($request->id);
+	$news = new News();
+	$news->populate($id);
+	
+?>
+<style>
+#latestdiv {
+	width:103%; 
+	padding-bottom:25px; 
+	border-bottom:1px solid #D3D3D3;
+}
+#newsdetails {
+	width:103%; 
+	padding-bottom:10px; 
+	margin-top:25px
+}
+#summaryinfo, .summaryinfo {
+	display:block; 
+	width:100%; 
+	margin-top:5px; 
+	color:#666666;
+}
+#thedate, .thedate {
+	color:#8C8C8C; 
+	font-size:14px; 
+	margin-bottom:10px;
+}
+#latestttle, .latestttle {
+	font-size:15px; 
+	color:#000000; 
+	margin-bottom:0;
+}
+.latestttle a {
+	color:#000000; 
+}
+#latestband {
+	height:30px; 
+	margin-bottom:5px; 
+	width:100%; 
+	padding-top:6px; 
+	padding-bottom:6px; 
+	font-weight:bold;
+}
+</style>
+<div class="row marginleft0">
+    <div class="span8 pull-left marginleft0 public_leftcolumn">
+        <div class="content">
+            <div class="well lighter" id="latestband">
+                <h1 style="float:left; display:inline-block;"><a href="<?php echo $this->baseUrl('news/item/id/'.encode($news->getID())); ?>" title="<?php echo $news->getHeadline(); ?>"><?php echo $news->getHeadline(); ?></a></h1>
+                <a style="float:right; display:inline-block; margin-top:5px; font-size:14px;" href="<?php echo $this->baseUrl('news'); ?>" title="Back to News Summary">Back to News Summary</a>
+              </div>
+              <h2 class="latestttle" style="margin-left:12px;"></h2>
+              <label class="thedate" style="margin-left:12px;"><?php echo date('M d, Y', strtotime($news->getDatePublished())); ?></label>
+              <div id="latestdiv" style="width:103%; padding-bottom:25px; border-bottom:1px solid #D3D3D3;">
+                <table class="table noborder margin0" style="">
+                    <?php if(!isEmptyString($news->getNewsImage())){ ?>
+                    <tr>
+                        <td class="centeralign"><img src="<?php echo $this->baseUrl($news->getNewsImage()); ?>" style="width:400px;" /></td>
+                    </tr>
+                    <?php } ?>
+                    <tr>
+                        <td style="">
+                            <span style="display:block; width:100%; margin-top:5px; color:#666666;"><?php echo $news->getNewsDetail(); ?></span>
+                        </td>
+                    </tr>
+                </table>
+              </div>
+        </div>
+    </div>
+    <?php require APPLICATION_PATH."/views/scripts/index/righthandband.phtml"; ?>
+</div>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

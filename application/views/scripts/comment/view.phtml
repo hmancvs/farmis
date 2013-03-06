@@ -1,0 +1,9 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$visionstatementcomment = new VisionStatementComment();
+	$visionstatementcomment->populate(decode($request->id)); 
+?>
+<label class="successmessage">The comment has been saved successfully.</label><br /><br />
+<?php echo str_replace("\n", "<br>", $visionstatementcomment->getComment()); ?>
+

@@ -1,0 +1,113 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$title = $this->translate("useraccount_pagetitle_signup_confirm"); 
+	$this->headTitle($title); 
+	
+	// the usermaking the payment
+	$useraccount = new UserAccount();
+	$useraccount->populate(decode($request->id));
+	
+	$resending = false;
+	if($request->resend == '1'){
+		$sendresult = $useraccount->sendActivationCodeToMobile();
+		$resending = true;
+	}
+	
+	$posturl = $this->baseUrl("signup/activate/id/".encode($useraccount->getID())); 
+	if ($sessionhaserror) {
+		$useraccount->processPost($session->getVar(FORM_VALUES)); 
+	} 
+	
+?>
+<script>
+	$(document).ready(function() {
+		$("#activateform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				actkey: {
+					required: true,
+					maxlength: 10,
+					minlength: 10					
+				}
+			}, 
+			// the messages for each of the fields being validated
+			messages: {				
+				actkey: {
+					required: "<?php echo $this->translate("useraccount_activationkey_error"); ?>",
+					maxlength: "Code should have 10 Characters",
+					minlength: "Code should have 10 Characters"
+				}
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						error.appendTo("#"+element.attr("name")+"_error")
+						break;
+				}			
+			}
+		});
+	}); 
+</script>
+<style>
+.centerblock {
+	display:block;
+	text-align:center;
+	width:100%;
+	margin-top:2px;
+	font-size:14px;
+}
+.normalblock {
+	display:block;
+	text-align:left;	
+	/*margin:0 auto;*/
+	margin-top:2px;
+	font-weight:bold;
+}
+</style>
+<span class="span7 well" style="margin-left:200px;">
+    <h1><?php echo $title; ?></h1>
+    <span class="span7 marginleft0">
+    <form id="activateform" action="<?php echo $posturl; ?>" method="post">
+        <table class="table">
+            <thead>
+                <tr>			
+                    <td>
+					<?php if(!$sessionhaserror) { ?>
+                    	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a>Registration completed successfully</div>
+                    <?php } ?>    
+                    </td>
+                </tr>
+            </thead>
+            <tr>
+                <td>
+                	<label class="centerblock">Thank you for registering with <b><?php echo $this->translate("appname"); ?></b></label>
+                    <label class="centerblock">However, before you can get started, you have got to activate your account <br />using one of the methods below;</label><br /> 
+                    <?php if($sessionhaserror) { ?>
+                        <label class="error"><?php echo $session->getVar(ERROR_MESSAGE); ?></label><br />
+                        <a id="reset" title="Request new Code" class="btn btn-primary" href="<?php echo $this->baseUrl('signup/confirm/id/'.$request->id.'/resend/1'); ?>">Request New</a><br /><br />
+                    <?php } ?>
+                    <?php if($resending) { ?>
+                        <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a>Activation code has been resent to your phone</div>
+                    <?php } ?>
+                    <label class="normalblock">1. Click on the activation link sent to the email address you provided during registration.</label><br />
+                    <label class="normalblock">2. Enter 10 Digit Activation Code sent to your mobile phone <br />in box below and click activate:<br /></label>
+                   	
+                    <div class="input-append">
+                      <input type="text" name="actkey" maxlength="10" id="actkey" style="width:100px;" class="" value="<?php // echo $useraccount->getActivationKey(); ?>" />
+                      <input type="hidden" name="act_byphone" id="act_byphone" value="1" />
+                      <button id="activate" class="btn btn-primary" type="submit" style="margin-top:-10px; margin-left:-5px;">Activate</button>
+                   </div>
+                    <div id="actkey_error"></div>    
+                    
+                    <label class="centerblock"><br /><br />For any assistance please feel free to <a href="<?php echo $this->serverUrl($this->baseUrl('contactus')); ?>" title="Contact us">Contact us</a></label>
+                </td>
+            </tr>
+        </table>       
+	</form>
+    </span>	
+</span>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

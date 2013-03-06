@@ -1,0 +1,243 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$sale = new Sales();
+	$sale->populate(decode($request->id));	
+	$thefarmid = $sale->getSeason()->getFarmID();
+	
+	$title = $this->translate("season_sale_pagetitle_view"); 
+		
+	$this->headTitle($title);  
+	
+?>
+<script>
+	$(document).ready(function() {
+		
+	}); 
+</script>
+<h1><?php echo $this->translate('farm_title'); ?></h1>
+<div id="tabs">
+    <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
+    <div class="span9 tab-content" id="center">
+    	<?php require APPLICATION_PATH."/views/scripts/farm/tabstop.phtml"; ?>
+		<div id="seasons">
+            <form id="viewform" class="form-horizontal seasons">
+            <?php if($request->tab == 'seasons'){ ?>
+                <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+                    <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+                <?php } ?>
+                <div class="row margin0" style="padding:2px; margin-bottom:10px;">
+                    <span class="pull-left well lighter margin0" style="width:72%; min-height:160px;">
+                        <h3 class="well-legend"><?php echo $title; ?></h3>
+                        <table class="table noborder margin0" style="margin-top:15px;">
+                            <tr>
+                                <td style="width:20%;"><label class="control-label"><?php echo $this->translate("season_activityref_label"); ?>: </label></td>
+                                <td style="width:30%;"><?php echo $sale->getRef(); ?></td>
+                                <td style="width:20%;"><label class="control-label"><?php echo $this->translate("season_ref_label"); ?>: </label></td>
+                                <td><a href="<?php $this->baseUrl('season/view/id/'.encode($sale->getSeasonID())); ?>" title="Season details"><?php echo $sale->getSeason()->getRef(); ?></a></td>
+                            </tr>
+                            <tr>
+                                <td><label class="control-label"><?php echo $this->translate("season_sale_startdate_label"); ?>:</label></td>
+                                <td colspan="3"><?php echo changeMySQLDateToPageFormat($sale->getStartDate()); ?></td>
+                            </tr>
+                            <tr>
+                                <td><label class="control-label"><?php echo $this->translate("season_status_label"); ?>:</label></td>
+                                <td colspan="3"><?php echo getStatusText($sale->getStatus()); ?></td>
+                            </tr>
+                        </table>
+                    </span>
+                    <span class="pull-right padding0" style="width:24%; margin-left:5px;">
+                        <div class="well margin0" style="height:160px;">
+                            <h3 class="well-legend">Quick Links</h3>
+                            <table class="table noborder" >                       
+                               <tr>		                    
+                                    <td class="formactions">
+                                        <a class="btn btn-primary" href="<?php echo $this->baseUrl('season/sale/id/'.encode($sale->getID())); ?>" id="update"><i class="icon-pencil icon-white"></i> Update</a>  
+                                        <a href="javascript: void(0)" id="deleteline" title="Delete Entry" class="btn deleteline noimgbutton" action="<?php echo $this->baseUrl('season/delete/id/'.$sale->getID()."/entityname/Sales/successurl/".encode($this->baseUrl('season/view/id/'.encode($sale->getSeasonID())))); ?>"><i class="icon-trash"></i></a>    
+                                        <a class="btn" href="<?php echo $this->baseUrl('season/view/id/'.encode($sale->getSeasonID())); ?>" title="Return to Timeline"><i class="icon-list"></i> View Timeline</a>           
+                                    </td>
+                               </tr>
+                            </table>                           
+                        </div>
+                    </span>
+            </div>
+            <div class="row margin0" style="padding:2px; margin-bottom:10px;">
+                    <span class="pull-left" style="width:100%; margin-right:5px;">
+                        <div id="location_left" class="well lighter margin0" style="min-height:150px;"> 
+                            <h3 class="well-legend">Details</h3>
+                            <table class="table noborder">
+                                <tr>
+                                    <td style="width:45%; padding-left:0;">
+                                        <table class="table">
+                                            <tr>
+                                                <td style="width:30%;"><label class="control-label"><?php echo $this->translate("season_commodity_label"); ?>:</label></td>
+                                                <td><?php echo $sale->getCrop()->getName(); ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td><label class="control-label"><?php echo $this->translate("season_sale_quantity_label"); ?>:</label></td>
+                                                <td><?php echo formatNumber($sale->getQuantity())."&nbsp;<span class='pagedescription'>(".$sale->getQuantityUnitText().")</span>"; ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td><label class="control-label"><?php echo $this->translate("season_sale_unitprice_label"); ?>:</label></td>
+                                                <td><?php echo formatNumber($sale->getUnitPrice())."&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>"; ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td><label class="control-label"><?php echo $this->translate("season_sale_amount_label"); ?>: </label></td>
+                                                <td><?php echo formatNumber($sale->getTotalAmount())."&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>"; ?></td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                    <td>
+                                        <table class="table">
+                                            <tr>
+                                                <td style="width:30%;"><label class="control-label"><?php echo $this->translate("season_sale_clientname_label"); ?>:</label></td>
+                                                <td><?php echo $sale->getClientName(); ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td><label class="control-label"><?php echo $this->translate("season_sale_clienttype_label"); ?>:</label></td>
+                                                <td><?php echo $sale->getClientTypeText(); ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td><label class="control-label"><?php echo $this->translate("season_sale_clientphone_label"); ?>:</label></td>
+                                                <td><?php echo $sale->getClientPhone(); ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td><label class="control-label"><?php echo $this->translate("season_sale_contract_label"); ?>:</label></td>
+                                                <td><?php echo $sale->getContract(); ?></td>
+                                            </tr>
+                                            
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </span>
+                </div>
+                <div class="row margin0" style="padding:2px; margin-bottom:10px;">
+                    <span class="pull-left" style="width:100%; margin-right:5px;">
+                        <div id="location_left" class="well lighter margin0" style="min-height:100px; position:relative;"> 
+                            <?php
+								$expenselines = $sale->getExpensesDetails();
+								// debugMessage($expenselines->toArray());
+								$count = $expenselines->count();
+								$exp_label = '';
+								if($count > 0){
+									$exp_label = '<span class="pagedescription">('.$count.')</span>';
+								}
+							?>
+                            <h3 class="well-legend">Expenses <?php echo $exp_label; ?></h3>
+                            <div class="margin0" style="position:absolute; right:10px; top:5px;">
+                                <a href="<?php echo $this->baseUrl('season/expense/type/Sales/pgc/true/refid/'.encode($sale->getID())); ?>" class="btn btn-mini addpopup" title="Add Expense" rel="Add Expense" id="newexpense" formtitle="indexform" successurl="<?php echo $this->baseUrl('season/saleview/id/'.encode($sale->getID())); ?>" action="<?php echo $this->baseUrl('season/expensecreate/successurl/'.encode($this->baseUrl('season/addexpsuccess/successmessage/global_save_success/'))); ?>"><i class="icon-plus"></i> Add </a>                                       
+                            </div>
+							<?php if($count == 0){ ?>
+                                <br /><span class="pagedescription">None currently available.</span>
+                            <?php } else { ?>
+                                <ul id="datalist" class="nav nav-stacked">
+                                <?php 
+                                    $x = 1;
+                                    foreach($expenselines as $expense){
+                                ?>
+                                    <li>
+                                        <table class="table noborder margin0">
+                                            <tr>                                
+                                                <td width="15%"><?php echo changeMySQLDateToPageFormat($expense->getInputDate()); ?></a></td>
+                                                <td class="padding0">
+                                                    <div style="position:relative;">
+                                                        <div class="threadicons" style="position:absolute; right:5px; top:5px;">
+                                                            <a href="<?php echo $this->baseUrl('season/expense/pgc/true/type/Sales/refid/'.encode($sale->getID()).'/id/'.encode($expense->getID())); ?>" class="addpopup btn btn-mini" title="Edit Expense" rel="Edit Expense" id="editexpense_<?php echo $expense->getID(); ?>" formtitle="indexform" successurl="<?php echo $this->baseUrl('season/saleview/id/'.encode($sale->getID())); ?>" action="<?php echo $this->baseUrl('season/expensecreate/successurl/'.encode($this->baseUrl('season/addexpsuccess/successmessage/global_save_success/'))); ?>"><i class="icon-pencil"></i></a></a>
+                                                            <a href="javascript: void(0)" id="deleteline_multiple" title="Delete Entry" class="btn btn-mini deleteline noimgbutton" action="<?php echo $this->baseUrl('season/delete/id/'.$expense->getID()."/entityname/SeasonInputDetail/successurl/".encode($this->baseUrl('season/saleview/id/'.encode($sale->getID())))); ?>"><i class="icon-trash"></i></a>
+                                                        </div>
+                                                        <table class="itemlist table noborder margin0">
+                                                            <tr>
+                                                                <td style="width:150px;"><label class="control-label">Type:</label>
+                                                                    <span><?php echo $expense->getTypeText(); ?></span></td>
+                                                                <td style="width:180px;"><label class="control-label">Description </label>
+                                                                    <span><?php echo snippet($expense->getName(), 100, '...'); ?></span></td>
+                                                                <td style="width:100px;"><label class="control-label">Quantity</label>
+                                                                    <span><?php echo $expense->getQuantity(); ?></span></td>
+                                                                <td><label class="control-label">Amount</label>
+                                                                    <span><?php echo formatNumber($expense->getAmount()); ?></span></td>
+                                                            </tr>
+                                                        </table>
+                                                    </div>
+                                                       
+                                                </td>
+                                             </tr>
+                                        </table>
+                                     </li>
+                                <?php } ?>
+                                </ul>
+                            <?php } ?>
+                        </div>
+                    </span>
+                </div>
+                <div class="row margin0" style="padding:2px; margin-bottom:10px;">
+                    <span class="pull-left" style="width:100%; margin-right:5px;">
+                        <div id="location_left" class="well lighter margin0" style="min-height:100px; position:relative;"> 
+                            <?php
+								$notelines = $sale->getNotesDetails();
+								// debugMessage($expenselines->toArray());
+								$count = $notelines->count();
+								$notes_label = '';
+								if($count > 0){
+									$notes_label = '<span class="pagedescription">('.$count.')</span>';
+								}
+							?>
+                            <h3 class="well-legend">Notes | Comments <?php echo $notes_label; ?></h3>
+                            <div class="margin0" style="position:absolute; right:10px; top:5px;">
+                                <a href="<?php echo $this->baseUrl('season/notes/type/Sales/pgc/true/refid/'.encode($sale->getID())); ?>" class="btn btn-mini addpopup" title="Add Notes" rel="Add Notes" id="newnote" formtitle="indexform" successurl="<?php echo $this->baseUrl('season/saleview/id/'.encode($sale->getID())); ?>" action="<?php echo $this->baseUrl('season/notescreate/successurl/'.encode($this->baseUrl('season/addnotessuccess/successmessage/global_save_success/'))); ?>"><i class="icon-plus"></i> Add</a>                                            
+                            </div>
+                            <?php if($count == 0){ ?>
+                                <br /><span class="pagedescription">None currently available.</span>
+                            <?php } else { ?>
+                                <ul id="datalist" class="nav nav-stacked">
+                                <?php 
+                                    $x = 1;
+                                    foreach($notelines as $note){
+										$farmer = $note->getNotedBy()->getFarmer();
+                                ?>
+                                    <li>
+                                        <table class="table noborder margin0">
+                                            <tr>                                
+                                                <td class="" style="width:90%;">
+                                                	<table class="itemlist table noborder margin0">
+                                                        <tr>
+                                                            <td style="width:75px; padding-top:10px;">
+                                                                <div id="thumbinfo" class="<?php echo $farmer->hasProfileImage() ? 'new_pic': ''; ?>"> 
+                                                                    <a href="<?php //echo $this->baseUrl("farmer/view/id/".encode($line['id'])); ?>" title="<?php echo $this->translate("person_button_view_profile"); ?>"><img src="<?php echo $farmer->getUser()->getThumbnailPicturePath(); ?>" /></a>
+                                                                </div>
+                                                            </td>
+                                                            <td style="padding-left:15px;"><label class="control-label"><?php echo date('M j, Y g:i A', strtotime($note->getDateNoted())); ?></label>
+                                                            	<span><?php echo nl2br($note->getDescription()); ?></span>
+                                                            
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                                <td class="padding0">
+                                                	<div style="position:relative;">
+                                                        <div class="threadicons" style="position:absolute; right:5px; top:5px;">
+                                                            <!--<a href="<?php //echo $this->baseUrl('season/expense/pgc/true/type/Sales/refid/'.encode($sale->getID()).'/id/'.encode($note->getID())); ?>" class="addpopup btn btn-mini" title="Edit Note" rel="Edit Note" id="editnote_<?php //echo $note->getID(); ?>" formtitle="indexform" successurl="<?php //echo $this->baseUrl('season/saleview/id/'.encode($sale->getID())); ?>" action="<?php //echo $this->baseUrl('season/expensecreate/successurl/'.encode($this->baseUrl('season/addexpsuccess/successmessage/global_save_success/'))); ?>"><i class="icon-pencil"></i></a></a>-->
+                                                            <a href="javascript: void(0)" id="deleteline_multiple" title="Delete Entry" class="btn btn-mini deleteline noimgbutton" action="<?php echo $this->baseUrl('season/delete/id/'.$note->getID()."/entityname/Notes/successurl/".encode($this->baseUrl('season/saleview/id/'.encode($sale->getID())))); ?>" message="Are you sure you want to delete this note?"><i class="icon-trash"></i></a>
+                                                        </div>
+                                            
+                                                    </div>
+                                                </td>
+                                             </tr>
+                                        </table>
+                                     </li>
+                                <?php } ?>
+                                </ul>
+                            <?php } ?>
+                        </div>
+                    </span>
+                </div>
+            <?php } ?>    
+            </form>
+		</div>
+		<?php require APPLICATION_PATH."/views/scripts/farm/tabsbottom.phtml"; ?> 
+    </div>
+</div>    
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

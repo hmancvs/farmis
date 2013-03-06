@@ -1,0 +1,135 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	# Page title
+	$title = $this->translate("report_pagetitle_payment");
+	$this->headTitle($title);
+	
+	# Create an instance of the class to handle the pagination
+	$paginate = new Pagination();	
+	$paginate->setView($this);
+	# set the search columns to be used on this list
+	$paginate->setSearchColumns(array("u.firstname", "u.surname", ""));
+	// $paginate->setFilterColumns(array(""));
+	$paginate->setDefaultSortBy("payment_date");
+	$paginate->setDefaultSortOrder("DESC");
+	$paginate->setStartAndEndDateFilterColumn("p.payment_date");
+
+	$paginate->processPost($request->getParams());	
+	$all_results_query = "SELECT p.id, concat(u.firstname, ' ',u.surname) AS `Writer Name`, mc_gross AS Amount, DATE_FORMAT(payment_date, '".$config->dateandtime->mysqlformat."') AS `Payment Date`, DATE_FORMAT(p.enddate, '".$config->dateandtime->mysqlformat."') AS `Expiry Date`, p.payment_status AS `Status`, p.txn_id AS `Transaction ID` FROM payment AS p 
+INNER JOIN useraccount as u ON (p.`custom` = u.id) WHERE u.type = 1 ".$paginate->getSearchAndFilterSQL()." ".$paginate->getSortSQL();
+ 	// debugMessage($all_results_query);
+	$paginate->setItemCountFromSQLQuery($all_results_query);
+	
+	$current_results_query = $all_results_query." ".$paginate->getSQLLimit();
+	//echo $current_results_query;
+	$session->setVar(ALL_RESULTS_QUERY, $all_results_query);
+	$session->setVar(CURRENT_RESULTS_QUERY, $current_results_query);
+	# the query string to be appended to the return to list URL
+	$session->setVar('list_query_string'.$request->getControllerName(), $request->getParams());
+	
+	$conn = Doctrine_Manager::connection(); 
+	$result = $conn->fetchAll($current_results_query);
+	$has_no_data = (count($result) == 0) ? true : false; 
+	
+	# This variable stores the number of redundant columns returned in the query so that when we are printing
+	# we are able to know how many columns to ignore. This variable is sent in the print URL
+	$number_of_redundant_columns = 1;
+	
+	# the columns which contain numbers in the invoice query
+	# Please note that the column count begins at 0
+	$export_number_column_list = "3";
+?>
+<script>
+$(document).ready(function(){
+	// change the date format since the short format with / corrupts the urls
+	datepickerOpts.dateFormat = '<?php echo $config->dateandtime->javascriptmediumformat; ?>'; 
+	$("#startdate, #enddate").datepicker(datepickerOpts); 
+	$("#paymentform").validate({
+		errorPlacement: function(error, element) {
+			error.appendTo("#errormessage");
+		},
+		rules: {			
+			enddate: {					
+				enddateafterstartdate: true
+			}				
+		}
+	});
+});
+</script>
+<h1><?php echo $title; ?></h1>
+<form action="<?php echo $this->baseUrl("report/paymentsearch"); ?>" method="get" id="paymentform">
+	<table class="filtercontainer">
+		<tr>
+			<td>
+            	<table class="filtersection">
+                    <tr>
+                        <td><b>Start Date:</b> &nbsp;
+                        	<input name="startdate"  id="startdate" type="text"  class="datefield startdate autosubmitsearchform" value="<?php echo $request->startdate; ?>" title="Filter Payments From" />&nbsp;&nbsp;
+                            <b>End Date:</b> &nbsp;
+                            <input name="enddate" id="enddate" type="text" class="datefield autosubmitsearchform"  value="<?php echo $request->enddate; ?>"title="Filter Payments To" />&nbsp;&nbsp;
+							
+                        </td>
+                    </tr>                
+                </table>
+			</td>
+            <td>
+                <table>
+                    <tr>
+                        <td><input class="filterselect" type="text" name="searchterm" id="searchterm" value="<?php echo $request->searchterm; ?>" title="Search for user" /></td>
+                    </tr>
+                    <tr>
+                        <td><button type="submit" class="positiveaction" id="searchbutton" title="<?php echo $this->translate('list_searchbutton_title'); ?>"><img src="<?php echo $this->baseUrl("images/zoom_in.png"); ?>" alt="<?php echo $this->translate('list_searchbutton_title'); ?>"/><?php echo $this->translate('list_searchbutton_label'); ?></button>
+                        <div id="listcounter"><?php echo $this->listcountdropdown; ?></div></td>
+                    </tr>
+                </table>
+            </td>		
+		</tr>
+	</table>
+	<?php if (!isEmptyString($session->getVar(SUCCESS_MESSAGE))) { ?>
+        <label class="successmessage"><?php echo $session->getVar(SUCCESS_MESSAGE); ?></label>
+    <?php } ?>
+    <?php // show a message that there are no items to display
+        if ($has_no_data) {
+    ?>
+		<label class="informationmessage"><?php echo $this->translate("payment_list_norecords"); ?></label>
+	<?php } else { ?>
+    
+	<div id="counter"><?php echo sprintf($this->translate("payment_list_counter"), $paginate->getItemCounterText()); ?></div>  
+	<table class="list">	
+      	<thead>
+          <tr>
+          	<td><?php echo $paginate->getSortLinkForColumn('c.name', 'Writer\'s Name'); ?></td>
+            <td><?php echo $paginate->getSortLinkForColumn('payment_date','Payment Date'); ?></td>
+            <td><?php echo $paginate->getSortLinkForColumn('txn_id','Transaction ID'); ?></td>            
+            <td><?php echo $paginate->getSortLinkForColumn('mc_gross','Amount'); ?></td>            
+            <td><?php echo $paginate->getSortLinkForColumn('payment_status','Status'); ?></td>
+            <td><?php echo $paginate->getSortLinkForColumn('enddate','Expiry Date'); ?></td>
+          </tr>
+      	</thead>
+		<tbody>
+			<?php 				  		
+            	foreach($result as $line){
+            ?>
+            <tr>
+            	<td><?php echo $line['Writer Name']; ?></td>            	
+            	<td><?php echo $line['Payment Date']; ?></td>
+                <td><?php echo $line['Transaction ID']; ?></td>               
+                <td><?php echo $line['Amount']; ?></td>
+                <td align="center"><?php echo $line['Status']; ?></td>  
+                <td><?php echo $line['Expiry Date']; ?></td>           
+            </tr>
+            <?php 						
+            	} // end processing results 
+            ?>
+		</tbody>
+	  </tr>
+	</table>
+	<?php echo $paginate->getPaginationLinks(); ?>
+<?php			
+	} // end check that there are results    	
+?>    
+</form>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

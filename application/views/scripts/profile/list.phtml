@@ -1,0 +1,139 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	# Page title
+	$title = "User Accounts";
+	$plural = "Users";
+	$this->headTitle($title);
+	
+	# Create an instance of the class to handle the pagination
+	$paginate = new Pagination();	
+	$paginate->setView($this);
+	# set the search columns to be used on this list
+	$paginate->setSearchColumns(array("firstname","lastname","othername","username","email","phone"));
+	$paginate->setFilterColumns(array("isactive"));
+	$paginate->setDefaultSortBy("datecreated");	
+	$paginate->setDefaultSortOrder("DESC");
+
+	$paginate->processPost($request->getParams());
+	$all_results_query = "SELECT id, concat(firstname, ' ', lastname) as `Name`, username as `Username`, email as `Email Address`, phone as `Phone Number`, isactive as `Status` FROM useraccount WHERE email <> '' ".$paginate->getSearchAndFilterSQL()." ".$paginate->getSortSQL();
+	
+	# debugMessage($all_results_query);
+	$paginate->setItemCountFromSQLQuery($all_results_query);
+	
+	$current_results_query = $all_results_query." ".$paginate->getSQLLimit();
+	//echo $current_results_query;
+	$session->setVar(ALL_RESULTS_QUERY, $all_results_query);
+	$session->setVar(CURRENT_RESULTS_QUERY, $current_results_query);
+	# the query string to be appended to the return to list URL
+	$session->setVar('list_query_string'.$request->getControllerName(), $request->getParams());
+	
+	$conn = Doctrine_Manager::connection(); 
+	$result = $conn->fetchAll($current_results_query);
+	$has_no_data = (count($result) == 0) ? true : false; 
+	
+	# This variable stores the number of redundant columns returned in the query so that when we are printing
+	# we are able to know how many columns to ignore. This variable is sent in the print URL
+	$number_of_redundant_columns = 1;
+	
+	# the columns which contain numbers in the invoice query
+	# Please note that the column count begins at 0
+	$export_number_column_list = "";
+	
+?>
+<form action="<?php echo $this->baseUrl("profile/listsearch"); ?>" method="get" id="usersform">
+<table class="filtercontainer">
+    <tr>
+        <td>
+            <table class="filtersection">
+                <tr>
+                    <td>
+                    <?php			
+                        $yesnostatus = new LookupType(); 
+                        $yesnostatus->setName("ACTIVE_STATUS");
+                        $values = array("" => "All Status");
+                        $values = array_merge_maintain_keys($values, $yesnostatus->getOptionValuesAndDescription()); 
+                        
+                        $cb = new Zend_Form_Element_Select('isactive',
+                                    array(
+                                        'multiOptions' => $values, 
+                                        'view' => new Zend_View(),
+                                        'decorators' => array('ViewHelper')
+                                    )
+                        );
+                        $cb->setValue($request->isactive); 
+                        echo $cb->render();	
+                    ?>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2"></td>                          
+                </tr>
+            </table>
+        </td>
+        <td>
+            <table>
+                <tr>
+                    <td><input class="filterselect" type="text" name="searchterm" id="searchterm" value="<?php echo $request->searchterm; ?>" title="Enter your search term here and click search" /></td>
+                </tr>
+                <tr>
+                    <td><button type="submit" class="positiveaction" id="searchbutton" title="Click here to Search or Filter"><img src="<?php echo $this->baseUrl("images/zoom_in.png"); ?>" alt="Search"/>Search</button></td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+<?php // show a message that there are no items to display
+	if ($has_no_data) {
+?>
+	<label class="error"><?php echo "There are no users to display"; ?></label>        
+<?php } else { ?>
+<div id="counter"><?php echo $paginate->getItemCounterText()." ".$plural; ?></div>
+<div id="listcounter"><?php echo $this->listcountdropdown; ?></div>
+  <div id="export"><?php echo $this->translate('global_export_as'); ?><a title="<?php echo $this->translate('global_export_as_excel'); ?>" href="<?php echo $this->baseUrl('index/exceldownload/'.EXPORT_NUMBER_COLUMN_LIST.'/'.$export_number_column_list.'/'.EXPORT_IGNORE_COLUMN_COUNT.'/'.$number_of_redundant_columns); ?>" target="_blank"><img src="<?php echo $this->baseUrl('images/excel.png'); ?>" alt="<?php echo $this->translate('global_export_as_excel'); ?>" /></a></div>
+<div id="listresults_div">
+	<h2><?php echo $title; ?></h2>	  
+      <table class="list">	  
+      	<thead>
+          <tr>
+            <td>Edit</td>
+            <td><?php echo $paginate->getSortLinkForColumn('firstname','Name'); ?></td>                        
+			<td><?php echo $paginate->getSortLinkForColumn('username','Username'); ?></td>                        
+            <td><?php echo $paginate->getSortLinkForColumn('email','Email'); ?></td>
+            <td><?php echo $paginate->getSortLinkForColumn('phonenumber','Phone'); ?><img src="<?php echo $this->baseUrl('images/spacer.gif'); ?>" width="70" height="1" /></td>		
+            <td width="99%"><?php echo $paginate->getSortLinkForColumn('isactive','Status'); ?></td> 
+          </tr>
+      	</thead>
+		<tbody>
+			<?php 				  		
+            	foreach($result as $line){							
+            ?>
+            <tr>
+            	<td align="center"><a href="<?php echo $this->baseUrl("profile/index/id/".encode($line['id'])); ?>" title="Update User Details"><img src="<?php echo $this->baseUrl('images/edit.png'); ?>" alt="Update User Details" /></a></td>
+            	<td><a href="<?php echo $this->viewUrl(array("id" => encode($line['id']))); ?>"><?php echo $line['Name']; ?></a></td>
+            	<td><?php echo $line['Username']; ?></td>            	
+				<td><?php echo $line['Email Address']; ?></td>            	
+                <td><?php echo $line['Phone Number'] == "" ? "---": $line['Phone Number']; ?></td>
+            	<td>
+            		<?php echo ($line['Status'] == 1) ? 
+            			'<img src="'.$this->baseUrl("images/tick.png").'" alt="User Active" />' : 
+            			'<img src="'.$this->baseUrl("images/cross.png").'" alt="User Inactive" />' ;  
+            		?>
+            	</td>                      
+            </tr>
+            <?php 						
+            	} // end processing results 
+            ?>
+            
+		</tbody>
+	  </tr>
+	</table>
+</div>
+<?php			
+	} // end check that there are results    	
+?>
+<div class="paginationlinks"><?php echo $paginate->getPaginationLinks(); ?></div>
+</form>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

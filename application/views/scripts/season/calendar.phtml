@@ -1,0 +1,80 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$title = "Calendar"; 
+	$this->headTitle($title);  
+	
+	$season = new Season(); 
+	$season->populate(3);
+	$croplines = $season->getSeasonDetails();
+	$noofcrops = $croplines->count();
+	$otherlines = $season->getAllOtherActivityDetails();
+	$timeline = sort_multi_array($season->getTimeLineDetails(), 'order');
+	
+?>
+<script>
+	$(document).ready(function() {
+
+		$('#calendar').fullCalendar({
+			header: {
+				left: 'prev,next today',
+				center: 'title',
+				right: 'month,basicWeek,basicDay'
+			},
+			editable: true,
+			events: "<?php echo $this->baseUrl('season/events'); ?>",
+			eventRender: function(event, element) {
+				var type = $("#targetposition").html();
+				var tippos = $("#tipposition").html();
+				var tooltip_title = event.formatedstart+': '+event.title;
+				var idclass = event.className;
+				if(!isEmptyString(event.end)){
+					tooltip_title = event.formatedstart+' - '+event.formatedend+': '+event.title;
+				}
+				element.qtip({
+					content: {
+						text: '<a id="loading"><img style="margin-left:250px;" src="<?php echo $this->baseUrl('images/loader.gif'); ?>" /></a>',
+						title: {
+							text: tooltip_title
+						}
+					},
+					hide: { when: 'mouseout', fixed: true },
+					show: { solo: true, effect: 'slide'},
+					position: {adjust: {x: 30, y: 0} },
+					position: {
+						corner: {target: 'bottomMiddle', tooltip: 'topMiddle'}
+					},
+					style: { 
+						name: 'blue', width: 350, height: 175, padding: 5, background: '#F9F9F9',
+						tip: {corner: 'topMiddle', size: {x: 20, y : 10 }},
+						border:{width: 2,radius: 4, color: '#8F8F8F'},
+						title: { 'color': 'white', 'background': '#81D122'}
+					},
+					api: {
+						onShow: function(){
+							$(".qtip-content").html($("ul#"+idclass).html());
+						}
+					}
+				});
+			}
+		});
+	}); 
+</script>
+<div>
+	<?php require APPLICATION_PATH."/views/scripts/index/leftcolumn.phtml"; ?>
+    <div id="centercolumn">
+        <form id="viewform" class="form-horizontal">
+			<?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+                <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+            <?php } ?>
+            <div class="row margin0" style="padding:2px; margin-bottom:10px;">
+            	<h3 class="well-legend"><?php echo $title; ?></h3>
+                <div id='calendar' class="100width padding0 margin0" style="margin-top:10px;"></div>
+            </div>
+				
+        </form>
+    </div>
+</div>    
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

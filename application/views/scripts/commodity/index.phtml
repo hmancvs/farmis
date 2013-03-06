@@ -1,0 +1,189 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$commodity = new Commodity(); 
+	
+	// default title is to enable adding any payee
+	$title = $this->translate("commodity_pagetitle_new"); 
+	$posturl = $this->baseUrl($request->getControllerName()."/create");
+	$button_title = $this->translate("commodity_button_new"); 
+	
+	// set the payee if provided in the url 
+	if (!isEmptyString($request->id)) {
+		$commodity->populate(decode($request->id));
+		$title = sprintf($this->translate("commodity_pagetitle_edit"), $commodity->getName()); 
+		$button_title = $this->translate("commodity_button_edit");
+		$posturl = $this->baseUrl($request->getControllerName()."/edit");	
+	}
+	
+	#in case of errors in session, populate the fields from session
+	if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
+		$commodity->processPost($session->getVar(FORM_VALUES));	
+	}
+		
+	$this->headTitle($title);  
+?>
+<script>
+	$(document).ready(function() {
+		$("#indexform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				name: "required",
+				categoryid: "required"
+			}, 
+			// the messages for each of the fields being validated
+			messages: {		
+				name: "<?php echo $this->translate("commodity_name_error"); ?>",
+				categoryid: "<?php echo $this->translate("commodity_category_error"); ?>"			
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						error.appendTo("#"+element.attr("name")+"_error")
+						break;
+				}			
+			}
+		});
+	}); 
+</script>
+<style>
+.radio.inline, .checkbox.inline {
+	display:inline-block;
+	margin-bottom: 1px;
+    padding-top: 0;
+}
+.radio input[type="radio"], .checkbox input[type="checkbox"] {
+	margin-top:1px;
+}
+</style>
+<div>
+	<?php require APPLICATION_PATH."/views/scripts/index/leftcolumn.phtml"; ?>
+    <div id="centercolumn">
+        <form id="indexform" class="form-horizontal" action="<?php echo $posturl; ?>" method="post">
+			<?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+                <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+            <?php } ?>
+            <?php if($sessionhaserror) { ?>
+                <div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+            <?php } ?>
+            <div class="row margin0" style="padding:2px; margin-bottom:10px;">
+            	<span class="pull-left well lighter margin0" style="width:72%; min-height:230px;">
+                	<table class="table noborder margin0">
+                    	<tr>                        	
+                            <td style="padding:10px 10px 8px 0; width:65%;">
+                                <h3 class="well-legend"><?php echo $title; ?></h3>
+                                <table class="table smalltdpad">
+                                    <tr class="person">
+                                        <td width="35%"><label class="control-label" for="name"><?php echo $this->translate("commodity_name_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            							<td><input type="text" name="name" id="name" class="width170 hastooltip" value="<?php echo $commodity->getName(); ?>" title="<?php echo $this->translate("commodity_name_tooltip"); ?>" /><div id="name_error"></div></td>                                    
+                                    </tr>
+                                    <tr>
+                                      <td><label class="control-label"><?php echo $this->translate("commodity_parent_label"); ?>:</label></td>
+                                      <td><?php 	
+                                            $commoditylist = new LookupType(); 
+                                            $commoditylist->setName("ALL_COMMODITIES");
+                                            $commodities = $commoditylist->getOptionValuesFromQuery();
+                                            $commoditydropdown = new Zend_Form_Element_Select('parentid',
+                                                                array(
+                                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $commodities),	
+                                                                    'view' => new Zend_View(),
+                                                                    'decorators' => array('ViewHelper'),
+                                                                    'class' => array("span3", 'xchzn-select'),
+                                                                )
+                                                            );
+                                            $commoditydropdown->setValue($commodity->getParentID()); 
+                                            echo $commoditydropdown->render(); 
+                                        ?>
+                                        </td>
+                                   </tr>
+                                   <tr>
+                                      <td><label class="control-label"><?php echo $this->translate("commodity_category_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                                      <td><?php 	
+                                            $commoditycategorylist = new LookupType(); 
+                                            $commoditycategorylist->setName("ALL_COMMODITY_CATEGORIES"); 
+                                            $commoditycategorydropdown = new Zend_Form_Element_Select('categoryid',
+                                                                array(
+                                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $commoditycategorylist->getOptionValuesFromQuery()),								
+                                                                    'view' => new Zend_View(),
+                                                                    'decorators' => array('ViewHelper'),
+                                                                    'class' => array('span3'),
+                                                                )
+                                                            );
+                                            $commoditycategorydropdown->setValue($commodity->getCategoryID()); 
+                                            echo $commoditycategorydropdown->render(); 
+                                        ?><div id="categoryid_error"></div>
+                                        </td>
+                                   </tr>
+                                   <tr>
+                                      <td><label class="control-label"><?php echo $this->translate("commodity_units_label"); ?>:</label></td>
+                                      <td><?php 	
+                                            $commodityunitdropdown = new Zend_Form_Element_Select('unitid',
+                                                            array(
+                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), getAllStandardUnits()),								
+                                                                'view' => new Zend_View(),
+                                                                'decorators' => array('ViewHelper'),
+                                                                'class' => array('span2')
+                                                            )
+                                                        );
+                                            $commodityunitdropdown->setValue($commodity->getUnitID()); 
+                                            echo $commodityunitdropdown->render(); 
+                                        ?></td>
+                                    </tr>
+                                   <tr>
+                                      <td><label class="control-label">Allow to Farmers:</label></td>
+                                      <td><?php 	
+                                            $visibility = new Zend_Form_Element_Radio('allowfarmer',
+                                                  array(
+                                                          'multiOptions' => array("1" => "Yes", "0" => "No"), 
+                                                          'view' => new Zend_View(),
+                                                          'disableLoadDefaultDecorators' => true,
+                                                          'separator' => '&nbsp;&nbsp;&nbsp;&nbsp;',
+                                                          'class' => array('hastooltip_custom'),
+														  'title' => $this->translate("commodity_visibility_tooltip"),
+                                                          'decorators' => array('ViewHelper',
+                                                                              array('HtmlTag', array('tag' => 'div', 'class' => array('inline', 'radio', 'zendradio'))) // use a sorrounding DIV with classes which are copied to the label by JQuery
+                                                                          )
+                                                  )
+                                            );
+                                            $visibility->setValue($commodity->getAllowFarmer());
+                                            echo $visibility->render();
+                                        ?>&nbsp;&nbsp;<span id="tooltip_visibility"></span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label class="control-label"><?php echo $this->translate("commodity_description_label"); ?>:</label></td>
+                                        <td><textarea class="expanding span3" id="description" name="description"><?php echo $commodity->getDescription(); ?></textarea></td>
+                                    </tr>
+                                </table>
+                            </td>
+                            <td style="vertical-align:top; padding-left:0; padding-top:45px;">
+                            	<div class="imagecontainer" style="width:100%; min-height:100px; padding:2px;">
+                                	<img style="width:100%;" src="<?php echo $commodity->getImagePath(); ?>" />
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </span>
+                <span class="pull-right padding0" style="width:24%; margin-left:5px;">
+                	<div class="well margin0" style="height:160px;">
+                            <h3 class="well-legend">Quick Links</h3>
+                            <table class="table">                       
+                               <tr>		                    
+                                    <td class="formactions">
+                                    	<button type="submit" class="btn btn-primary savethenview"><i class="icon-ok icon-white"></i> <?php echo $this->translate('global_button_save_changes'); ?></button>
+                                        <a href="<?php echo $this->baseUrl('commodity/view/id/'.encode($commodity->getID())); ?>" class="btn"><i class="icon-remove"></i> <?php echo $this->translate('global_button_cancel'); ?></a>
+                                        <input type="hidden" name="entityname" value="Commodity" />
+                                        <input type="hidden" id="id" name="id" value="<?php echo encode($commodity->getID()); ?>" />
+                                        <input type="hidden" id="<?php echo SUCCESS_MESSAGE; ?>" name="<?php echo SUCCESS_MESSAGE; ?>" value="Commodity updated successfully" /> 
+                                    </td>
+                               </tr>
+                            </table>                           
+                        </div>
+                </span>
+            </div>
+        </form>
+    </div>
+</div>    
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

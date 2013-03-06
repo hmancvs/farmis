@@ -1,0 +1,84 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	# Create an instance of the class to handle the pagination
+	
+	$result = $this->prices;
+	$has_no_data = (count($result) == 0) ? true : false;
+	
+	if(!$has_no_data){
+		$processeddata = array();
+		$months = array(); 
+		foreach($result as $key => $line){			
+			$months[] = $line['Month'];
+			$processeddata[$line['Commodity']]['retailprices'][] = $line['RetailPrice'];
+			//$processeddata[$line['Commodity']]['wholesaleprices'][] = $line['Wholesale Price'];
+		}
+		
+		// create list for periods
+		$periodlist = "'".implode("', '",$months)."'";
+		
+		// generate the series data
+		$series_data = array(); 
+		foreach ($processeddata as $key => $value) {
+			$series_data[] = "{name: '".$key."', data: [".implode(",", $value['retailprices'])."]}"; 
+			//$series_data[] = "{name: 'Wholesale Price: ".$key."', data: [".implode(", ", $value['wholesaleprices'])."]}";
+		}
+	}
+?>
+<script type="text/javascript">
+var chart;
+<?php 
+	$jquery_prefix = "$"; 
+	if (!isEmptyString($request->pgc)) {
+		$jquery_prefix = "jQuery"; 
+	} 
+?>
+<?php echo $jquery_prefix; ?>(document).ready(function() {
+	   chart = new Highcharts.Chart({
+		  chart: {
+			 renderTo: 'commoditycontainer',
+			 defaultSeriesType: 'line' ,
+			 marginTop: 90,
+			 height: 400       
+		  },
+		  credits: {
+				enabled: false
+			},
+		  title: {
+			 text: " "
+		  }, 
+		  exporting: {
+			  enabled: false
+		  }, 
+		  xAxis: {     
+			 categories: [<?php echo $periodlist; ?>]
+		  },
+		  yAxis: {   
+			 title: {
+				text: 'Retail Price (UGX)'
+			 }
+		  },
+		  tooltip: {
+			  formatter: function() {
+				return this.series.name + ' in '+ this.x + ': UGX ' + Highcharts.numberFormat(this.y, 0);
+			 }
+		  },	
+		  legend: {
+			 layout: 'horizontal',         
+			 align: 'center',
+			 verticalAlign: 'top',
+			 x: -10,
+			 y: -10,
+			 floating: true,
+			 shadow: true,
+			 width: 350
+		  },   
+		  series: [<?php echo implode(",", $series_data); ?>]
+	   });
+});
+</script>
+<div id="commoditycontainer"></div>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

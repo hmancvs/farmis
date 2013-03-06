@@ -1,0 +1,109 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$title = $this->translate("message_pagetitle_new");
+	$button_title = $this->translate('message_button_send');
+	$posturl = $this->baseUrl("message/create");
+	
+	$id = decode($request->userid);
+	
+	$useraccount = new UserAccount(); 
+	$useraccount->populate($id);
+	// debugMessage($useraccount->toArray());
+	$this->headTitle($title);  
+	
+	#in case of errors in session, populate the fields from session
+	if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
+		$useraccount->processPost($session->getVar(FORM_VALUES));	
+	}
+	
+	# set the message format to be returned. See view page
+	$session->setVar('msgreturn', ''); 
+	
+?>
+<script>
+	$(document).ready(function() {
+		$("#composeform").validate({		
+			// define the validation rules one field at a time		
+			rules: {
+				recipientid: "required", 				
+				contents: "required" 
+			}, 
+			// the messages for each of the fields being validated
+			messages: {	
+				recipientid: "<?php echo $this->translate("message_recipient_error"); ?>",					
+				contents: "<?php echo $this->translate("message_contents_error"); ?>"	
+			}
+		});
+		
+		// set the default message when page loads and remove when user focuses in message box
+		$("#contents").css({'color':'#666666'});	
+		setValue("contents");
+		$("#contents").bind("focus", function(event){
+			clearValue("contents");
+		}).bind('blur', function(event){			
+			setValue("contents"); 
+		})
+		
+		// hide button to send message if user is viewing their profile
+		<?php if($useraccount->getID() == $userid){ ?>
+			$(".ui-dialog-buttonpane button:contains(Send)").hide();
+		<?php } ?>
+		
+	}); 	
+</script>
+
+<style>
+	table.formtable, table.formtable td {
+		border:none;
+	}
+	table.formtable {	
+		margin-top:0;	
+	}
+	table.formtable td.label {
+		background:none;
+		width:50px;	
+	}
+	table.formtable td {
+		vertical-align:top;	
+	}	
+	textarea.expanding, .chzn-choices {
+		width:350px;
+		margin-top:10px;		
+	}
+	#subject {
+		width:346px;
+	}
+</style>
+<form id="composeform" action="<?php echo $posturl; ?>" method="post">
+  <table class="formtable" style="width:380px;">    
+    <?php if ($sessionhaserror) { ?>
+    <tr>
+      <td class="error" colspan="2"><?php echo $session->getVar(ERROR_MESSAGE); ?></td>
+    </tr>
+    <?php } ?>    
+    <tr>
+      <td width="30%"><img id="profilepic" src="<?php echo $useraccount->getMediumPicturePath(); ?>" /></td>
+      <td style="vertical-align:top;"><b>About me:</b><br /><?php echo $useraccount->getAboutMe(); ?> </td>
+    </tr>
+    <?php if($useraccount->getID() != $userid){ ?>   
+    <tr>
+     <td colspan="2"><div id="successmessage"></div>
+     	<textarea id="contents" name="contents" class="expanding" title="Send a private message to this member..."></textarea>      
+         <input type="hidden" name="entityname" value="Message" />         
+         <input type="hidden" name="senderid" id="senderid" value="<?php echo $userid; ?>" />
+         <input type="hidden" name="recipientids[<?php echo md5(1); ?>]" id="recipientid_<?php echo md5(1); ?>" value="<?php echo $useraccount->getID(); ?>" />
+        </td>
+    </tr>
+    <?php } ?>
+  </table>  	
+</form>
+<div id="loading" class="hidden"> 
+    Sending Message ....<br /><br />
+    Please Wait ..... <br /><br />
+    <img src="<?php echo $this->baseUrl("images/loading.gif"); ?>" /> <br />
+</div>
+<?php
+	$clearsessionformvalues = true; 
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

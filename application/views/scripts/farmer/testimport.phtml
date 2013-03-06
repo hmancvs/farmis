@@ -1,0 +1,32 @@
+<table class="table">                       
+                           <tr>
+                                <td style="width:50x;"><label class="control-label"><?php echo $this->translate("farmer_name_label"); ?>:</label></td>
+                                <td style="width:150px;"><?php echo $farmer->getName().$farmer->getSalutationLabel(); ?></td>
+                                <td style="width:80px;"><label class="control-label"><?php echo $this->translate("farmer_gender_label"); ?>:</label></td>
+                                <td><?php echo $farmer->getGenderLabel(); ?></td>                                                             
+                            </tr>
+                            <tr>		                    
+                                <td><label class="control-label prefix"><?php echo "FIN ID#"/*$this->translate("farmer_identity_label")*/; ?>:</label></td>
+                                <td><?php echo $farmer->getRegNo(); ?></td>  
+                                <td><label class="control-label"><?php echo $this->translate("farmer_dateofbirth_label"); ?>:</label></td>
+                                <td><?php echo $farmer->getUser()->getBirthDateFormatted(); ?></td>     
+                            </tr>                                                
+                            <tr>
+                                <td><label class="control-label"><?php echo $this->translate("farmer_country_label"); ?>:</label></td>
+                                <td><?php echo $farmer->getUser()->getAddress()->getCountryName(); ?></td>
+                                <td><label class="control-label"><?php echo $this->translate("farmer_location_label"); ?>:</label></td>
+                                <td><?php echo isEmptyString($farmer->getUser()->getAddress()->getDistrictID()) ? (isEmptyString($farmer->getUser()->getLocationID()) ? '--' : $farmer->getUser()->getLocation()->getName()): $farmer->getUser()->getAddress()->getDistrict()->getName(); ?></td>                           
+                            </tr>
+                            <tr>
+                                <td><label class="control-label"><?php echo $this->translate("farmer_profilepath_label"); ?>:</label></td>
+                                <td colspan="3"><?php echo $farmer->getUser()->getProfilePath(); ?></td>                                                             
+                            </tr>  
+                            <tr>
+                                <td><label class="control-label"><?php echo $this->translate("farmer_group_label"); ?>:</label></td>
+                                <td colspan="3"><?php echo isEmptyString($farmer->getFarmGroupID()) ? '--' : $farmer->getFarmGroup()->getName(); ?>
+                                <?php if($farmer->getID() == $farmer->getFarmGroup()->getManagerID()){ ?>
+                                	<span class="pagedescription">&nbsp;&nbsp;(Admin)</span>
+                                <?php } ?>
+                                </td>
+                            </tr>
+                        </table>

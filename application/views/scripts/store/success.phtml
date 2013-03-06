@@ -1,0 +1,38 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$title = $this->translate("useraccount_pagetitle_signup"); 
+	$this->headTitle($title);
+	
+	$useraccount = new UserAccount();
+	$useraccount->populate(decode($request->userid));
+	// debugMessage($useraccount->toArray(true));
+
+?>
+<style>
+#contentcolumn {
+	padding-left:200px;
+}
+table.formtable {
+	width:575px;
+	border:1px solid #AAAAAA;	
+	margin-top:0;	
+}
+table.formtable td {
+	border-right:none;
+}
+
+</style>
+<h1><?php echo $title; ?></h1>
+<table class="formtable">    
+    <thead>
+    	<tr><td colspan="2">Payment Confirmation</td></tr>
+    </thead> 
+    <tr>
+      <td colspan="2" style="background-color:#FFFFFF; height: 150px; vertical-align: top;"><label class="successmessage">Your Payment has been successfully processed.</label></td>
+    </tr>    
+</table>
+<?php
+	
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

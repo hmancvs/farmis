@@ -1,0 +1,25 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$title = "Plans and Pricing";
+	$this->headTitle($this->translate("appname")." | ".$title);
+
+?>
+<style>
+.content h4 {
+	margin-top:5px;
+	margin-bottom:15px;
+	font-size:16px;	
+}
+</style>
+<div class="row marginleft0">
+    <div class="span8 pull-left marginleft0 public_leftcolumn">
+        <div class="content">
+            <?php require APPLICATION_PATH."/views/scripts/billing/pricingcontent.phtml"; ?>
+        </div>
+    </div>
+    <?php require APPLICATION_PATH."/views/scripts/index/righthandband.phtml"; ?>
+</div>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

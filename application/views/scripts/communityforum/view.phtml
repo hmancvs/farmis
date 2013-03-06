@@ -1,0 +1,329 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+		
+	$communityforum = new CommunityForum();
+	$communityforum->populate(decode($request->id));	
+	
+	$user = new UserAccount();
+	$user->populate($userid);
+	
+	if(!isEmptyString($request->messageid)){
+		$message = new Message();
+		$message->populate(decode($request->messageid));	
+		
+		// mark this message as read if it has not yet been read by the owner
+		if(!$message->getMessageDetails()->hasReadMessage() && ($userid == $message->getRecipient()->getID())){		
+			$message->getMessageDetails()->markAsRead(array($message->getMessageDetails()->getID()), '1');
+			// update session with number of messages unread
+			$remaining = $message->getMessageDetails()->countUnReadMessages($userid);		
+			$session->setVar('unread', $remaining);
+			$newmsghtml = '<a title="Inbox" href="'.$this->baseUrl('message/list').'">Inbox </a>';
+			$session->setVar('newmsghtml', $newmsghtml);		 
+		}
+	}
+	
+	$button_title = $this->translate('communityforum_button_send');
+	# Page title
+	$title = $this->translate("communityforum_pagetitle_view"); 
+	$this->headTitle($title);
+	
+	if(isEmptyString($request->tab)){
+		$request->setParam('tab', 'viewtopic'); 
+	}
+	
+?>
+<script type="text/javascript"> 
+$(document).ready(function() {
+	// validate reply form	
+	$("#replyform").validate({		
+		// define the validation rules one field at a time
+		rules: {
+			content: {
+				required: true,
+				maxlength: '1000'
+			} 
+		}, 
+		// the messages for each of the fields being validated
+		messages: {	
+			content: {
+				required: '<?php echo $this->translate("message_contents_error"); ?>',
+				maxlength: '<?php echo sprintf($this->translate("message_contents_length_error"), 500); ?>'
+			}
+		},
+		// custom error positions
+		errorPlacement: function(error, element) {
+			switch(element.attr("name")){					
+				default:
+					error.appendTo("#"+element.attr("name")+"_error")
+					break;
+			}			
+		}
+	});
+	
+	var c_characters = 1000;
+	$("#content_balance").append(c_characters);
+	$("#content").keyup(function(){
+		var c_remaining = c_characters - $(this).val().length;
+		$("#content_balance").html(c_remaining);
+		if(c_remaining < 0){
+			$("#content_balance, #c_remaining").css("color","red");
+		} else {
+			$("#content_balance, #c_remaining").css("color","#666666");
+		}
+	});
+	 
+	// override default tab	
+	<?php if(!isEmptyString($request->tab)){ ?>
+		$("#tabs").tabs({ selected:'<?php echo $request->tab; ?>', fx: {opacity: 'toggle'} });	   
+	<?php } ?>
+	$('#tabs').tabs({
+		// the selected tab
+		selected: '<?php echo $request->tab; ?>'
+	});
+	$("#topiclist a").click(function(e){
+		window.location.href = "<?php echo $this->baseUrl('communityforum/list'); ?>";
+	});
+	$("#create a").click(function(e){
+		window.location.href = "<?php echo $this->baseUrl('communityforum/index'); ?>";
+	});
+	
+	// post comment
+	$("#reply").click(function(){		
+		// post comment if form is valid
+		if ($("#replyform").valid() == true) {			
+			// save the message
+			$.post(  
+				'<?php echo $this->baseUrl("communityforumcomment/create"); ?>',  
+				$("#replyform").serialize(),  
+				function(data){  
+					// alert(data); return false;
+					comment = $.parseJSON(data);
+					//alert(comment.id);																		
+					// create variables for the list items to be inserted in dom
+					var src = '<?php echo $user->getThumbnailPicturePath(); ?>';
+					var del = '<?php echo $this->baseUrl('images/cancel_down.png'); ?>';
+					var wait = '<?php echo $this->baseUrl('images/loader.gif'); ?>';
+					var alt = '<?php echo $session->getVar('fullname'); ?>';
+					var fullname = '<?php echo $user->getName(); ?>';
+					
+					// html string of comment list item to be appended to the ul
+					var postedhtml = "<li style='display:none;' id='comment_"+comment.id+"'><div class='thumbinfo new_pic'> <img src="+src+" alt="+alt+" /></div><div class='postdetail'><h2>"+fullname+"</h2><span>"+comment.content+"</span><label>Posted on "+comment.datecreated+"</label><a href='javascript: void(0);' title='Delete Comment' class='delete_comment removeline close button btn' id='remove_comment_"+comment.id+"'>&times;</a><input type='hidden' class='remove_comment_"+comment.id+"' title='"+comment.id+"' value='"+comment.id+"' /></div><img class='loading bottomwait hidden' id='waiting_old_"+comment.id+"' src="+wait+" /></li>";
+					// alert(postedhtml);	return false;
+					
+					// insert comment to the bottom of the list  as the 2nd last child
+					$(postedhtml).insertBefore("ul.comments li:last-child");			
+					$("ul.comments li:last-child").prev().fadeIn("slow");
+					// remove readonly from textarea
+					$("#content").val('').removeAttr('readonly').css({'background': '#FFFFFF'}).keyup();
+					var c_characters = 1000;
+					$("#content").removeClass('error');
+					$("#content_error").html('');
+					
+					// hide the loading image and show comment that was sent					
+					$("#waiting_new").hide();
+					$("#reply").addClass('btn-primary').removeClass('disabled');	
+					
+					// delete comment
+					$(".delete_comment").click(function(){		
+						var commentid = $('input.'+$(this).attr('id')).val();
+						// alert('comm is '+commentid);
+						$("#idfordelete").val(commentid);		
+						// confirm that user wants to delete the comment
+						if(window.confirm("Are you sure you want to delete this comment. \n Click 'OK' to confirm or 'Cancel' to stay on this page")){						
+							// set comment id and entity to be deleted
+							
+							$.post(  
+								"<?php echo $this->baseUrl("communityforumcomment/delete"); ?>",  
+								$("#replyform").serialize(), 
+								function(data){
+									// alert(data);	
+									if(data.search("success") != -1){
+										// remove comment from list item from the DOM
+										$("ul.comments li#comment_"+commentid).fadeOut('slow', function(){ $(this).remove(); });
+										// hide loading image 						
+										$("#waiting_old_"+commentid).hide();	
+									} else {
+										alert('An error occured in removing the comment. Please try again');
+									}
+								}  
+							); // close the $.post 	
+							$("#waiting_old_"+commentid).show();	
+											
+							return true;
+						} else {
+							return false;
+						}
+					});	
+				}  
+			); // close the $.post 							
+			// hide the textarea and send button when user clicks send comment
+			$("#waiting_new").show();
+			// make textarea readonly while comment is being saved
+			$("#content").attr('readonly','readonly').css({'background-color': '#F6F6D1'});	
+			$("#reply").removeClass('btn-primary').addClass('disabled');			
+		}
+	});	
+	
+	// delete comment
+	$(".delete_comment").click(function(){		
+		var commentid = $('input.'+$(this).attr('id')).val();
+		// alert('comm is '+commentid);
+		$("#idfordelete").val(commentid);		
+		// confirm that user wants to delete the comment
+		if(window.confirm("Are you sure you want to delete this comment. \n Click 'OK' to confirm or 'Cancel' to stay on this page")){						
+			// set comment id and entity to be deleted
+			
+			$.post(  
+				"<?php echo $this->baseUrl("communityforumcomment/delete"); ?>",  
+				$("#replyform").serialize(), 
+				function(data){
+					// alert(data);
+					if(data.search("success") != -1){
+						// remove comment from list item from the DOM
+						$("ul.comments li#comment_"+commentid).fadeOut('slow', function(){ $(this).remove(); });
+						// hide loading image 						
+						$("#waiting_old_"+commentid).hide();	
+					} else {
+						alert('An error occured in removing the comment. Please try again');
+					}
+				}  
+			); // close the $.post 	
+			$("#waiting_old_"+commentid).show();	
+							
+			return true;
+		} else {
+			return false;
+		}
+	});	
+	
+	// delete comment
+	$(".delete_topic").click(function(){		
+		var id = '<?php echo $communityforum->getID(); ?>';
+		// alert('id is '+id);
+		
+		// confirm that user wants to delete the comment
+		if(window.confirm("Are you sure you want to delete this Topic. \n Click 'OK' to confirm or 'Cancel' to stay on this page")){						
+			// set comment id and entity to be deleted
+			
+			$.post(  
+				"<?php echo $this->baseUrl("communityforum/delete/id/".$communityforum->getID()); ?>",
+				function(data){
+					// alert(data);				
+					if(data.search("success") != -1){
+						window.location.href = '<?php echo $this->baseUrl('communityforum/list'); ?>';
+					} else {
+						alert('An error occured in removing the comment. Please try again');
+					}
+				}  
+			); // close the $.post 	
+			$("#waiting_old_"+id).show();	
+							
+			return true;
+		} else {
+			return false;
+		}
+	});	
+	
+	
+}); 
+</script>
+<style>
+textarea.expanding {
+	width:80%;
+	min-height:60px;
+}
+ul.comments li img.loading.bottomwait {
+	margin-left:30px;
+	margin-top:5px;
+}
+</style>
+<div class="row marginleft0" id="forum">
+    <div class="span8 pull-left marginleft0 public_leftcolumn">
+        <div class="content">
+            <h2 style="font-size:20px;"><?php echo $title; ?></h2>
+            <div id="tabs" class="discussion">   
+            	<ul>
+                   <li id="topiclist"><a href="#topics"><?php echo $this->translate('communityforum_section_topics'); ?></a></li>
+                   <li id="view"><a href="#viewtopic"><?php echo $this->translate('communityforum_section_viewtopic'); ?></a></li>       
+                   <li id="create"><a href="#newtopic"><img src="<?php echo $this->baseUrl("images/add.png"); ?>" />&nbsp; <?php echo $this->translate('communityforum_section_newtopic'); ?></a></li> 
+                </ul>
+                <div id="topics">
+                    <div id="loading"><br />Please Wait ..... <br /><br /><img src="<?php echo $this->baseUrl("images/loading.gif"); ?>" /></div>
+                </div>
+                <div id="viewtopic">
+                	<form id="replyform" method="post">
+                        <h2><?php echo 'Topic: '.$communityforum->getTopic(); ?></h2>            
+                        <ul class="comments">
+                            <li id="topic">        	
+                                <div class="thumbinfo new_pic"> 
+                                	<a href="javascript: void(0)" class="profilepopup" title="<?php echo $communityforum->getCreator()->getName(); ?>"><img src="<?php echo $communityforum->getCreator()->getThumbnailPicturePath(); ?>" alt="<?php echo $communityforum->getCreator()->getName(); ?>" /></a>
+                                </div>
+                                <div class="postdetail">
+                                    <a href="javascript: void(0)" class="profilepopup" title="<?php echo $communityforum->getCreator()->getName(); ?>"><h2><?php echo $communityforum->getCreator()->getName(); ?></h2></a>
+                                    <span><?php echo nl2br($communityforum->getContent()); ?></span>                                
+                                    <label>Posted on <?php echo date('m/d/Y - g:i A', strtotime($communityforum->getDateCreated())); ?>&nbsp;&nbsp;|&nbsp;&nbsp;Category: <a href="<?php echo $this->baseUrl('communityforum/list/d'.HTML_TABLE_COLUMN_SEPARATOR.'category/'.$communityforum->getCategory()); ?>" title="View more posts in '<?php echo $communityforum->getCategoryText(); ?>'"><?php echo $communityforum->getCategoryText(); ?></a></label>
+                                    <?php if($userid == $communityforum->getCreatedBy() || isAdmin()){ ?>
+                                        <a href="javascript: void(0);" title="Delete Topic" class="delete_topic removeline close button btn" theid="<?php echo $communityforum->getID(); ?>" id="remove_topic_<?php echo $communityforum->getID(); ?>">&times;</a>
+                                        <input type="hidden" class="remove_topic_<?php echo $communityforum->getID(); ?>" title="<?php echo $communityforum->getID(); ?>" value="<?php echo $communityforum->getID(); ?>" />
+                                    <?php } ?>
+                                </div>
+                                <img class="loading bottomwait hidden" id="waiting_old_<?php echo $communityforum->getID(); ?>" src="<?php echo $this->baseUrl('images/loader.gif'); ?>" />
+                            </li>
+                            <?php 
+								$comments = $communityforum->getAllComments();
+								// debugMessage($comments->toArray());
+								foreach($comments as $comment){
+							?>
+								<li id="comment_<?php echo $comment->getID(); ?>">
+                                	<div class="thumbinfo new_pic"> 
+                                        <a href="javascript: void(0)" class="profilepopup" title="<?php echo $comment->getCreator()->getName(); ?>"><img src="<?php echo $comment->getCreator()->getThumbnailPicturePath(); ?>" alt="<?php echo $comment->getCreator()->getName(); ?>" /></a>
+                                    </div>        	
+									<div class="postdetail">
+										<a href="javascript: void(0)" class="profilepopup" title="<?php echo $comment->getCreator()->getName(); ?>"><h2><?php echo $comment->getCreator()->getName(); ?></h2></a>                    
+										<span><?php echo nl2br($comment->getContent()); ?></span>                                
+										<label>Posted on <?php echo date('m/d/Y - g:i A', strtotime($comment->getDateCreated())); ?></label>
+										<?php if($userid == $comment->getCreatedBy() || isAdmin()){ ?>
+                                            <a href="javascript: void(0);" title="Delete Comment" class="delete_comment removeline close button btn" id="remove_comment_<?php echo $comment->getID(); ?>">&times;</a>
+											<input type="hidden" class="remove_comment_<?php echo $comment->getID(); ?>" title="<?php echo $comment->getID(); ?>" value="<?php echo $comment->getID(); ?>" />                                
+										<?php } ?>
+									</div>
+									<img class="loading bottomwait hidden" id="waiting_old_<?php echo $comment->getID(); ?>" src="<?php echo $this->baseUrl('images/loader.gif'); ?>" />
+								</li>
+							<?php } ?>
+							<li class="commentdetails" id="newcomment" >
+                            	<div class="thumbinfo new_pic"> 
+									<img src="<?php echo $user->getCreator()->getThumbnailPicturePath(); ?>" alt="<?php echo $session->getVar('fullname'); ?>" />
+                                </div>
+								<div class="postdetail">
+									<h2><?php echo $user->getName(); ?></h2>
+									<span id="beforesend">
+                                    	<textarea id="content" name="content" class="expanding" placeholder="write a comment"></textarea><br />
+                                        <label id="content_balance" class="remaining"></label><label class="remaining" id="c_remaining">chars left</label><div id="content_error"></div>
+                                        
+                                    </span>
+                                    <a style="position:absolute; right:40px; top:52px;" href="javascript: doNothing();" id="reply" class="btn btn-primary" title="Post"><i class="icon-ok icon-white"></i> Post</a>
+                                    <img class="loading hidden" style="position:absolute; right:60px; top:85px;" id="waiting_new" src="<?php echo $this->baseUrl('images/loader.gif'); ?>" />
+								 </div>
+							</li>
+                        </ul>
+                        <div class="actionbuttons">
+                            <input type="hidden" name="communityforumid" id="communityforumid" value="<?php echo $communityforum->getID(); ?>" />
+                            <input type="hidden" name="userid" id="userid" value="<?php echo $user->getID(); ?>" />
+                            <input type="hidden" name="farmerid" id="farmerid" value="<?php echo $user->getFarmerID(); ?>" />                    
+                            <input type="hidden" name="type" id="type" value="1" />
+                            <input type="hidden" name="entityname" id="entityname" value="CommunityForumComment" /> 
+                            <input type="hidden" name="<?php echo URL_SUCCESS; ?>" id="<?php echo URL_SUCCESS; ?>" value="<?php echo encode($this->baseUrl('communityforumcomment/view')); ?>" />
+                            <input type="hidden" id="idfordelete" name="idfordelete" value="" />       
+                        </div>
+                        <div class="sectionfooter"></div>
+					</form>
+                </div>
+                <div id="newtopic"><div id="loading"><br />Please Wait ..... <br /><br /><img src="<?php echo $this->baseUrl("images/loading.gif"); ?>" /></div></div>
+            </div>
+		</div>
+	</div>
+    <?php require APPLICATION_PATH."/views/scripts/index/righthandband.phtml"; ?>
+</div>             
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

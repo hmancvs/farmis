@@ -1,0 +1,40 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$title = "Guided Features Tour";
+	$this->headTitle($this->translate("appname")." | ".$title); 
+
+?>
+<script>
+$(document).ready(function() {
+	// $("#container").html($("a#loading").html());	
+	
+});
+</script>
+<div class="row marginleft0">
+    <div class="span8 pull-left marginleft0 public_leftcolumn">
+        <div class="content">
+            <h1><?php echo $title; ?></h1> 
+            <p>Watch this video today for a guided visual tour of FARMIS and how you can use it to improve your business.</p>
+            
+            <div id="homevideo">
+                <div id="container">
+                    <object width="640" height="400">
+                        <param name="movie" value="http://www.youtube.com/v/YecyKnQUcBY?version=3&amp;hl=en_US&amp;rel=0"></param>
+                        <param name="allowFullScreen" value="true"></param>
+                        <param name="allowscriptaccess" value="always"></param>
+                        <embed src="http://www.youtube.com/v/YecyKnQUcBY?version=3&amp;hl=en_US&amp;rel=0" type="application/x-shockwave-flash" width="640" height="400" allowscriptaccess="always" allowfullscreen="true"></embed>
+                    </object>
+                </div>
+            </div>
+            <div id='youtube-player-container'> </div>
+            
+            <h1 style="margin-top:30px;">Feature Description</h1> 
+            
+        </div>
+    </div>
+    <?php require APPLICATION_PATH."/views/scripts/index/righthandband.phtml"; ?>
+</div>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>
