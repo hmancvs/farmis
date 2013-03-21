@@ -28,7 +28,7 @@ class Loan extends BaseEntity  {
 		$this->hasColumn('saleid', 'integer', null);
 		
 		$this->hasColumn('principal', 'decimal', 11, array('default' => '0'));
-		$this->hasColumn('interestrate', 'integer', null);
+		$this->hasColumn('interestrate', 'decimal', 11, array('default' => '0'));
 		$this->hasColumn('installment', 'decimal', 11, array('default' => '0'));
 		$this->hasColumn('installmentunit', 'integer', null);
 		$this->hasColumn('paybackamount', 'decimal', 11, array('default' => '0'));

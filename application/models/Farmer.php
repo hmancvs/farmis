@@ -22,6 +22,7 @@ class Farmer extends BaseEntity {
 		
 		$this->hasColumn('email', 'string', 50);
 		$this->hasColumn('isinvited', 'integer', null, array('default' => 0));
+		$this->hasColumn('isphoneinvited', 'integer', null, array('default' => 0));
 		$this->hasColumn('invitedbyid', 'integer', null);
 		$this->hasColumn('hasacceptedinvite', 'integer', null, array('default' => 0));
 		$this->hasColumn('dateinvited','date');
@@ -251,6 +252,9 @@ class Farmer extends BaseEntity {
 		if(isArrayKeyAnEmptyString('isinvited', $formvalues)){
 			unset($formvalues['isinvited']);
 		}
+		if(isArrayKeyAnEmptyString('isphoneinvited', $formvalues)){
+			unset($formvalues['isphoneinvited']);
+		}
 		if(isArrayKeyAnEmptyString('hasacceptedinvite', $formvalues)){
 			unset($formvalues['hasacceptedinvite']); 
 		}
@@ -350,11 +354,17 @@ class Farmer extends BaseEntity {
 			$formvalues['user']['address']['farmerid'] = NULL;
 		}
 		$formvalues['user']['address']['country'] = !isArrayKeyAnEmptyString('country', $formvalues) ? $formvalues['country'] : NULL;
+		if(!isArrayKeyAnEmptyString('locationid2', $formvalues)){
+			$formvalues['user']['address']['districtid'] = $formvalues['locationid2'];
+			$formvalues['user']['locationid'] = $formvalues['locationid2'];
+		}
 		if(!isArrayKeyAnEmptyString('districtid', $formvalues)){
 			$formvalues['user']['address']['districtid'] = $formvalues['districtid'];
+			$formvalues['user']['locationid'] = $formvalues['districtid']; 
 		}
 		if(!isArrayKeyAnEmptyString('locationid', $formvalues)){
 			$formvalues['user']['address']['districtid'] = $formvalues['locationid'];
+			$formvalues['user']['locationid'] = $formvalues['locationid']; 
 		}
 		if(!isArrayKeyAnEmptyString('countyid', $formvalues)){
 			$formvalues['user']['address']['countyid'] = $formvalues['countyid'];
@@ -669,9 +679,29 @@ class Farmer extends BaseEntity {
 			// debugMessage('Error is '.$e->getMessage());
 			throw new Exception($e->getMessage());
 		}
-
+		
 		$this->sendInviteConfirmationNotification();
 		// exit();
+		return true;
+	}
+	# set the subscription period for the farm group
+	function setNewSubscription(){
+		# set subscription entry for user
+		# current plan
+		$plan = new MembershipPlan();
+		$plan->populate($this->getUser()->getMembershipPlanID());
+		# new subscription
+		$subscription = new Subscription();
+		$subscription->setUserID($this->getUserID());
+		$subscription->setMembershipPlanID($this->getUser()->getMembershipPlanID());
+		$startdate = date("Y-m-d");	
+		$expirydate = date("Y-m-d", strtotime(date("Y-m-d", strtotime($startdate)) . " +".$plan->getTrialDays()." days "));
+		$subscription->setStartDate($startdate);
+		$subscription->setEndDate($expirydate);
+		$subscription->setIsTrial(1);
+		$subscription->setIsActive(1);
+		$subscription->save();
+		
 		return true;
 	}
 	# determine if person has signature
@@ -757,7 +787,7 @@ class Farmer extends BaseEntity {
 
 		// assign values
 		$template->assign('firstname', isEmptyString($this->getFirstName()) ? 'Friend' : $this->getFirstName());
-		$template->assign('inviter', isEmptyString($this->getInvitedByID()) ? 'FARMIS Admin' : $this->getInvitedBy()->getName() );
+		$template->assign('inviter', isEmptyString($this->getInvitedByID()) ? 'FARMREC Admin' : $this->getInvitedBy()->getName() );
 		// the actual url will be built in the view
 		$viewurl = $template->serverUrl($template->baseUrl('signup/index/profile/'.encode($this->getID())."/")); 
 		$template->assign('invitelink', $viewurl);
@@ -813,9 +843,11 @@ class Farmer extends BaseEntity {
 		// set the send of the email address
 		$mail->setFrom($this->config->notification->emailmessagesender, $this->translate->_('useraccount_email_notificationsender'));
 		
-		$mail->setSubject(sprintf($this->translate->_('useraccount_email_subject_invite_confirmation'), $this->translate->_('appname')));
+		$subject = sprintf($this->translate->_('useraccount_email_subject_invite_confirmation'), $this->translate->_('appname'));
+		$mail->setSubject($subject);
 		// render the view as the body of the email
 		$mail->setBodyHtml($template->render('inviteconfirmation.phtml'));
+		$message_contents = $template->render('signupnotification.phtml');
 		// debugMessage($template->render('inviteconfirmation.phtml')); exit();
 		$mail->send();
 		
@@ -823,6 +855,21 @@ class Farmer extends BaseEntity {
 		$mail->clearSubject();
 		$mail->setBodyHtml('');
 		$mail->clearFrom();
+		
+		
+		# save copy of message to user's application inbox
+		$message_dataarray = array(
+			"senderid" => 1,
+			"subject" => $subject,
+			"contents" => $message_contents,
+			"recipients" => array(
+								md5(1) => array("recipientid" => $this->getUserID())
+							)
+		);
+		// process message data
+		$message = new Message();
+		$message->processPost($message_dataarray);
+		$message->save();
 		
 		return true;
 	}
@@ -844,7 +891,7 @@ class Farmer extends BaseEntity {
 		$template->assign('subject', $dataarray['subject']);
 		$template->assign('message', nl2br($dataarray['message']));
 		
-		$mail->setSubject("New FARMIS Contact Us Message: ".$dataarray['subject']);
+		$mail->setSubject("New FARMREC Contact Us Message: ".$dataarray['subject']);
 		// set the send of the email address
 		$mail->setFrom($dataarray['email'], $dataarray['name']);
 		
@@ -931,6 +978,7 @@ class Farmer extends BaseEntity {
 		if(isEmptyString($this->getUser()->getFarmerID())){
 			$this->getUser()->setFarmerID($this->getID());
 		}
+		#  inviting farm group admin
 		if($this->isFarmGroupManager() && isEmptyString($this->getUserID())){
 			$this->getUser()->setFirstName($this->getFirstName());
 			$this->getUser()->setLastName($this->getLastName());
@@ -970,6 +1018,42 @@ class Farmer extends BaseEntity {
 		
 		return true;
 	}
+	# invite user by phone to join
+	function inviteOneByPhone() {
+		$this->setDateInvited(date('Y-m-d'));
+		$this->setIsPhoneInvited('1');
+		$this->setIsInvited('0');
+		$this->getUser()->setActivationKey($this->getUser()->generateActivationKey());
+		$this->setHasAcceptedInvite('0');
+		
+		// set farmer id on user
+		if(isEmptyString($this->getUser()->getFarmerID())){
+			$this->getUser()->setFarmerID($this->getID());
+		}
+		
+		// debugMessage($this->toArray(true)); exit();
+		$this->getUser()->save();
+		$this->save();
+		// send email
+		$this->sendMobilePhoneInvitation();
+	
+		return true;
+	}
+	# send invitition message to user inbox
+	function sendMobilePhoneInvitation() {
+		$message = $this->getSignupInviteContent();
+		// debugMessage($message);
+		// $sendresult = sendSMSMessage($this->getUser()->getPhone(), $message);
+		// debugMessage($sendresult);
+		# saving of message to application inbox is not valid here
+		return true;
+	}
+	# content for requesting activation code via  phone
+	function getSignupInviteContent(){
+		$template = new Zend_View();
+		$signup_url = $template->serverUrl($template->baseUrl('signup/activate'));
+		return "Dear ".$this->getUser()->getFirstName().", \nYour FARMREC activation code is: ".$this->getUser()->getActivationKey()." \nGo to ".$signup_url." and enter this code to complete.";
+	} 
 	# determine level of completion for primary profile
 	function getStep1_1_Status(){
 		$total = 0;

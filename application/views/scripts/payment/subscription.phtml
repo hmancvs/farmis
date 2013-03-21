@@ -1,0 +1,230 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$id = decode($request->id);	
+	$subscription = new Subscription();
+	
+	$isfarmer = false;
+	$isfarmgroup = false;
+	$groupid = decode($request->farmgroupid);
+	$subcriberid = decode($request->userid);
+	if(isEmptyString($request->id)){
+		$subscription->setStartDate(date('Y-m-d'));
+		# farmgroup payment	
+		if(!isEmptyString($groupid)){
+			$isfarmgroup = true;
+			$farmgroup = new FarmGroup();
+			$farmgroup->populate($groupid); 
+			$subscription->setFarmGroupID($farmgroup->getID());
+			$subscription->setPlanID(4);
+		}
+		# subscriber payment 
+		if(!isEmptyString($subcriberid)){
+			$isuser = true;
+			$user = new UserAccount();
+			$user->populate($subcriberid);
+			$subscription->setUserID($user->getID());
+			$subscription->setFarmerID($user->getFarmerID());
+			$subscription->setPhone($user->getPhone());
+		}
+	}
+	
+	if(!isEmptyString($request->id)){
+		$subscription->populate(decode($request->id));
+	}
+	
+	#in case of errors in session, populate the fields from session
+	if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
+		$subscription->processPost($session->getVar(FORM_VALUES));	
+	}
+	
+	$title = "New Subscription"; 
+	$this->headTitle($title);
+	
+?>
+<script>
+	$(document).ready(function() {
+		$("#indexform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				startdate: "required",
+				enddate: "required",
+				verifier: "required"
+			}, 
+			// the messages for each of the fields being validated
+			messages: {		
+				startdate: "Please select Subscription Start",
+				enddate: "Please select Subscription End",
+				verifier: "Please enter name"
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						error.appendTo("#"+element.attr("name")+"_error")
+						break;
+				}			
+			}
+		});
+		
+		// datepickerOpts = new Date();   
+		$("#startdate, #enddate").datepicker(datepickerOpts);
+		
+		// tooltips in popup
+		$(".hastooltip").each(function(){		
+			var theid = $(this).attr('id');
+			var thepath = '<?php echo $this->baseUrl('images/questionmark.png'); ?>';
+			if($(this).attr('title') != "undefined" || $(this).attr('title') != ""){
+				$('<a href="javascript: void(0);" class="qcontainer" id="q_'+theid+'"><img src="'+thepath+'" /></a>').insertAfter(this);
+				$("#q_"+theid).attr('title', $(this).attr('title')).addClass('qtooltip');
+			}	    
+		}); 
+		$('.qtooltip').tipsy({fade: true, gravity: 'w', html: true, trigger: 'hover', offset: -5});
+    	$(".hastooltip").attr('title','');
+		
+		// reset tab index
+		var tabindex = 1;
+		$('input,select').each(function() {
+			if (this.type != "hidden") {
+				var $input = $(this);
+				$input.attr("tabindex", tabindex);
+				tabindex++;
+			}
+		});
+		
+		if(isEmptyString($('#enddate').val())){
+			$('#days').val('30');
+		}
+		$('#days').change(function() {
+			start = $('#startdate').val()
+			var s = new Date(start);
+			var sstamp = s.getTime();
+			var days = $(this).val();
+			if(!isEmptyString(days)){
+				var e = new Date();
+				e.setDate(s.getDate() + parseInt(days));
+				// alert(parseInt(days));
+				var assigned =  (getShortMonthName(e))+" "+e.getDate()+", "+e.getFullYear();
+				$('#enddate').val(assigned);
+			} else {
+				end = $('#enddate').val()
+				var e = new Date(end);
+				var estamp = e.getTime();
+				diff = days_between(e, s);
+				$('#days').val(diff);
+			}
+		});
+		$('#days').change();
+		
+		$('#startdate').change(function() {
+			$('#days').trigger('change');
+		});
+		
+		function getShortMonthName(d){
+			var month=new Array();
+			month[0]="Jan";
+			month[1]="Feb";
+			month[2]="Mar";
+			month[3]="Apr";
+			month[4]="May";
+			month[5]="Jun";
+			month[6]="Jul";
+			month[7]="Aug";
+			month[8]="Sep";
+			month[9]="Oct";
+			month[10]="Nov";
+			month[11]="Dec";
+			var n = month[d.getMonth()];
+			return n;
+		}
+		function days_between(date1, date2) {
+			// The number of milliseconds in one day
+			var ONE_DAY = 1000 * 60 * 60 * 24
+			// Convert both dates to milliseconds
+			var date1_ms = date1.getTime()
+			var date2_ms = date2.getTime()
+			// Calculate the difference in milliseconds
+			var difference_ms = Math.abs(date1_ms - date2_ms)
+			// Convert back to days and return
+			return Math.round(difference_ms/ONE_DAY)
+		}
+	}); 
+</script>
+<style>
+
+
+</style>
+<div class="popupdiv">
+<form class="form-horizontal well span6" id="indexform" action="" method="post">
+    <table class="table">
+		<?php if($sessionhaserror) { ?>
+	        <tr>
+	        	<td colspan="2"><div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div></td>
+	        </tr>
+        <?php } ?>
+        <tr>
+            <td style="width:28%;"><label class="control-label">Start Date: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><input type="text" name="startdate" id="startdate" class="datefield hastooltip width100" value="<?php echo changeMySQLDateToPageFormat($subscription->getStartDate()); ?>" title="<?php echo $this->translate("subscription_startdate_tooltip"); ?>" />
+                <input type="hidden" name="entityname" value="Subscription" />
+                <input type="hidden" id="id" name="id" value="<?php echo encode($subscription->getID()); ?>" />
+                <input type="hidden" id="planid" name="planid" value="<?php echo $subscription->getPlanID(); ?>" />
+                <input type="hidden" id="farmgroupid" name="farmgroupid" value="<?php echo $subscription->getFarmGroupID(); ?>" />
+                <input type="hidden" id="farmerid" name="farmerid" value="<?php echo $subscription->getFarmerID(); ?>" />
+                <input type="hidden" id="userid" name="userid" value="<?php echo $subscription->getUserID(); ?>" />
+                <input type="hidden" name="<?php echo SUCCESS_MESSAGE; ?>" value="global_save_success" />
+                <div id="startdate_error"></div></td>
+        </tr>
+        <tr>
+            <td><label class="control-label">Days Assigned: </label></td>
+            <td><?php
+                    $types = getSubscriptionPeriods();
+                    $typesdropdown = new Zend_Form_Element_Select('days',
+                                        array(
+                                            'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $types),								
+                                            'view' => new Zend_View(),
+                                            'decorators' => array('ViewHelper'),
+                                            'class' => array('hastooltip', 'span2'),
+                                            'title' => $this->translate("subscription_days_tooltip")
+                                        )
+                                    );
+                    $typesdropdown->setValue(''); 
+                    echo $typesdropdown->render(); 
+               ?><div id="days_error"></div></td>
+        </tr>
+        <tr>
+            <td><label class="control-label">End Date: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><input type="text" name="enddate" id="enddate" class="datefield hastooltip width100" value="<?php echo changeMySQLDateToPageFormat($subscription->getEndDate()); ?>" title="<?php echo $this->translate("subscription_enddate_tooltip"); ?>" /><div id="enddate_error"></div></td>
+        </tr>
+        <tr>
+        	<td><label class="control-label">Status: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><?php 
+					$typeclass = $subscription->getIsActive();
+					$data = array('0'=>'No', '1'=>'Yes');						  
+					$statusradio = new Zend_Form_Element_Radio('isactive',
+							  array(
+									  'multiOptions' => $data, 
+									  'view' => new Zend_View(),
+									  'disableLoadDefaultDecorators' => true,
+									  'separator' => '&nbsp;',
+									  'class' => array('fintype', $typeclass),										  
+									  'decorators' => array('ViewHelper',
+														  array('HtmlTag', array('tag' => 'div', 'class' => array('inline', 'radio', 'zendradio'))) // use a sorrounding DIV with classes which are copied to the label by JQuery
+													  )
+							  )
+					  );
+					  $statusradio->setValue($subscription->getIsActive());
+					  echo $statusradio->render();
+				?>
+			</td>	
+        </tr>
+        <tr>
+            <td><label class="control-label">Verified By: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><input type="text" name="verifier" id="verifier" class="span3 hastooltip" value="<?php echo $subscription->getVerifier(); ?>" title="<?php echo $this->translate("subscription_verifier_tooltip"); ?>" /><div id="verifier_error"></div>
+            </td>
+        </tr>
+  </table>
+</form>
+</div>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

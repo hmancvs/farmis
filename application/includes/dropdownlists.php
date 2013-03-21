@@ -534,22 +534,7 @@
 		$countriesarray = getCountries();
 		return $countriesarray[$countrycode];
 	}
-	# function to generate ethinicity dropdown list 
-	function getEthinicities(){
-		$ethn_list = array(
-			"1" => "Afghan",
-			"2" => "Albanian",
-			"3" => "Algerian",
-			"4" => "American",
-			"5" => "Andorran",
-			"6" => "Angolan",
-			"7" => "Antiguans",
-			"8" => "Argentinean",
-			"9" => "Armenian",
-			"10" => "Australian"
-		);
-		return $ethn_list;
-	}
+	
 	/**
 	 * Return an array containing the 2 digit US state codes and names of the states
 	 *
@@ -723,15 +708,19 @@
 	}
 	# determine the education levels 
 	function getAllEducationLevels(){
-		return array('1'=>'Degree', '2'=>'Diploma', '8'=>'Institution', '3'=>'A-Level', '4'=>'0-Level', '5'=>'P.7', '7'=>'Less than P.7', '6'=>'None');
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'EDUCATION_LEVELS'";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# determine the marital statuses 
 	function getAllMaritalStatuses(){
-		return array('1'=>'Married', '2'=>'Single', '3'=>'Divorced', '4'=>'Widowed');
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'MARITAL_STATUS_VALUES'";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# determine the list of farm group types
 	function getFarmGroupTypes(){
-		return array('1'=>'DFA', '3'=>'Cooperative Society', '2'=>'NGO', '4'=>'SACCO','5'=>'Organization');
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'FARM_GROUP_TYPES' order by optiontext";
+		// debugMessage($all_values);
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# determine the available farm groups
 	function getAllFarmGroups() {
@@ -801,17 +790,23 @@
 		$valuesquery = "SELECT b.id AS optionvalue, b.name as optiontext FROM businessdirectorycategory as b WHERE b.parentid IS NOT NULL ".$custom_query." ORDER BY optiontext";
 		return getOptionValuesFromDatabaseQuery($valuesquery);
 	}
-	# land measure units
+	# field area units
+	function getAreaUnits(){
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'LAND_MEASURE_UNITS' order by optiontext ";
+		return getOptionValuesFromDatabaseQuery($query);
+	}
 	function getLandMeasureUnits(){
-		return array("1"=>"Acres","2"=>"Hectares");
+		return getAreaUnits();
 	}
 	# land acquire methods
 	function getLandAcquireMethods(){
-		return array("1"=>"Personal","2"=>"Hired","3"=>"Leased");
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'LAND_ACQUIRE_METHODS' ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# status values
 	function getStatusValues(){
-		return array("1"=>"Not Started","2"=>"In Progress","3"=>"Completed");
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'ACTION_STATUS' ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# commodities configured for farmis 
 	function getFarmisCommodities($ignore_list = array()){
@@ -838,162 +833,135 @@
 	}
 	# production input types
 	function getAllInputTypes(){
-		$values = array("2"=> "Machinery", "1"=> "Seeds", "5"=> "Herbicide", "3"=> "Insectcide", "4"=> "Fungicide", "6"=> "Fertiliser", "7"=>"Farm Equipment");
-		asort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'INPUT_TYPES' order by optiontext ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# production input types
 	function getAllExpenseTypes(){
-		$values = array("8"=>"Other", "9"=>"Transport", "10"=>"Labour","11"=>"Botany Services","12"=>"Consultancy","13"=>"Rent","14"=>"Training","15"=>"Salaries","16"=>"Allowances","17"=>"Brokrage");
-		asort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'EXPENSE_TYPES' order by optiontext ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# methods of tillage
 	function getTillageMethods(){
-		$values = array("1"=>"Chem Fallow", "2"=>"Conservation Till", "4"=>"Minimum Till", "5"=>"Mulch Till", "6"=>"No Till", "7"=>"Ridge Till", "8"=>"Roll Till", "9"=>"Strip Till", "10"=>"Zone Till", "11"=>"Other");
-		asort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'TILLAGE_TYPES' order by optiontext ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# primary tillage methods
 	function getPrimaryTillageMethods(){
-		$values = array("1" => "Wooden plough", "2"=>"Indigenous plough", "3"=>"Soil Turning Ploughs", "4"=>"Mouldboard Plough", "5"=>"One way Disc", "6"=>"Offset disc", "7"=>"Tine Implement", "8"=>"Disc Plough", "9"=>"One-way Plough", "10"=>"Subsoil Plough", "11"=>"Chisel Plough", "12"=>"Ridge Plough", "13"=>"Rotary Plough", "14"=>"Basin Lister", "15"=>"Other");
-		asort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'PRIMARY_TILLAGE_METHODS' order by optiontext ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# secondary tillage methods
 	function getSecondaryTillageMethods(){
-		$values = array("1"=>"Tractor Drawn Cultivator", "2"=>"Sweep Cultivator", "3"=>"Harrows", "4"=>"Disc Harrow", "5"=>"Blade Harrow", "6"=>"Indigenous Blade Harrows", "7"=>"Plank and Roller", "8"=>"Country plough", "9"=>" Ridge plough", "10"=>"Bund former", "11"=>"Peg tooth harrow", "12"=>"Disc cultivator", "13"=>"Tined cultivator", "14"=>"Rotovator", "15"=>"Other");
-		asort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'SECONDARY_TILLAGE_METHODS' order by optiontext ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# methods of tillage
 	function getDepthUnits(){
-		$values = array("1"=>"Feet", "2"=>"Inches", "3"=>"Millimeters", "4"=>"Centimeters", "5"=>"Yards");
-		ksort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'DEPTH_UNITS' order by optiontext ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# seeding rate units
 	function getSeedingUnits(){
-		$values = array("1"=>"Seeds/SqFeet", "2"=>"Seeds/SqMeter", "3"=>"Seeds/SqYard", "4"=>"Seeds/Acre");
-		ksort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'SEEDING_UNITS' order by optiontext ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# seeding rate units
 	function getSeedingTotalUnits(){
-		$values = array("1"=>"Seeds", "4"=>"Other");
-		ksort($values);
-		return $values;
-	}
-	# field area units
-	function getAreaUnits(){
-		$values = array("1"=>"SqFeet", "2"=>"SqMeters", "3"=>"SqYards", "4"=>"Acres", "5"=>"Hectares");
-		asort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'PLANTING_UNITS'";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# planting methods
 	function getPlantingMethods(){
-		$values = array("1"=>"Broadcasting", "2"=>"Seedbedding", "3"=>"Pre-sowing", "4"=>"Open-fielding", "5"=>"Dibbling", "6"=>"Transplanting", "7"=>"Other");
-		asort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'PLANTING_METHODS' order by optiontext ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# treatment types
 	function getTreatmentChemicalTypes(){
-		$values = array("1"=>"Type 1", "2"=>"Type 2", "3"=>"Type 3", "4"=>"Other");
+		$values = array();
 		ksort($values);
 		return $values;
 	}
 	# treatment methods
 	function getTreatmentMethods(){
-		$values = array("1"=>"1/128th Acre Method", "2"=>"5940 Method", "3"=>"Overall Broadcast Spray", "4"=>"Foliar", "5"=>"Stump Treatment", "6"=>"Basal Bark", "7"=>"Spot Sprays", "8"=>"Wiping Treatments", "9"=>"1 Inch away", "10"=>"2 Inch away", "11"=>"Aerial", "12"=>"Air Blast", "13"=>"Backpack Spray", "14"=>"Band", "15"=>"Banding", "16"=>"Broadcast", "17"=>"Chemigation", "18"=>"Co-Application", "19"=>"Electro-static", "20"=>"Fertigation", "21"=>"Ground", "22"=>"Hooded Sprayer", "23"=>"Impregnate", "24"=>"In Furrow", "25"=>"Injected", "26"=>"Mis-Application", "27"=>"Planter", "28"=>"Rope Wick", "29"=>"SideDress", "30"=>"Surface", "31"=>"T Band", "32"=>"Other");
-		asort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'TREATMENT_METHODS' order by optiontext ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# treatment units
 	function getTreatmentMeasureUnits(){
-		$values = array("1"=>"Ltrs/SqFeet", "2"=>"MLtrs/SqFeet", "3"=>"cc/SqFeet", "4"=>"Ltrs/SqMeter", "5"=>"MLtrs/SqMeter", "6"=>"cc/SqMeter", "8"=>"Kgs/SqFeet", "9"=>"grams/SqFeet", "10"=>"Kgs/SqMeter", "11"=>"grams/SqMeter", "7"=>"Other");
-		ksort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'TREATMENT_MEASURE_UNITS' ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# treatment units
 	function getTreatmentTotalUnits(){
-		$values = array("1"=>"Ltrs", "2"=>"MLtrs", "3"=>"cc", "4"=>"Gallons", "5"=>"Kgs", "6"=>"grams", "7"=>"Other");
-		ksort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'TREATMENT_VOLUME_UNITS' ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# application timing values 
 	function getTimingValues(){
-		$values = array("1"=>"Pre Planting", "2"=>"Planting", "3"=>"Dormancy", "4"=>"Pre Harvest", "5"=>"Post Harvest", "6"=>"Mid Season", "7"=>"Burndown", "8"=>"PreEmerge", "9"=>"PostEmerge", "10"=>"PreFlood", "11"=>"Layby", "12"=>"Other");
-		ksort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'SEASON_TIMING_VALUES' ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# treatment sub types
 	function getTreatmentSubTypes(){
-		$values = array("1"=>"Type 1", "2"=>"Type 2", "3"=>"Type 3", "4"=>"Other");
+		$values = array();
 		asort($values);
 		return $values;
 	}
 	# treatment sub types
 	function getTreatmentTypes(){
-		$values = array("1"=>"Algicide", "2"=>"AntiMicrobial", "3"=>"Attractant", "4"=>"Biopesticide", "5"=>"Biocide", "6"=>"Disinfectant", "7"=>"Fungicide", "8"=>"Fumigant", "9"=>"Herbicide", "10"=>"Insecticide", "11"=>"Miticides", "12"=>"Molluscicide", "13"=>"Nematicide", "14"=>"Ovicide", "15"=>"Pheromone", "16"=>"Repellant", "17"=>"Rodenticide", "18"=>"Defoliant", "19"=>"Desiccant", "20"=>"Growth Regulator", "21"=>"Other");
-		asort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'SEASON_TREATMENT_TYPES' order by optiontext ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# treatment types
 	function getTreatmentForms(){
-		$values = array("1"=>"Liquid", "2"=>"Solid", "3"=>"Other");
-		asort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'SEASON_TREATMENT_FORMS' ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# harvest yield rate
 	function getHarvestYieldUnits(){
-		$values = array("1"=>"kgs/acre", "2"=>"kgs/hectare", "3"=>"tonnes/Kg", "4"=>"tonnes/hectare", "5"=>"bags/acre","6"=>"bags/hectare");
-		ksort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'YIELD_UNITS' ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# harvest quantity yield rate
 	function getHarvestQuantityUnits(){
-		$values = array("1"=>"kgs", "2"=>"grammes", "3"=>"tonnes", "4"=>"bags", "5"=>"pieces");
-		ksort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'SEASON_HARVEST_UNITS' ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# harvest quantity yield rate
 	function getHarvestMethods(){
-		$values = array("1"=>"Manual harvesting", "2"=>"Machine threshing", "3"=>"Machine reaping", "4"=>"Combined harvesting");
-		asort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'HARVEST_METHODS' order by optiontext ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# sale to types
 	function getSaleToTypes(){
-		$values = array("1"=>"Broker", "2"=>"Transporter", "3"=>"Wholesaler", "4"=>"Retailer", "5"=>"Family", "6"=>"Institution", "7"=>"Farm Group", "8"=>"Other");
-		asort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'SALES_DESTINATIONS' order by optiontext ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# types of inventory
 	function getInventoryTypes(){
-		$values = array("1"=>"Assest Inventory", "2"=>"Production Inventory", "3"=>"Output Inventory");
-		// asort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'INVENTORY_TYPES' ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# categories of inventory
-	function getInventoryCategories(){
+	function getInventoryCategories($userid = ''){
 		$values = array("1"=>"Cat 1", "2"=>"Other");
 		// asort($values);
 		return $values;
 	}
 	# types of services for inventory
 	function getServiceTypes(){
-		$values = array("1"=>"Repair", "2"=>"Standard", "3"=>"Warranty", "4"=>"Other");
-		asort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'SERVICE_TYPES' ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# sources of loans for financing season activities
 	function getCapitalSources(){
 		$values = array(
-			"1"=>"Own Cash (personal income)", 
+			"1"=>"Own Cash / Personal income", 
 			"2"=>"Savings from previous season", 
 			"3"=>"Soft loan", 
-			"4"=>"Bank loan (credit)",
-			"5"=>"Crop finance (farming contract)"
+			"4"=>"Bank loan",
+			"5"=>"Crop finance contract"
 		);
 		// asort($values);
 		return $values;
@@ -1003,15 +971,15 @@
 			$values = array(
 				"1"=>"Current Season Capital", 
 				"3"=>"Soft loan", 
-				"4"=>"Bank loan (credit)",
-				"5"=>"Crop finance (farming contract)"
+				"4"=>"Bank loan",
+				"5"=>"Crop finance"
 			);
 		}
 		if($type == '2'){
 			$values = array(
 				"1"=>"Current Season Capital", 
 				"3"=>"New Soft loan", 
-				"4"=>"New Bank loan (credit)",
+				"4"=>"New Bank loan",
 				"5"=>"New Crop Finance Contract"
 			);
 		}
@@ -1042,30 +1010,12 @@
 	}
 	# available credit financial institutions
 	function getAllFinancialInstitutions(){
-		$values = array(
-			"1"=>"Equity Bank", 
-			"2"=>"Pride Microfinance", 
-			"3"=>"Centenary Bank", 
-			"4"=>"Opportunity Uganda",
-			"5"=>"Post Bank",
-			"6"=>"Finca Uganda",
-			"7"=>"Standard Chartered Bank",
-			"8"=>"Stanbic Bank",
-			"9"=>"Bank of Africa",
-			"10"=>"Housing Finance"
-		);
-		ksort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'FINANCIAL_INSTITUTIONS' order by optiontext ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	function getAllClients(){
-		$values = array(
-			"1"=>"Mukwano", 
-			"2"=>"Harvest Plus", 
-			"3"=>"Vedco", 
-			"4"=>"Other"
-		);
-		ksort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'ALL_CLIENTS' order by optiontext ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	function getAllSeasons($farmid){
 		$custom_query = '';
@@ -1077,21 +1027,12 @@
 	}
 	# determine signup contact categories
 	function getContactUsCategories(){
-		$array = array('Feedback'=>'Feedback', 'Ask a Question'=>'Ask a Question', 'Submit a Bug'=>'Submit a Bug', 'Sign up Problems'=>'Sign up Problems', 'Account compromised'=>'Account compromised', 'Failed to Login'=>'Failed to Login');
-		ksort($array);
-		$array['Other'] = 'Other';
-		return $array;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'CONTACTUS_CATEGORIES' ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	function getPricingTypes(){
-		$values = array(
-			"1"=>"Farm Gate Price", 
-			"2"=>"Assembly Market Price", 
-			"3"=>"Store Price",
-			"4"=>"Wholesale Price", 
-			"5"=>"Retail Price"
-		);
-		// asort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'SALES_PRICING_TYPES' ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	function getFarmers($farmgroupid = ''){
 		$custom_query = '';
@@ -1106,79 +1047,28 @@
 	}
 	# farming types practised
 	function getFarmingTypes(){
-		$values = array(
-			"1"=>"Subsistance Farming", 
-			"2"=>"Commercial Farming", 
-			"3"=>"Ranching", 
-			"4"=>"Dry and Irrigated Farming",
-			"5"=>"Mixed Farming",
-			"6"=>"Single Crop Farming",
-			"7"=>"Multi-crop Farming",
-			"8"=>"Diversified Farming",
-			"9"=>"Specialised Farming",
-			"10"=>"Shifting Cultivation"
-		);
-		asort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'FARMING_TYPES' order by optiontext ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# support types received by farmer
 	function getSupportTypes(){
-		$values = array(
-			"1"=>"Farming Inputs", 
-			"2"=>"Loans", 
-			"3"=>"Training", 
-			"4"=>"Market Research",
-			"5"=>"Advertising",
-			"6"=>"Market Information",
-			"7"=>"Advisory Services",
-			"8"=>"Brokerage",
-			"9"=>"Farming Equipment",
-			"10"=>"Saving Scheme"
-		);
-		asort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'SUPPORT_TYPES' order by optiontext ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# income generateing activities
 	function getOtherActivityTypes(){
-		$values = array(
-			"1"=>"Poultry", 
-			"2"=>"Fishing", 
-			"3"=>"Trading", 
-			"4"=>"Livestock",
-			"5"=>"Piggery"
-		);
-		asort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'ACTIVITY_FORMS' order by optiontext ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# farming tools 
 	function getFarmingTools(){
-		$values = array(
-			"1"=>"Hoe", 
-			"2"=>"Spade", 
-			"3"=>"Axe", 
-			"4"=>"Panga",
-			"5"=>"Rake",
-			"6"=>"tractor "
-		);
-		asort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'FARMING_TOOLS' order by optiontext ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# forum categories
 	function getForumCategories(){
-		$values = array(
-			"1"=>"Help (using the FARMIS)",
-			"2"=>"Farm Group",
-			"3"=>"Farm Loans",
-			"4"=>"Marketing",
-			"5"=>"Methods of Farming",
-			"6"=>"Market Information",
-			"7"=>"Farming Inputs",
-			"8"=>"Commodities",
-			"9"=>"Farming Best Practices",
-			"10"=>"Offers"
-		);
-		asort($values);
-		return $values;
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'FORUM_CATEGORIES' order by optiontext ";
+		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# function to fetch all forum categories from database
 	function getForumCategoryList() {
@@ -1207,5 +1097,21 @@
 		$all_categories = $conn->fetchAll("SELECT c.id as id, c.topic as topic FROM communityforum AS c WHERE c.id <> '' order by datecreated desc ".$limit_query);
 		
 		return $all_categories;
+	}
+	# check for payment methods
+	function getPaymentMethods(){
+		return array(1=>'Mobile Money',2=>'Cash',3=>'Payments System');
+	}
+	# payment status values
+	function getPaymentStatuses(){
+		return array(3=>'Completed',2=>'Cancelled',1=>'Pending');
+	}
+	# subscription periods available
+	function getSubscriptionPeriods(){
+		return array('15'=>'15 Days','30'=>'30 Days', '180'=>'6 Months', '365'=>'1 Year');
+	}
+	# subscription subjects
+	function getPaymentSubjects(){
+		return array(1=>'Basic Farmer Subscription', 2=>'Premium Farmer Subscription', 3=>'DNA Basic', 4=>'DNA Premium', 5=>'Other');
 	}
 ?>

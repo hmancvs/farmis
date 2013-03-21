@@ -48,6 +48,19 @@
                         <li>
                             <a class="list" href="<?php echo $this->baseUrl("resource/allprices"); ?>" title="Market Prices"><img src="<?php echo $this->baseUrl('images/topmenu_market.png'); ?>" /><br /><h2>Current Market Prices</h2></a>
                         </li>
+                        <?php if(isAdmin()){ ?>
+                        <li>
+                            <a class="list" href="<?php echo $this->baseUrl('resource/listvariables'); ?>" title="System Variables"><img src="<?php echo $this->baseUrl('images/topmenu_market.png'); ?>" /><br /><h2>System Variables</h2></a>
+                        </li>
+                        <?php } ?>
+                        <?php if(isAdmin() || isFarmGroupAdmin()){ ?>
+                        <li>
+                            <a class="list" href="<?php echo $this->baseUrl('message/massmail'); ?>" title="Mass Mail"><img src="<?php echo $this->baseUrl('images/topmenu_market.png'); ?>" /><br /><h2>Mass Mail</h2></a>
+                        </li>
+                        <li>
+                            <a class="list" href="<?php echo $this->baseUrl('message/massmail'); ?>" title="Bulk Sms"><img src="<?php echo $this->baseUrl('images/topmenu_market.png'); ?>" /><br /><h2>Bulk Sms</h2></a>
+                        </li>
+                        <?php } ?>
                     </ul>
                 </span>
             </div>

@@ -2,6 +2,7 @@
 
 # functions to create and manage drop down lists
 require_once 'dropdownlists.php';
+require_once 'BrowserDetection.php';
 
 define("ACTION_CREATE", "create");
 define("ACTION_INDEX", "index"); // maps to the default controller for Zend Framework, same as the create action in the ACL 

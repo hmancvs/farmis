@@ -38,13 +38,12 @@
 				},
 				gender: "required",
 				districtid: "required",
-				/*farmgroupid: "required",*/
 				regdate: "required",
 				refno: {
 					required: true,
 					validate_number: true,
 					maxlength:8,
-					minlength:4
+					minlength:3
 				},
 				phone: {
 					required: false, 					
@@ -63,13 +62,12 @@
 				},
 				gender: "<?php echo $this->translate("farmer_gender_error"); ?>",
 				districtid: "<?php echo $this->translate("farmer_district_error"); ?>",
-				/*farmgroupid: "Please select a Farm Group",*/
 				regdate: "Please select Registration Date",
 				refno: {
 					required: "Please enter a Reference Number",
 					validate_number: "Invalid Ref No specified",
 					maxlength: "Should not be more than 8 digits",
-					minlength: "Should not be less than 4 digits"
+					minlength: "Should not be less than 3 digits"
 				},
 				phone: {
 					validnumber: "Please enter a valid Phone Number",
@@ -178,6 +176,41 @@
 						} else {  
 							//show that the phone is NOT available  
 							$('#phone_availability_result').html(phone + ' is available').addClass('alert').addClass('alert-success').removeClass('alert-error');
+						}  
+				});  
+			}
+		} 
+		
+		//when button is clicked  
+        $('#check_email_availability').click(function(){ 
+			check_email_availability();  
+        });
+		$('#email').change(function(){ 
+			check_email_availability();  
+        });  
+		$('#email').keyup(function(){
+			this.value = this.value.toLowerCase();
+		});
+		
+		//function to check email availability  
+		function check_email_availability(){  
+			//get the username
+			var checking_html = 'Checking availability...';   
+			var email = $('#email').val();  
+			if(!isEmptyString(email) && validateEmail(email)){
+				$('#email_availability_result').html(checking_html);  
+				
+				//use ajax to run the check  
+				$.post("<?php echo $this->baseUrl('signup/checkemail'); ?>", { email: email },  
+					function(result){  
+						//if the result is 1  
+						// alert(result); // return false;
+						if(result == 1){  
+							//show that the email is available
+							$('#email_availability_result').html(email + ' is NOT available!').addClass('alert').addClass('alert-error').removeClass('alert-success'); 
+						} else {  
+							//show that the email is NOT available  
+							$('#email_availability_result').html(email + ' is available').addClass('alert').addClass('alert-success').removeClass('alert-error');
 						}  
 				});  
 			}
@@ -355,12 +388,13 @@ body {
         <tr>
             <td><label class="control-label" for="email"><?php echo $this->translate("farmer_email_label"); ?>: </label></td>
             <td><input type="text" name="email" id="email" value="" class="hastooltip span3" title="<?php echo $this->translate("farmer_inviteemail_tooltip"); ?>" />
-                <div id="email_error"></div>
+                <label class='lineblocked'><a href="javascript: void(0);" class="btn btn-primary btn-mini" id='check_user_availability' title="Check Availability">Check</a></label>
+                <div id="email_error"></div><div id="email_availability_result" style="margin-top:5px;"></div>
             </td>
         </tr>  
         <tr>
             <td><label class="control-label"><?php echo $this->translate("farmgroup_refno_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
-            <td><input type="text" name="refno" id="refno" value="<?php echo $farmer->getRefNo(); ?>" class="xhastooltip width100" title="<?php //echo $this->translate("farmgroup_refno_tooltip"); ?>" />&nbsp;&nbsp;
+            <td><input type="text" name="refno" id="refno" maxlength="8" value="<?php echo $farmer->getRefNo(); ?>" class="xhastooltip width100" title="<?php //echo $this->translate("farmgroup_refno_tooltip"); ?>" />&nbsp;&nbsp;
             <input type="text" name="regno" id="regno" value="<?php echo $farmer->getRegNo(); ?>" class="readonly hastooltip width100" title="<?php echo $this->translate("farmgroup_regno_tooltip"); ?>" /><div id="refno_error"></div><div id="regno_error"></div></td>
         </tr>
         <tr>

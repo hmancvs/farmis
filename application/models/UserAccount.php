@@ -35,6 +35,8 @@ class UserAccount extends BaseEntity {
 		$this->hasColumn('profilephoto', 'string', 50);
 		$this->hasColumn('emailmeoncomment', 'int', array('default' => '1'));
 		$this->hasColumn('emailmeonmessage', 'int', array('default' => '1'));
+		$this->hasColumn('dashwizard', 'integer', null, array('default' => '1')); # 0=hidden, 1=shown
+		$this->hasColumn('dashwelcome', 'integer', null, array('default' => '1')); # 0=hidden, 1=shown
 		
 		# override the not null and not blank properties for the createdby column in the BaseEntity
 		$this->hasColumn('createdby', 'integer', 11);
@@ -118,6 +120,18 @@ class UserAccount extends BaseEntity {
 								)
 						);
 		$this->hasMany('FarmCrop as farmcrops',
+						 array(
+								'local' => 'id',
+								'foreign' => 'userid'
+							)
+					);
+		$this->hasMany('Payment as payments',
+						 array(
+								'local' => 'id',
+								'foreign' => 'userid'
+							)
+					);
+		$this->hasMany('Subscription as subscriptions',
 						 array(
 								'local' => 'id',
 								'foreign' => 'userid'
@@ -210,6 +224,7 @@ class UserAccount extends BaseEntity {
 		$phone_query = "SELECT ua.*, up.* from useraccount as ua inner join userphone as up where ua.id = up.userid AND up.phone = '".$phone."' ".$id_check."";
 		$phone_result = $conn->fetchRow($phone_query);
 		// debugMessage($phone_query);
+		// debugMessage($phone_result);
 		if(isEmptyString($phone_result['userid'])){
 			return false;
 		}
@@ -262,6 +277,12 @@ class UserAccount extends BaseEntity {
 		}
 		if(isArrayKeyAnEmptyString('emailmeonmessage', $formvalues)){
 			$formvalues['emailmeonmessage'] = 1; 
+		}
+		if(isArrayKeyAnEmptyString('dashwizard', $formvalues)){
+			$formvalues['dashwizard'] = 1;
+		}
+		if(isArrayKeyAnEmptyString('dashwelcome', $formvalues)){
+			$formvalues['dashwelcome'] = 1;
 		}
 		# move the data from $formvalues['usergroups_groupid'] into $formvalues['usergroups'] array
 		# the key for each group has to be the groupid
@@ -740,7 +761,7 @@ class UserAccount extends BaseEntity {
 		$baseUrl = Zend_Controller_Front::getInstance()->getBaseUrl();
 		$contactus_url = $baseUrl.'/contactus';
 		$password_url = $baseUrl.'/farmer/view/id/'.encode($this->getPersonID().'/tab/account');
-		return "Dear ".$this->getFirstName().", <br /><br />Your FARMIS Account has been successfully activated. You can now login anytime using either Email, Phone or Username with the password you provided during registration. <br /><br /> You can also change your password anytime by <a href='".$password_url."' title='Change Password'>clicking here</a>.  <br /><br />For any help or assistance, <a href='".$contactus_url."'>Contact us</a> ";
+		return "Dear ".$this->getFirstName().", <br /><br />Your FARMREC Account has been successfully activated. You can now login anytime using either Email, Phone or Username with the password you provided during registration. <br /><br /> You can also change your password anytime by <a href='".$password_url."' title='Change Password'>clicking here</a>.  <br /><br />For any help or assistance, <a href='".$contactus_url."'>Contact us</a> ";
 	}
 	# set activation code to change user's email
 	function triggerEmailChange($newemail) {
@@ -906,7 +927,7 @@ class UserAccount extends BaseEntity {
 	 * @return String An activation key
 	 */
     function generateActivationKey() {
-		return substr(md5(uniqid(mt_rand(), 1)), 0, 10);
+		return substr(md5(uniqid(mt_rand(), 1)), 0, 6);
     }
    /**
     * Find a user account either by their email address 
@@ -935,6 +956,7 @@ class UserAccount extends BaseEntity {
 		
 		return true; 
 	}
+	# find user by email
 	function populateByEmail($email) {
 		# query active user details using email
 		$q = Doctrine_Query::create()->from('UserAccount u')->where('u.email = ?', $email);
@@ -946,6 +968,20 @@ class UserAccount extends BaseEntity {
 		}
 		
 		return $result; 
+	}
+	# find user by phone
+	function populateByPhone($phone) {
+		# query active user details using email
+		$c = new Doctrine_RawSql();
+		$c->select('{u.*}, {p.*}');
+		$c->from('useraccount u INNER JOIN userphone p ON (p.userid = u.id)');
+		$c->where("(p.phone = '".$phone."')");
+		$c->addComponent('u', 'UserAccount u');
+		$c->addComponent('p', 'u.phones p');
+		
+		$user_phone = $c->execute();
+		// debugMessage($user_phone->toArray());
+		return $user_phone;
 	}
 	function findByUsername($username) {
 		# query active user details using email
@@ -1285,6 +1321,26 @@ class UserAccount extends BaseEntity {
 		// debugMessage($relativeid);
 		$q = Doctrine_Query::create()->from('Subscription s')->where("s.userid = '".$this->getID()."' AND s.isactive = 1 ");
 		$result = $q->fetchOne();
+		// debugMessage($result->toArray());
+		if(!$result){
+			$result = $subscrip = new Subscription();
+		}
+		return $result;
+	}
+	# determine the payments made
+	function getAllPayments() {
+		$q = Doctrine_Query::create()->from('Payment p')->where("p.userid = '".$this->getID()."'")->orderby("p.trxdate desc");
+		$result = $q->execute();
+		// debugMessage($result->toArray());
+		if(!$result){
+			$result = $payment = new Payment();
+		}
+		return $result;
+	}
+	# determine the subcription history
+	function getAllSubscription() {
+		$q = Doctrine_Query::create()->from('Subscription s')->where("s.userid = '".$this->getID()."'")->orderby("s.enddate desc");
+		$result = $q->execute();
 		// debugMessage($result->toArray());
 		if(!$result){
 			$result = $subscrip = new Subscription();

@@ -87,8 +87,8 @@ class IndexController extends Zend_Controller_Action  {
     	// to ensure that its wellformed 
     	$new_object->processPost($this->_getAllParams());
     	/*debugMessage($new_object->toArray());
-    	debugMessage('errors are '.$new_object->getErrorStackAsString());*/
-    	// exit();
+    	debugMessage('errors are '.$new_object->getErrorStackAsString());
+    	exit();*/
     	if ($new_object->hasError()) {
     		// there were errors - add them to the session
     		$this->_logger->info("Validation Error for ".$classname." - ".$new_object->getErrorStackAsString());

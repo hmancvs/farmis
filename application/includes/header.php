@@ -24,6 +24,12 @@ $hide_on_print_class = $request->getParam(PAGE_CONTENTS_ONLY) == "true" ? "hideo
 // initialize the ACL for all views
 $acl = getACLInstance(); 
 
+$os = browser_detection('os');
+$islinux = false;
+if($os != 'nt'){
+  $islinux = true;
+}
+  
 $showleftcolumn = false;
 $showrightcolumn = false;
 $leftcolumnspan = '';
@@ -49,3 +55,11 @@ $farm = '<div id="farm"><form id="profileform-farm" class="form-horizontal farm"
 $subscription = '<div id="subscription"><form id="profileform-subscription" class="form-horizontal subscription"></div>';
 $accsettings = '<div id="account"><form id="profileform-account" class="form-horizontal account"></div>';
 $privacy = '<div id="privacy"><form id="profileform-privacy" class="form-horizontal privacy"></div>';
+
+$c = new Doctrine_RawSql();
+$c->select('{m.*}, {mr.*}');
+$c->from('message m INNER JOIN messagerecipient mr ON (m.id = mr.messageid)');
+$c->where("(mr.recipientid = '".$userid."' AND mr.isread = 0) ORDER BY m.datecreated");
+$c->addComponent('m', 'Message m');
+$c->addComponent('mr', 'm.recipients mr');
+$unread_messages = $c->execute()->count();

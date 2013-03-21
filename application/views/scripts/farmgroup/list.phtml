@@ -1,7 +1,7 @@
 <?php
 	require_once APPLICATION_PATH.'/includes/header.php';
 	
-	$title = "Farm Group Directory";	
+	$title = "DNA and Farm Groups Directory";	
 	$this->headTitle($title);
 	
 	$searchnames = '';
@@ -108,7 +108,7 @@ $(document).ready(function() {
                                 <tr>
                                     <td style="width:60px;">                                    
                                        <?php if(isAdmin()){ ?>
-                                       		<a href="<?php echo $this->baseUrl('farmgroup/add/pgc/true'); ?>" class="addpopup addcontact btn btn-primary btn-mini" title="New Farm Group" rel="New Farm Group" id="newfarmgroup" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmgroup/list'); ?>" action="<?php echo $this->baseUrl("farmgroup/create"); ?>"><i class="icon-plus icon-white"></i> New</a>
+                                       		<a href="<?php echo $this->baseUrl('farmgroup/add/pgc/true'); ?>" class="addpopup addcontact btn btn-primary btn-mini" title="New Group" rel="New Group" id="newfarmgroup" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmgroup/list'); ?>" action="<?php echo $this->baseUrl("farmgroup/create"); ?>"><i class="icon-plus icon-white"></i> New</a>
                                        <?php } ?>
                                     </td>
                                     <td style="width:100px; padding-left:2px; padding-right:2px;">

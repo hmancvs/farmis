@@ -33,7 +33,8 @@ body.publicbody #contentcolumn {
 	background:none;
 }
 #intro {
-	font-family:'calibri','Telex',sans-serif; line-height:28px; font-size:18px;
+	/*font-family:'calibri','Telex',sans-serif; */
+	line-height:28px; font-size:18px;
 	text-shadow: 0 1px 0 #e9e9e9;
 }
 .btn.shadowed, .shadowed {
@@ -95,6 +96,7 @@ body.publicbody #contentcolumn {
 	margin-right:0;
 	height:150px;
 }
+
 #benefitlist li img {
 	position:absolute;
 	top:12px;
@@ -108,11 +110,23 @@ body.publicbody #contentcolumn {
 }
 #benefitlist li p {
 	color: #848282;
-	font-family:'calibri','Telex',sans-serif; 
+	/*font-family:'calibri','Telex',sans-serif; */
+	font-family:calibri, Telex, "Helvetica Neue", Helvetica, Arial, sans-serif;
 	font-size:16px;
 	margin-left:2px;
 }
-
+<?php if($islinux){ ?>
+#benefitlist li {
+	height:160px;
+}
+#benefitlist li h2 {
+	font-size:14px;
+	line-height:20px;
+}
+#benefitlist li p {
+	font-size:14px;
+}
+<?php } ?>
 ul.listitems {
 	list-style:none;
 	padding:0;
@@ -160,8 +174,25 @@ label#bestfarmis {
     </div>
     <div id="homeright" style="height:100%; float:right; width:37%;">
     	<table class="table margin0 border0" style="margin-top:20px;">
+        	<style>
+            	#systemname {
+					color:#252e28; 
+					padding:0; 
+					padding-bottom:20px; 
+					font-size:18px; 
+					font-weight:bold; 
+					font-weight:bold; 
+					text-align:center; 
+					text-shadow: 0 1px 0 #e4e4e4;
+				}
+				<?php if($islinux){ ?>
+				#systemname {
+					font-size:15px; 
+				}
+				<?php } ?>
+            </style>
         	<tr>
-            	<td class="calfont" style="color:#252e28; padding:0; padding-bottom:20px; font-size:18px; font-weight:bold; font-weight:bold; text-align:center; text-shadow: 0 1px 0 #e4e4e4;">FARMER RECORD MANAGEMENT INFORMATION SYSTEM</td>
+            	<td id="systemname" class="calfont">FARMER RECORD MANAGEMENT INFORMATION SYSTEM</td>
             </tr>
             <tr>
             	<td style="padding:0; padding-top:15px; border-top:2px solid #83b758;" class="centeralign"><label id="intro">FARMIS is the easy way to manage your <br /> agricultural business online allowing you to <br />quickly manage and evaluate your <br /> income and expenses.</label></td>
@@ -193,7 +224,7 @@ label#bestfarmis {
                             <td class="calfont"><label style="font-weight:bold; font-size:22px; color:#fff; margin-top:20px; margin-left:40px;">B</label></td>
                         </tr>
                         <tr>
-                        	<td class="calfont" colspan="2" style="padding:5px 20px 0 15px; height:70px; vertical-align:top; font-size:16px; color:#111111;">The Basic Plan gets you a feel of <a href="<?php echo $this->baseUrl('howitworks'); ?>" title="How FARMIS Works">How it works</a>. For a grace period of 30days, create your farm profile and test out the different features... <a href="<?php echo $this->baseUrl('billing'); ?>">read more</a></td>
+                        	<td class="calfont" colspan="2" style="padding:5px 20px 0 15px; height:70px; vertical-align:top; font-size:16px; color:#111111;">The Basic Plan gets you a feel of <a href="<?php echo $this->baseUrl('howitworks'); ?>" title="How FARMREC Works">How it works</a>. For a grace period of 30days, create your farm profile and test out the different features... <a href="<?php echo $this->baseUrl('billing'); ?>">read more</a></td>
                         </tr>
                         <tr>
                         	<td colspan="2" style="height:40px; padding:0;">

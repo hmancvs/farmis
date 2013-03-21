@@ -12,7 +12,7 @@ class FarmerController extends SecureController   {
     	if(
 	    	$action == "username" || $action == "gps" || $action == "test" || $action == "search" || 
 	    	$action == "addsuccess"  || $action == "adderror" ||
-	    	$action == "invite" || $action == "inviteone" || $action == "inviteoneconfirm" || $action == "invitemany" || 
+	    	$action == "invite" || $action == "inviteone" || $action == "inviteonebyphone" || $action == "invitemany" || 
 	    	$action == "invitemanyconfirm" || $action == "invitefriends" || $action == "invitefriendsconfirm" || 
 	    	$action == "picture" || $action == "processpicture" || $action == "croppicture" ||
 	    	$action == "autosearch" || $action == "delete" || 
@@ -464,7 +464,7 @@ class FarmerController extends SecureController   {
 		
     }
 	# Send notification to invite a friend
-	function tellFriendsAboutFARMIS($dataarray) {
+	function tellFriendsAboutFARMREC($dataarray) {
 		$template = new EmailTemplate(); 
 		# create mail object
 		$mail = getMailInstance();
@@ -515,7 +515,7 @@ class FarmerController extends SecureController   {
 		$template->assign('subject', $dataarray['subject']);
 		$template->assign('message', nl2br($dataarray['message']));
 		
-		$mail->setSubject("FARMIS: ".$dataarray['subject']);
+		$mail->setSubject("FARMREC: ".$dataarray['subject']);
 		// set the send of the email address
 		$mail->setFrom($dataarray['email'], $dataarray['name']);
 		
@@ -543,8 +543,6 @@ class FarmerController extends SecureController   {
      	$this->_helper->layout->disableLayout();
 		$this->_helper->viewRenderer->setNoRender(TRUE);
 		
-		// $id = "21";
-		// $mail = "gsade@devmail.infomacorp.com";
 		$id = $this->_getParam('id');
 		$mail = $this->_getParam('email');
 		$farmer = new Farmer();
@@ -554,23 +552,45 @@ class FarmerController extends SecureController   {
 		$farmer->setInvitedByID($session->getVar('userid'));
 		// debugMessage($farmer->toArray()); exit();
 		
-    	if($farmer->inviteOne()){
-			// success action
-			$this->_redirect($this->view->baseUrl('farmer/inviteoneconfirm/id/'.encode($farmer->getID())));
+		# validate the email provided
+		if($farmer->getUser()->emailExists($mail)){
+			echo '<div class="alert alert-error"><a class="close" data-dismiss="alert"></a>'.sprintf($this->_translate->translate("useraccount_email_unique_error"), $mail).'</div>';
+		} else {
+			try {
+				$farmer->inviteOne();
+				echo '<div class="alert alert-success"><a class="close" data-dismiss="alert"></a>'.$this->_translate->translate("farmer_invite_success").'</div>';
+			} catch (Exception $e) {
+				echo '<div class="alert alert-error"><a class="close" data-dismiss="alert"></a>'.$e->getMessage().'</div>';
+			}
 		}
-		return false;
     }
     
-	public function inviteoneconfirmAction(){
+	public function inviteonebyphoneAction(){
 		$session = SessionWrapper::getInstance(); 
      	$this->_helper->layout->disableLayout();
 		$this->_helper->viewRenderer->setNoRender(TRUE);
-
-		/*$farmer = new Farmer();
-		$farmer->populate(decode($this->_getParam('id')));*/
 		
-		// $session->setVar(SUCCESS_MESSAGE, $this->_translate->translate("person_invite_success"));
-    	echo '<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a>'.$this->_translate->translate("farmer_invite_success").'</div>';
+		$id = $this->_getParam('id');
+		$phone = $this->_getParam('phone');
+		$farmer = new Farmer();
+		$farmer->populate($id);
+		//debugMessage($phone);
+		//debugMessage($farmer->toArray());
+		# validate the email provided
+		if($farmer->getUser()->phoneExists(getFullPhone($phone))) {
+			//debugMessage('exists');
+			echo '<div class="alert alert-error"><a class="close" data-dismiss="alert"></a>'.sprintf($this->_translate->translate("useraccount_phone_unique_error"), $phone).'</div>';
+		} else {
+			try {
+				$farmer->getUser()->getPhones()->get(0)->setPhone(getFullPhone($phone));
+				$farmer->setInvitedByID($session->getVar('userid'));
+				//debugMessage('no error');
+				$farmer->inviteOneByPhone();
+				echo '<div class="alert alert-success"><a class="close" data-dismiss="alert"></a>'.$this->_translate->translate("farmer_invite_success").'</div>';
+			} catch (Exception $e) {
+				echo '<div class="alert alert-error"><a class="close" data-dismiss="alert"></a>'.$e->getMessage().'</div>';
+			}
+		}
     }
     
 	function deleteAction() {

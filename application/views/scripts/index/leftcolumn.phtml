@@ -19,15 +19,7 @@
 	if($countfarms > 1){
 		$hasmultiplefarms = true;
 	}
-		
-	$c = new Doctrine_RawSql();
-	$c->select('{m.*}, {mr.*}');
-	$c->from('message m INNER JOIN messagerecipient mr ON (m.id = mr.messageid)');
-	$c->where("(mr.recipientid = '".$userid."' AND mr.isread = 0) ORDER BY m.datecreated");
-	$c->addComponent('m', 'Message m');
-	$c->addComponent('mr', 'm.recipients mr');
-		
-	$unread_messages = $c->execute()->count();
+	
 	$latest_discussions = getLatestForumDiscussions(3);
 
 ?>

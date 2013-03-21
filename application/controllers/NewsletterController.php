@@ -16,7 +16,7 @@ class NewsletterController extends IndexController   {
     	// debugMessage('errors are '.$newsletter->getErrorStackAsString());
 		if(!$newsletter->hasError()){
 			$newsletter->save();
-			$session->setVar('newsletter_success', 'Successfully subscribed for our Updates. We shall notify you accordingly. Thank you for your interest in FARMIS!'); 
+			$session->setVar('newsletter_success', 'Successfully subscribed for our Updates. We shall notify you accordingly. Thank you for your interest in FARMREC!'); 
 		} else {
 			$session->setVar('newsletter_error', $newsletter->getErrorStackAsString()); 
 		}

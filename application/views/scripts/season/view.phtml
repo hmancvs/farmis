@@ -59,7 +59,7 @@
                             <table class="table">                       
                                <tr>		                    
                                     <td class="formactions" style="padding-right:0;">
-                                        <?php if($season->getFarmerID() == $farmerid){ ?>
+                                        <?php //if($season->getFarmerID() == $farmerid){ ?>
                                             <a class="btn btn-primary" href="<?php echo $this->baseUrl('season/index/id/'.encode($season->getID())); ?>" title="Update Season" id="update"><i class="icon-pencil icon-white"></i> Update</a>
                                             <a href="javascript: void(0)" id="deleteline" title="Delete Season" class="btn deleteline noimgbutton" action="<?php echo $this->baseUrl('season/delete/id/'.$season->getID()."/entityname/Season/successurl/".encode($this->baseUrl('farm/view/tab/seasons/id/'.encode($season->getFarmID())))); ?>"><i class="icon-trash"></i></a>            
                                             <div class="btn-group">
@@ -74,7 +74,7 @@
                                                     <li><a href="<?php echo $this->baseUrl('season/sale/sid/'.encode($season->getID())); ?>"><i class="icon-plus"></i> Season Sales</a></li>
                                                 </ul>
                                             </div>
-                                        <?php } ?>
+                                        <?php //} ?>
                                     </td>
                                </tr>
                             </table>                           

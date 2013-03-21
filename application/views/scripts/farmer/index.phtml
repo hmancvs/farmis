@@ -98,13 +98,13 @@ $(document).ready(function() {
 				firstname: "required",
 				lastname: "required",
 				country: "required",
-				locationid: "required",
+				locationid2: "required",
 				regdate: "required",
 				refno: {
 					required: true,
 					validate_number: true,
 					maxlength:8,
-					minlength:4
+					minlength:3
 				}
 			}, 
 			// the messages for each of the fields being validated
@@ -113,13 +113,13 @@ $(document).ready(function() {
 				firstname: "<?php echo $this->translate("farmer_firstname_error"); ?>",
 				lastname: "<?php echo $this->translate("farmer_lastname_error"); ?>",
 				country: "<?php echo $this->translate("farmer_country_error"); ?>",
-				locationid: "<?php echo $this->translate("farmer_district_error"); ?>",
+				locationid2: "<?php echo $this->translate("farmer_district_error"); ?>",
 				regdate: "Please select Registration Date",
 				refno: {
 					required: "Please enter a Reference Number",
 					validate_number: "Invalid Ref No specified",
 					maxlength: "Should not be more than 8 digits",
-					minlength: "Should not be less than 4 digits"
+					minlength: "Should not be less than 3 digits"
 				}
 			},
 			// custom error positions
@@ -142,17 +142,6 @@ $(document).ready(function() {
 			$("#profileform-basics .failureurl").val('<?php echo encode($this->baseUrl('farmer/index/id/'.encode($farmer->getID()).'/tab/basics')); ?>');
 		});
 		
-		// chained select to load the subcounties for a county
-		$('#farmgroupid').selectChain({
-			target: $('#subgroupid'),
-			url: '<?php echo $this->baseUrl('farmer/selectchain/'.SELECT_CHAIN_TYPE.'/farmgroup_children/')?>',
-			data: 'currentvalue=<?php echo $farmer->getSubGroupID(); ?>',
-			type: 'get'
-		});
-		<?php if(!isEmptyString($farmer->getFarmGroupID())){ ?>
-			$('#farmgroupid').trigger("change");
-		<?php } ?>
-		
 		var dateofregOpts = datepickerOpts;
 		dateofregOpts.yearRange = "-5";
 		dateofregOpts.maxDate = new Date();
@@ -167,6 +156,19 @@ $(document).ready(function() {
 			$("#regno").val('<?php echo FARMER_REG_PREFIX.'/'.$farmer->getFarmGroup()->getRefNo(); ?>/'+$(this).val());
 		});
 		$("#refno").trigger('keyup');
+		
+		<?php if($farmer->getFarmGroup()->hasSubGroups()){ ?>
+			// chained select to load the subcounties for a county
+			$('#farmgroupid').selectChain({
+				target: $('#subgroupid'),
+				url: '<?php echo $this->baseUrl('farmer/selectchain/'.SELECT_CHAIN_TYPE.'/farmgroup_children/')?>',
+				data: 'currentvalue=<?php echo $farmer->getSubGroupID(); ?>',
+				type: 'get'
+			});
+			<?php if(!isEmptyString($farmer->getFarmGroupID())){ ?>
+				$('#farmgroupid').trigger("change");
+			<?php } ?>
+		<?php } ?>
 		
 	<?php } ?>
 	
@@ -263,13 +265,13 @@ $(document).ready(function() {
 		
 		// add the validation for wholesale price to be less than retail price
 		$.validator.addMethod("validnumber", function(value, element, params) { 
-			if (IsValidAmount(value)) {
+			if (IsValidAmount(value) || isEmptyString(value)) {
 				return true; 
 			}
 			return false;        
 		}, "Please enter a valid Phone Number");
 		$.validator.addMethod("validate_ug", function(value, element, params) { 
-			if(!isUgNumber(value)) {
+			if(!isUgNumber(value) && !isEmptyString(value)) {
 				return false; 
 			}
 			return true;        
@@ -491,7 +493,7 @@ select#salutation {
                                         echo $countrydropdown->render(); 
                                     ?><input type="hidden" name="country2" id="country2" value="<?php echo $address->getCountry(); ?>" />
                                 </td>
-                                <td><label class="control-label"><?php echo $this->translate("farmer_location_label"); ?>:</label>
+                                <td><label class="control-label"><?php echo $this->translate("farmer_location_label"); ?>:  <?php echo $this->translate("global_required_field_marker"); ?></label>
 									<?php
                                         $districtlist = new LookupType(); 
                                         $districtlist->setName("ALL_DISTRICTS");
@@ -502,7 +504,7 @@ select#salutation {
                                                                 'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $districts),								
                                                                 'view' => new Zend_View(),
                                                                 'decorators' => array('ViewHelper'),
-                                                                'class' => array('filterselect', 'hastooltip_custom', 'chzn-select'),
+                                                                'class' => array('filterselect', 'hastooltip_custom', 'country'),
                                                                 'title' => $this->translate("farmer_district_tooltip")
                                                             )
                                                         );
@@ -512,9 +514,9 @@ select#salutation {
                                    <span id="tooltip_locationid2"></span><div id="locationid2_error"></div></td>                           
                             </tr>
                             <tr>
-                                <td><label class="control-label"><?php echo $this->translate("farmer_refno_label"); ?>:</label>
+                                <td><label class="control-label"><?php echo $this->translate("farmer_refno_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
                                     <?php if(isAdmin() || isFarmGroupAdmin()){ ?>
-                                        <input type="text" name="refno" id="refno" class="width100" maxlength="6" value="<?php echo $farmer->getRefNo(); ?>" />
+                                        <input type="text" name="refno" id="refno" class="width100" maxlength="8" value="<?php echo $farmer->getRefNo(); ?>" />
                                     <?php } else { ?>
                                         <input type="hidden" name="refno" id="refno" value="<?php echo $farmer->getRefNo(); ?>" />
                                         <?php echo isEmptyString($farmer->getRefNo()) ? '--': $farmer->getRefNo(); ?>
@@ -532,7 +534,7 @@ select#salutation {
                                 </td>
                             </tr>
                             <tr>
-                                <td><label class="control-label"><?php echo $this->translate("farmer_dateregistered_label"); ?>:</label>
+                                <td><label class="control-label"><?php echo $this->translate("farmer_dateregistered_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
                                     <?php if(isAdmin() || isFarmGroupAdmin()){ ?>
                                         <input type="text" name="regdate" id="regdate" class="datefield width100" value="<?php echo changeMySQLDateToPageFormat($farmer->getRegDate()); ?>" />
                                     <?php } else { ?>
@@ -619,6 +621,8 @@ select#salutation {
                                         <?php echo isEmptyString($farmer->getSubGroupID()) ? "--" : $farmer->getSubGroup()->getName(); ?>
                                         <input type="hidden" id="subgroupid" name="subgroupid" value="<?php echo $farmer->getSubGroupID(); ?>" /> 
                                    <?php } ?>
+                                <?php } else { ?>
+                                	<input type="hidden" id="subgroupid" name="subgroupid" value="" /> 
                                 <?php } ?>
                             </td>
                         </tr>
@@ -836,7 +840,7 @@ select#salutation {
 															'class' => array('filterselect', 'country')
 														)
 													);
-									$districtdropdown->setValue($farmer->getUser()->getLocationID()); 
+									$districtdropdown->setValue($address->getDistrictID()); 
 									echo $districtdropdown->render(); 
 							   ?>
 							   <span id="tooltip_districtid"></span><div id="districtid_error"></div>

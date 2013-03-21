@@ -40,14 +40,13 @@
 ?>
 
 <div class="container" style="position:relative;">
-  <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-    <span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span>
-  </a>
-  <a class="brand" id="thelogo" href="<?php echo $this->baseUrl('index'); ?>"><img <?php echo $logostyle; ?> src="<?php echo $logopath; ?>" /></a>
-  <div class="" style="margin-left:170px; position:relative;">
+  <div style="float:left; width:10%;">
+  	<a class="brand" id="thelogo" href="<?php echo $this->baseUrl('index'); ?>"><img <?php echo $logostyle; ?> src="<?php echo $logopath; ?>" /></a>
+  </div>
+  <div style="position:relative; float:right; width:87%;">
     <div class="xnav-collapse">
 		<?php if(!isEmptyString($userid)){ ?>
-            <ul class="nav pull-right" id="headeractions" style="max-width:500px; float:right; width:250px; margin-top:8px;">
+            <ul class="nav pull-right" id="headeractions" style="float:right; margin-top:8px;">
                 <li class="dropdown " style="float:right;">
                     <a data-toggle="dropdown" id="accountdrop" class="dropdown-toggle <?php echo !in_array($thecontroller, $publiccontrollers) ? 'loggedin' : ''; ?>" href="#"><?php echo $farmer->getName(); ?> <b class="caret"></b></a>
                     <ul class="dropdown-menu span3">
@@ -76,8 +75,8 @@
         <?php } else { ?>
             <ul class="nav pull-right" id="headeractions" style="max-width:500px; float:right; width:250px;">
                 <li id="loginheader" style="float:right;">
-                    <a class="btn" style="display:inline-block; font-weight:bold; color:#9c9b9b; padding:6px 10px;" id="headersignup" type="submit" href="<?php echo $this->baseUrl('signup'); ?>"><i class="icon-user"></i> Signup</a>&nbsp;
-                    <a class="btn btn-primary" style="display:inline-block; font-weight:bold; padding:6px 10px;" id="headersignin" type="submit" href="<?php echo $this->baseUrl('user/login'); ?>"><i class="icon-lock icon-white"></i> Signin</a>
+                    <a class="btn" style="display:inline-block; font-weight:normal; color:#000; padding:6px 10px;" id="headersignup" type="submit" href="<?php echo $this->baseUrl('signup'); ?>"><i class="icon-user"></i> Signup</a>&nbsp;
+                    <a class="btn btn-primary" style="display:inline-block; font-weight:normal; padding:6px 10px;" id="headersignin" type="submit" href="<?php echo $this->baseUrl('user/login'); ?>"><i class="icon-lock icon-white"></i> Signin</a>
                 </li>
             </ul>    
         <?php } ?>
@@ -87,13 +86,12 @@
         <?php require_once APPLICATION_PATH.'/views/scripts/index/headermenu.phtml'; ?>
     </div>
     <?php } ?>
-  </div>
-
-	<?php if (!in_array($thecontroller, $publiccontrollers)){ ?>
+    <?php if (!in_array($thecontroller, $publiccontrollers)){ ?>
         <div class="subnavbar pull-left <?php echo !in_array($thecontroller, $publiccontrollers) ? 'loggedin' : ''; ?>" id="thenav">
             <?php require_once APPLICATION_PATH.'/views/scripts/index/headermenu.phtml'; ?>
         </div>
     <?php } ?>
+  </div>
 </div>
 <?php
 	require_once APPLICATION_PATH.'/includes/footer.php';

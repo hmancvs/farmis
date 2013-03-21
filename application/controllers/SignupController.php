@@ -71,7 +71,7 @@ class SignupController extends IndexController   {
 		$formvalues = $this->_getAllParams();
 		$session = SessionWrapper::getInstance(); 
 		$formvalues['id'] = $formvalues['farmerid'];
-		// debugMessage($this->_getAllParams());
+		// debugMessage($formvalues);
 		
 		$this->_setParam('entityname', 'Farmer');
 		$this->_setParam(URL_FAILURE, encode($this->view->baseUrl('signup/index/profile/'.encode($formvalues['id'])."/")));
@@ -81,6 +81,14 @@ class SignupController extends IndexController   {
 		
 		$farmer = new Farmer(); 
 		$farmer->populate($formvalues['id']);
+		
+		# determine if is a farmer or farmgroup clerk
+		$isgroupclerk = false;
+		$isfarmer = true;
+		if($farmer->getFarmGroup()->getManagerID() == $farmer->getID()){
+			$isgroupclerk = true;
+			$isfarmer = false;
+		}
 		
 		if(isEmptyString($formvalues['birthday'])){
 			$formvalues['birthday'] = NULL;
@@ -104,6 +112,7 @@ class SignupController extends IndexController   {
 		$formvalues['gtype'] = 2;
 		if($farmer->isFarmGroupManager()){
 			$formvalues['gtype'] = 3;
+			$formvalues['membershipplanid'] = 4;
 		}
 		
 		// user account data
@@ -131,11 +140,11 @@ class SignupController extends IndexController   {
 
 		$formvalues['user'] = $userarray;
 		$formvalues['hasacceptedinvite'] = '1';
-		//debugMessage($formvalues);
-		
+		// debugMessage($formvalues);
+		// exit(); 
 		$farmer->processPost($formvalues);
-		//debugMessage($farmer->toArray()); 
-		//debugMessage('process errors are '.$farmer->getErrorStackAsString()); exit();
+		/*debugMessage($farmer->toArray()); 
+		debugMessage('process errors are '.$farmer->getErrorStackAsString()); exit(); */
 		// check for processing errors
 		if($farmer->hasError()) {
 			// debugMessage('process errors are '.$farmer->getErrorStackAsString()); exit();
@@ -145,6 +154,8 @@ class SignupController extends IndexController   {
 		} else {
 			try {
 				if($farmer->transactionInviteUpdate()){
+					# set subscription period for user
+					$farmer->setNewSubscription();
 					$this->_helper->redirector->gotoUrl(decode($this->_getParam(URL_SUCCESS))); 
 				}
 			} catch (Exception $e) {
@@ -162,32 +173,34 @@ class SignupController extends IndexController   {
 	function activateAction() {
 		$session = SessionWrapper::getInstance(); 
 		$formvalues = $this->_getAllParams();
-		// debugMessage($formvalues);
-		$isphoneactivation = false;
-		if(!isArrayKeyAnEmptyString('act_byphone', $formvalues)){
-			// debugMessage('activated via phone');
-			$isphoneactivation = true;
-		}
-		$user = new UserAccount(); 
-		$user->populate(decode($this->_getParam("id")));
-		// debugMessage($user->toArray());
-		
-		if ($user->isUserActive() && isEmptyString($user->getActivationKey())) {
-			// account already activated 
-    		$session->setVar(ERROR_MESSAGE, 'Account is already activated. Please login.'); 
-			$this->_helper->redirector->gotoUrl($this->view->baseUrl("user/login"));
-		}
-		
-		$this->_setParam(URL_FAILURE, encode($this->view->baseUrl("signup/confirm/id/".encode($user->getID()))));
-		$key = $this->_getParam('actkey');
-		
-		$this->view->result = $user->activateAccount($key, $isphoneactivation);
-		if (!$this->view->result) {
-			// activation failed
-			$this->view->message = $user->getErrorStackAsString();
-			$session->setVar(FORM_VALUES, $this->_getAllParams());
-    		$session->setVar(ERROR_MESSAGE, $user->getErrorStackAsString()); 
-			$this->_helper->redirector->gotoUrl(decode($this->_getParam(URL_FAILURE)));
+		if(!isArrayKeyAnEmptyString('id', $formvalues)){
+			// debugMessage($formvalues);
+			$isphoneactivation = false;
+			if(!isArrayKeyAnEmptyString('act_byphone', $formvalues)){
+				// debugMessage('activated via phone');
+				$isphoneactivation = true;
+			}
+			$user = new UserAccount(); 
+			$user->populate(decode($formvalues['id']));
+			// debugMessage($user->toArray());
+			
+			if ($user->isUserActive() && isEmptyString($user->getActivationKey())) {
+				// account already activated 
+	    		$session->setVar(ERROR_MESSAGE, 'Account is already activated. Please login.'); 
+				$this->_helper->redirector->gotoUrl($this->view->baseUrl("user/login"));
+			}
+			
+			$this->_setParam(URL_FAILURE, encode($this->view->baseUrl("signup/confirm/id/".encode($user->getID()))));
+			$key = $this->_getParam('actkey');
+			
+			$this->view->result = $user->activateAccount($key, $isphoneactivation);
+			if (!$this->view->result) {
+				// activation failed
+				$this->view->message = $user->getErrorStackAsString();
+				$session->setVar(FORM_VALUES, $this->_getAllParams());
+	    		$session->setVar(ERROR_MESSAGE, $user->getErrorStackAsString()); 
+				$this->_helper->redirector->gotoUrl(decode($this->_getParam(URL_FAILURE)));
+			}
 		}
 		// exit();
 	}
@@ -217,6 +230,38 @@ class SignupController extends IndexController   {
     		$session->setVar(ERROR_MESSAGE, $user->getErrorStackAsString()); 
 			$this->_helper->redirector->gotoUrl(decode($this->_getParam(URL_FAILURE)));
 		}
+	}
+	
+	function mobileactivateAction() {
+		$this->_helper->layout->disableLayout();
+		$this->_helper->viewRenderer->setNoRender(TRUE);
+		
+		$formvalues = $this->_getAllParams();
+		// $formvalues['phone'] = '0756412300';
+		$session = SessionWrapper::getInstance();
+		# debugMessage($formvalues);
+		
+		$user = new UserAccount();
+		$activatinguser = $user->populateByPhone(getFullPhone($formvalues['phone']));
+		# debugMessage($activatinguser->get(0)->toArray());
+		$useraccount = $activatinguser->get(0);
+		
+		# check if user with specified phone exists
+		if(!isEmptyString($useraccount->getID())){
+			/* debugMessage($useraccount->getActivationKey());
+			debugMessage($formvalues['actkey']); */
+			# now validate user's activation code specified
+			if($useraccount->getActivationKey() == trim($formvalues['actkey'])){
+				$useraccount->getPhones()->get(0)->setIsPrimary(1);
+				$useraccount->getPhones()->get(0)->activate();
+				$this->_helper->redirector->gotoUrl($this->view->baseUrl("signup/index/profile/".encode($useraccount->getFarmerID()).'/actkey/valid'));
+			} else {
+				$this->_helper->redirector->gotoUrl($this->view->baseUrl("signup/activate/acterror/1"));
+			}
+		} else {
+			$this->_helper->redirector->gotoUrl($this->view->baseUrl("signup/activate/acterror/1"));
+		}
+		// exit();
 	}
 	
 	function confirmAction() {
@@ -288,6 +333,9 @@ class SignupController extends IndexController   {
 		$username = trim($formvalues['username']);
 		// debugMessage($formvalues);
 		$user = new UserAccount();
+		if(!isArrayKeyAnEmptyString('userid', $formvalues)){
+			$user->populate($formvalues['userid']);
+		}
 		if($user->usernameExists($username)){
 			echo '1';
 		} else {
@@ -319,6 +367,9 @@ class SignupController extends IndexController   {
 		$phone = trim($formvalues['phone']);
 		// debugMessage($formvalues);
 		$user = new UserAccount();
+		if(!isArrayKeyAnEmptyString('userid', $formvalues)){
+			$user->populate($formvalues['userid']);
+		}
 		if($user->phoneExists(getFullPhone($phone))){
 			echo '1';
 		} else {

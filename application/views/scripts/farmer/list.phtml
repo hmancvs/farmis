@@ -39,7 +39,7 @@
 	}
 	
 	if(!isEmptyString($request->letter)){
-		$where_query .= " AND (f.`firstname` LIKE '".$request->letter."%') ";
+		$where_query .= " AND (f.`firstname` LIKE '".$request->letter."%' OR f.`lastname` LIKE '".$request->letter."%') ";
 	}
 	
 	$listurl = $this->baseUrl('farmer/list');
@@ -72,7 +72,7 @@
 	}
 	
 	$paginate->processPost($request->getParams());
-	$all_results_query = "SELECT f.*, u.*, fg.*, l.*, f.id as id, u.id as userid, fg.id as fmgroupid, l.id as districtid, u.email as uemail, f.email as femail, l.name as district FROM farmer f INNER JOIN useraccount u on (f.userid = u.id) LEFT JOIN userphone as up on (u.id = up.userid) LEFT JOIN farmgroup as fg on (f.farmgroupid = fg.id) LEFT JOIN location l on (u.locationid = l.id AND l.locationtype = 2) ".$where_query." AND u.type = 2 ".$paginate->getSearchAndFilterSQL()." GROUP BY f.id ".$order_query;
+	$all_results_query = "SELECT f.*, u.*, fg.*, l.*, f.id as id, u.id as userid, fg.id as fmgroupid, l.id as districtid, u.email as uemail, f.email as femail, l.name as district, f.regno as fregno, fg.regno as fgregno, up.phone as phone FROM farmer f INNER JOIN useraccount u on (f.userid = u.id) LEFT JOIN userphone as up on (u.id = up.userid AND up.isprimary = 1) LEFT JOIN farmgroup as fg on (f.farmgroupid = fg.id) LEFT JOIN location l on (u.locationid = l.id AND l.locationtype = 2) ".$where_query." AND u.type = 2 ".$paginate->getSearchAndFilterSQL()." GROUP BY f.id ".$order_query;
 	
 	// debugMessage($all_results_query);
 	$paginate->setItemCountFromSQLQuery($all_results_query);
@@ -92,6 +92,41 @@ $(document).ready(function() {
 		$('#letter').val(letter);
 		$("#listform").submit();
 	});
+	
+	//when button is clicked  
+        $('#check_email_availability').click(function(){ 
+			check_email_availability();  
+        });
+		$('#email').change(function(){ 
+			check_email_availability();  
+        });  
+		$('#email').keyup(function(){
+			this.value = this.value.toLowerCase();
+		});
+		
+		//function to check email availability  
+		function check_email_availability(){  
+			//get the username
+			var checking_html = 'Checking availability...';   
+			var email = $('#email').val();  
+			if(!isEmptyString(email) && validateEmail(email)){
+				$('#email_availability_result').html(checking_html);  
+				
+				//use ajax to run the check  
+				$.post("<?php echo $this->baseUrl('signup/checkemail'); ?>", { email: email },  
+					function(result){  
+						//if the result is 1  
+						// alert(result); // return false;
+						if(result == 1){  
+							//show that the email is available
+							$('#email_availability_result').html(email + ' is NOT available!').addClass('alert').addClass('alert-error').removeClass('alert-success'); 
+						} else {  
+							//show that the email is NOT available  
+							$('#email_availability_result').html(email + ' is available').addClass('alert').addClass('alert-success').removeClass('alert-error');
+						}  
+				});  
+			}
+		}
 }); 
 </script>
 <style>		
@@ -110,8 +145,7 @@ $(document).ready(function() {
     	<h1><?php echo $title; ?><?php echo $groupstring; ?></h1>
         <div class="wellcontent" style=" margin-top:-10px;">
             <div class=" blocked clear" style="position:relative; margin-top:25px;">
-            	<div class="advsearch" style="display:block; float:right; text-align:right; position:absolute; right:20px; top:10px; width:195px;">
-                    <a href="javascript: void(0)" id="advanced" class="btn btn-primary btn-mini pull-right" title="Advanced Search">Advanced Search <span class="caret"></span></a>&nbsp;&nbsp;
+            	<div class="advsearch" style="display:block; float:right; text-align:right; position:absolute; right:0; top:10px; width:60px;">
                     <a href="<?php echo $listurl; ?>" id="reset" class="btn btn-primary btn-mini pull-left" title="Reset list or clear all filters">Reset</a>&nbsp;&nbsp;
                     
             	</div>
@@ -252,31 +286,64 @@ $(document).ready(function() {
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td style="width:90px;"><label class="control-label">FIN#: </label></td>
-                                            <td style="width:160px;"class="nowrapping"><span><?php echo $line['regno']; ?></span></td>
-                                            <td style="width:60px;"><label class="control-label">Subscribed:</label></td>
-                                            <td style="width:250px;" class="nowrapping"><span><?php echo $line['isactive'] == 1 ? 'Yes' : 'No'; ?></span></td>
+                                            <td style="width:70px;"><label class="control-label">FIN#: </label></td>
+                                            <td style="width:180px;"class="nowrapping"><span><?php echo $line['fregno']; ?></span></td>
+                                            <td style="width:90px;"><label class="control-label"><?php echo isFarmGroupAdmin() ? 'Gender': 'Farm Group'; ?>:</label></td>
+                                            <td style="width:240px;" class="nowrapping">
+                                            	<?php if(isFarmGroupAdmin()){ ?>
+                                            		<span><?php echo $line['gender'] == '1' ? 'Male' : 'Female'; ?></span>
+                                                <?php } else { ?>
+                                                	<span><?php echo isEmptyString($thefarmgroupid) ? '--' : $groupname; ?></span>
+                                                <?php } ?>
+                                            </td>
                                             <td rowspan="3"></td>
                                         </tr>
                                         <tr>
                                             <td><label class="control-label">District:</label></td>
                                             <td class="nowrapping"><span><?php echo isEmptyString($line['districtid']) ? '--' : $line['district']; ?></span></td>
-                                            <td><label class="control-label">Phone: </label></td>
-                                            <td class="nowrapping"><span><?php //echo isEmptyString($farmer->getUser()->getPhone()) ? '--' : $farmer->getUser()->getPhone().$farmer->getUser()->getPrimaryPhone()->getStatusLabel(); ?></span></td>
+                                            <td><label class="control-label">Subscribed:</label></td>
+                                            <td class="nowrapping"><span><?php echo $line['isactive'] == 1 ? 'Yes' : 'No'; ?></span></td>
                                         </tr>
                                         <tr>
-                                            <td><label class="control-label">Farm Group:</label></td>
-                                            <td class="nowrapping"><span><?php echo isEmptyString($thefarmgroupid) ? '--' : $groupname; ?></span></td>
+                                            <td><label class="control-label">Phone: </label></td>
+                                            <td class="nowrapping">
+                                            	<?php if($line['isactive'] == 1){ ?>
+                                                    <span><?php echo isEmptyString($line['phone']) ? '--' : getShortPhone($line['phone']); ?></span><br />
+                                                <?php } else { ?>
+                                                    <span class="pinv_before" id="pinv_before_<?php echo $id; ?>" style="margin-top:2px;">
+                                                        <div class="input-prepend"><span style="padding:2px 4px;" class="add-on"><?php echo '+'.COUNTRY_CODE_UG; ?></span><input name="phone_<?php echo $id; ?>" id="phone_<?php echo $id; ?>" type="text" placeholder="enter phone" maxlength="10" class="pinvite pinvite_<?php echo $id; ?>" style="width:120px; height:14px;" value="<?php echo getShortPhone($line['phone']); ?>" title="Invite <?php echo $firstname; ?> to Join" /></div><br />
+                                                        <a href="javascript:doNothing();" class="btn btn-primary btn-mini pinvitetrigger" style="margin-top:5px;" id="pinvite_<?php echo $id; ?>" title="Invite <?php echo $firstname; ?> to Join"><i class="icon-envelope icon-white"></i> Invite</a>
+                                                        <label class="hide pinvite_<?php echo $id; ?>" title="<?php echo $id; ?>"><?php echo $id; ?></label>                            
+                                                        <div id="pinvite_<?php echo $id; ?>_error" style="margin-top:4px;"></div>
+                                                    </span>
+                                                    <span class="pinv_after" id="pinv_after_<?php echo $id; ?>"></span>
+                                                    <a id="loading_<?php echo $id; ?>" class="hidden"><img style="margin-left:0" src="<?php echo $this->baseUrl('images/loader.gif'); ?>" /></a>  
+                                                    <?php if($line['isphoneinvited'] == 1 && $line['hasacceptedinvite'] == 0){ ?>
+                                                        <span class="pagedescription alert alert-info" style="display:block; text-align:center; padding:2px; margin-top:5px; margin-bottom:0;">Invited. Confirmation pending</span>
+                                                    <?php } ?>
+
+                                                <?php } ?>
+                                                
+                                                
+                                            <span><?php //echo isEmptyString($farmer->getUser()->getPhone()) ? '--' : $farmer->getUser()->getPhone().$farmer->getUser()->getPrimaryPhone()->getStatusLabel(); ?></span></td>
                                             <td><label class="control-label">Email: </label></td>
                                             <td class="nowrapping">
-                                            	<?php if(isFarmGroupAdmin() || isAdmin()){ ?>
-                                                	<?php if($farmer->getUser()->isUserActive()){ ?>
-                                                        <span><?php echo isEmptyString($farmer->getUser()->getEmail()) ? '--' : $farmer->getUser()->getEmail(); ?></span><br />
-                                                    <?php } else { ?>
-
-													<?php } ?>
+												<?php if($line['isactive'] == 1){ ?>
+                                                    <span><?php echo isEmptyString($line['uemail']) ? '--' : $line['uemail']; ?></span><br />
                                                 <?php } else { ?>
-                                                
+                                                    <span class="inv_before" id="inv_before_<?php echo $id; ?>" style="margin-top:2px;">
+                                                        <input type="text" name="email_<?php echo $id; ?>" id="email_<?php echo $id; ?>" placeholder="enter email" title="Invite <?php echo $firstname; ?> to join FARMREC" value="<?php echo $line['uemail']; ?>" class="invite invite_<?php echo $id; ?>" style="width:230px; height:14px;" /><br />
+                                                        <a href="javascript:doNothing();" class="btn btn-primary btn-mini invitetrigger" style="margin-top:5px;" id="invite_<?php echo $id; ?>" title="Invite <?php echo $firstname; ?> to join <?php echo $this->translate('appname'); ?>"><i class="icon-envelope icon-white"></i> Invite</a>
+                                                        <label class="hide invite_<?php echo $id; ?>" title="<?php echo $id; ?>"><?php echo $id; ?></label>                            
+                                                        <div id="invite_<?php echo $id; ?>_error" style="margin-top:4px;"></div>
+                                                    </span>
+                                                    <span class="inv_after" id="inv_after_<?php echo $id; ?>">
+                                                        <a id="loading_<?php echo $id; ?>" class="hidden"><img style="margin-left:0" src="<?php echo $this->baseUrl('images/loader.gif'); ?>" /></a>
+                                                    </span>
+                                                    <?php if($line['isinvited'] == 1 && $line['hasacceptedinvite'] == 0){ ?>
+                                                        <span class="pagedescription alert alert-info" style="display:block; text-align:center; padding:2px; margin-top:5px; margin-bottom:0;">Invited. Confirmation pending</span>
+                                                    <?php } ?>
+
                                                 <?php } ?>
                                             </td>
                                         </tr>

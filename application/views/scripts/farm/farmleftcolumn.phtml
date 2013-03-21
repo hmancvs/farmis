@@ -23,7 +23,17 @@
 	if($farmerid == $farm->getFarmerID()){
 		$isme = true;
 	}
-	// debugMessage('tab is '.$request->tab);
+	
+	$farmerid = $session->getVar('farmerid');
+	if(!isEmptyString($farm->getID())){
+		$farmerid = $farm->getFarmerID();
+	}
+	
+	$activeclass = 'hasfarm';
+	if(isEmptyString($farm->getID())){
+		$activeclass = 'nofarm';
+	}
+	// debugMessage('tab is '.$request->tab); exit();
 ?>
 <script>
 $(document).ready(function() {
@@ -41,20 +51,32 @@ $(document).ready(function() {
 	<?php } ?>
 	
 	$("#tabs ul#leftnav li a").click(function(e){
-		currentclass = $(this).attr('class');
-		$(".form-horizontal."+currentclass).html("<a id='loading' class='xhidden' style='text-align:center; display:block; margin-top:75px;'><span style='display:block; margin-bottom:15px; font-weight:bold;'>Loading...</span><img style='margin-left:-10px;' src='<?php echo $this->baseUrl('images/farmisloader.gif'); ?>' /></a>").css({'display':'block'});
+		currentclass = $(this).attr('tab');
+		// alert(currentclass);
 		var url = '';
-		if(currentclass == 'account'){
-			var url = "<?php echo $this->baseUrl('farmer/view/id/'.encode($farm->getFarmerID())); ?>";
-		} else {
-			var action = '<?php echo $action; ?>';
-			// alert(currentclass);
-			if(action == 'index' && (currentclass == 'summary' || currentclass == 'land')){
-				var url = "<?php echo $this->baseUrl("farm/index/id/".encode($farm->getID())."/tab/"); ?>"+currentclass;
+		if($(this).hasClass('hasfarm')){
+			$(".form-horizontal."+currentclass).html("<a id='loading' class='xhidden' style='text-align:center; display:block; margin-top:75px;'><span style='display:block; margin-bottom:15px; font-weight:bold;'>Loading...</span><img style='margin-left:-10px;' src='<?php echo $this->baseUrl('images/farmisloader.gif'); ?>' /></a>").css({'display':'block'});
+			var url = '';
+			if(currentclass == 'account'){
+				var url = "<?php echo $this->baseUrl('farmer/view/id/'.encode($farmerid)); ?>";
 			} else {
-				var url = "<?php echo $this->baseUrl("farm/view/id/".encode($farm->getID())."/tab/"); ?>"+currentclass;
+				var action = '<?php echo $action; ?>';
+				// alert(currentclass);
+				if(action == 'index' && (currentclass == 'summary' || currentclass == 'land')){
+					<?php if(!isEmptyString($farm->getID())){ ?>
+						var url = "<?php echo $this->baseUrl("farm/index/id/".encode($farm->getID())."/tab/"); ?>"+currentclass;
+					<?php } else { ?>
+						var url = "<?php echo $this->baseUrl("farm/index/farmerid/".encode($farmerid).'/restart/1'); ?>";	
+					<?php } ?>
+					
+				} else {
+					var url = "<?php echo $this->baseUrl("farm/view/id/".encode($farm->getID())."/tab/"); ?>"+currentclass;
+				}
 			}
+		} else {
+			var url = "<?php echo $this->baseUrl("farm/index/farmerid/".encode($farmerid).'/restart/1'); ?>";	
 		}
+		// alert(url);
 		if(!isEmptyString(url)){
 			location.href = url;  
 		}
@@ -62,9 +84,11 @@ $(document).ready(function() {
 	
 	$("#tabs").tabs().addClass('ui-tabs-vertical ui-helper-clearfix');
    	$("#tabs ul#leftnav li").removeClass('ui-corner-top').addClass('ui-corner-left');
-			
+		
+	$("#tabs ul#leftnav li.nofarm a").css({'color':'#D6D6C2'});
 }); 
 </script>
+
 <style>
 
 </style>
@@ -77,16 +101,16 @@ $(document).ready(function() {
                 <img id="profileimage" src="<?php echo $farm->getMediumLogoPath(); ?>" />
             <?php } ?>
         </div>
-    </div>
+    </div>    
     <ul id="leftnav" style="width:97%;">
-        <li id="tab_summary"><a href="#summary" class="summary">Overview</a></li>
-        <li id="tab_land"><a href="#land" class="land">Land Usage</a></li>
-        <li id="tab_commodities"><a href="#commodities" class="commodities">Crops</a></li>
-        <li id="tab_commodities"><a href="#preseason" class="preseason">Preseason Estimates</a></li>
-        <li id="tab_seasons"><a href="#seasons" class="seasons">Manage Seasons</a></li>
-        <li id="tab_calendar"><a href="#calendar" class="calendar">Activity Calendar</a></li>
-        <li id="tab_finance"><a href="#finance" class="finance">Finance</a></li>
-        <li id="tab_inventory"><a href="#inventory" class="inventory">Inventory</a></li>
-        <li id="tab_account"><a href="#account" class="account">My Account</a></li>
+        <li id="tab_summary" class="hasfarm"><a href="#summary" tab="summary" class="hasfarm">Overview</a></li>
+        <li id="tab_land" class="<?php echo $activeclass; ?>"><a href="#land" tab="land" class="<?php echo $activeclass; ?>">Land Usage</a></li>
+        <li id="tab_commodities" class="<?php echo $activeclass; ?>"><a href="#commodities" tab="commodities" class="<?php echo $activeclass; ?>">Crops</a></li>
+        <li id="tab_commodities" class="<?php echo $activeclass; ?>"><a href="#preseason" tab="preseason" class="<?php echo $activeclass; ?>">Preseason Estimates</a></li>
+        <li id="tab_seasons" class="<?php echo $activeclass; ?>"><a href="#seasons" tab="seasons" class="<?php echo $activeclass; ?>">Manage Seasons</a></li>
+        <li id="tab_calendar" class="<?php echo $activeclass; ?>"><a href="#calendar" tab="calendar" class="<?php echo $activeclass; ?>">Activity Calendar</a></li>
+        <li id="tab_finance" class="<?php echo $activeclass; ?>"><a href="#finance" tab="finance" class="<?php echo $activeclass; ?>">Finance</a></li>
+        <li id="tab_inventory" class="<?php echo $activeclass; ?>"><a href="#inventory" tab="inventory" class="<?php echo $activeclass; ?>">Inventory</a></li>
+        <li id="tab_account" class="hasfarm"><a href="#account" tab="account" class="hasfarm">My Account</a></li>
     </ul>
 </div>

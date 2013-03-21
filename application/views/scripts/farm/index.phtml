@@ -60,12 +60,22 @@ $(document).ready(function() {
 			// define the validation rules one field at a time
 			rules: {
 				businessname: "required",
-				districtid:  "required"
+				districtid:  "required",
+				bizstartmonth: "required",
+				bizstartyear: {
+					required: true,
+					minstart: true
+				}
 			}, 
 			// the messages for each of the fields being validated
 			messages: {		
 				businessname: "<?php echo $this->translate("farm_businessname_error"); ?>",
-				districtid:  "<?php echo $this->translate("global_district_error"); ?>"
+				districtid:  "<?php echo $this->translate("global_district_error"); ?>",
+				bizstartmonth: "<?php echo $this->translate("season_startmonth_error"); ?>",
+				bizstartyear: {
+					required: "<?php echo $this->translate("season_startyear_error"); ?>",
+					minstart: "Should not be after today"
+				},
 			},
 			// custom error positions
 			errorPlacement: function(error, element) {
@@ -76,43 +86,24 @@ $(document).ready(function() {
 				}			
 			}
 		});
-	<?php } ?>
-	
-	<?php if($request->tab == 'land'){ ?>
-		$('#farm').tabs();
-		<?php if(!isEmptyString($request->farm)){ ?>
-			$("#farm").tabs({ selected:'<?php echo $request->farm; ?>', fx: {opacity: 'toggle'} });	   
-		<?php } ?>
 		
-		$("#profileform-land").validate();
+		$.validator.addMethod("minstart", function(value, element) {
+			var n = new Date();
+			var nstamp = n.getTime();
+			var syear = $("#bizstartyear").val(); var smonth = $("#bizstartmonth").val(); var sday = 1;
+			// alert(nstamp);
+			if(!isEmptyString(syear) && !isEmptyString(smonth )){
+				var start = smonth+'/'+sday+'/'+syear;
+				var s = new Date(start);
+				var sstamp = s.getTime();
+				if(sstamp > nstamp){
+					return false;
+				}
+			}
+			return true;
+		}, "Should'nt be after today");
 		
-		$("#profileform-land").submit(function(){
-			$("#profileform-land").validate();
-		});
-	<?php } ?>
-
-	// disable editing counntry	
-	disableField("country");
-	
-	// basics custom failure and success url
-	$("#profileform-summary .savethenview").click(function() {
-		$("#profileform-summary .successurl").val('<?php echo encode($this->baseUrl('farm/view/tab/summary')); ?>');
-		$("#profileform-summary .failureurl").val('<?php echo encode($this->baseUrl('farm/index/id/'.encode($farm->getID()).'/tab/summary')); ?>');
-	});
-	
-	// personal custom failure and success url
-	$("#profileform-land .savethenview").click(function() {
-		$("#profileform-land .successurl").val('<?php echo encode($this->baseUrl('farm/view/tab/land')); ?>');
-		$("#profileform-land .failureurl").val('<?php echo encode($this->baseUrl('farm/index/id/'.encode($farm->getID()).'/tab/land')); ?>');
-	}); 
-	
-	// personal custom failure and success url
-	$("#profileform-preseason .savethenview").click(function() {
-		$("#profileform-preseason .successurl").val('<?php echo encode($this->baseUrl('farm/view/tab/preseason')); ?>');
-		$("#profileform-preseason .failureurl").val('<?php echo encode($this->baseUrl('farm/index/id/'.encode($farm->getID()).'/tab/preseason')); ?>');
-	}); 
-	
-	<?php if($request->tab == 'summary') { ?>
+		$(".savethenview").hide();
 		// chained select to load the counties for a district
 		$('#districtid').selectChain({
 			target: $('#countyid'),
@@ -159,82 +150,267 @@ $(document).ready(function() {
 		<?php if(!isEmptyString($theaddress->getParishID())){ ?>
 			$('#parishid').trigger("change");
 		<?php } ?>
-	<?php } ?>	
-	
-	$("#landunits").change(function(){
-		$("#activeland").html($('option:selected', this).html());
-		if($('option:selected', this).val() == ''){
-			$("#activeland").html('--&nbsp;&nbsp;')
-		}
-	});
-	$("#landunits").change();
-	
-	$("#numberoffields").change(function(){
-		var maxfields = '<?php echo MAX_NO_FARMS_LANDS; ?>';
-		var nooffields = $(this).val();
-		// alert(nooffields);
-	});
-	$("#numberoffields").change();
-	
-	// when a user clicks add new display the first hidden firm which is not shown
-	$(".addline").click(function() {
-		showNewLine($(this).attr('id'));
-	});		
-	function showNewLine(type) {
-		$(".hidden_row_"+type+":first").removeClass("hidden_row_"+type).addClass("visible_row_"+type);	
 		
-		// remove disabled attr from the fields
-		$("tr.visible_row_"+type+" input").attr("disabled", false);
-		$("tr.visible_row_"+type+" select").attr("disabled", false);	
-			
-		//if the maximum no of rows is added, hide the link to add another row
-		if ($("tr.visible_row_"+type+"").size() == 5) {
-			$("#"+type).hide();	
-		} else {
-			$("#"+type).show();	
-		}				
-	}
+		$(".savethenview").show();
+		// disable editing counntry	
+		disableField("country");
+		
+		// basics custom failure and success url
+		$("#profileform-summary .savethenview").click(function() {
+			$("#profileform-summary .successurl").val('<?php echo encode($this->baseUrl('farm/view/tab/summary')); ?>');
+			$("#profileform-summary .failureurl").val('<?php echo encode($this->baseUrl('farm/index/id/'.encode($farm->getID()).'/tab/summary')); ?>');
+		});
+		
+	<?php } ?>
 	
-	// delete rules
-	$(".removeline").click(function() {
-		removeLine($(this).attr('id'), $(this).attr('rel'));
-	});
-	function removeLine(lineid, type) {
-		var row_to_hide = lineid;
-		// confirm popup
-		bootbox.confirm("Are you sure you want to delete this entry? <br /><br /> Click <b>'OK'</b> to confirm, and <b>'Cancel'</b> to ignore", function(confirmed) {
-			if(confirmed){
-				$(".visible_row_"+type).has('a#'+row_to_hide).addClass("hidden_row_"+type).removeClass("visible_row_"+type);
-				// $("input, select").attr("disabled", true);	
-				$("tr."+row_to_hide+" input").val('').attr("disabled", true);
-				$("tr."+row_to_hide+" select").val('').attr("disabled", true);	
-				//if the maximum no of rows is added, hide the link to add another row
-				if ($("tr.visible_row_"+type).size() == 5) {
-					$("#"+type).hide();		
-				} else {
-					$("#"+type).show();	
-				}	
-				// $(".units, .qty").trigger('keyup');
-			} else {
-				return false;
+	<?php if($request->tab == 'land'){ ?>
+		$('#farm').tabs();
+		<?php if(!isEmptyString($request->farm)){ ?>
+			$("#farm").tabs({ selected:'<?php echo $request->farm; ?>', fx: {opacity: 'toggle'} });	   
+		<?php } ?>
+		
+		$("#profileform-land").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				landsize: {
+					required: false,
+					validate_decimal: true
+				},
+				landactivesize: {
+					required: false,
+					validate_decimal: true,
+					validate_diff: true
+				},
+				landunits: {
+					required: false,
+					size_validate: true
+				}
+			}, 
+			// the messages for each of the fields being validated
+			messages: {		
+				landactivesize: {
+					validate_diff: "Should be less than total above",
+				},
+				landunits: {
+					size_validate: "Please select a Unit"
+				}
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						error.appendTo("#"+element.attr("name")+"_error")
+						break;
+				}			
 			}
 		});
-	}
+		
+		$.validator.addMethod("validate_diff", function(value, element) {
+			var total = $("#landsize").val();
+			// alert(parseFloat(value)+' - '+parseFloat(total));			
+			if(!isEmptyString(value) && !isEmptyString(total) && parseFloat(value) > parseFloat(total)){
+				return false;
+			}
+			return true;
+		}, "Should be less than total above");
+		
+		$.validator.addMethod("size_validate", function(value, element) {
+			var total = $("#landsize").val();
+			var avail = $("#landactivesize").val();
+			// alert(parseFloat(value)+' - '+parseFloat(total));			
+			if((!isEmptyString(avail) || !isEmptyString(total)) && isEmptyString(value)){
+				return false;
+			}
+			return true;
+		}, "Please select a Unit");
 	
-	// enable/disable previous season estimates
-	$("#hashistory-1").click(function(){
-		enableContainerByClass('lastseason');
-		// alert('has ');
-	});
-	$("#hashistory-0").click(function(){
-		disableContainerByClass('lastseason');
-		// alert('doesnt have ');
-	});
-	<?php if($farm->hasPreviousSeason()){ ?>
-		$("#hashistory-1").click();
+		// personal custom failure and success url
+		$("#profileform-land .savethenview").click(function() {
+			$("#profileform-land .successurl").val('<?php echo encode($this->baseUrl('farm/view/tab/land')); ?>');
+			$("#profileform-land .failureurl").val('<?php echo encode($this->baseUrl('farm/index/id/'.encode($farm->getID()).'/tab/land')); ?>');
+		});
+		
+		$("#landunits").change(function(){
+			$("#activeland").html($('option:selected', this).html());
+			if($('option:selected', this).val() == ''){
+				$("#activeland").html('--&nbsp;&nbsp;')
+			}
+		});
+		$("#landunits").change();
+		
 	<?php } ?>
-	<?php if(!$farm->hasPreviousSeason()){ ?>
-		$("#hashistory-0").click();
+
+	
+	<?php if($request->tab == 'preseason'){ ?>
+		$("#profileform-preseason").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				startmonth: "required",
+				endmonth: "required",
+				startyear: {
+					required: true,
+					minstart: true
+				},
+				endyear: {
+					required: true,
+					minend: true,
+					mindiff: true
+				}			
+			}, 
+			// the messages for each of the fields being validated
+			messages: {
+				startmonth: "<?php echo $this->translate("season_startmonth_error"); ?>",
+				endmonth: "<?php echo $this->translate("season_endmonth_error"); ?>",
+				startyear: {
+					required: "<?php echo $this->translate("season_startyear_error"); ?>",
+					minstart: "Should not be after today"
+				},	
+				endyear: {
+					required: "<?php echo $this->translate("season_endyear_error"); ?>",
+					minend: "Should not be after today",
+					mindiff: "End should be after Start"
+				}
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						if(element.hasClass("useid_error")){
+							error.appendTo("#"+element.attr("id")+"_error");
+						} else {
+							error.appendTo("#"+element.attr("name")+"_error");
+						}
+						break;
+				}			
+			}
+		});
+		
+		$.validator.addMethod("minstart", function(value, element) {
+			var n = new Date();
+			var nstamp = n.getTime();
+			var syear = $("#startyear").val(); var smonth = $("#startmonth").val(); var sday = 1;
+			// alert(nstamp);
+			if(!isEmptyString(syear) && !isEmptyString(smonth )){
+				var start = smonth+'/'+sday+'/'+syear;
+				var s = new Date(start);
+				var sstamp = s.getTime();
+				if(sstamp > nstamp){
+					return false;
+				}
+			}
+			return true;
+		}, "Should'nt be after today");
+		
+		$.validator.addMethod("minend", function(value, element) {
+			var n = new Date();
+			var nstamp = n.getTime();
+			var eyear = $("#endyear").val(); var emonth = $("#endmonth").val(); var eday = 1;
+			// alert(nstamp);
+			if(!isEmptyString(eyear) && !isEmptyString(emonth)){
+				var end = emonth+'/'+eday+'/'+eyear;
+				var e = new Date(end);
+				var estamp = e.getTime();
+				if(estamp > nstamp){
+					return false;
+				}
+			}
+			return true;
+		}, "Should'nt be after today");
+		
+		$.validator.addMethod("mindiff", function(value, element) {
+			var n = new Date();
+			var nstamp = n.getTime();
+			var syear = $("#startyear").val(); var smonth = $("#startmonth").val(); var sday = 1;
+			var eyear = $("#endyear").val(); var emonth = $("#endmonth").val(); var eday = 1;
+			// alert(nstamp);
+			if(!isEmptyString(eyear) && !isEmptyString(emonth) && !isEmptyString(eyear) && !isEmptyString(emonth)){
+				var start = smonth+'/'+sday+'/'+syear;
+				var s = new Date(start);
+				var sstamp = s.getTime();
+				
+				var end = emonth+'/'+eday+'/'+eyear;
+				var e = new Date(end);
+				var estamp = e.getTime();
+				if(sstamp > estamp){
+					return false;
+				}
+			}
+			return true;
+		}, "End should be after Start");
+		
+		// personal custom failure and success url
+		$("#profileform-preseason .savethenview").click(function() {
+			$("#profileform-preseason .successurl").val('<?php echo encode($this->baseUrl('farm/view/tab/preseason')); ?>');
+			$("#profileform-preseason .failureurl").val('<?php echo encode($this->baseUrl('farm/index/id/'.encode($farm->getID()).'/tab/preseason')); ?>');
+		}); 
+		
+		// when a user clicks add new display the first hidden firm which is not shown
+		$(".addline").click(function() {
+			showNewLine($(this).attr('id'));
+		});		
+		function showNewLine(type) {
+			$(".hidden_row_"+type+":first").removeClass("hidden_row_"+type).addClass("visible_row_"+type);	
+			
+			// remove disabled attr from the fields
+			$("tr.visible_row_"+type+" input").attr("disabled", false);
+			$("tr.visible_row_"+type+" select").attr("disabled", false);	
+				
+			//if the maximum no of rows is added, hide the link to add another row
+			if ($("tr.visible_row_"+type+"").size() == 5) {
+				$("#"+type).hide();	
+			} else {
+				$("#"+type).show();	
+			}				
+		}
+		
+		// delete rules
+		$(".removeline").click(function() {
+			removeLine($(this).attr('id'), $(this).attr('rel'));
+		});
+		function removeLine(lineid, type) {
+			var row_to_hide = lineid;
+			// confirm popup
+			bootbox.confirm("Are you sure you want to delete this entry? <br /><br /> Click <b>'OK'</b> to confirm, and <b>'Cancel'</b> to ignore", function(confirmed) {
+				if(confirmed){
+					$(".visible_row_"+type).has('a#'+row_to_hide).addClass("hidden_row_"+type).removeClass("visible_row_"+type);
+					// $("input, select").attr("disabled", true);	
+					$("tr."+row_to_hide+" input").val('').attr("disabled", true);
+					$("tr."+row_to_hide+" select").val('').attr("disabled", true);	
+					//if the maximum no of rows is added, hide the link to add another row
+					if ($("tr.visible_row_"+type).size() == 5) {
+						$("#"+type).hide();		
+					} else {
+						$("#"+type).show();	
+					}	
+					// $(".units, .qty").trigger('keyup');
+				} else {
+					return false;
+				}
+			});
+		}
+		
+		// enable/disable previous season estimates
+		$("#hashistory-1").click(function(){
+			enableContainerByClass('lastseason');
+			// alert('has ');
+		});
+		$("#hashistory-0").click(function(){
+			disableContainerByClass('lastseason');
+			// alert('doesnt have ');
+		});
+		<?php if($farm->hasPreviousSeason()){ ?>
+			$("#hashistory-1").click();
+		<?php } ?>
+		<?php if(!$farm->hasPreviousSeason()){ ?>
+			$("#hashistory-0").click();
+		<?php } ?>
+		
+		// custom validation for details
+		<?php 
+			//for($v = 0; $v < 5; $v++) { 
+		?>
+		
+		<?php //} ?>
 	<?php } ?>
 	
 }); 
@@ -277,6 +453,9 @@ select.unitselect {
                         <?php if($sessionhaserror) { ?>
                             <div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
                         <?php } ?>
+                        <?php if($request->restart == 1){ ?>
+                            <div style="padding:5px 5px;" class="alert alert-info margin0 centeralign">Please complete registation of Business to continue</div></td>
+                        <?php } ?>
                         <table class="table"> 
                         	<tr>
                                 <td width="30%"><label class="control-label"><?php echo $this->translate("farm_name_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
@@ -289,7 +468,7 @@ select.unitselect {
                                 </td>
                             </tr>
                             <tr>
-                                <td><label class="control-label">Practicing Farming Since:</label></td>
+                                <td><label class="control-label">Practicing Farming Since: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
                                 <td>
                                     <div class="blocked">
                                         <?php
@@ -462,9 +641,9 @@ select.unitselect {
                             <table class="table"> 
                                 <tr>
                                     <td width="25%"><label class="control-label"><?php echo $this->translate("farm_landsize_label"); ?>:</label></td>
-                                    <td><input name="landsize" id="landsize" type="text" class="span1 isdecimal hastooltip" value="<?php echo $farm->getLandSize(); ?>" title="<?php echo $this->translate("farm_landsize_tooltip"); ?>" />&nbsp;&nbsp;
+                                    <td><input name="landsize" id="landsize" type="text" class="span1" value="<?php echo clean_num($farm->getLandSize()); ?>" title="<?php echo $this->translate("farm_landsize_tooltip"); ?>" />&nbsp;&nbsp;
 										<?php
-                                            $landunits = getLandMeasureUnits();
+                                            $landunits = getAreaUnits();
                                             $landunitdropdown = new Zend_Form_Element_Select('landunits',
                                                                 array(
                                                                     'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $landunits),								
@@ -476,12 +655,12 @@ select.unitselect {
                                                             );
                                             $landunitdropdown->setValue($farm->getLandUnits()); 
                                             echo $landunitdropdown->render(); 
-                                       ?><div id="landsize_error"></div>
+                                       ?><div id="landsize_error"></div><div id="landunits_error"></div>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td><label class="control-label"><?php echo $this->translate("farm_landsizeactive_label"); ?>:</label></td>
-                                    <td><input name="landactivesize" id="landactivesize" type="text" class="span1 isdecimal hastooltip" value="<?php echo $farm->getLandActiveSize(); ?>" title="<?php echo $this->translate("farm_landsize_tooltip"); ?>" /> <span class="pagedescription" id="activeland"></span><div id="landactivesize_error"></div></td>
+                                    <td><input name="landactivesize" id="landactivesize" type="text" class="span1 hastooltip" value="<?php echo clean_num($farm->getLandActiveSize()); ?>" title="<?php echo $this->translate("farm_landsize_tooltip"); ?>" /> <span class="pagedescription" id="activeland"></span><div id="landactivesize_error"></div></td>
                                 </tr>
                                 <tr>
                                     <td class="nowrapping"><label class="control-label"><?php echo $this->translate("farm_landacquiremethod_label"); ?>:</label></td>
@@ -542,7 +721,7 @@ select.unitselect {
                         </div>
                     </span>
                 </div>
-                <div class="well row marginleft0" style="min-height:75px; width:97%;"> 
+                <!--<div class="well row marginleft0" style="min-height:75px; width:97%;"> 
                     <h3 class="well-legend">Details of Farm Lands</h3>
                     <table class="table">                       
                         <tr>
@@ -551,7 +730,7 @@ select.unitselect {
                             </td>
                         </tr>
                     </table>
-                </div>
+                </div>-->
                 <?php } ?>
             </form>    
         </div>
@@ -593,7 +772,7 @@ select.unitselect {
                     <div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
                 <?php } ?>
                 <div class="row margin0" style="padding:2px; margin-bottom:10px;">
-                	 <span class="pull-left well lighter margin0" style="width:72%; height:150px; position:relative;">
+                	 <span class="pull-left well lighter margin0" style="width:72%; min-height:150px; height:auto; position:relative;">
                 		<table class="table margin0" style="margin-top:15px;">
                             <tr>
                             	<td colspan="3">
@@ -622,20 +801,6 @@ select.unitselect {
                                     <label class="control-label">Season Started: <?php echo $this->translate("global_required_field_marker"); ?></label>
                                     <div class="blocked">
                                         <?php
-                                            $years = getAllYears("5","0");
-                                            $yeardp = new Zend_Form_Element_Select('startyear',
-                                                                array(
-                                                                    'multiOptions' => array_merge_maintain_keys(array('' => 'Year'), $years),	
-                                                                    'view' => new Zend_View(),
-                                                                    'decorators' => array('ViewHelper'),
-                                                                    'class' => array('birth'),
-                                                                    'title' => 'Select Year'		
-                                                                )
-                                                            );
-                                            $yeardp->setValue($farmpreseason->getStartYear()); 
-                                            echo $yeardp->render(); 
-                                        ?>
-                                        <?php
                                             $monthdp = new Zend_Form_Element_Select('startmonth',
                                                                 array(
                                                                     'multiOptions' => array_merge_maintain_keys(array('' => 'Month'), getAllMonthsAsShortNames()),	
@@ -650,24 +815,25 @@ select.unitselect {
                                             $monthdp->setValue($farmpreseason->getStartMonth()); 
                                             echo $monthdp->render(); 
                                         ?>
+										<?php
+                                            $years = getAllYears("5","0");
+                                            $yeardp = new Zend_Form_Element_Select('startyear',
+                                                                array(
+                                                                    'multiOptions' => array_merge_maintain_keys(array('' => 'Year'), $years),	
+                                                                    'view' => new Zend_View(),
+                                                                    'decorators' => array('ViewHelper'),
+                                                                    'class' => array('birth'),
+                                                                    'title' => 'Select Year'		
+                                                                )
+                                                            );
+                                            $yeardp->setValue($farmpreseason->getStartYear()); 
+                                            echo $yeardp->render(); 
+                                        ?>
                                         <div id="startyear_error"></div><div id="startmonth_error"></div>
                                     </div>
                                 </td>
                                 <td style="width:30%;"><label class="control-label">Season Ended: <?php echo $this->translate("global_required_field_marker"); ?></label>		
                                 <div class="blocked">
-                                    <?php
-                                        $years = getAllYears("5","0");
-                                        $yeardp = new Zend_Form_Element_Select('endyear',
-                                                            array(
-                                                                'multiOptions' => array_merge_maintain_keys(array('' => 'Year'), $years),	
-                                                                'view' => new Zend_View(),
-                                                                'decorators' => array('ViewHelper'),
-                                                                'class' => array('birth')
-                                                            )
-                                                        );
-                                        $yeardp->setValue($farmpreseason->getEndYear()); 
-                                        echo $yeardp->render(); 
-                                    ?>
                                     <?php
                                         $monthdp = new Zend_Form_Element_Select('endmonth',
                                                             array(
@@ -680,6 +846,19 @@ select.unitselect {
                                                         );
                                         $monthdp->setValue($farmpreseason->getEndMonth()); 
                                         echo $monthdp->render(); 
+                                    ?>
+									<?php
+                                        $years = getAllYears("5","0");
+                                        $yeardp = new Zend_Form_Element_Select('endyear',
+                                                            array(
+                                                                'multiOptions' => array_merge_maintain_keys(array('' => 'Year'), $years),	
+                                                                'view' => new Zend_View(),
+                                                                'decorators' => array('ViewHelper'),
+                                                                'class' => array('birth')
+                                                            )
+                                                        );
+                                        $yeardp->setValue($farmpreseason->getEndYear()); 
+                                        echo $yeardp->render(); 
                                     ?>
                                     <div id="endyear_error"></div><div id="endmonth_error"></div>
                                 </div>        
@@ -730,25 +909,25 @@ select.unitselect {
                                                         'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $availablecrops),								
                                                         'view' => new Zend_View(),
                                                         'decorators' => array('ViewHelper'),
-                                                        'class' => array('hastooltip', 'width150'),
+                                                        'class' => array('hastooltip', 'width150', 'cropid_'.$e, 'useid_error', 'selectrequired'),
                                                         'title' => $this->translate("season_commodity_tooltip")
                                                     )
                                                 );
                                 $cropdropdown->setValue($detail->getCropID()); 
                                 echo $cropdropdown->render();
-                           ?><div id="details_cropid_<?php echo $e; ?>_error"></div>
+                           ?><div id="cropid_<?php echo $e; ?>_error"></div>
                         </span>
-                        <input type="hidden" name="details[<?php echo $e; ?>][id]" id="details_id_<?php echo $e; ?>" value="<?php echo $detail->getid(); ?>" />
+                        <input type="hidden" name="details[<?php echo $e; ?>][id]" id="details_id_<?php echo $e; ?>" class="<?php echo 'cropid_'.$e; ?>" value="<?php echo $detail->getid(); ?>" />
                         <a href="javascript: doNothing();" title="<?php echo $this->translate("global_button_remove"); ?>" id="row_input_<?php echo $e; ?>" class="removeline close button btn" rel="input">&times;</a>
-                    </h3>
+                    	</h3>
                         <table class="table noborder margin0" style="margin-top:10px;">
                             <tr>
                                 <td style="width:33%;"> <label class="control-label">Source of Inputs:</label>
-                                   <input style="width:80%;" class="hastooltip" type="text" name="details[<?php echo $e; ?>][inputsource]" id="details_inputsource_<?php echo $e; ?>" value="<?php echo $detail->getinputsource(); ?>" title="<?php echo $this->translate("season_inputsource_tooltip"); ?>" /><div id="details_inputsource_<?php echo $e; ?>_error"></div>
+                                   <input style="width:80%;" class="hastooltip useid_error inputrequired <?php echo 'inputsource_'.$e; ?>" type="text" name="details[<?php echo $e; ?>][inputsource]" id="details_inputsource_<?php echo $e; ?>" value="<?php echo $detail->getinputsource(); ?>" title="<?php echo $this->translate("season_inputsource_tooltip"); ?>" /><div id="details_inputsource_<?php echo $e; ?>_error"></div>
                                 </td>
                                 <td style="width:33%;">
                                    <label class="control-label">Acrage Cultivated:</label>
-                                    <input style="width:50px;" type="text" name="details[<?php echo $e; ?>][fieldsize]" id="details_fieldsize_<?php echo $e; ?>" class="centeralign isnumber" value="<?php echo $detail->getfieldsize(); ?>" />
+                                    <input style="width:50px;" type="text" name="details[<?php echo $e; ?>][fieldsize]" id="details_fieldsize_<?php echo $e; ?>" class="centeralign isdecimal useid_error inputrequired fieldsize_<?php echo $e; ?>" value="<?php echo clean_num($detail->getfieldsize()); ?>" />
                                     &nbsp;
                                     <?php
                                         $areavalues = getAreaUnits();
@@ -757,16 +936,16 @@ select.unitselect {
                                                                 'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $areavalues),								
                                                                 'view' => new Zend_View(),
                                                                 'decorators' => array('ViewHelper'),
-                                                                'class' => array('hastooltip', 'span2'),
+                                                                'class' => array('hastooltip', 'span2', 'fieldsizeunit_'.$e, 'useid_error', 'selectrequired'),
                                                                 'title' => $this->translate("season_plant_fieldsize_tooltip")
                                                             )
                                                         );
                                         $unitdropdown->setValue($detail->getfieldsizeunit()); 
                                         echo $unitdropdown->render(); 
-                                   ?><div id="details_fieldsize_<?php echo $e; ?>_error"></div>
+                                   ?><div id="details_fieldsize_<?php echo $e; ?>_error"></div><div id="fieldsizeunit_<?php echo $e; ?>_error"></div>
                                 </td>
                                 <td><label class="control-label">Quantity Planted:</label>
-                                    <input type="text" name="details[<?php echo $e; ?>][totalplanted]" id="details_totalplanted_<?php echo $e; ?>" class="centeralign isnumber" style="width:50px;" value="<?php echo $detail->gettotalplanted(); ?>" />
+                                    <input type="text" name="details[<?php echo $e; ?>][totalplanted]" id="details_totalplanted_<?php echo $e; ?>" class="centeralign isdecimal useid_error inputrequired totalplanted_<?php echo $e; ?>" style="width:50px;" value="<?php echo clean_num($detail->gettotalplanted()); ?>" />
                                     <?php
                                         $univalues = getHarvestQuantityUnits();
                                         $unitdropdown = new Zend_Form_Element_Select('totalplantedunit_'.$e,
@@ -774,7 +953,7 @@ select.unitselect {
                                                                 'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
                                                                 'view' => new Zend_View(),
                                                                 'decorators' => array('ViewHelper'),
-                                                                'class' => array('hastooltip', 'span2','width100'),
+                                                                'class' => array('hastooltip', 'span2','width100', 'totalplantedunit_'.$e, 'useid_error', 'selectrequired'),
                                                                 'title' => $this->translate("season_harvest_totalharvest_tooltip")
                                                             )
                                                         );
@@ -782,13 +961,13 @@ select.unitselect {
                                         echo $unitdropdown->render(); 
                                     ?>
                                     <div id="details_totalplanted_<?php echo $e; ?>_error"></div>
-                                   
+                                    <div id="totalplantedunit_<?php echo $e; ?>_error"></div>
                                 </td>
                             </tr>
                             <tr>
                                 <td>
-                                   <label class="control-label">Quantity Harvest:</label>
-                                   <input style="width:50px;" type="text" name="details[<?php echo $e; ?>][totalharvest]" id="details_totalharvest_<?php echo $e; ?>" class="centeralign isnumber" value="<?php echo $detail->gettotalharvest(); ?>" />&nbsp;
+                                   <label class="control-label">Quantity Harvested:</label>
+                                   <input style="width:50px;" type="text" name="details[<?php echo $e; ?>][totalharvest]" id="details_totalharvest_<?php echo $e; ?>" class="centeralign isdecimal useid_error inputrequired totalharvest_<?php echo $e; ?>" value="<?php echo clean_num($detail->gettotalharvest()); ?>" />&nbsp;
                                     <?php
                                         $univalues = getHarvestQuantityUnits();
                                         $unitdropdown = new Zend_Form_Element_Select('totalharvestunit_'.$e,
@@ -796,35 +975,41 @@ select.unitselect {
                                                                 'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
                                                                 'view' => new Zend_View(),
                                                                 'decorators' => array('ViewHelper'),
-                                                                'class' => array('hastooltip', 'span2','width100'),
+                                                                'class' => array('hastooltip', 'span2','width100', 'totalharvestunit_'.$e, 'useid_error', 'selectrequired'),
                                                                 'title' => $this->translate("season_harvest_totalharvest_tooltip")
                                                             )
                                                         );
                                         $unitdropdown->setValue($detail->gettotalharvestunit()); 
                                         echo $unitdropdown->render(); 
                                     ?>
-                                    <div id="details_totalharvest_<?php echo $e; ?>_error"></div>
+                                    <div id="details_totalharvest_<?php echo $e; ?>_error"></div><div id="totalharvestunit_<?php echo $e; ?>_error"></div>
                                 </td>
                                 <td>
-                                   <label class="control-label">Quantity Sold:</label>
-                                   <input style="width:50px;" type="text" name="details[<?php echo $e; ?>][quantitysold]" id="details_quantitysold_<?php echo $e; ?>" class="centeralign isnumber" value="<?php echo $detail->getquantitysold(); ?>" />&nbsp;
+                                   <label class="control-label">Harvest Yield:</label>
+                                   <input style="width:50px;" type="text" name="details[<?php echo $e; ?>][yield]" id="details_yield_<?php echo $e; ?>" class="centeralign isdecimal useid_error inputrequired yield_<?php echo $e; ?>" value="<?php echo clean_num($detail->getyield()); ?>" />&nbsp;
                                     <?php
-                                        $univalues = getHarvestQuantityUnits();
-                                        $unitdropdown = new Zend_Form_Element_Select('quantitysoldunit_'.$e,
+                                        $univalues = getHarvestYieldUnits();
+                                        $unitdropdown = new Zend_Form_Element_Select('yieldunit_'.$e,
                                                             array(
                                                                 'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
                                                                 'view' => new Zend_View(),
                                                                 'decorators' => array('ViewHelper'),
-                                                                'class' => array('hastooltip', 'span2'),
-                                                                'title' => $this->translate("season_sale_quantity_tooltip"),
-                                                                'style' => 'width: 80px;'
+                                                                'class' => array('hastooltip', 'span2','width100', 'yield_'.$e, 'useid_error', 'selectrequired'),
+                                                                'title' => $this->translate("season_harvest_yield_tooltip")
                                                             )
                                                         );
-                                        $unitdropdown->setValue($detail->getquantitysold()); 
+                                        $unitdropdown->setValue($detail->getyieldunit()); 
                                         echo $unitdropdown->render(); 
                                     ?>
-                                    <div id="details_quantitysold_<?php echo $e; ?>_error"></div>
+                                    <div id="details_yield_<?php echo $e; ?>_error"></div><div id="yieldunit_<?php echo $e; ?>_error"></div>
                                 </td>
+                                <td>
+                                	<label class="control-label">Cost of Production (Approx):</label>
+                                   	<div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo $e; ?>][totalexpenseamount]" id="details_totalexpenseamount_<?php echo $e; ?>" class="width100 hastooltip isamount rightalign useid_error inputrequired totalexpenseamount_<?php echo $e; ?>" value="<?php echo $detail->gettotalexpenseamount(); ?>" title="<?php echo $this->translate("season_sale_productioncost_tooltip"); ?>" /></div>
+                                   <div id="details_totalexpenseamount_<?php echo $e; ?>_error"></div>
+                                </td>
+                            </tr>
+                            <tr>
                                 <td><label class="control-label">Sales Price Type:</label>
                                     <?php 
                                         $pricetypes = getPricingTypes();
@@ -833,93 +1018,229 @@ select.unitselect {
                                                                 'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $pricetypes),								
                                                                 'view' => new Zend_View(),
                                                                 'decorators' => array('ViewHelper'),
-                                                                'class' => array('hastooltip', 'width150'),
+                                                                'class' => array('hastooltip', 'width150', 'quantitysoldunit_'.$e, 'useid_error', 'selectrequired'),
                                                                 'title' => $this->translate("season_saletype_tooltip")
                                                             )
                                                         );
                                         $typedropdown->setValue($detail->getsaletype()); 
                                         echo $typedropdown->render();
-                                   ?><div id="details_saletype_<?php echo $e; ?>_error"></div>
+                                   ?><div id="details_saletype_<?php echo $e; ?>_error"></div><div id="saletype_<?php echo $e; ?>_error"></div>
                                 
+                                </td>
+                                <td>
+                                   <label class="control-label">Quantity Sold:</label>
+                                   <input style="width:50px;" type="text" name="details[<?php echo $e; ?>][quantitysold]" id="details_quantitysold_<?php echo $e; ?>" class="centeralign isdecimal useid_error inputrequired quantitysold_<?php echo $e; ?>" value="<?php echo clean_num($detail->getquantitysold()); ?>" />&nbsp;
+                                    <?php
+                                        $univalues = getHarvestQuantityUnits();
+                                        $unitdropdown = new Zend_Form_Element_Select('quantitysoldunit_'.$e,
+                                                            array(
+                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
+                                                                'view' => new Zend_View(),
+                                                                'decorators' => array('ViewHelper'),
+                                                                'class' => array('hastooltip', 'span2', 'quantitysoldunit_'.$e, 'useid_error', 'selectrequired'),
+                                                                'title' => $this->translate("season_sale_quantity_tooltip"),
+                                                                'style' => 'width: 80px;'
+                                                            )
+                                                        );
+                                        $unitdropdown->setValue($detail->getquantitysold()); 
+                                        echo $unitdropdown->render(); 
+                                    ?>
+                                    <div id="details_quantitysold_<?php echo $e; ?>_error"></div><div id="quantitysoldunit_<?php echo $e; ?>_error"></div>
+                                </td>
+                                <td>
+                                   <label class="control-label">Unit Selling Price:</label>
+                                   <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo $e; ?>][unitprice]" id="details_unitprice_<?php echo $e; ?>" class="width100 hastooltip isamount rightalign useid_error inputrequired unitprice_<?php echo $e; ?>" value="<?php echo $detail->getunitprice(); ?>" title="<?php echo $this->translate("season_sale_unitprice_tooltip"); ?>" /></div>
+                                   <div id="details_unitprice_<?php echo $e; ?>_error"></div>
                                 </td>
                             </tr>
                             <tr>
-                                <td>
-                                   <label class="control-label">Unit Selling Price:</label>
-                                   <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo $e; ?>][unitprice]" id="details_unitprice_<?php echo $e; ?>" class="width100 hastooltip isamount rightalign" value="<?php echo $detail->getunitprice(); ?>" title="<?php echo $this->translate("season_sale_unitprice_tooltip"); ?>" /></div>
-                                   <div id="unitprice_error"></div>
-                                </td>
-                                <td>
+                            	<td>
                                    <label class="control-label">Total Revenue (Approx):</label>
-                                   <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo $e; ?>][totalsalesamount]" id="details_totalsalesamount_<?php echo $e; ?>" class="width100 hastooltip isamount rightalign" value="<?php echo $detail->gettotalsalesamount(); ?>" title="<?php echo $this->translate("season_sale_totalamount_tooltip"); ?>" /></div>
-                                   <div id="totalsalesamount_error"></div>
+                                   <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo $e; ?>][totalsalesamount]" id="details_totalsalesamount_<?php echo $e; ?>" class="width100 hastooltip isamount rightalign useid_error inputrequired totalsalesamount_<?php echo $e; ?>" value="<?php echo $detail->gettotalsalesamount(); ?>" title="<?php echo $this->translate("season_sale_totalamount_tooltip"); ?>" /></div>
+                                   <div id="details_totalsalesamount_<?php echo $e; ?>_error"></div>
                                 </td>
                                 <td>
-                                	<label class="control-label">Cost of Production (Inputs):</label>
-                                   	<div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo $e; ?>][totalexpenseamount]" id="details_totalexpenseamount_<?php echo $e; ?>" class="width100 hastooltip isamount rightalign" value="<?php echo $detail->gettotalexpenseamount(); ?>" title="<?php echo $this->translate("season_sale_productioncost_tooltip"); ?>" /></div>
-                                   <div id="totalexpenseamount_error"></div>
+                                	<label class="control-label">Revenue estimate for next season:</label>
+                                    <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo $e; ?>][nextseasonrevenue]" id="details_nextseasonrevenue_<?php echo $e; ?>" class="width100 hastooltip isamount rightalign useid_error inputrequired nextseasonrevenue_<?php echo $e; ?>" value="<?php echo $detail->getnextseasonrevenue(); ?>" title="<?php echo $this->translate("season_sale_nextseasonrevenue_tooltip"); ?>" /></div>
+                                   <div id="details_nextseasonrevenue_<?php echo $e; ?>_error"></div>
                                 </td>
+                                <td>
+                                	<label class="control-label">Did you get a Loan?</label>
+                                    <?php
+										if(isEmptyString($detail->getfinancetype())){
+											$detail->setfinancetype(0);
+										}
+										$typeclass = $detail->getfinancetype();
+										$data = array('0'=>'No', '1'=>'Yes');						  
+										$capitalradio = new Zend_Form_Element_Radio('financetype_'.$e,
+												  array(
+														  'multiOptions' => $data, 
+														  'view' => new Zend_View(),
+														  'disableLoadDefaultDecorators' => true,
+														  'separator' => '&nbsp;',
+														  'class' => array('fintype', $typeclass),										  
+														  'decorators' => array('ViewHelper',
+																			  array('HtmlTag', array('tag' => 'div', 'class' => array('inline', 'radio', 'zendradio'))) // use a sorrounding DIV with classes which are copied to the label by JQuery
+																		  )
+												  )
+										  );
+										  $capitalradio->setValue($detail->getfinancetype());
+										  echo $capitalradio->render();
+									?>
+                                    
+                                </td>
+                            </tr>
+                            <tr class="hasloan_<?php echo $e; ?>">
+                            	<td>
+                                   <label class="control-label"><?php echo $this->translate("season_credit_principal_label"); ?>:</label>
+                                   <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo $e; ?>][principal]" id="details_principal_<?php echo $e; ?>" class="width100 hastooltip isamount rightalign useid_error inputrequired principal_<?php echo $e; ?>" value="<?php echo $detail->getLoan()->getprincipal(); ?>" title="<?php echo $this->translate("season_principal_tooltip"); ?>" /></div>
+                                   <div id="details_principal_<?php echo $e; ?>_error"></div>
+                                </td>
+                                <td>
+                                    <label class="control-label"><?php echo $this->translate("season_credit_interestrate_label"); ?>:</label>
+                                    <input style="width:50px;" type="text" name="details[<?php echo $e; ?>][interestrate]" id="details_interestrate_<?php echo $e; ?>" class="centeralign isdecimal hastooltip useid_error inputrequired interestrate_<?php echo $e; ?>" value="<?php echo $detail->getLoan()->getInterestRate(); ?>" title="<?php echo $this->translate("season_interestrate_tooltip"); ?>" />&nbsp;<span class="pagedescription">(%)</span><div id="details_interestrate_<?php echo $e; ?>_error"></div>
+                                </td>
+                                <td>
+                                	<label class="control-label"><?php echo $this->translate("season_credit_repayment_label"); ?>:</label>
+                                    <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo $e; ?>][paybackamount]" id="details_paybackamount_<?php echo $e; ?>" class="width100 hastooltip isamount rightalign useid_error inputrequired paybackamount_<?php echo $e; ?>" value="<?php echo $detail->getLoan()->getpaybackamount(); ?>" title="<?php echo $this->translate("season_paybackamount_tooltip"); ?>" /></div>
+                                   <div id="details_paybackamount_<?php echo $e; ?>_error"></div>
+                                </td>
+                            </tr>
+                            <tr class="hasloan_<?php echo $e; ?>">
+                            	<td>
+                                   <label class="control-label"><?php echo $this->translate("season_credit_payperiod_label"); ?>:</label>
+                                   <input style="width:50px;" type="text" name="details[<?php echo $e; ?>][paybackperiod]" id="details_paybackperiod_<?php echo $e; ?>" class="centeralign isnumber useid_error inputrequired paybackperiod_<?php echo $e; ?>" value="<?php echo $detail->getLoan()->getPayBackPeriod(); ?>" />
+								   <?php
+                                        $univalues = getLoanFrequencyValues();
+                                        $unitdropdown = new Zend_Form_Element_Select('paybackperiodunit_'.$e,
+                                                            array(
+                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
+                                                                'view' => new Zend_View(),
+                                                                'decorators' => array('ViewHelper'),
+                                                                'class' => array('span2','width100','hastooltip', 'paybackperiodunit_'.$e, 'useid_error', 'selectrequired'),
+                                                                'title' => $this->translate("season_paybackperiod_tooltip")
+                                                            )
+                                                        );
+                                        $unitdropdown->setValue($detail->getLoan()->getPayBackPeriodUnit()); 
+                                        echo $unitdropdown->render(); 
+                                    ?><div id="details_paybackperiod_<?php echo $e; ?>_error"></div><div id="paybackperiodunit_<?php echo $e; ?>_error"></div>
+                                </td>
+                                <td>
+                                	<label class="control-label"><?php echo $this->translate("season_credit_source_label"); ?>:</label>
+                                    <input style="width:80%;" class="hastooltip useid_error <?php echo 'financesourcetext_'.$e; ?>" type="text" name="details[<?php echo $e; ?>][financesourcetext]" id="details_financesourcetext_<?php echo $e; ?>" value="<?php echo $detail->getLoan()->getfinancesourcetext(); ?>" title="<?php echo $this->translate("season_financesource_tooltip"); ?>" /><div id="details_financesourcetext_<?php echo $e; ?>_error"></div>
+                                </td>
+                                <td></td>
                             </tr>
                         </table>
                     </span>
+                    <script>
+						$(document).ready(function() {
+							if(isEmptyString($("#fieldsizeunit_<?php echo $e; ?>").val())){
+								$("#fieldsizeunit_<?php echo $e; ?>").val(1);
+							}
+							if(isEmptyString($("#totalplantedunit_<?php echo $e; ?>").val())){
+								$("#totalplantedunit_<?php echo $e; ?>").val(1);
+							}
+							if(isEmptyString($("#totalharvestunit_<?php echo $e; ?>").val())){
+								$("#totalharvestunit_<?php echo $e; ?>").val(1);
+							}
+							if(isEmptyString($("#yieldunit_<?php echo $e; ?>").val())){
+								$("#yieldunit_<?php echo $e; ?>").val(1);
+							}
+							if(isEmptyString($("#quantitysoldunit_<?php echo $e; ?>").val())){
+								$("#quantitysoldunit_<?php echo $e; ?>").val(1);
+							}
+							if(isEmptyString($("#details_nextseasonrevenue_<?php echo $e; ?>").val())){
+								$("#details_nextseasonrevenue_<?php echo $e; ?>").val(0);
+							}
+							if(isEmptyString($("#paybackperiodunit_<?php echo $e; ?>").val())){
+								$("#paybackperiodunit_<?php echo $e; ?>").val(2);
+							}
+							
+							$("#financetype_<?php echo $e; ?>-0").click(function(){
+								disableContainerByClass("hasloan_<?php echo $e; ?>");
+							});
+							$("#financetype_<?php echo $e; ?>-1").click(function(){
+								enableContainerByClass("hasloan_<?php echo $e; ?>");
+							});
+							
+							//$("#method").change();
+							<?php if($detail->hasLoan()){ ?>
+								enableContainerByClass("hasloan_<?php echo $e; ?>");
+							<?php } else { ?>
+								disableContainerByClass("hasloan_<?php echo $e; ?>");
+							<?php } ?>
+							
+							$("#details_fieldsize_<?php echo $e; ?>, #details_totalharvest_<?php echo $e; ?>").keyup(function(){
+								var size = $("#details_fieldsize_<?php echo $e; ?>").val();
+								var harv = $("#details_totalharvest_<?php echo $e; ?>").val();
+								computed = 0;
+								if(!isEmptyString(size) && parseInt(size)>0 && !isEmptyString(harv) && parseInt(harv)>0){
+									var computed = harv / size;
+								}
+								
+								$("#details_yield_<?php echo $e; ?>").val(computed.toFixed(2));
+							});
+							
+						});
+					</script>
 					<?php $e++; $x++; } ?>
                     <?php 
-                        $defaultlines = 0;
-                        if($nooflines >= 0){
-                            $defaultlines = $nooflines + 1;
-                        }
+                        $defaultlines = 1;
                         for($i = $e; $i<5; $i++){
-                            // debugMessage($i);
-                            $class = "hidden_row_input";
-                            /*if($i >= $defaultlines){
+                            $class = "visible_row_input";
+                            if($i >= $defaultlines){
                                 $class = "hidden_row_input";
-                            }*/
+                            }
                         
                     ?>
-                        <span class="pull-left well lighter margin0 <?php echo $class; ?> row_input_<?php echo $i; ?>" id="row_input_<?php echo $i; ?>" style="width:97%; min-height:180px; height:auto; margin-bottom:10px;">
+                       <span class="pull-left well lighter margin0 <?php echo $class; ?> row_input_<?php echo $i; ?>" id="row_input_<?php echo $i; ?>" style="width:97%; min-height:180px; height:auto; margin-bottom:10px;">
                         <h3 class="well-legend" style="padding-bottom:10px; position:relative;">Crop <?php echo $i+1; ?>: 
-                        	<span style="display:inline-block; margin-left:5px;">
-                            	<?php
-									$cropdropdown = new Zend_Form_Element_Select('cropid_'.md5($i),
-														array(
-															'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $availablecrops),								
-															'view' => new Zend_View(),
-															'decorators' => array('ViewHelper'),
-															'class' => array('hastooltip', 'width150'),
-															'title' => $this->translate("season_commodity_tooltip")
-														)
-													);
-									$cropdropdown->setValue(''); 
-									echo $cropdropdown->render();
-							   ?><div id="details_cropid_<?php echo $i; ?>_error"></div>
-                            </span>
-                            <td class="centeralign"><a href="javascript: doNothing();" title="<?php echo $this->translate("global_button_remove"); ?>" id="row_input_<?php echo $i; ?>" class="removeline close button btn" rel="input">&times;</a></td>
-                        </h3>
+                        <span style="display:inline-block; margin-left:5px;">
+                            <?php
+                                
+                                $cropdropdown = new Zend_Form_Element_Select('cropid_'.$i,
+                                                    array(
+                                                        'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $availablecrops),								
+                                                        'view' => new Zend_View(),
+                                                        'decorators' => array('ViewHelper'),
+                                                        'class' => array('hastooltip', 'width150', 'cropid_'.$i, 'useid_error', 'selectrequired'),
+                                                        'title' => $this->translate("season_commodity_tooltip")
+                                                    )
+                                                );
+                                $cropdropdown->setValue(''); 
+                                echo $cropdropdown->render();
+                           ?><div id="cropid_<?php echo $i; ?>_error"></div>
+                        </span>
+                        
+                        <a href="javascript: doNothing();" title="<?php echo $this->translate("global_button_remove"); ?>" id="row_input_<?php echo $i; ?>" class="removeline close button btn" rel="input">&times;</a>
+                    	</h3>
                         <table class="table noborder margin0" style="margin-top:10px;">
                             <tr>
-                                <td style="width:34%;"><label class="control-label">Source of Inputs:</label>
-                                   <input style="width:80%;" class="hastooltip" type="text" name="details[<?php echo md5($i); ?>][inputsource]" id="details_inputsource_<?php echo $i; ?>" value="" title="<?php echo $this->translate("season_inputsource_tooltip"); ?>" /><div id="details_inputsource_<?php echo $i; ?>_error"></div>
+                                <td style="width:33%;"> <label class="control-label">Source of Inputs:</label>
+                                   <input style="width:80%;" class="hastooltip useid_error inputrequired <?php echo 'inputsource_'.$i; ?>" type="text" name="details[<?php echo $i; ?>][inputsource]" id="details_inputsource_<?php echo $i; ?>" value="" title="<?php echo $this->translate("season_inputsource_tooltip"); ?>" /><div id="details_inputsource_<?php echo $i; ?>_error"></div>
                                 </td>
-                                <td style="width:33%;"><label class="control-label">Acrage Cultivated:</label>
-                                	<input style="width:50px;" type="text" name="details[<?php echo md5($i); ?>][fieldsize]" id="details_fieldsize_<?php echo $i; ?>" class="centeralign isnumber" value="" />
+                                <td style="width:33%;">
+                                   <label class="control-label">Acrage Cultivated:</label>
+                                    <input style="width:50px;" type="text" name="details[<?php echo $i; ?>][fieldsize]" id="details_fieldsize_<?php echo $i; ?>" class="centeralign isdecimal useid_error inputrequired fieldsize_<?php echo $i; ?>" value="" />
                                     &nbsp;
                                     <?php
                                         $areavalues = getAreaUnits();
-                                        $unitdropdown = new Zend_Form_Element_Select('fieldsizeunit_'.md5($i),
+                                        $unitdropdown = new Zend_Form_Element_Select('fieldsizeunit_'.$i,
                                                             array(
                                                                 'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $areavalues),								
                                                                 'view' => new Zend_View(),
                                                                 'decorators' => array('ViewHelper'),
-                                                                'class' => array('hastooltip', 'width100'),
+                                                                'class' => array('hastooltip', 'span2', 'fieldsizeunit_'.$i, 'useid_error', 'selectrequired'),
                                                                 'title' => $this->translate("season_plant_fieldsize_tooltip")
                                                             )
                                                         );
                                         $unitdropdown->setValue(''); 
                                         echo $unitdropdown->render(); 
-                                   ?><div id="details_fieldsize_<?php echo $i; ?>_error"></div>
+                                   ?><div id="details_fieldsize_<?php echo $i; ?>_error"></div><div id="fieldsizeunit_<?php echo $i; ?>_error"></div>
                                 </td>
                                 <td><label class="control-label">Quantity Planted:</label>
-                                    <input type="text" name="details[<?php echo $i; ?>][totalplanted]" id="details_totalplanted_<?php echo $i; ?>" class="centeralign isnumber" style="width:50px;" value="" />
+                                    <input type="text" name="details[<?php echo $i; ?>][totalplanted]" id="details_totalplanted_<?php echo $i; ?>" class="centeralign isdecimal useid_error inputrequired totalplanted_<?php echo $i; ?>" style="width:50px;" value="" />
                                     <?php
                                         $univalues = getHarvestQuantityUnits();
                                         $unitdropdown = new Zend_Form_Element_Select('totalplantedunit_'.$i,
@@ -927,7 +1248,7 @@ select.unitselect {
                                                                 'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
                                                                 'view' => new Zend_View(),
                                                                 'decorators' => array('ViewHelper'),
-                                                                'class' => array('hastooltip', 'span2','width100'),
+                                                                'class' => array('hastooltip', 'span2','width100', 'totalplantedunit_'.$i, 'useid_error', 'selectrequired'),
                                                                 'title' => $this->translate("season_harvest_totalharvest_tooltip")
                                                             )
                                                         );
@@ -935,39 +1256,83 @@ select.unitselect {
                                         echo $unitdropdown->render(); 
                                     ?>
                                     <div id="details_totalplanted_<?php echo $i; ?>_error"></div>
+                                    <div id="totalplantedunit_<?php echo $i; ?>_error"></div>
                                 </td>
                             </tr>
                             <tr>
                                 <td>
                                    <label class="control-label">Quantity Harvest:</label>
-                                   <input style="width:50px;" type="text" name="details[<?php echo md5($i); ?>][totalharvest]" id="details_totalharvest_<?php echo $i; ?>" class="centeralign isnumber" value="" />&nbsp;
-									<?php
+                                   <input style="width:50px;" type="text" name="details[<?php echo $i; ?>][totalharvest]" id="details_totalharvest_<?php echo $i; ?>" class="centeralign isdecimal useid_error inputrequired totalharvest_<?php echo $i; ?>" value="" />&nbsp;
+                                    <?php
                                         $univalues = getHarvestQuantityUnits();
-                                        $unitdropdown = new Zend_Form_Element_Select('totalharvestunit_'.md5($i),
+                                        $unitdropdown = new Zend_Form_Element_Select('totalharvestunit_'.$i,
                                                             array(
                                                                 'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
                                                                 'view' => new Zend_View(),
                                                                 'decorators' => array('ViewHelper'),
-                                                                'class' => array('hastooltip', 'span2','width100'),
+                                                                'class' => array('hastooltip', 'span2','width100', 'totalharvestunit_'.$i, 'useid_error', 'selectrequired'),
                                                                 'title' => $this->translate("season_harvest_totalharvest_tooltip")
                                                             )
                                                         );
                                         $unitdropdown->setValue(''); 
                                         echo $unitdropdown->render(); 
                                     ?>
-                                    <div id="details_totalharvest_<?php echo $i; ?>_error"></div>
+                                    <div id="details_totalharvest_<?php echo $i; ?>_error"></div><div id="totalharvestunit_<?php echo $i; ?>_error"></div>
                                 </td>
                                 <td>
-                                   <label class="control-label">Quantity Sold:</label>
-                                   <input style="width:50px;" type="text" name="details[<?php echo md5($i); ?>][quantitysold]" id="details_quantitysold_<?php echo $i; ?>" class="centeralign isnumber" value="" />&nbsp;
-									<?php
-                                        $univalues = getHarvestQuantityUnits();
-                                        $unitdropdown = new Zend_Form_Element_Select('quantitysoldunit_'.md5($i),
+                                   <label class="control-label">Harvest Yield:</label>
+                                   <input style="width:50px;" type="text" name="details[<?php echo $i; ?>][yield]" id="details_yield_<?php echo $i; ?>" class="centeralign isdecimal useid_error inputrequired yield_<?php echo $i; ?>" value="" />&nbsp;
+                                    <?php
+                                        $univalues = getHarvestYieldUnits();
+                                        $unitdropdown = new Zend_Form_Element_Select('yieldunit_'.$i,
                                                             array(
                                                                 'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
                                                                 'view' => new Zend_View(),
                                                                 'decorators' => array('ViewHelper'),
-                                                                'class' => array('hastooltip', 'span2'),
+                                                                'class' => array('hastooltip', 'span2','width100', 'yield_'.$i, 'useid_error', 'selectrequired'),
+                                                                'title' => $this->translate("season_harvest_yield_tooltip")
+                                                            )
+                                                        );
+                                        $unitdropdown->setValue(''); 
+                                        echo $unitdropdown->render(); 
+                                    ?>
+                                    <div id="details_yield_<?php echo $i; ?>_error"></div><div id="yieldunit_<?php echo $i; ?>_error"></div>
+                                </td>
+                                <td>
+                                	<label class="control-label">Cost of Production (Approx):</label>
+                                   	<div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo $i; ?>][totalexpenseamount]" id="details_totalexpenseamount_<?php echo $i; ?>" class="width100 hastooltip isamount rightalign useid_error inputrequired totalexpenseamount_<?php echo $i; ?>" value="" title="<?php echo $this->translate("season_sale_productioncost_tooltip"); ?>" /></div>
+                                   <div id="details_totalexpenseamount_<?php echo $i; ?>_error"></div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><label class="control-label">Sales Price Type:</label>
+                                    <?php 
+                                        $pricetypes = getPricingTypes();
+                                        $typedropdown = new Zend_Form_Element_Select('saletype_'.$i,
+                                                            array(
+                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $pricetypes),								
+                                                                'view' => new Zend_View(),
+                                                                'decorators' => array('ViewHelper'),
+                                                                'class' => array('hastooltip', 'width150', 'quantitysoldunit_'.$i, 'useid_error', 'selectrequired'),
+                                                                'title' => $this->translate("season_saletype_tooltip")
+                                                            )
+                                                        );
+                                        $typedropdown->setValue(''); 
+                                        echo $typedropdown->render();
+                                   ?><div id="details_saletype_<?php echo $i; ?>_error"></div><div id="saletype_<?php echo $i; ?>_error"></div>
+                                
+                                </td>
+                                <td>
+                                   <label class="control-label">Quantity Sold:</label>
+                                   <input style="width:50px;" type="text" name="details[<?php echo $i; ?>][quantitysold]" id="details_quantitysold_<?php echo $i; ?>" class="centeralign isdecimal useid_error inputrequired quantitysold_<?php echo $i; ?>" value="" />&nbsp;
+                                    <?php
+                                        $univalues = getHarvestQuantityUnits();
+                                        $unitdropdown = new Zend_Form_Element_Select('quantitysoldunit_'.$i,
+                                                            array(
+                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
+                                                                'view' => new Zend_View(),
+                                                                'decorators' => array('ViewHelper'),
+                                                                'class' => array('hastooltip', 'span2', 'quantitysoldunit_'.$i, 'useid_error', 'selectrequired'),
                                                                 'title' => $this->translate("season_sale_quantity_tooltip"),
                                                                 'style' => 'width: 80px;'
                                                             )
@@ -975,43 +1340,125 @@ select.unitselect {
                                         $unitdropdown->setValue(''); 
                                         echo $unitdropdown->render(); 
                                     ?>
-                                    <div id="details_quantitysold_<?php echo $i; ?>_error"></div>
+                                    <div id="details_quantitysold_<?php echo $i; ?>_error"></div><div id="quantitysoldunit_<?php echo $i; ?>_error"></div>
                                 </td>
-                                <td><label class="control-label">Sales Price Type:</label>
-                                	<?php 
-										$pricetypes = getPricingTypes();
-                                        $typedropdown = new Zend_Form_Element_Select('saletype_'.md5($i),
-                                                            array(
-                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $pricetypes),								
-                                                                'view' => new Zend_View(),
-                                                                'decorators' => array('ViewHelper'),
-                                                                'class' => array('hastooltip', 'width150'),
-                                                                'title' => $this->translate("season_saletype_tooltip")
-                                                            )
-                                                        );
-                                        $typedropdown->setValue(''); 
-                                        echo $typedropdown->render();
-                                   ?><div id="details_saletype_<?php echo $i; ?>_error"></div>
+                                <td>
+                                   <label class="control-label">Unit Selling Price:</label>
+                                   <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo $i; ?>][unitprice]" id="details_unitprice_<?php echo $i; ?>" class="width100 hastooltip isamount rightalign useid_error inputrequired unitprice_<?php echo $i; ?>" value="" title="<?php echo $this->translate("season_sale_unitprice_tooltip"); ?>" /></div>
+                                   <div id="details_unitprice_<?php echo $i; ?>_error"></div>
                                 </td>
                             </tr>
                             <tr>
-                                <td>
-                                   <label class="control-label">Unit Selling Price:</label>
-                                   <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo md5($i); ?>][unitprice]" id="details_unitprice_<?php echo $i; ?>" class="width100 hastooltip isamount rightalign" value="" title="<?php echo $this->translate("season_sale_unitprice_tooltip"); ?>" /></div>
-                                   <div id="unitprice_error"></div>
-                                </td>
-                                <td>
+                            	<td>
                                    <label class="control-label">Total Revenue (Approx):</label>
-                                   <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo md5($i); ?>][totalsalesamount]" id="details_totalsalesamount_<?php echo $i; ?>" class="width100 hastooltip isamount rightalign" value="" title="<?php echo $this->translate("season_sale_totalamount_tooltip"); ?>" /></div>
-                                   <div id="totalsalesamount_error"></div>
+                                   <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo $i; ?>][totalsalesamount]" id="details_totalsalesamount_<?php echo $i; ?>" class="width100 hastooltip isamount rightalign useid_error inputrequired totalsalesamount_<?php echo $i; ?>" value="" title="<?php echo $this->translate("season_sale_totalamount_tooltip"); ?>" /></div>
+                                   <div id="details_totalsalesamount_<?php echo $i; ?>_error"></div>
                                 </td>
                                 <td>
-                                	<label class="control-label">Cost of Production (Inputs):</label>
-                                   	<div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo $i; ?>][totalexpenseamount]" id="details_totalexpenseamount_<?php echo $i; ?>" class="width100 hastooltip isamount rightalign" value="" title="<?php echo $this->translate("season_sale_productioncost_tooltip"); ?>" /></div>
-                                   <div id="totalexpenseamount_error"></div>
+                                	<label class="control-label">Revenue estimate for next season:</label>
+                                    <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo $i; ?>][nextseasonrevenue]" id="details_nextseasonrevenue_<?php echo $i; ?>" class="width100 hastooltip isamount rightalign useid_error inputrequired nextseasonrevenue_<?php echo $i; ?>" value="" title="<?php echo $this->translate("season_sale_nextseasonrevenue_tooltip"); ?>" /></div>
+                                   <div id="details_nextseasonrevenue_<?php echo $i; ?>_error"></div>
+                                </td>
+                                <td>
+                                	<label class="control-label">Did you get a Loan?</label>
+                                    <?php
+										if(isEmptyString($detail->getfinancetype())){
+											$detail->setfinancetype(0);
+										}
+										$typeclass = $detail->getfinancetype();
+										$data = array('0'=>'No', '1'=>'Yes');						  
+										$capitalradio = new Zend_Form_Element_Radio('financetype_'.$i,
+												  array(
+														  'multiOptions' => $data, 
+														  'view' => new Zend_View(),
+														  'disableLoadDefaultDecorators' => true,
+														  'separator' => '&nbsp;',
+														  'class' => array('fintype', $typeclass),										  
+														  'decorators' => array('ViewHelper',
+																			  array('HtmlTag', array('tag' => 'div', 'class' => array('inline', 'radio', 'zendradio'))) // use a sorrounding DIV with classes which are copied to the label by JQuery
+																		  )
+												  )
+										  );
+										  $capitalradio->setValue('');
+										  echo $capitalradio->render();
+									?>
+                                    
                                 </td>
                             </tr>
+                            <tr class="hasloan_<?php echo $i; ?>">
+                            	<td>
+                                   <label class="control-label"><?php echo $this->translate("season_credit_principal_label"); ?>:</label>
+                                   <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo $i; ?>][principal]" id="details_principal_<?php echo $i; ?>" class="width100 hastooltip isamount rightalign useid_error inputrequired principal_<?php echo $i; ?>" value="" title="<?php echo $this->translate("season_principal_tooltip"); ?>" /></div>
+                                   <div id="details_principal_<?php echo $i; ?>_error"></div>
+                                </td>
+                                <td>
+                                    <label class="control-label"><?php echo $this->translate("season_credit_interestrate_label"); ?>:</label>
+                                    <input style="width:50px;" type="text" name="details[<?php echo $i; ?>][interestrate]" id="details_interestrate_<?php echo $i; ?>" class="centeralign isdecimal hastooltip useid_error inputrequired interestrate_<?php echo $i; ?>" value="" title="<?php echo $this->translate("season_interestrate_tooltip"); ?>" />&nbsp;<span class="pagedescription">(%)</span><div id="details_interestrate_<?php echo $i; ?>_error"></div>
+                                </td>
+                                <td>
+                                	<label class="control-label"><?php echo $this->translate("season_credit_repayment_label"); ?>:</label>
+                                    <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo $i; ?>][paybackamount]" id="details_paybackamount_<?php echo $i; ?>" class="width100 hastooltip isamount rightalign useid_error inputrequired paybackamount_<?php echo $i; ?>" value="" title="<?php echo $this->translate("season_paybackamount_tooltip"); ?>" /></div>
+                                   <div id="details_paybackamount_<?php echo $i; ?>_error"></div>
+                                </td>
+                            </tr>
+                            <tr class="hasloan_<?php echo $i; ?>">
+                            	<td>
+                                   <label class="control-label"><?php echo $this->translate("season_credit_payperiod_label"); ?>:</label>
+                                   <input style="width:50px;" type="text" name="details[<?php echo $i; ?>][paybackperiod]" id="details_paybackperiod_<?php echo $i; ?>" class="centeralign isnumber useid_error inputrequired paybackperiod_<?php echo $i; ?>" value="" />
+								   <?php
+                                        $univalues = getLoanFrequencyValues();
+                                        $unitdropdown = new Zend_Form_Element_Select('paybackperiodunit_'.$i,
+                                                            array(
+                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
+                                                                'view' => new Zend_View(),
+                                                                'decorators' => array('ViewHelper'),
+                                                                'class' => array('span2','width100','hastooltip', 'paybackperiodunit_'.$i, 'useid_error', 'selectrequired'),
+                                                                'title' => $this->translate("season_paybackperiod_tooltip")
+                                                            )
+                                                        );
+                                        $unitdropdown->setValue(''); 
+                                        echo $unitdropdown->render(); 
+                                    ?><div id="details_paybackperiod_<?php echo $i; ?>_error"></div><div id="paybackperiodunit_<?php echo $i; ?>_error"></div>
+                                </td>
+                                <td>
+                                	<label class="control-label"><?php echo $this->translate("season_credit_source_label"); ?>:</label>
+                                    <input style="width:80%;" class="hastooltip useid_error <?php echo 'financesourcetext_'.$i; ?>" type="text" name="details[<?php echo $i; ?>][financesourcetext]" id="details_financesourcetext_<?php echo $i; ?>" value="" title="<?php echo $this->translate("season_financesource_tooltip"); ?>" /><div id="details_financesourcetext_<?php echo $i; ?>_error"></div>
+                                </td>
+                                <td></td>
+                            </tr>
                         </table>
+                        <script>
+						$(document).ready(function() {
+							if(isEmptyString($("#fieldsizeunit_<?php echo $i; ?>").val())){
+								$("#fieldsizeunit_<?php echo $i; ?>").val(1);
+							}
+							if(isEmptyString($("#totalplantedunit_<?php echo $i; ?>").val())){
+								$("#totalplantedunit_<?php echo $i; ?>").val(1);
+							}
+							if(isEmptyString($("#totalharvestunit_<?php echo $i; ?>").val())){
+								$("#totalharvestunit_<?php echo $i; ?>").val(1);
+							}
+							if(isEmptyString($("#yieldunit_<?php echo $i; ?>").val())){
+								$("#yieldunit_<?php echo $i; ?>").val(1);
+							}
+							if(isEmptyString($("#quantitysoldunit_<?php echo $i; ?>").val())){
+								$("#quantitysoldunit_<?php echo $i; ?>").val(1);
+							}
+							if(isEmptyString($("#details_nextseasonrevenue_<?php echo $i; ?>").val())){
+								$("#details_nextseasonrevenue_<?php echo $i; ?>").val(0);
+							}
+							if(isEmptyString($("#paybackperiodunit_<?php echo $i; ?>").val())){
+								$("#paybackperiodunit_<?php echo $i; ?>").val(2);
+							}
+							
+							$("#financetype_<?php echo $i; ?>-0").click(function(){
+								disableContainerByClass("hasloan_<?php echo $i; ?>");
+							});
+							$("#financetype_<?php echo $i; ?>-1").click(function(){
+								enableContainerByClass("hasloan_<?php echo $i; ?>");
+							});
+						});
+					</script>
                     </span>
                     <?php $x++; } ?>
                     <span class="nohistory" style="display:block; width:96%; height:auto; padding-left:5px;">

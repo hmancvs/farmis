@@ -82,7 +82,7 @@ class FarmLand extends BaseRecord {
      */
     function getLandUnitsLabel(){
     	$label = '--';
-    	$allmeasures = getLandMeasureUnits();
+    	$allmeasures = getAreaUnits();
     	if(!isEmptyString($this->getLandUnits())){
     		$label = $allmeasures[$this->getLandUnits()];
     	}

@@ -26,6 +26,7 @@
 		}
 	} 
 	
+	$phoneobj = new UserPhone();
 	$farmerid = decode($request->profile);
 	// debugMessage('farmer is '.$farmerid);
 	if(!isEmptyString($farmerid)){
@@ -34,6 +35,7 @@
 		
 		$firstname = $farmer->getFirstName();
 		$lastname = $farmer->getLastName();
+		$username = $farmer->getUser()->getUserName(); 
 		
 		$namestring = explode(' ', $firstname);
 		// debugMessage($namestring);
@@ -44,7 +46,8 @@
 		
 		$email = $farmer->getEmail();
 		$userid = $farmer->getUserID();
-		$phone = $farmer->getUser()->getPhone();
+		$phoneobj = $farmer->getUser()->getPhones()->get(0);
+		$phone = $phoneobj->getPhone();
 		if($farmer->getID() == $farmer->getFarmGroup()->getManagerID() &&  !isEmptyString($farmer->getFarmGroup()->getPhone())){
 			$phone = getShortPhone($farmer->getFarmGroup()->getPhone());
 		}
@@ -53,12 +56,21 @@
 		if($farmer->getID() == $farmer->getFarmGroup()->getManagerID() &&  !isEmptyString($farmer->getFarmGroup()->getAddress()->getDistrictID())){
 			$locationid = $farmer->getFarmGroup()->getAddress()->getDistrictID();
 		}
-		
+		if(!isEmptyString($farmer->getUser()->getDateOfBirth())){
+			$birthday = date('d', strtotime($farmer->getUser()->getDateOfBirth())); 
+			$birthyear = date('Y', strtotime($farmer->getUser()->getDateOfBirth())); 
+			$birthmonth = date('m', strtotime($farmer->getUser()->getDateOfBirth())); 
+		}
+				
+		$isgroupclerk = false;
+		$isfarmer = true;
 		$country = $farmer->getUser()->getAddress()->getCountry();
 		# check if person is a farm group manager
 		if(!isEmptyString($farmer->getFarmGroupID())){
 			if($farmer->getFarmGroup()->getManagerID() == $farmer->getID()){
 				$type = 4;
+				$isgroupclerk = true;
+				$isfarmer = false;
 			}
 			$farmgroupid = $farmer->getFarmGroupID();
 		}
@@ -221,7 +233,7 @@
 			if ($("#code").val().toLowerCase() == $("#validcode").val().toLowerCase()) {
 				return true; 
 			}
-			return true;        
+			return false;        
 		}, "Captcha Invalid! <br />Re-enter code or refresh for a new one");
 		
 		$.validator.addMethod("validbirth", function(value, element, params) { 
@@ -282,9 +294,9 @@
 			if(!isEmptyString(username) && username.length >= 4 && username.length <= 15 && isAlpha(username)){
 				// alert('passed');
 				$('#username_availability_result').html(checking_html); 
-				
+				var userid = '<?php echo $farmer->getUserID(); ?>';
 				//use ajax to run the check  
-				$.post("<?php echo $this->baseUrl('signup/checkusername'); ?>", { username: username },  
+				$.post("<?php echo $this->baseUrl('signup/checkusername'); ?>", { username: username, userid: userid },  
 					function(result){  
 						//if the result is 1  
 						// alert(result); // return false;
@@ -328,11 +340,11 @@
 			//get the username
 			var checking_html = 'Checking availability...';   
 			var phone = $('#phone').val();  
-			if(!isEmptyString(phone) /*&& isUgNumber(phone)*/){
+			if(!isEmptyString(phone) && isUgNumber(phone)){
 				$('#phone_availability_result').html(checking_html);  
-				
+				var userid = '<?php echo $farmer->getUserID(); ?>';
 				//use ajax to run the check  
-				$.post("<?php echo $this->baseUrl('signup/checkphone'); ?>", { phone: phone },  
+				$.post("<?php echo $this->baseUrl('signup/checkphone'); ?>", { phone: phone, userid: userid },  
 					function(result){  
 						//if the result is 1  
 						// alert(result); return false;
@@ -426,7 +438,8 @@ ul#plans li {
 }
 </style>
 <div class="row margin0 blocked maxwidth">
-    <h1 class="calfont" style="color:#498D0F; font-size:22px;"><?php echo $title; ?></h1>
+    <h1 class="calfont" style="color:#498D0F; font-size:22px;"><?php echo $title; ?><a style="float:right; margin-right:10px;" href="<?php echo $this->baseUrl('signup/activate'); ?>" class="btn btn-primary" title="Activate Existing Account">Activate Existing Account</a></h1>
+    
     <span class="span7 marginleft0 pull-left" style="width:560px;">
         <form class="form-horizontal well" id="signupform" action="<?php echo $posturl; ?>" method="post">
         <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
@@ -440,7 +453,11 @@ ul#plans li {
                         <td colspan="2"><div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div></td>
                    </tr>
                    <?php } ?>
-                   
+                   <?php if($request->actkey == 'valid') { ?>
+                   <tr>
+                        <td colspan="2"><div class="alert alert-success">Activation code validated. Proceed to set a Password for your Account</div></td>
+                   </tr>
+                   <?php } ?>
                    <tr>
                        <td colspan="2"><label class="control-label gender"><?php echo $this->translate("farmer_gender_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
                         <?php						  
@@ -470,12 +487,11 @@ ul#plans li {
                    </tr>
                    <tr>
                        <td colspan="2"><label class="control-label email"><?php echo $this->translate("farmer_email_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
-                       <?php if(isEmptyString($request->profile)){ ?>
-                            <input style="width:335px;" class="hastooltip validate_255_string" name="email" id="email" type="text" value="<?php echo $email; ?>" title="<?php echo $this->translate("farmer_email_tooltip"); ?>" />
-                            <label class='lineblocked'><a href="javascript: void(0);" class="btn btn-primary btn-mini" id='check_user_availability' title="Check Availability">Check</a></label>
-                      
-                       <?php } else { ?>
+                       <?php if(!isEmptyString($email) && !isEmptyString($request->profile)){ ?>
                             <?php echo $email; ?><input name="email" id="email" type="hidden" value="<?php echo $email; ?>" />
+                       <?php } else { ?>
+                       		<input style="width:335px;" class="hastooltip validate_255_string" name="email" id="email" type="text" value="<?php echo $email; ?>" title="<?php echo $this->translate("farmer_email_tooltip"); ?>" />
+                            <label class='lineblocked'><a href="javascript: void(0);" class="btn btn-primary btn-mini" id='check_user_availability' title="Check Availability">Check</a></label>
                        <?php } ?>
                        <div id="email_error"></div><div id="email_availability_result" style="margin-top:5px;"></div></td>
                    </tr>
@@ -507,7 +523,7 @@ ul#plans li {
                         <td>
                             <div id="wrap" align="center">
                                 <label id="captcha"></label>
-                                <input name="code" type="text" id="code" style="width:80px;" value="">
+                                <input name="code" type="text" id="code" style="width:80px;" maxlength="5" value="">
                                 <input name="validcode" type="hidden" id="validcode" value="">
                             </div>
                             <img src="<?php echo $this->baseUrl('images/refresh.jpg'); ?>" width="25" alt="" id="refresh" />
@@ -561,12 +577,12 @@ ul#plans li {
                     </tr>
                     <tr>
                        <td colspan="2"><label class="control-label phone"><?php echo $this->translate("farmer_phone_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
-                       <div class="input-prepend">
-                          <span class="add-on"><?php echo '+'.COUNTRY_CODE_UG; ?></span><input name="phone" id="phone" type="text" maxlength="10" class="span2 hastooltip" value="<?php echo $phone; ?>" title="<?php echo $this->translate("farmer_phone_tooltip"); ?>"  />
-                       </div>
-                       
-                       <label class='lineblocked'><a href="javascript: void(0);" class="btn btn-primary btn-mini" id='check_phone_availability' title="Check Availability">Check</a></label><label class="pagedescription" style="font-size:10px;">e.g &nbsp; <span class="green">0772123456</span></label>
-                       <div id="phone_error"></div><div id="phone_availability_result" style="margin-top:5px;"></div></td>
+                       	   <div class="input-prepend">
+                              <span class="add-on"><?php echo '+'.COUNTRY_CODE_UG; ?></span><input name="phone" id="phone" type="text" maxlength="10" class="span2 hastooltip" value="<?php echo getShortPhone($phone); ?>" title="<?php echo $this->translate("farmer_phone_tooltip"); ?>"  />
+                           </div>
+                           <label class='lineblocked'><a href="javascript: void(0);" class="btn btn-primary btn-mini" id='check_phone_availability' title="Check Availability">Check</a></label><label class="pagedescription" style="font-size:10px;">e.g &nbsp; <span class="green">0772123456</span></label>
+                       		<div id="phone_error"></div><div id="phone_availability_result" style="margin-top:5px;"></div>
+                       </td>
                     </tr>                  
                     <tr>
                        <td colspan="2">
@@ -614,9 +630,15 @@ ul#plans li {
                             <input name="dateofbirth" id="dateofbirth" type="text" class="span2 datefield hastooltip" value="<?php // echo $dateofbirth; ?>" title="<?php echo $this->translate("farmer_dateofbirth_tooltip"); ?>" /><div id="birthday_error"><div id="birthmonth_error"><div id="birthyear_error"><div id="dateofbirth_error"></div>
                         </td>
                    </tr>
+                   <?php if($isgroupclerk){ ?>
+                       <tr id="terms">
+                           <td colspan="2" style="padding-bottom:30px;"><input type="checkbox" name="agreedtoterms" id="agreedtoterms" value="1" class="<?php echo $agreedtoterms; ?>" title="<?php echo $this->translate("person_agreedtoterms_tooltip"); ?>" />
+                            <?php echo sprintf($this->translate("useraccount_terms_accept_label"), '#', '#'); ?><?php echo $this->translate("global_required_field_marker"); ?><div id="agreedtoterms_error"></div></td>
+                       </tr>
+                   <?php } ?>
                 </table>
             </fieldset>
-        
+        	<?php if($isfarmer){ ?>
             <fieldset title="Subscription Plan">
                 <legend>Step 3</legend>
                 <table class="table">
@@ -634,30 +656,35 @@ ul#plans li {
                                         <input type="radio" style="margin-top:-5px;" name="membershipplanid" id="membershipplanid_<?php echo $value['id']; ?>" value="<?php echo $value['id']; ?>" class="<?php echo $value['id'] == $membershipplanid ? 1 : 0; ?>" />&nbsp; 
                                         <label style="display:inline-block; margin-top:0; font-size:16px; font-weight:bold;"><?php echo $value['name']." Farmis"; ?></label> <br />
                                         <div style="width:100%; height:auto; margin-top:10px;">
-                                            <?php if($value['id'] == 1){ ?>
-                                                <label class="planbenefits" style="">- 30 Day Risk Free Trial</label>
-                                                <label class="planbenefits">- 1 User, 10Mb space</label>
-                                                <label class="planbenefits">- 1 Farm</label>
-                                                <label class="planbenefits">- 1 Season</label>
-                                                <label class="planbenefits">- 10 Activities</label>
-                                                <label class="planbenefits">- Activity Calendar</label>
-                                                <label class="planbenefits">- Limited Reports</label>
-                                                <label class="planbenefits">- Email Alerts</label>
-                                                <label class="planbenefits">- No Crop Card Provided</label>
-                                            <?php } ?>
-                                            <?php if($value['id'] == 2){ ?>
-                                                <label class="planbenefits">- Ugx 9,200 per month</label>
-                                                <label class="planbenefits">- Unlimited Users, 100Mb space</label>
-                                                <label class="planbenefits">- Multiple Farms</label>
-                                                <label class="planbenefits">- Farm Groups Enabled</label>
-                                                <label class="planbenefits">- Multiple Seasons</label>
-                                                <label class="planbenefits">- Infinite Activities</label>
-                                                <label class="planbenefits">- Activity Calendar</label>
-                                                <label class="planbenefits">- Detailed Reports</label>
-                                                <label class="planbenefits">- SMS and Email Alerts</label>
-                                                <label class="planbenefits">- Season Crop Card is Provided</label>
-                                                <label class="planbenefits">- FARMIS Membership Certificate</label>
-                                            <?php } ?>
+                                        	<?php if($isfarmer){ ?>
+												<?php if($value['id'] == 1){ ?>
+                                                    <label class="planbenefits" style="">- 30 Day Risk Free Trial</label>
+                                                    <label class="planbenefits">- 1 User, 10Mb space</label>
+                                                    <label class="planbenefits">- 1 Farm</label>
+                                                    <label class="planbenefits">- 1 Season</label>
+                                                    <label class="planbenefits">- 10 Activities</label>
+                                                    <label class="planbenefits">- Activity Calendar</label>
+                                                    <label class="planbenefits">- Limited Reports</label>
+                                                    <label class="planbenefits">- Email Alerts</label>
+                                                    <label class="planbenefits">- No Crop Card Provided</label>
+                                                <?php } ?>
+                                                <?php if($value['id'] == 2){ ?>
+                                                    <label class="planbenefits">- Ugx 9,200 per month</label>
+                                                    <label class="planbenefits">- Unlimited Users, 100Mb space</label>
+                                                    <label class="planbenefits">- Multiple Farms</label>
+                                                    <label class="planbenefits">- Farm Groups Enabled</label>
+                                                    <label class="planbenefits">- Multiple Seasons</label>
+                                                    <label class="planbenefits">- Infinite Activities</label>
+                                                    <label class="planbenefits">- Activity Calendar</label>
+                                                    <label class="planbenefits">- Detailed Reports</label>
+                                                    <label class="planbenefits">- SMS and Email Alerts</label>
+                                                    <label class="planbenefits">- Season Crop Card is Provided</label>
+                                                    <label class="planbenefits">- FARMIS Membership Certificate</label>
+                                                <?php } ?>
+                                             <?php } ?>
+                                             <?php if($isgroupclerk){ ?>
+                                             
+                                             <?php } ?>
                                         </div>
                                     </li>
                                 <?php } ?>
@@ -671,6 +698,7 @@ ul#plans li {
                    </tr>
                 </table>
             </fieldset>
+            <?php } ?>
             <button type="submit" class="btn btn-primary btn-large finish" id="complete"><i class="icon-arrow-right icon-white"></i> Complete</button>
             <input type="hidden" name="usecustomsave" id="usecustomsave" value="true" />
             <input type="hidden" name="farmerid" id="farmerid" value="<?php echo $farmerid; ?>" />
@@ -678,7 +706,6 @@ ul#plans li {
             <input type="hidden" name="createdby" id="createdby" value="<?php echo $createdby; ?>" />
             <input type="hidden" name="type" id="type" value="<?php echo $type; ?>" />
             <input type="hidden" id="farmgroupid" name="farmgroupid" value="<?php echo $farmgroupid; ?>" />
-            
         </form>
     </span>
     <span class="span5 pull-right">

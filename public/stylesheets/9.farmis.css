@@ -521,7 +521,7 @@ select.birth {
 .modal-header h3 {
 	font-size: 17px;
 }
-span.inv_before, .inv_after, span.phone_before, .phone_after {
+span.inv_before, span.pinv_before, .inv_after, .pinv_after, span.phone_before, .phone_after {
 	display:block;
 	margin-top:10px;
 }
@@ -833,10 +833,10 @@ div.row.nomargin {
 	z-index:1000;
 }
 .navbar .brand {
-	padding:5px 10px 2px 25px;
+	padding:5px 5px 2px 25px;
 }
 .publicbody .navbar .brand {
-	padding:10px 10px 2px 25px;
+	padding:10px 0 0 0px;
 }
 /*.brand img {
 	width:75px;
@@ -1072,7 +1072,8 @@ img.ui-datepicker-trigger {
 	margin-top:-5px;
 }
 #centercolumn h1, #centercolumn h2 {
-	font-family:'calibri','Telex',sans-serif;
+	/*font-family:'calibri','Telex',sans-serif;*/
+	font-family:calibri, Telex, "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 ul#searchbox {
@@ -1497,7 +1498,8 @@ ul.dataentry_items li a {
 	padding-right:10px;
 }
 .public_leftcolumn .content, .public_leftcolumn .content p, .public_leftcolumn .content h2, .public_leftcolumn h1, .content, .content p, .content h2 {
-	font-family:calibri,Telex,sans-serif;
+	/*font-family:calibri,Telex,sans-serif;*/
+	font-family:calibri, Telex, "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 .public_leftcolumn .content p, .content p {
 	line-height:1.6em;
@@ -1536,7 +1538,8 @@ ul.dataentry_items li a {
 	margin-top:48px;
 }
 .calfont {
-	font-family:calibri,Telex,sans-serif;
+	/*font-family:calibri,Telex,sans-serif;*/
+	font-family:calibri, Telex, "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 #wrap{
 	border:solid #CCCCCC 1px;

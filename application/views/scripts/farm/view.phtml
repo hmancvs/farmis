@@ -42,6 +42,12 @@
 		$hasmultiplefarms = true;
 	}
 	
+	$seasons = $farm->getSeasons();
+	$scount = $seasons->count();
+	
+	$inventories = $farm->getInventoryDetails();
+	$tcount = $inventories->count();
+											
 	if($request->tab == 'calendar'){
 		$season = $farm->getSeasons()->get(0);
 		$timeline = sort_multi_array($season->getTimeLineDetails(), 'order');
@@ -119,7 +125,9 @@ $(document).ready(function() {
 }); 
 </script>
 <style>
-
+table.table .profilerightlabel {
+	font-weight:bold;
+}
 </style>
 <h1><?php echo $this->translate('farm_title'); ?></h1>
 <div id="tabs">
@@ -142,7 +150,7 @@ $(document).ready(function() {
             	<?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
                     <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
                 <?php } ?>  
-                <span class="span6 marginleft0" style="width:74%">
+                <span class="span6 marginleft0" style="width:70%">
                     <div class="well row marginleft0" style="min-height:150px; padding-left:10px;">                        
                         <table class="table"> 
                         	<tr>
@@ -172,16 +180,38 @@ $(document).ready(function() {
                         </table>
                     </div>
                 </span>
-                <span class="span3 pull-right" style="width:22%;">
-                    <div class="well row" style="height:260px; min-height:0;">
-                        <h3 class="well-legend">Statistics</h3>
-                        <table class="table">                       
-                           <tr>		                    
-                                <td></td>
-                           </tr>
+                <span class="span3 pull-right" style="width:26%;">
+                    <div id="xrow2_right" class="well row" style="height:260px; min-height:0;">
+                        <h3 class="well-legend margin0">Summary</h3>
+                        <table class="table table-striped table-bordered table-condensed" id="stats">
+                            <tr>		                    
+                                <td class="profilerightlabel"><b>No of Crops</b>:</td>
+                                <td class="profilerightvalue"><?php echo $farm->getCrops()->count(); ?></td>
+                            </tr>
+                            <tr>		                    
+                                <td class="profilerightlabel">Size of Land:</td>
+                                <td class="profilerightvalue"><?php echo $farm->displayLandSize(); ?></td>
+                            </tr>
+                            <tr>		                    
+                                <td class="profilerightlabel">No of Seasons:</td>
+                                <td class="profilerightvalue"><?php echo $scount; ?></td>
+                            </tr>
+                            <tr>		                    
+                                <td class="profilerightlabel">Inventory Items:</td>
+                                <td class="profilerightvalue"><?php echo $tcount; ?></td>
+                            </tr>
+                            <tr>		                    
+                                <td class="profilerightlabel">Sales to Date:</td>
+                                <td class="profilerightvalue"><?php echo formatNumber($farm->getTotalSalesToDate()); ?></td>
+                            </tr>
+                            <tr>		                    
+                                <td class="profilerightlabel">Expenses to Date:</td>
+                                <td class="profilerightvalue"><?php echo formatNumber($farm->getTotalExpensesToDate()); ?></td>
+                            </tr>
                         </table>
-                    </div>                   
+                    </div>               
                 </span>
+                
             </div>
             <div class="well row marginleft0" style="min-height:100px; width:97%;">
                 <h3 class="well-legend">Location</h3>
@@ -375,17 +405,44 @@ $(document).ready(function() {
                             </tr>
                             <tr>
                                 <td><label class="control-label">Quantity Harvest:</label><?php echo $detail->gettotalharvesttext(); ?></td>
-                                <td><label class="control-label">Quantity Sold:</label><?php echo $detail->getquantitysoldtext(); ?></td>
-                                <td><label class="control-label">Sales Price Type:</label><?php $pricetypes = getPricingTypes(); echo isEmptyString($detail->getsaletype()) || $detail->getsaletype() == 0 ? '-- ' : $pricetypes[$detail->getsaletype()]; ?></td>
-                            </tr>
-                            <tr>
-                                <td>
-                                   <label class="control-label">Unit Selling Price:</label><?php echo formatNumber( $detail->getunitprice())."&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>"; ?></td>
-                                <td><label class="control-label">Total Revenue (Approx):</label><?php echo formatNumber( $detail->gettotalsalesamount())."&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>"; ?></td>
+                                <td><label class="control-label">Harvest Yield:</label><?php echo $detail->getYieldText(); ?></td>
                                 <td><label class="control-label">Cost of Production (Inputs):</label>
                                 	<?php echo formatNumber( $detail->gettotalexpenseamount())."&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>"; ?>
                                 </td>
                             </tr>
+                            <tr>
+                            	<td><label class="control-label">Sales Price Type:</label><?php $pricetypes = getPricingTypes(); echo isEmptyString($detail->getsaletype()) || $detail->getsaletype() == 0 ? '-- ' : $pricetypes[$detail->getsaletype()]; ?></td>
+                                <td><label class="control-label">Quantity Sold:</label><?php echo $detail->getquantitysoldtext(); ?></td>
+                                <td>
+                                   <label class="control-label">Unit Selling Price:</label><?php echo formatNumber( $detail->getunitprice())."&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>"; ?></td>
+                            </tr>
+                            <tr>
+                            	<td><label class="control-label">Total Revenue (Approx):</label><?php echo formatNumber( $detail->gettotalsalesamount())."&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>"; ?></td> 
+                                <td><label class="control-label">Revenue estimate for next season:</label><?php echo formatNumber( $detail->getnextseasonrevenue())."&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>"; ?></td> 
+                                <td><label class="control-label">Received a Loan?</label><?php echo $detail->getfinancetype() == 0 ? 'No': 'Yes'; ?></td>
+                            </tr>
+                            <?php if($detail->hasLoan()){ ?>
+                                <tr>
+                                    <td><label class="control-label"><?php echo $this->translate("season_credit_principal_label"); ?>:</label>
+										<?php echo formatMoney($detail->getLoan()->getPrincipal()); ?>
+                                    </td> 
+                                    <td><label class="control-label"><?php echo $this->translate("season_credit_interestrate_label"); ?>:</label>
+										<?php echo clean_num($detail->getLoan()->getInterestRate()).'&nbsp;<span class="pagedescription">(%)</span>'; ?>&nbsp;
+									</td> 
+                                    <td><label class="control-label"><?php echo $this->translate("season_credit_repayment_label"); ?>:</label>
+                                    	<?php echo formatMoney($detail->getLoan()->getPayBackAmount()); ?>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><label class="control-label"><?php echo $this->translate("season_credit_payperiod_label"); ?>:</label>
+										<?php echo isEmptyString($detail->getLoan()->getPayBackPeriodText()) ? '--' : $detail->getLoan()->getPayBackPeriodText(); ?>
+                                    </td> 
+                                    <td><label class="control-label"><?php echo $this->translate("season_credit_source_label"); ?>:</label>
+										<?php echo isEmptyString($detail->getLoan()->getFinanceSourceText()) ? '--' : $detail->getLoan()->getFinanceSourceText(); ?>
+									</td> 
+                                    <td></td>
+                                </tr>
+                            <?php } ?>
                         </table>
                     </span>
                     <?php } ?>
@@ -408,8 +465,6 @@ $(document).ready(function() {
                              <a class="btn btn-primary btn-mini" href="<?php echo $this->baseUrl('season/index/farmid/'.encode($farm->getID())); ?>" title="Setup New Season"><i class="icon-plus icon-white"></i> Setup Season</a>
                         </div>               
 					<?php 
-						$seasons = $farm->getSeasons();
-						$scount = $seasons->count();
 						if($scount == 0) { ?>
                         <div class="alert alert-info">No seasons have been Setup yet. Click on 'Setup Season' to get started</div>
                     <?php } else { ?>                
@@ -573,9 +628,6 @@ $(document).ready(function() {
                         	<a class="btn btn-primary" href="<?php echo $this->baseUrl('inventory/index/farmid/'.encode($farm->getID())); ?>" title="Add Inventory Item"><i class="icon-plus icon-white"></i> Add Item</a>                                       
                         </div>
 					<?php 
-						$inventories = $farm->getInventoryDetails();
-						
-						$tcount = $inventories->count();
 						if($tcount == 0) { ?>
                         <div class="alert alert-info" style="margin-top:35px;">No inventory has been done yet. Click on 'Add Item' to get started</div>
                     <?php } else { ?>                

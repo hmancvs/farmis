@@ -27,16 +27,16 @@
 			rules: {
 				actkey: {
 					required: true,
-					maxlength: 10,
-					minlength: 10					
+					maxlength: 6,
+					minlength: 6					
 				}
 			}, 
 			// the messages for each of the fields being validated
 			messages: {				
 				actkey: {
 					required: "<?php echo $this->translate("useraccount_activationkey_error"); ?>",
-					maxlength: "Code should have 10 Characters",
-					minlength: "Code should have 10 Characters"
+					maxlength: "Code must have 6 Characters",
+					minlength: "Code must have 6 Characters"
 				}
 			},
 			// custom error positions

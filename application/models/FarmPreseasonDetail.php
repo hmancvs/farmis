@@ -12,21 +12,26 @@ class FarmPreseasonDetail extends BaseRecord {
 		$this->hasColumn('fieldsize', 'decimal', 10, array('default' => NULL));
 		$this->hasColumn('fieldsizeunit', 'integer', null);
 		$this->hasColumn('inputsource', 'string', 255);
-		$this->hasColumn('totalplanted', 'integer', null);
+		$this->hasColumn('totalplanted', 'decimal', 10, array('default' => NULL));
 		$this->hasColumn('totalplantedunit', 'integer', null);
-		$this->hasColumn('yield', 'integer', null);
+		$this->hasColumn('yield', 'decimal', 10, array('default' => NULL));
 		$this->hasColumn('yieldunit', 'integer', null);
-		$this->hasColumn('totalharvest', 'integer', null);
+		$this->hasColumn('totalharvest', 'decimal', 10, array('default' => NULL));
 		$this->hasColumn('totalharvestunit', 'integer', null);
-		$this->hasColumn('quantitysold', 'integer', null);
+		$this->hasColumn('quantitysold', 'decimal', 10, array('default' => NULL));
 		$this->hasColumn('quantitysoldunit', 'integer', null);
-		$this->hasColumn('unitprice', 'decimal', 11, array('default' => '0'));
-		$this->hasColumn('totalsalesamount', 'decimal', 11, array('default' => '0'));
-		$this->hasColumn('totalexpenseamount', 'decimal', 11, array('default' => '0'));
+		$this->hasColumn('unitprice', 'decimal', 10, array('default' => '0'));
+		$this->hasColumn('totalsalesamount', 'decimal', 10, array('default' => '0'));
+		$this->hasColumn('totalexpenseamount', 'decimal', 10, array('default' => '0'));
 		$this->hasColumn('saletype', 'integer', null);
 		$this->hasColumn('productionconstraints','string', 500);
 		$this->hasColumn('marketingconstraints','string', 500);
 		$this->hasColumn('transactionconstraints','string', 500);
+		$this->hasColumn('nextseasonrevenue', 'decimal', 10, array('default' => '0'));
+		$this->hasColumn('nextseasonprodn', 'decimal', 10, array('default' => NULL));
+		$this->hasColumn('nextseasonprodnunit', 'integer', null);
+		$this->hasColumn('financetype', 'integer', null, array('default' => '0'));
+		$this->hasColumn('loanid', 'integer', null);
 		
 	}
 	/**
@@ -59,6 +64,11 @@ class FarmPreseasonDetail extends BaseRecord {
 									'local' => 'cropid',
 									'foreign' => 'id'
 								)
+						);
+		$this->hasOne('Loan as loan',
+							array('local' => 'loanid',
+									'foreign' => 'id'
+							)
 						);
 	}
 	
@@ -99,6 +109,12 @@ class FarmPreseasonDetail extends BaseRecord {
 		if(isArrayKeyAnEmptyString('totalharvestunit', $formvalues)){
 			$formvalues['totalharvestunit'] = NULL;  
 		}
+		if(isArrayKeyAnEmptyString('nextseasonprodn', $formvalues)){
+			$formvalues['nextseasonprodn'] = NULL; 
+		}
+		if(isArrayKeyAnEmptyString('nextseasonprodnunit', $formvalues)){
+			$formvalues['nextseasonprodnunit'] = NULL;  
+		}
 		if(isArrayKeyAnEmptyString('quantitysold', $formvalues)){
 			$formvalues['quantitysold'] = NULL; 
 		}
@@ -111,10 +127,19 @@ class FarmPreseasonDetail extends BaseRecord {
 		if(isArrayKeyAnEmptyString('totalsalesamount', $formvalues)){
 			$formvalues['totalsalesamount'] = NULL; 
 		}
+		if(isArrayKeyAnEmptyString('nextseasonrevenue', $formvalues)){
+			$formvalues['nextseasonrevenue'] = NULL; 
+		}
 		if(isArrayKeyAnEmptyString('saletype', $formvalues)){
 			$formvalues['saletype'] = NULL; 
 		}
-
+		if(isArrayKeyAnEmptyString('financetype', $formvalues)){
+			$formvalues['financetype'] = NULL; 
+		}
+		if(isArrayKeyAnEmptyString('loanid', $formvalues)){
+			unset($formvalues['loanid']); 
+		}
+		
 		# process address information
         // debugMessage($formvalues); 
         // exit();
@@ -219,6 +244,10 @@ class FarmPreseasonDetail extends BaseRecord {
     		$text .= " <span class='pagedescription'>(".$this->getQuantitySoldUnitText().")</span>";
     	}
     	return $text;
+    }
+    # determine if loan was financed
+    function hasLoan() {
+    	return $this->getfinancetype() == 1 ? true : false;
     }
 }
 ?>

@@ -2,7 +2,7 @@
 	require_once APPLICATION_PATH.'/includes/header.php';
 	require_once(APPLICATION_PATH.'/../'.PUBLICFOLDER.'/dompdf/dompdf_config.inc.php');
 		
-	$title = "FARMIS Baseline Summary Report";
+	$title = "FARMREC Baseline Summary Report";
 	// meta data
 	$this->headTitle($title); 
 	
@@ -267,7 +267,7 @@ pdfquicklinks {
 					$infotrade_logo = APPLICATION_PATH.DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR."public".DIRECTORY_SEPARATOR."images".DIRECTORY_SEPARATOR.'logo_infotrade.png';
 				}
 				
-				
+				$infotrade_logo = ''; $farmis_logo ='';
 				$html .= '
 				<div>
                   	<table style="margin-top:10px; height:auto; width:100%;">

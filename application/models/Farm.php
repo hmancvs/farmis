@@ -136,28 +136,28 @@ class Farm extends BaseEntity {
 			unset($formvalues['isdefault']); 
 		}
 		if(isArrayKeyAnEmptyString('numberofbranches', $formvalues)){
-			$formvalues['numberofbranches'] = NULL; 
+			unset($formvalues['numberofbranches']); 
 		}
 		if(isArrayKeyAnEmptyString('numberofemployees', $formvalues)){
-			$formvalues['numberofemployees'] = NULL; 
+			unset($formvalues['numberofemployees']); 
 		}
 		if(isArrayKeyAnEmptyString('numberoffields', $formvalues)){
-			$formvalues['numberoffields'] = NULL; 
+			unset($formvalues['numberoffields']); 
 		}
 		if(isArrayKeyAnEmptyString('landsize', $formvalues)){
-			$formvalues['landsize'] = NULL; 
+			unset($formvalues['landsize']); 
 		}
 		if(isArrayKeyAnEmptyString('landactivesize', $formvalues)){
-			$formvalues['landactivesize'] = NULL; 
+			unset($formvalues['landactivesize']); 
 		}
 		if(isArrayKeyAnEmptyString('landunits', $formvalues)){
-			$formvalues['landunits'] = NULL;  
+			unset($formvalues['landunits']);  
 		}
 		if(isArrayKeyAnEmptyString('landacquiremethod', $formvalues)){
-			$formvalues['landacquiremethod'] = NULL;
+			unset($formvalues['landacquiremethod']);
 		}
 		if(isArrayKeyAnEmptyString('hashistory', $formvalues)){
-			$formvalues['hashistory'] = NULL;
+			unset($formvalues['hashistory']);
 		}
 		if(isArrayKeyAnEmptyString('historyid', $formvalues)){
 			$formvalues['historyid'] = NULL;
@@ -261,6 +261,11 @@ class Farm extends BaseEntity {
 						} else {
 							$cropdetails[$key]['totalharvestunit'] = NULL;
 						}
+						if(!isArrayKeyAnEmptyString('yieldunit_'.$key, $formvalues)){
+							$cropdetails[$key]['yieldunit'] = $formvalues['yieldunit_'.$key];
+						} else {
+							$cropdetails[$key]['totalharvestunit'] = NULL;
+						}
 						if(!isArrayKeyAnEmptyString('quantitysoldunit_'.$key, $formvalues)){
 							$cropdetails[$key]['quantitysoldunit'] = $formvalues['quantitysoldunit_'.$key];
 						} else {
@@ -306,6 +311,31 @@ class Farm extends BaseEntity {
 						} else {
 							$cropdetails[$key]['totalsalesamount'] = NULL;
 						}
+						if(!isArrayKeyAnEmptyString('nextseasonrevenue', $value)){
+							$cropdetails[$key]['nextseasonrevenue'] = $value['nextseasonrevenue'];
+						} else {
+							$cropdetails[$key]['nextseasonrevenue'] = NULL;
+						}
+						if(!isArrayKeyAnEmptyString('financetype_'.$key, $formvalues)){
+							if($formvalues['financetype_'.$key] == 1){
+								// debugMessage('processing loan');
+								$cropdetails[$key]['loan']['createdby'] = $formvalues['userid'];
+								$cropdetails[$key]['loan']['userid'] = $formvalues['userid'];
+								$cropdetails[$key]['loan']['farmid'] = $formvalues['farmid'];
+								$cropdetails[$key]['loan']['farmerid'] = $formvalues['farmerid'];
+								isArrayKeyAnEmptyString('principal', $value) ? $cropdetails[$key]['loan']['principal'] = NULL : $cropdetails[$key]['loan']['principal'] = $value['principal'];
+								isArrayKeyAnEmptyString('interestrate', $value) ? $cropdetails[$key]['loan']['interestrate'] = NULL : $cropdetails[$key]['loan']['interestrate'] = $value['interestrate'];
+								isArrayKeyAnEmptyString('paybackamount', $value) ? $cropdetails[$key]['loan']['paybackamount'] = NULL : $cropdetails[$key]['loan']['paybackamount'] = $value['paybackamount'];
+								isArrayKeyAnEmptyString('installment', $value) ? $cropdetails[$key]['loan']['installment'] = NULL : $cropdetails[$key]['loan']['installment'] = $value['installment'];
+								isArrayKeyAnEmptyString('installmentunit', $value) ? $cropdetails[$key]['loan']['installmentunit'] = NULL : $cropdetails[$key]['loan']['installmentunit'] = $value['installmentunit'];
+								isArrayKeyAnEmptyString('paybackperiod', $value) ? $cropdetails[$key]['loan']['paybackperiod'] = NULL : $cropdetails[$key]['loan']['paybackperiod'] = $value['paybackperiod'];
+								isArrayKeyAnEmptyString('paybackperiodunit_'.$key, $formvalues) ? $cropdetails[$key]['loan']['paybackperiodunit'] = NULL : $cropdetails[$key]['loan']['paybackperiodunit'] = $formvalues['paybackperiodunit_'.$key];
+								isArrayKeyAnEmptyString('creditdate', $value) ? $cropdetails[$key]['loan']['creditdate'] = NULL : $cropdetails[$key]['loan']['creditdate'] = $value['creditdate'];
+								isArrayKeyAnEmptyString('financesourceid', $value) ? $cropdetails[$key]['loan']['financesourceid'] = NULL : $cropdetails[$key]['loan']['financesourceid'] = $value['financesourceid'];
+								isArrayKeyAnEmptyString('financesourcetext', $value) ? $cropdetails[$key]['loan']['financesourcetext'] = NULL : $cropdetails[$key]['loan']['financesourcetext'] = $value['financesourcetext'];
+							}
+						} 
+						$cropdetails[$key]['financetype'] = $formvalues['financetype_'.$key];
 					} else {
 						unset($cropdetails[$key]);
 					}
@@ -317,22 +347,26 @@ class Farm extends BaseEntity {
 				}
 				unset($formvalues['details']);
 			}
+		} else {
+			unset($formvalues['historyid']);
 		}
 		
 		if(!isArrayKeyAnEmptyString('farmingtoolsids', $formvalues)) {
-			$ids = $formvalues['farmingtoolsids']; 
-			$typelist = ''; 
-			if(count($ids) > 0){
-				$typelist = createHTMLCommaListFromArray($ids, ",");
-			}
-			$formvalues['farmingtools'] = $typelist; 
-			# remove the usergroups_groupid array, it will be ignored, but to be on the safe side
-			unset($formvalues['farmingtoolsids']); 
+			// if(!isEmptyString($formvalues['farmingtoolsids'])){
+				$ids = $formvalues['farmingtoolsids']; 
+				$typelist = ''; 
+				if(count($ids) > 0){
+					$typelist = createHTMLCommaListFromArray($ids, ",");
+				}
+				$formvalues['farmingtools'] = $typelist; 
+				# remove the usergroups_groupid array, it will be ignored, but to be on the safe side
+				unset($formvalues['farmingtoolsids']); 
+			
 		} else {
-			$formvalues['farmingtools'] = NULL; 
+			unset($formvalues['farmingtools']); 
 		}
 		
-       	// debugMessage($formvalues); // exit();
+        // debugMessage($formvalues); exit();
 		parent::processPost($formvalues);
 	}
 	/**
@@ -357,7 +391,7 @@ class Farm extends BaseEntity {
      */
     function getLandUnitsLabel(){
     	$label = '--';
-    	$allmeasures = getLandMeasureUnits();
+    	$allmeasures = getAreaUnits();
     	if(!isEmptyString($this->getLandUnits())){
     		$label = $allmeasures[$this->getLandUnits()];
     	}
@@ -365,7 +399,7 @@ class Farm extends BaseEntity {
     }
     # determine text string for available land size
     function displayActiveLandSize(){
-    	if(isEmptyString($this->getLandActiveSize()) || $this->getLandActiveSize() == 0) {
+    	if(isEmptyString($this->getLandActiveSize()) || $this->getLandActiveSize() == 0 || $this->getLandActiveSize() == 0.00) {
     		return '--';
     	} else {
     		$ret = '--';
@@ -377,7 +411,7 @@ class Farm extends BaseEntity {
     }
 	# determine text string for active land size
     function displayLandSize(){
-    	if(isEmptyString($this->getLandSize()) || $this->getLandSize() == 0) {
+    	if(isEmptyString($this->getLandSize()) || $this->getLandSize() == 0 || $this->getLandSize() == 0.00) {
     		return '--';
     	} else {
     		$ret = '--';
@@ -735,6 +769,28 @@ class Farm extends BaseEntity {
 		$seasons = $this->getSeasons();
 		$scount = $seasons->count();
 		return $scount;
+	}
+	# the total revenue to date on farm
+	function getTotalSalesToDate(){
+		$seasons = $this->getSeasons();
+		$total = 0;
+		if($seasons->count()>0){
+			foreach ($seasons as $aseason){
+				$total += $aseason->getTotalRevenue();
+			}
+		}
+		return $total = 0;
+	}
+	# the total expenses to date on farm
+	function getTotalExpensesToDate(){
+		$seasons = $this->getSeasons();
+		$total = 0;
+		if($seasons->count()>0){
+			foreach ($seasons as $aseason){
+				$total += $aseason->getTotalExpenses();
+			}
+		}
+		return $total = 0;
 	}
 }
 

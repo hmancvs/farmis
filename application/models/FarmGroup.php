@@ -578,5 +578,25 @@ class FarmGroup extends BaseEntity {
 	function isGroup(){
 		return isEmptyString($this->getParentID()) ? true : false;
 	}
+	# determine the payments made
+	function getAllPayments() {
+		$q = Doctrine_Query::create()->from('Payment p')->where("p.farmgroupid = '".$this->getID()."'")->orderby("p.trxdate desc");
+		$result = $q->execute();
+		// debugMessage($result->toArray());
+		if(!$result){
+			$result = $payment = new Payment();
+		}
+		return $result;
+	}
+	# determine the subcription history
+	function getAllSubscription() {
+		$q = Doctrine_Query::create()->from('Subscription s')->where("s.farmgroupid = '".$this->getID()."'")->orderby("s.enddate desc");
+		$result = $q->execute();
+		// debugMessage($result->toArray());
+		if(!$result){
+			$result = $subscrip = new Subscription();
+		}
+		return $result;
+	}
 }
 ?>

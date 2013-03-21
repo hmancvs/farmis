@@ -1,3 +1,15 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$c = new Doctrine_RawSql();
+	$c->select('{m.*}, {mr.*}');
+	$c->from('message m INNER JOIN messagerecipient mr ON (m.id = mr.messageid)');
+	$c->where("(mr.recipientid = '".$userid."' AND mr.isread = 0) ORDER BY m.datecreated");
+	$c->addComponent('m', 'Message m');
+	$c->addComponent('mr', 'm.recipients mr');
+	$unread_messages = $c->execute()->count();
+
+?>
 <div class="xcontainer">
     <ul class="mainnav" id="middlebar">
         <?php if(isEmptyString($session->getVar('userid'))){ ?>
@@ -54,35 +66,29 @@
         <?php if(isAdmin() && $isInnerPage){ ?>
             <li id="farmgroup" class="<?php echo ($request->getControllerName() == 'farmer' && $request->getActionName() == 'list') ? 'active' : ''; ?>"><a href="<?php echo $this->baseUrl('farmer/list'); ?>" class="" id=""><span>Farmers</span></a></li>
             <li id="farmgroup" class="<?php echo ($request->getControllerName() == 'farmgroup') ? 'active' : ''; ?>">
-                <a href="<?php echo $this->baseUrl('farmgroup/list'); ?>"><span>Farm Groups</span></a>
+                <a href="<?php echo $this->baseUrl('farmgroup/list'); ?>"><span>DNA Profiles</span></a>
             </li>
         <?php } ?>
         <?php if(isFarmGroupAdmin() && $isInnerPage){ 
 			$farmgroup = new FarmGroup();
 			$farmgroup->populate($farmer->getFarmGroupID());
 		?>
-			<li id="farmgroup" class="<?php echo ($request->getControllerName() == 'farmgroup') ? 'active' : ''; ?>"><a href="<?php echo $this->baseUrl('farmgroup/view/id/'.encode($farmer->getFarmGroupID())); ?>" class="" id=""><span>My Farm Group</span></a></li>
-            <li id="farmgroup" class="<?php echo ($request->getControllerName() == 'farmer' && $request->getActionName() == 'list') ? 'active' : ''; ?>"><a href="<?php echo $this->baseUrl('farmer/list/farmgroupid/'.$farmer->getFarmGroupID()); ?>" class="" id=""><span>My Farmers</span></a></li>
+			<li id="farmgroup" class="<?php echo ($request->getControllerName() == 'farmgroup') ? 'active' : ''; ?>"><a href="<?php echo $this->baseUrl('farmgroup/view/id/'.encode($farmer->getFarmGroupID())); ?>" class="" id=""><span>DNA Profile</span></a></li>
+            <li id="farmgroup" class="<?php echo ($request->getControllerName() == 'farmer' && $request->getActionName() == 'list') ? 'active' : ''; ?>"><a href="<?php echo $this->baseUrl('farmer/list/farmgroupid/'.$farmer->getFarmGroupID()); ?>" class="" id=""><span>Farmers</span></a></li>
 		<?php } ?>  
         <?php if($isInnerPage){ ?>
-            <li id="resources" class="<?php echo ($request->getControllerName() == 'resource' || $request->getControllerName() == 'contact' || $request->getControllerName() == 'commodity' || ($request->getControllerName() == 'message') && !isFarmer() ) ? 'active' : ''; ?>">
+            <li id="resources" class="<?php echo ($request->getControllerName() == 'resource' || $request->getControllerName() == 'contact' || $request->getControllerName() == 'commodity') ? 'active' : ''; ?>">
                 <a href="<?php echo $this->baseUrl('resource'); ?>"><span>Resources</span></a>	
             </li>
             <li id="reports" class="<?php echo ($request->getControllerName() == 'report') ? 'active' : ''; ?>">
                 <a href="<?php echo $this->baseUrl('report/overview'); ?>"><span>Reports</span></a>	
             </li>
-            <?php if(isFarmer()){ ?>
-            <li id="inbox" class="<?php echo ($request->getControllerName() == 'message') ? 'active' : ''; ?>">
-            	<a href="<?php echo $this->baseUrl('message/list'); ?>"><span>Inbox</span></a>	
+            <?php // if(isFarmer()){ ?>
+            <li id="inbox" style="width:98px;" class="<?php echo ($request->getControllerName() == 'message') ? 'active' : ''; ?>">
+            	<a href="<?php echo $this->baseUrl('message/list'); ?>" title="Inbox: <?php echo $unread_messages; ?> Unread" style="padding-right:20px; padding-left:0; position:relative; float:left; width:70%;"><span style="">Inbox </span><label class="error" style="background-image:none; float:right; position:absolute; right:3px; top:1px; padding:2px 8px 2px 8px;"><?php echo $unread_messages; ?></label></a>	
             </li>
-            <?php } ?>
+            <?php // } ?>
         <?php } ?>
-        <!--<li id="help">
-            <a href="<?php // echo $this->baseUrl('help'); ?>"><span>Help</span></a>	
-        </li>
-        <li id="contactus">
-            <a href="<?php //echo $this->baseUrl('contactus'); ?>"><span>Contact Us</span></a>	
-        </li>-->
         <?php if(isEmptyString($session->getVar('userid'))){ ?>
         <li id="forum" class="<?php echo ($request->getControllerName() == 'communityforum' || $request->getControllerName() == 'forum') ? 'active' : ''; ?>">
             <a href="<?php echo $this->baseUrl('forum'); ?>"><span>Community Forum</span></a>	
@@ -131,7 +137,7 @@ ul.mainnav > li {
 	height:auto;
 }
 ul.mainnav li > a {
-	color:#C0C0C0;
+	color:#fff;
 	font-weight:bold;
 	font-family:'calibri','Telex',sans-serif;
     display: block;
@@ -141,11 +147,21 @@ ul.mainnav li > a {
     padding: 10px 14px 12px 14px;
     text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.2);
 }
+<?php if($islinux){ ?>
+ul.mainnav li > a {
+	font-size:15px;
+}
+<?php } ?>
 .subnavbar.loggedin#thenav ul.mainnav li > a {
 	color:#f9f9f9;
 	padding: 7px 14px 8px 14px;
-	font-size:18px;
+	font-size:17px;
 }
+<?php if($islinux){ ?>
+.subnavbar.loggedin#thenav ul.mainnav li > a {
+	font-size:15px;
+}
+<?php } ?>
 #accountdrop.loggedin {
 	background-color: #f5f5f5;
 	background-image: -moz-linear-gradient(top, #ffffff, #e6e6e6);
@@ -178,7 +194,7 @@ ul.mainnav li > a span {
     display: inline-block;
 }
 ul.mainnav li:hover a, ul.mainnav li.active a  {
-	color:#f1f1f1;   
+	color:#fff;   
 	background-color:#585858 ;
 	border:solid 2px #787878;
 	padding: 10px 12px 12px 12px;
