@@ -1034,7 +1034,7 @@
 		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'SALES_PRICING_TYPES' ";
 		return getOptionValuesFromDatabaseQuery($query);
 	}
-	function getFarmers($farmgroupid = ''){
+	function getFarmers($farmgroupid = '', $hasemail = false, $ignorelist = ''){
 		$custom_query = '';
 		if(!isEmptyString($farmgroupid)){
 			$farmgroup = new FarmGroup(); 
@@ -1042,7 +1042,14 @@
 			$manegerid = $farmgroup->getManagerID();
 			$custom_query = " AND f.farmgroupid = '".$farmgroupid."' AND f.id <> '".$manegerid."'";
 		}
-		$valuesquery = "SELECT f.id AS optionvalue, concat(f.firstname, ' ', f.lastname) as optiontext FROM farmer as f WHERE f.id <> '' ".$custom_query." ORDER BY optiontext";
+		if($hasemail){
+			$custom_query .= " AND u.email <> '' ";
+		}
+		if(!isEmptyString($ignorelist)){
+			$custom_query .= " AND u.id <> '".$ignorelist."' ";
+		}
+		$valuesquery = "SELECT f.id AS optionvalue, concat(f.firstname, ' ', f.lastname) as optiontext FROM farmer as f inner join useraccount as u on (f.userid = u.id) WHERE f.id <> '' ".$custom_query." ORDER BY optiontext";
+		// debugMessage($valuesquery);
 		return getOptionValuesFromDatabaseQuery($valuesquery);
 	}
 	# farming types practised
@@ -1113,5 +1120,11 @@
 	# subscription subjects
 	function getPaymentSubjects(){
 		return array(1=>'Basic Farmer Subscription', 2=>'Premium Farmer Subscription', 3=>'DNA Basic', 4=>'DNA Premium', 5=>'Other');
+	}
+	# all listable variable groupings
+	function getAllists(){
+		$conn = Doctrine_Manager::connection();
+		$all_lists = $conn->fetchAll("SELECT l.id as id, l.displayname as name FROM lookuptype AS l WHERE l.listable = 1 order by l.displayname ASC ");
+		return $all_lists;
 	}
 ?>

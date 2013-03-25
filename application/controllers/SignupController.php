@@ -352,6 +352,9 @@ class SignupController extends IndexController   {
 		$email = trim($formvalues['email']);
 		// debugMessage($formvalues);
 		$user = new UserAccount();
+		if(!isArrayKeyAnEmptyString('userid', $formvalues)){
+			$user->populate($formvalues['userid']);
+		}
 		if($user->emailExists($email)){
 			echo '1';
 		} else {

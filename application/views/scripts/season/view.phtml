@@ -115,16 +115,16 @@
                                                                         <?php if($hasplanted){ ?>
                                                                         	<tr>
                                                                                 <td class="" style="padding-left:0; width:40%;">Land Size:</td>
-                                                                                <td class="" style=""><?php echo $plant->getFieldSize()."&nbsp;<span class='pagedescription'>(".$plant->getFieldSizeUnitText().")</span>"; ?></td>
+                                                                                <td class="" style=""><?php echo clean_num($plant->getFieldSize())."&nbsp;<span class='pagedescription'>(".$plant->getFieldSizeUnitText().")</span>"; ?></td>
                                                                             </tr>
                                                                             <tr>
                                                                                 <td class="" style="padding-left:0;">Quantity Planted:</td>
-                                                                                <td class="" style=""><?php echo isEmptyString($plant->getTotalPlanted()) ? '--' : $plant->getTotalPlanted() ; ?></td>
+                                                                                <td class="" style=""><?php echo isEmptyString($plant->getTotalPlanted()) ? '--' : clean_num($plant->getTotalPlanted()) ; ?></td>
                                                                             </tr>
                                                                         <?php } else { ?>
                                                                             <tr>
                                                                                 <td class="" style="padding-left:0; width:50%;">Land Size:</td>
-                                                                                <td class="" style=""><?php echo $season->getFieldSize()."&nbsp;<span class='pagedescription'>(".$season->getFieldSizeUnitText().")</span>"; ?></td>
+                                                                                <td class="" style=""><?php echo clean_num($season->getFieldSize())."&nbsp;<span class='pagedescription'>(".$season->getFieldSizeUnitText().")</span>"; ?></td>
                                                                             </tr>
                                                                         <?php } ?>        
                                                                         </table>
@@ -210,7 +210,7 @@
                 </div>
                 <div class="row margin0" style="padding:2px;">
                     <span class="pull-left well lighter margin0" style="width:97%; min-height:200px; position:relative;">
-                        <h3 class="well-legend margin0">Activity Timeline</h3>
+                        <h3 class="well-legend margin0">Season Activity Timeline</h3>
                         <a style="position:absolute; right:30px; top:10px; font-size:16px; font-weight:bold;" href="<?php echo $this->baseUrl('farm/view/tab/calendar/id/'.encode($season->getFarmID())); ?>" id="calendar" title="View Season Calendar">View Calendar</a>
                         <?php 
                             $timeline = sort_multi_array($season->getTimeLineDetails(), 'order');

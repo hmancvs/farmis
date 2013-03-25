@@ -332,7 +332,7 @@ $(document).ready(function() {
                                                     <span><?php echo isEmptyString($line['uemail']) ? '--' : $line['uemail']; ?></span><br />
                                                 <?php } else { ?>
                                                     <span class="inv_before" id="inv_before_<?php echo $id; ?>" style="margin-top:2px;">
-                                                        <input type="text" name="email_<?php echo $id; ?>" id="email_<?php echo $id; ?>" placeholder="enter email" title="Invite <?php echo $firstname; ?> to join FARMREC" value="<?php echo $line['uemail']; ?>" class="invite invite_<?php echo $id; ?>" style="width:230px; height:14px;" /><br />
+                                                        <input type="text" name="email_<?php echo $id; ?>" id="email_<?php echo $id; ?>" placeholder="enter email" title="Invite <?php echo $firstname; ?> to join FARMIS" value="<?php echo $line['uemail']; ?>" class="invite invite_<?php echo $id; ?>" style="width:230px; height:14px;" /><br />
                                                         <a href="javascript:doNothing();" class="btn btn-primary btn-mini invitetrigger" style="margin-top:5px;" id="invite_<?php echo $id; ?>" title="Invite <?php echo $firstname; ?> to join <?php echo $this->translate('appname'); ?>"><i class="icon-envelope icon-white"></i> Invite</a>
                                                         <label class="hide invite_<?php echo $id; ?>" title="<?php echo $id; ?>"><?php echo $id; ?></label>                            
                                                         <div id="invite_<?php echo $id; ?>_error" style="margin-top:4px;"></div>

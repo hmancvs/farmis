@@ -37,8 +37,8 @@
 				$farmgroup = new FarmGroup();
 				$farmgroup->populate($farmer->getFarmGroupID());
 			?>
-                <li><a href="<?php echo $this->baseUrl('farmgroup/view/id/'.encode($farmer->getFarmGroupID())); ?>" class="" id=""><i class="icon-list icon-white"></i> My Farm Group</a></li>
-                <li><a href="<?php echo $this->baseUrl('farmer/list/farmgroupid/'.$farmer->getFarmGroupID()); ?>" class="" id=""><i class="icon-list icon-white"></i> My Farmers</a></li>
+                <li><a href="<?php echo $this->baseUrl('farmgroup/view/id/'.encode($farmer->getFarmGroupID())); ?>" class="" id=""><i class="icon-list icon-white"></i> Group Profile</a></li>
+                <li><a href="<?php echo $this->baseUrl('farmer/list/farmgroupid/'.$farmer->getFarmGroupID()); ?>" class="" id=""><i class="icon-list icon-white"></i> Farmers</a></li>
             <?php } ?>  
             <?php if(isFarmer()){ ?>
                 <?php if($hasfarm){ ?>
@@ -64,44 +64,36 @@
     	<div class="widgetsection" style="min-height:100px; max-height:200px; padding-bottom:20px; height:auto;">
             <h3>Quick Add</h3>
             <div style="margin-left:-8px; margin-top:2px; width:108%;">
-                <table class="table noborder margin0" id="quicklinks">
-					<?php if(isAdmin()){ ?>
-                        <tr>
-                            <td style="width:50%;"><a href="<?php echo $this->baseUrl('farmgroup/add/pgc/true'); ?>" class="addpopup addgroup" title="New Farm Group" rel="New Farm Group" id="newfarmgroup" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmgroup/list'); ?>" action="<?php echo $this->baseUrl("farmgroup/create"); ?>"><i class="icon-plus icon-white"></i> <span>New Farm Group</span></a></td>
-                            <td style="width:5px;"></td>
-                            <td><a href="<?php echo $this->baseUrl('farmer/add/pgc/true'); ?>" class="addpopup addfarmer" title="New Farmer" rel="New Farmer" id="newfarmer" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmer/list'); ?>" action="<?php echo $this->baseUrl("farmer/create"); ?>"><i class="icon-plus icon-white"></i> <span>New Farmer</span></a></td>
-                        </tr>
-                        <tr>
-                            <td><a href="<?php echo $this->baseUrl('contact/index'); ?>"><i class="icon-plus icon-white"></i> <span>New Contact</span></a></td>
-                            <td style="width:5px;"></td>
-                            <td></td>
-                        </tr>
+                
+                <ul class="nav nav-tabs nav-stacked" style="width:205px; margin-top:-1px;">
+                    <?php if(isAdmin()){ ?>
+                        <li><a href="<?php echo $this->baseUrl('farmgroup/add/pgc/true'); ?>" class="addpopup addgroup" title="New Farm Group" rel="New Farm Group" id="newfarmgroup" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmgroup/list'); ?>" action="<?php echo $this->baseUrl("farmgroup/create"); ?>"><i class="icon-plus "></i> <span>New Farm Group</span></a></li>
+                        <li><a href="<?php echo $this->baseUrl('farmer/add/pgc/true'); ?>" class="addpopup addfarmer" title="New Farmer" rel="New Farmer" id="newfarmer" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmer/list'); ?>" action="<?php echo $this->baseUrl("farmer/create"); ?>"><i class="icon-plus"></i> <span>New Farmer</span></a></li>
+                    <?php } ?>  
+                    <?php if(isFarmer()){ 
+						$newseason = $this->baseUrl('season/index/farmid/'.encode($farmer->getFarmID()));
+						$logactivity = $this->baseUrl('farm/view/id/'.encode($farmer->getFarmID()).'/tab/seasons');
+						$newxpense = $this->baseUrl('farm/view/id/'.encode($farmer->getFarmID()).'/tab/seasons');
+						$inventory = $this->baseUrl('inventory/index/farmid/'.encode($farmer->getFarmID()).'/tab/inventory');
+						if(isEmptyString($farmer->getFarmID())){
+							$newseason = $logactivity = $newxpense = $inventory = $this->baseUrl('farm/index/farmerid/'.encode($farmer->getID()).'/restart/1');
+						}
+						
+						if(isEmptyString($farmer->getFarmID())){
+							
+						}
+					?>
+                    	<li><a href="<?php echo $newseason; ?>"><i class="icon-plus"></i> <span>New Season</span></a></li>
+                        <li><a href="<?php echo $logactivity; ?>"><i class="icon-plus"></i> <span>Log Activity</span></a></li>
+                        <li><a href="<?php echo $newxpense; ?>"><i class="icon-plus"></i> <span>Record New Expense</span></a></li>
+                        <li><a href="<?php echo $inventory; ?>"><i class="icon-plus"></i> <span>Add Inventory Item</span></a></li>   
+                        <li><a href="<?php echo $this->baseUrl('contact/index'); ?>"><i class="icon-plus"></i> <span>New Contact</span></a></li>
                     <?php } ?>
-                    <?php if(isFarmer()){ ?>
-                        <tr>
-                            <td style="width:50%;"><a href="<?php echo $this->baseUrl('season/index/farmid/'.encode($farmer->getFarmID())); ?>"><i class="icon-plus icon-white"></i> <span>New Season</span></a></td>
-                            <td style="width:5px;"></td>
-                            <td><a href="javascript: void(0)<?php //echo $this->baseUrl('season/index/farmid/'.encode($farmer->getFarmID())); ?>"><i class="icon-plus icon-white"></i> <span>Log Activity</span></a></td>
-                        </tr>
-                        <tr>
-                            <td><a href="javascript: void(0)<?php //echo $this->baseUrl('season/index/farmid/'.encode($farmer->getFarmID())); ?>"><i class="icon-plus icon-white"></i> <span>Record New Expense</span></a></td>
-                            <td style="width:5px;"></td>
-                            <td><a href="<?php echo $this->baseUrl('inventory/index/farmid/'.encode($farmer->getFarmID())); ?>"><i class="icon-plus icon-white"></i> <span>Record New Inventory Item</span></a></td>
-                        </tr>
-                        <tr>
-                            <td><a href="<?php echo $this->baseUrl('contact/index'); ?>"><i class="icon-plus icon-white"></i> <span>New Contact</span></a></td>
-                            <td style="width:5px;"></td>
-                            <td></td>
-                        </tr>
+                    <?php if(isFarmGroupAdmin()){ ?>
+                    	<li><a href="<?php echo $this->baseUrl('farmer/add/pgc/true/farmgroupid/'.$farmgroup->getID()); ?>" class="addfarmer addpopup"  rel="Add Farmer | <?php echo $farmgroup->getName(); ?>" title="Add Farmer" id="addfarmer" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmer/list/farmgroupid/'.$farmgroup->getID()); ?>" action="<?php echo $this->baseUrl("farmer/create"); ?>"><i class="icon-plus"></i> <span>New Farmer</span></a></li>
+                        <li><a href="<?php echo $this->baseUrl('contact/index'); ?>"><i class="icon-plus"></i> <span>New Contact</span></a></li>	
                     <?php } ?>
-                    <?php if(isFarmGroupAdmin()){ ?> 	
-                        <tr>
-                            <td style="width:50%;"><a href="<?php echo $this->baseUrl('farmer/add/pgc/true/farmgroupid/'.$farmgroup->getID()); ?>" class="addfarmer addpopup"  rel="Add Farmer | <?php echo $farmgroup->getName(); ?>" title="Add Farmer" id="addfarmer" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmer/list/farmgroupid/'.$farmgroup->getID()); ?>" action="<?php echo $this->baseUrl("farmer/create"); ?>"><i class="icon-plus icon-white"></i> <span>New Farmer</span></a></td>
-                            <td style="width:5px;"></td>
-                            <td><a href="<?php echo $this->baseUrl('season/index/farmid/'.encode($farmer->getFarmID())); ?>"><i class="icon-plus icon-white"></i> <span>New Contact</span></a></td>
-                        </tr>
-                    <?php } ?>      
-                </table>
+                </ul> 
             </div>
         </div>
         <?php if(isFarmGroupAdmin()){ ?>

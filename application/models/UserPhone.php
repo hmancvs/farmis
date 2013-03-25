@@ -8,7 +8,7 @@ class UserPhone extends BaseRecord {
 		
 		$this->setTableName('userphone');
 		$this->hasColumn('userid', 'integer', null, array('notnull' => true, 'notblank' => true));
-		$this->hasColumn('phone', 'string', 15/*, array('notnull' => true, 'notblank' => true)*/);	
+		$this->hasColumn('phone', 'string', 15);	
 		$this->hasColumn('isprimary', 'integer', null, array('default' => '0'));
 		$this->hasColumn('isactivated', 'integer', null, array('default' => '0'));
 		$this->hasColumn('activationkey', 'string', 15);
@@ -107,7 +107,7 @@ class UserPhone extends BaseRecord {
 	}
 	# content for requesting activation code via  phone
 	function getActivationCodeContent(){
-		return "Dear ".$this->getUser()->getFirstName().", \nThank you for your interest in the FARMREC Program. Your mobile phone activation code is: ".$this->getActivationKey();
+		return "Dear ".$this->getUser()->getFirstName().", \nThank you for your interest in the FARMIS Program. Your mobile phone activation code is: ".$this->getActivationKey();
 	}
 	# send activation code to the user's mobile phone
 	function sendSignupCodeToMobile() {
@@ -120,7 +120,7 @@ class UserPhone extends BaseRecord {
 	}
 	# content for requesting activation code via  phone
 	function getSignupCodeContent(){
-		return "Dear ".$this->getUser()->getFirstName().", \nThank you for your interest in the FARMREC Program. Your registration activation code is: ".$this->getUser()->getActivationKey();
+		return "Dear ".$this->getUser()->getFirstName().", \nThank you for your interest in the FARMIS Program. Your registration activation code is: ".$this->getUser()->getActivationKey();
 	}
 	# verify that a code specified is valid for activation
 	function verifyPhone($code){
@@ -162,7 +162,7 @@ class UserPhone extends BaseRecord {
 	}
 	# content of confirmation message upon confirmation
 	function getActivationConfirmationContent(){
-		return "Dear ".$this->getUser()->getFirstName().", \nYour mobile phone ".$this->getFormattedPhone()." has been successfully validated. Thank you for being apart of the FARMREC Program.";
+		return "Dear ".$this->getUser()->getFirstName().", \nYour mobile phone ".$this->getFormattedPhone()." has been successfully validated. Thank you for being apart of the FARMIS Program.";
 	}
 	# content of confirmation message upon confirmation
 	function getSignupAccountConfirmationContent(){
@@ -197,13 +197,13 @@ class UserPhone extends BaseRecord {
 	}
 	# content of confirmation message upon confirmation
 	function getSignupPhoneConfirmationContent(){
-		return "Dear ".$this->getUser()->getFirstName().", \nYour FARMREC Account and Phone have been successfully activated. You can now login anytime using either Email, Phone or Username";
+		return "Dear ".$this->getUser()->getFirstName().", \nYour FARMIS Account and Phone have been successfully activated. You can now login anytime using either Email, Phone or Username";
 	}
 	function getSignupInboxConfirmationContent(){
 		$baseUrl = Zend_Controller_Front::getInstance()->getBaseUrl();
 		$contactus_url = $baseUrl.'/contactus';
 		$password_url = $baseUrl.'/farmer/view/id/'.encode($this->getUser()->getFarmerID()).'/tab/account';
-		return "Dear ".$this->getUser()->getFirstName().", <br /><br />Your FARMREC Account and Phone have been successfully activated. You can now login anytime using either Email, Phone or Username with the password you provided during registration. <br /><br /> You can also change your password anytime by <a href='".$password_url."' title='Change Password'>clicking here</a>.  <br /><br />For any help or assistance, <a href='".$contactus_url."'>Contact us</a> ";
+		return "Dear ".$this->getUser()->getFirstName().", <br /><br />Your FARMIS Account and Phone have been successfully activated. You can now login anytime using either Email, Phone or Username with the password you provided during registration. <br /><br /> You can also change your password anytime by <a href='".$password_url."' title='Change Password'>clicking here</a>.  <br /><br />For any help or assistance, <a href='".$contactus_url."'>Contact us</a> ";
 	}
 	# set activation code to change user's email
 	function triggerPhoneChange($newphone) {

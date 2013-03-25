@@ -78,19 +78,19 @@ $(document).ready(function() {
 	});
 		
 	// turn select controls to chosen type selects
-	// IE browser effects only
-	if ($.browser.msie) {
+	$(".chzn-select").chosen();
+
+	// check if user is using less than IE9 and turn off chosen select
+	/*if ($.browser.msie) {
 		// remove the hidden property
-		$(".chzn-select").removeClass('chzn-select'); 
-	} else {
-		// turn select controls to chosen type selects
-		$(".chzn-select").chosen();  
-	  	// if a select field with chosen changes, revalidate the field 
-		$("select.chzn-select").chosen().change(function(){
-			$("form").validate().element(this);
-		});
-	}
-	
+		$(".chzn-select").removeClass('chzn-select')
+	}*/
+	 
+	// if a select field with chosen changes, revalidate the field 
+	$("select.chzn-select").chosen().change(function(){
+		$("form").validate().element(this);
+	});
+		
 	$(".datefield").change(function(){
 		$("form").validate().element(this);
 	});
@@ -564,7 +564,85 @@ $(document).ready(function() {
 			$('#newletter_trigger').click();
 		}
     });
+	
+	// change password
+	$('.changepassword').click(function(e){
+		// $("#"+idparam).qtip("hide");
+		e.preventDefault();
+		
+		// popup title
+		$(".modal-header h3").html($(this).attr('rel'));
+		// load content
+		$("#dialogcontent").html($("#dialogbody #loading").html());
+		$("#dialogcontent").load($(this).attr('href'));  	
+		// then show it after the changes have been made
+		$('#dialog').modal('toggle');
 
+		// save dialog
+		$('#save').on('click', function(e){
+			// $('#dialog').modal('hide');
+			if ($("#indexform").valid() == true) {
+				bootbox.confirm('<label class="blockcontainer">Are you sure you want to change your Password? <br /><br />Click <b>OK</b> to proceed, and <b>Cancel</b> to ignore</label>', function(confirmed) {
+					if(confirmed){
+						// disable buttons
+						$(".modelcancel").hide();
+						$(this).hide();
+						// post form
+						$.post(  
+							"<?php echo $this->baseUrl("profile/processchangepassword"); ?>",  
+							$("#indexform").serialize(),  
+							function(data){
+								// alert(data);
+								location.reload(true);
+							}  
+						); // close the $.post
+						$("#dialogcontent").hide(); 										
+						$("#dialogbody #loading").show();
+					} else {
+						return false;
+					}
+				});
+			}
+		});
+		// cancel model
+		$(".modelcancel").on('click', function(e){
+			$("#dialog").modal('hide');
+		});		
+		$('#dialog').on('hidden', function () {
+			// location.reload(true);
+			$(".dialog, body").css("overflow", "auto");
+		});
+		$(".dialog, body").css("overflow", "hidden");
+		 
+		return false;
+	});
+	
+	$('.radio.btn-group label').addClass('btn');
+    $(".btn-group label:not(.active)").click(function() {
+        var label = $(this);
+        var input = $('#' + label.attr('for'));
+
+        if (!input.prop('checked')) {
+            label.closest('.btn-group').find("label").removeClass('active btn-success btn-danger btn-primary');
+            if (input.val() == '') {
+                label.addClass('active btn-primary');
+            } else if (input.val() == 0) {
+                label.addClass('active btn-danger');
+            } else {
+                label.addClass('active btn-success');
+            }
+            input.prop('checked', true);
+        }
+    });
+    $(".btn-group input[checked=checked]").each(function() {
+        if ($(this).val() == '') {
+            $("label[for=" + $(this).attr('id') + "]").addClass('active btn-primary');
+        } else if ($(this).val() == 0) {
+            $("label[for=" + $(this).attr('id') + "]").addClass('active btn-danger');
+        } else {
+            $("label[for=" + $(this).attr('id') + "]").addClass('active btn-success');
+        }
+    });
 }); 
 //Use window.load and not document.ready for effective equal heights
 $(window).load(function() {

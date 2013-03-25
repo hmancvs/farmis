@@ -46,7 +46,7 @@
   <div style="position:relative; float:right; width:87%;">
     <div class="xnav-collapse">
 		<?php if(!isEmptyString($userid)){ ?>
-            <ul class="nav pull-right" id="headeractions" style="float:right; margin-top:8px;">
+            <ul class="nav pull-right" id="headeractions" style="max-width:500px; float:right; width:250px; margin-top:10px;">
                 <li class="dropdown " style="float:right;">
                     <a data-toggle="dropdown" id="accountdrop" class="dropdown-toggle <?php echo !in_array($thecontroller, $publiccontrollers) ? 'loggedin' : ''; ?>" href="#"><?php echo $farmer->getName(); ?> <b class="caret"></b></a>
                     <ul class="dropdown-menu span3">
@@ -60,12 +60,12 @@
                             </span>
                             <span class="pull-right" style="width:65%; margin:0; padding:0;">
                                 <ul class="navbar" style="margin:0; padding:0; list-style:none;">
-                                    <li><a href="<?php echo $this->baseUrl("profile/view/id/".encode($user->getID())); ?>" title="My Profile">My Profile</a></li>                                    <li><a href="<?php echo $this->baseUrl("profile/view/id/".encode($user->getID())."/tab/account"); ?>" title="Account Settings">Account Settings</a></li>
-                                    <li><a href="<?php echo $this->baseUrl("profile/view/id/".encode($user->getID())."/tab/privacy"); ?>" title="Privacy Settings">Privacy Settings</a></li>
+                                    <li><a href="<?php echo $this->baseUrl("farmer/view/id/".encode($farmer->getID())); ?>" title="My Profile">My Profile</a></li>                                    <li><a href="<?php echo $this->baseUrl("farmer/view/id/".encode($farmer->getID())."/tab/account"); ?>" title="Account Settings">Account Settings</a></li>
+                                    <li><a href="<?php echo $this->baseUrl("farmer/view/id/".encode($farmer->getID())."/tab/account"); ?>" title="Change Password">Change Password</a></li>
                                 </ul>	
                             </span></li>
                         <li class="divider"></li>
-                        <li><a href="<?php echo $this->baseUrl("help"); ?>" title="Get Help">Get Help</a></li>
+                        <li><a href="<?php echo $this->baseUrl("faqs"); ?>" title="Get Help">Get Help</a></li>
                         <li><a href="<?php echo $this->baseUrl("contactus"); ?>" title="Contact Us">Contact Us</a></li>
                         <li class="divider"></li>
                         <li><a href="<?php echo $this->baseUrl("user/logout"); ?>" title="Logout">Logout</a></li>

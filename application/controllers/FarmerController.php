@@ -6,7 +6,7 @@ class FarmerController extends SecureController   {
     public function getActionforACL() {
         $action = strtolower($this->getRequest()->getActionName()); 
 		if($action == "add" || $action == "other" || $action == "processother" || $action == "processadd" || 
-			$action == "processvalidatephone" || $action == 'validatephone') {
+			$action == "processvalidatephone" || $action == 'validatephone' || $action == 'changesettings') {
 			return ACTION_CREATE; 
 		}
     	if(
@@ -464,7 +464,7 @@ class FarmerController extends SecureController   {
 		
     }
 	# Send notification to invite a friend
-	function tellFriendsAboutFARMREC($dataarray) {
+	function tellFriendsAboutFARMIS($dataarray) {
 		$template = new EmailTemplate(); 
 		# create mail object
 		$mail = getMailInstance();
@@ -515,7 +515,7 @@ class FarmerController extends SecureController   {
 		$template->assign('subject', $dataarray['subject']);
 		$template->assign('message', nl2br($dataarray['message']));
 		
-		$mail->setSubject("FARMREC: ".$dataarray['subject']);
+		$mail->setSubject("FARMIS: ".$dataarray['subject']);
 		// set the send of the email address
 		$mail->setFrom($dataarray['email'], $dataarray['name']);
 		
@@ -618,4 +618,29 @@ class FarmerController extends SecureController   {
     function reportAction(){
     	
     }
+    
+	public function changesettingsAction(){
+		$this->_helper->layout->disableLayout();
+		$this->_helper->viewRenderer->setNoRender(TRUE);
+		
+		$formvalues = $this->_getAllParams();
+		$session = SessionWrapper::getInstance(); 
+		// debugMessage($formvalues);
+		
+		$farmer = new Farmer();
+		$farmer->populate($formvalues['farmerid']);
+		// debugMessage($farmer->toArray());
+		switch ($formvalues['field']) {
+			case 'emailmeonmessage':
+				$farmer->getUser()->setemailmeonmessage($formvalues['value']);
+				$farmer->getUser()->save();
+				break;
+			case 'emailmeoncomment':
+				$farmer->getUser()->setemailmeoncomment($formvalues['value']);
+				$farmer->getUser()->save();
+				break;
+			default:
+				break;
+		}
+	}
 }

@@ -74,6 +74,45 @@
 		$request->setParam('tab', 'basics');
 	}
 	$address = $farmer->getUser()->getAddresses()->get(0);
+	
+	if($request->tab == 'contacts' || $request->tab == 'account') {
+		$userphone = $farmer->getUser()->getPrimaryPhone();
+		$phone = getShortPhone($userphone->getPhone());
+		$userphoneid = $userphone->getID();
+		
+		$validated = false;
+		$valid_text = '';
+		if(!isEmptyString($phone)){
+			$valid_text = '&nbsp; (Unconfirmed)';
+		}
+		$allowrevalidate = false;
+		if(!isEmptyString($phone) && $userphone->isValidated()){
+			$validated = true;
+			$valid_text = '&nbsp; <span class="pagedescription" style="color:#55A411;">(Validated)</span';
+		}
+		if($userphone->hasPendingActivation()){
+			$allowrevalidate = true;
+		}
+		
+		$userphone2 = $farmer->getUser()->getSecondaryPhone();
+		$altphone = getShortPhone($userphone2->getPhone());
+		$userphone2id = $userphone2->getID(); 
+		
+		$svalidated = false;
+		$svalid_text = '';
+		if(!isEmptyString($altphone)){
+			$svalid_text = '&nbsp; (Unconfirmed)';
+		}
+		$sallowrevalidate = false;
+		if($userphone2->isValidated()){
+			$svalidated = true;
+			$svalid_text = '&nbsp; <span class="pagedescription" style="color:#55A411;">(Validated)</span';
+		}
+		if($userphone2->hasPendingActivation()){
+			$sallowrevalidate = true;
+		}
+
+	}
 	// debugMessage(toArray());
 	$title = "Update Profile";
 	$this->headTitle($title);
@@ -709,21 +748,6 @@ select#salutation {
                             <table class="table">
                                 <tr>
                                     <td width="50%"><label class="control-label">Phone:</label>
-                                    <?php 
-										$phone = $farmer->getUser()->getPhone();
-										$userphoneid = $farmer->getUser()->getPrimaryPhone()->getID();
-										
-										$validated = false;
-										$valid_text = '&nbsp; (Unconfirmed)';
-										$allowrevalidate = false;
-										if($farmer->getUser()->getPrimaryPhone()->isValidated()){
-											$validated = true;
-											$valid_text = '&nbsp; <span class="pagedescription" style="color:#55A411;">(Validated)</span';
-										}
-										if($farmer->getUser()->getPrimaryPhone()->hasPendingActivation()){
-											$allowrevalidate = true;
-										}
-									?>
                                     <?php if($validated){ ?>
 										<?php echo $phone; ?> <?php echo $valid_text; ?>
                                         <input type="hidden" name="phone" id="phone" value="<?php echo $phone; ?>" />
@@ -736,23 +760,8 @@ select#salutation {
                                     </td>
                                     <td>
                                     <label class="control-label">Alt Phone:</label>
-                                    <?php
-										$altphone = $farmer->getUser()->getAltPhone();
-										$userphone2id = $farmer->getUser()->getSecondaryPhone()->getID();
-										
-										$validated = false;
-										$valid_text = '&nbsp; (Unconfirmed)';
-										$allowrevalidate = false;
-										if($farmer->getUser()->getSecondaryPhone()->isValidated()){
-											$validated = true;
-											$valid_text = '&nbsp; <span class="pagedescription" style="color:#55A411;">(Validated)</span';
-										}
-										if($farmer->getUser()->getSecondaryPhone()->hasPendingActivation()){
-											$allowrevalidate = true;
-										}
-									?>
-                                    <?php if($validated){ ?>
-										<?php echo $altphone; ?> <?php echo $valid_text; ?>
+                                    <?php if($svalidated){ ?>
+										<?php echo $altphone; ?> <?php echo $svalid_text; ?>
                                         <input type="hidden" name="phone2" id="phone" value="<?php echo $altphone; ?>" />
                                     <?php } else { ?>
                                         <div class="input-prepend">
@@ -1036,53 +1045,7 @@ select#salutation {
                 
             </form>
         </div>
-        <div id="account">
-            <h2>Account Settings</h2>
-            <form id="profileform-account" class="form-horizontal account">
-                <?php if($request->tab == 'account'){ ?>
-                <div class="row" style="margin-left:0px;">
-                    <span class="span6 marginleft0" style="width:72%;">
-                        <div class="well row marginleft0" style="min-height:150px; padding-left:10px;">     
-                        <h3 class="well-legend">Login Identity</h3>                   
-                            <table class="table">
-                                <tr>		  
-                                    <td></td>
-                                </tr>
-                            </table>
-                        </div>
-                    </span>
-                    <span class="span3 pull-right" style="width:22%; margin-right:20px; ">
-                        <div class="well row" style="min-height:150px;">
-                            <h3 class="well-legend">Quick Links</h3>
-                            <table class="table">  
-								
-                            </table>                            
-                        </div>
-                    </span>		
-                </div>
-                <div class="well row marginleft0" style="min-height:100px; width:94%;">
-                    <h3 class="well-legend">Notification Settings</h3>
-                    <table class="table">                       
-                       <tr>		                    
-                            <td>
-                                
-                            </td>
-                       </tr>
-                    </table>
-                </div>
-                <div class="well row marginleft0" style="min-height:150px; width:94%;">
-                    <h3 class="well-legend">Prefferences</h3>
-                    <table class="table">                       
-                       <tr>		                    
-                            <td>
-                                
-                            </td>
-                       </tr>
-                    </table>
-                </div>
-                <?php } ?>
-            </form>
-        </div>
+        <?php require APPLICATION_PATH."/views/scripts/farmer/settings.phtml"; ?>
     </div> 
 </div>
 <?php

@@ -1,0 +1,149 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+		
+	$message = new Message(); 
+	
+	$posturl = $this->baseUrl("message/processmassmail");
+	
+	$user = new UserAccount();
+	$user->populate($userid);
+		
+	$farmer = new Farmer();
+	$farmer->populate($farmerid);
+	
+	$farmid = $farmer->getFarms()->get(0)->getID();
+	
+	$title = "Mass Mail";
+	$this->headTitle($title); 
+?>
+<script>
+$(document).ready(function(){
+	$("#massmailform").validate({		
+		// define the validation rules one field at a time
+		rules: {
+			from: "required",
+			sendername: "required",	
+			subject: "required",
+			contents: "required"
+		}, 
+		// the messages for each of the fields being validated
+		messages: {				
+			from: "<?php echo $this->translate("message_sender_error"); ?>",
+			sendername: "<?php echo $this->translate("message_massmail_sendername_error"); ?>",
+			subject: "<?php echo $this->translate("message_subject_error"); ?>",
+			contents: "<?php echo $this->translate("message_contents_error"); ?>"
+		},
+		// custom error positions
+		errorPlacement: function(error, element) {
+			switch(element.attr("name")){					
+				default:
+					error.appendTo("#"+element.attr("name")+"_error");
+					break;
+			}			
+		}
+	});
+	
+	$('#type-1').click(function(){
+		disableContainerByID('farmerlist');
+	});
+	$('#type-2').click(function(){
+		enableContainerByID('farmerlist');
+	});
+	$('#type-2').click();
+	
+});
+$(window).load(function() {
+	$("#centercolumn, #contentcolumn").css({'height':'auto'});
+});
+</script>
+<style>
+.radio.inline {
+	padding-top:0;
+}
+</style>
+<?php require APPLICATION_PATH."/views/scripts/index/leftcolumn.phtml"; ?>
+    <div id="centercolumn">
+        <div class="widgetsection" style="min-height:625px; height:auto;">
+            <h3 style="color:#282727;"><?php echo $title; ?></h3>
+            <div style="margin-top:10px;">
+               <form id="massmailform" action="<?php echo $posturl; ?>" method="post">
+               <table class="table">                       
+                    <tr>
+                        <td width="20%"><label class="control-label"><?php echo $this->translate("message_sender_email_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                        <td><input type="text" name="from" id="from" class="span4 hastooltip" title="<?php echo $this->translate("message_senderemail_tooltip"); ?>" value="<?php echo $config->notification->supportemailaddress; ?>" /><div id="from_error"></div></td>
+                   </tr>
+                   <tr>
+                        <td><label class="control-label"><?php echo $this->translate("message_sender_name_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                        <td><input type="text" name="sendername" id="sendername" class="span2 hastooltip" title="<?php echo $this->translate("message_sendername_tooltip"); ?>" value="<?php echo $farmer->getUser()->getName(); ?>" /><div id="sendername_error"></div></td>
+                   </tr>
+                   <tr>
+                        <td><label class="control-label"><?php echo $this->translate("message_recipient_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                        <span class="pagedescription" style="text-align:right; display:block;">(Only farmers with email addresses apply)</span>
+                        </td>
+                        <td><?php 
+								 $farmers = getFarmers($farmer->getFarmGroupID(), true);
+								 $list = array('1'=>'All Farmers with emails', '2'=>'Select Farmers',);
+								 $typeradio = new Zend_Form_Element_Radio('type',
+											  array(
+													  'multiOptions' => $list, 
+													  'view' => new Zend_View(),
+													  'disableLoadDefaultDecorators' => true,
+													  'separator' => '&nbsp;&nbsp;&nbsp;&nbsp;',
+													  'decorators' => array('ViewHelper',
+																		  array('HtmlTag', array('tag' => 'div', 'class' => array('inline', 'radio', 'zendradio'))) // use a sorrounding DIV with classes which are copied to the label by JQuery
+																	  )
+											  )
+									  );
+									  $typeradio->setValue('');
+									  echo $typeradio->render();
+								  ?>
+                                  <div id="farmerlist" style="margin-top:15px;">
+									  <?php
+										  $listdropdown = new Zend_Form_Element_Multiselect('farmerids',
+												  array(
+														  'multiOptions' => $farmers,
+														  'view' => new Zend_View(),
+														  'decorators' => array(array('ViewHelper')),
+														  'class' => array('chzn-select','multipleselect','span7', 'hastooltip_custom'),
+														  'title' => $this->translate("farmer_activitytypes_tooltip")
+												  )
+										  );
+										  
+										  $listdropdown->setValue('');
+										  $listdropdown->setAttrib("data-placeholder", 'Start typing farmers in category');
+										  echo $listdropdown->render();
+									  ?><span id="tooltip_farmerids"></span>
+                                  </div>
+								  <div id="type_error"></div><div id="farmerids_error"></div>
+						</td>
+                   </tr>
+                   <tr>
+                        <td><label class="control-label"><?php echo $this->translate("message_subject_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                        <td><input type="text" name="subject" id="subject" class="span7 hastooltip" title="<?php echo $this->translate("message_subject_tooltip"); ?>" value="" /><div id="subject_error"></div></td>
+                   </tr> 
+                   <tr>
+                        <td><label class="control-label"><?php echo $this->translate("message_contents_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                        <td><textarea class="expanding hastooltip" name="contents" id="contents" style="width:90%; min-height:240px;" title="<?php echo $this->translate("message_contents_tooltip"); ?>"></textarea><div id="contents_error"></div></td>
+                   </tr>
+                   <tr>		
+                   		<td></td>                    
+                        <td>
+                            <a href="<?php echo $this->baseUrl('resource'); ?>" class="btn"><i class="icon-remove"></i> <?php echo $this->translate('global_button_cancel'); ?></a>
+                            <button type="submit" class="btn btn-primary savethenview" title="<?php echo $this->translate('message_button_sendmassmail'); ?>"><i class="icon-ok icon-white"></i> <?php echo $this->translate('message_button_sendmassmail'); ?></button>
+                            
+                            <input type="hidden" name="entityname" value="Message" />
+                            <input type="hidden" id="id" name="id" value="" />
+                            <input type="hidden" class="successurl" id="<?php echo URL_SUCCESS; ?>" name="<?php echo URL_SUCCESS; ?>" value="" />
+                            <input type="hidden" class="failureurl" id="<?php echo URL_FAILURE; ?>" name="<?php echo URL_FAILURE; ?>" value="" />
+                            <input type="hidden" id="<?php echo SUCCESS_MESSAGE; ?>" name="<?php echo SUCCESS_MESSAGE; ?>" value="Message successfully sent" />    
+                        </td>
+                   </tr>
+               </table> 
+               </form>   
+            </div>
+        </div>
+    </div>
+</div>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

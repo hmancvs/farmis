@@ -81,15 +81,15 @@
                                                 </tr>
                                                 <tr>
                                                     <td class="widgetlabel padding0"><?php echo "Area Planted"/*$this->translate("season_plant_area_label")*/; ?>:</td>
-                                                    <td class="padding4" style="padding-top:0; padding-bottom:6px;"><?php echo $plant->getFieldSize()."&nbsp;<span class='pagedescription'>(".$plant->getFieldSizeUnitText().")</span>"; ?></td>
+                                                    <td class="padding4" style="padding-top:0; padding-bottom:6px;"><?php echo clean_num($plant->getFieldSize())."&nbsp;<span class='pagedescription'>(".$plant->getFieldSizeUnitText().")</span>"; ?></td>
                                                 </tr>
                                                 <tr>
                                                     <td class="widgetlabel padding0"><?php echo $this->translate("season_plant_quantity_label"); ?>:</td>
-                                                    <td class="padding4" style="padding-top:0; padding-bottom:6px;"><?php echo $plant->getTotalPlanted(); ?></td>
+                                                    <td class="padding4" style="padding-top:0; padding-bottom:6px;"><?php echo clean_num($plant->getTotalPlanted()); ?></td>
                                                 </tr>
                                                 <tr>
                                                     <td class="widgetlabel padding0"><?php echo $this->translate("season_plant_rate_label"); ?>:</td>
-                                                    <td class="padding4" style="padding-top:0; padding-bottom:6px;"><?php echo $plant->getSeedingRate()."&nbsp;<span class='pagedescription'>(".$plant->getSeedingRateUnitText().")</span>"; ?></td>
+                                                    <td class="padding4" style="padding-top:0; padding-bottom:6px;"><?php echo clean_num($plant->getSeedingRate())."&nbsp;<span class='pagedescription'>(".$plant->getSeedingRateUnitText().")</span>"; ?></td>
                                                 </tr>
                                             </table>
                                         </td>

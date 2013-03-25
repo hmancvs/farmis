@@ -61,6 +61,10 @@ ALTER TABLE `useraccount`
 	CHANGE `lastupdatedate` `lastupdatedate` datetime   NULL after `createdby`, 
 	CHANGE `lastupdatedby` `lastupdatedby` int(11) unsigned   NULL after `lastupdatedate`, COMMENT='';
 
+	/* Alter table in target */
+ALTER TABLE `useraccount` 
+	CHANGE `dashwelcome` `dashwelcome` tinyint(4) unsigned   NULL after `dashwizard`, COMMENT=''; 
+
 UPDATE `useraccount` SET `dashwizard` = 1;
 UPDATE `useraccount` SET `dashwelcome` = 1;	
 /* The foreign keys that were dropped are now re-created*/

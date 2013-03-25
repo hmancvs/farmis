@@ -8,6 +8,7 @@ class FarmPreseasonDetail extends BaseRecord {
 		
 		$this->setTableName('farmpreseasondetail');
 		$this->hasColumn('preseasonid', 'integer', null);
+		$this->hasColumn('farmid', 'integer', null);
 		$this->hasColumn('cropid', 'integer', null, array( 'notnull' => true, 'notblank' => true));
 		$this->hasColumn('fieldsize', 'decimal', 10, array('default' => NULL));
 		$this->hasColumn('fieldsizeunit', 'integer', null);
@@ -59,6 +60,12 @@ class FarmPreseasonDetail extends BaseRecord {
 								'foreign' => 'id'
 							)
 					); 
+		$this->hasOne('Farm as farm',
+						 array(
+								'local' => 'farmid',
+								'foreign' => 'id'
+							)
+					); 
 		$this->hasOne('Commodity as crop', 
 								array(
 									'local' => 'cropid',
@@ -84,6 +91,9 @@ class FarmPreseasonDetail extends BaseRecord {
 		// set default values for integers, dates, decimals
 		if(isArrayKeyAnEmptyString('preseasonid', $formvalues)){
 			unset($formvalues['preseasonid']); 
+		}
+		if(isArrayKeyAnEmptyString('farmid', $formvalues)){
+			unset($formvalues['farmid']); 
 		}
 		if(isArrayKeyAnEmptyString('fieldsize', $formvalues)){
 			$formvalues['fieldsize'] = NULL; 

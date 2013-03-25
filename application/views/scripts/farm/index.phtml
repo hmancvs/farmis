@@ -17,7 +17,6 @@
 	}
 	
 	$thefarmid = $farm->getID();
-	$theaddress = $farm->getAddresses()->get(0);
 	
 	if(!isEmptyString($request->farmerid)){
 		$farmer = new Farmer();
@@ -30,8 +29,27 @@
 		if($countfarms > 1){
 			$hasmultiplefarms = true;
 		}
-		$theaddress->setDistrictID($farmer->getUser()->getLocationID());
-		// debugMessage($theaddress->getDistrictID());
+		
+		$theaddress = $farm->getAddresses()->get(0);
+		$useraddress = $farmer->getUser()->getAddresses()->get(0);
+		if(!isEmptyString($useraddress->getID())){
+			
+			if(!isEmptyString($useraddress->getDistrictID())){
+				$theaddress->setDistrictID($useraddress->getDistrictID());
+			}
+			if(!isEmptyString($useraddress->getCountyID())){
+				$theaddress->setCountyID($useraddress->getCountyID());
+			}
+			if(!isEmptyString($useraddress->getSubCountyID())){
+				$theaddress->setSubCountyID($useraddress->getSubCountyID());
+			}
+			if(!isEmptyString($useraddress->getParish())){
+				$theaddress->setParishID($useraddress->getParishID());
+			}
+			if(!isEmptyString($useraddress->getVillageID())){
+				$theaddress->setVillageID($useraddress->getVillageID());
+			}
+		}
 	}
 	$currentfarmer = $farm->getFarmerID();
 	
@@ -1362,10 +1380,11 @@ select.unitselect {
                                 <td>
                                 	<label class="control-label">Did you get a Loan?</label>
                                     <?php
-										if(isEmptyString($detail->getfinancetype())){
+										/*if(isEmptyString($detail->getfinancetype())){
 											$detail->setfinancetype(0);
 										}
-										$typeclass = $detail->getfinancetype();
+										$typeclass = $detail->getfinancetype();*/
+										$typeclass = 'newhasloan';
 										$data = array('0'=>'No', '1'=>'Yes');						  
 										$capitalradio = new Zend_Form_Element_Radio('financetype_'.$i,
 												  array(
@@ -1457,6 +1476,7 @@ select.unitselect {
 							$("#financetype_<?php echo $i; ?>-1").click(function(){
 								enableContainerByClass("hasloan_<?php echo $i; ?>");
 							});
+							$("#financetype_<?php echo $i; ?>-0").click();
 						});
 					</script>
                     </span>

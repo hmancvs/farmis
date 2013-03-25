@@ -4,7 +4,11 @@ Dear <?php echo $this->firstname; ?>,<br /><br />
 
 You recently requested to change your <?php echo $this->appname; ?> Email Address to '<?php echo $this->toemail; ?>'.<br /><br />
 
-To confirm this request, click on the activation link below:<br />
+To confirm this request, you will have to enter the activation key below under account settings:<br />
+
+Code: <?php echo $this->code; ?><br /><br />
+
+Alternatively, click on the activation link below:<br />
 
 <?php echo $this->activationurl; ?><br /><br />
 

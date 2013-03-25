@@ -24,15 +24,17 @@
 		if(!isArrayKeyAnEmptyString('id', $formvalues)){
 			$id = $formvalues['id']; 
 		}
-	} 
+	}
 	
+	$isgroupclerk = false;
+	$isfarmer = true;
+		
+	$farmer = new Farmer();
 	$phoneobj = new UserPhone();
 	$farmerid = decode($request->profile);
 	// debugMessage('farmer is '.$farmerid);
 	if(!isEmptyString($farmerid)){
-		$farmer = new Farmer();
 		$farmer->populate($farmerid);
-		
 		$firstname = $farmer->getFirstName();
 		$lastname = $farmer->getLastName();
 		$username = $farmer->getUser()->getUserName(); 
@@ -62,8 +64,6 @@
 			$birthmonth = date('m', strtotime($farmer->getUser()->getDateOfBirth())); 
 		}
 				
-		$isgroupclerk = false;
-		$isfarmer = true;
 		$country = $farmer->getUser()->getAddress()->getCountry();
 		# check if person is a farm group manager
 		if(!isEmptyString($farmer->getFarmGroupID())){
@@ -78,6 +78,7 @@
 		$posturl = $this->baseUrl("signup/processinvite"); 
 	}
 	$this->headTitle($pagetile); 
+	
 ?>
 <script>
 	$(document).ready(function() {
@@ -374,6 +375,7 @@
 		
 	}); 
 </script>
+
 <style>
 body.publicbody #contentcolumn {
 	padding-left:15px;

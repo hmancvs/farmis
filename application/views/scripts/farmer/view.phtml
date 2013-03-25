@@ -63,7 +63,45 @@
 	if(isEmptyString($request->tab)) {
 		$request->setParam('tab', 'basics');
 	}
+	
+	if($request->tab == 'contacts' || $request->tab == 'account') {
+		$userphone = $farmer->getUser()->getPrimaryPhone();
+		$phone = getShortPhone($userphone->getPhone());
+		$userphoneid = $userphone->getID();
+		
+		$validated = false;
+		$valid_text = '';
+		if(!isEmptyString($phone)){
+			$valid_text = '&nbsp; (Unconfirmed)';
+		}
+		$allowrevalidate = false;
+		if(!isEmptyString($phone) && $userphone->isValidated()){
+			$validated = true;
+			$valid_text = '&nbsp; <span class="pagedescription" style="color:#55A411;">(Validated)</span';
+		}
+		if($userphone->hasPendingActivation()){
+			$allowrevalidate = true;
+		}
+		
+		$userphone2 = $farmer->getUser()->getSecondaryPhone();
+		$altphone = getShortPhone($userphone2->getPhone());
+		$userphone2id = $userphone2->getID(); 
+		
+		$svalidated = false;
+		$svalid_text = '';
+		if(!isEmptyString($altphone)){
+			$svalid_text = '&nbsp; (Unconfirmed)';
+		}
+		$sallowrevalidate = false;
+		if($userphone2->isValidated()){
+			$svalidated = true;
+			$svalid_text = '&nbsp; <span class="pagedescription" style="color:#55A411;">(Validated)</span';
+		}
+		if($userphone2->hasPendingActivation()){
+			$sallowrevalidate = true;
+		}
 
+	}
 	$loadgps = false;
 	$title = $farmer->getName();
 	$this->headTitle($title);
@@ -115,6 +153,66 @@ $(document).ready(function() {
 			}
 		});
 	<?php } ?>
+	<?php if($request->tab == 'account'){ ?>
+		$("#confirmemail").click(function(){
+			var code = $("#code").val();
+			var id = $(this).attr('userid');
+			var ref = $(this).attr('ref');
+			
+			var validcode = true;
+			var clength = code.length;
+			if(isEmptyString(code) || (!isEmptyString(code) && clength < 6)) {
+				$("div#code_email_error").html('<div class="alert alert-error">Please enter 6 digit code</div>');
+				$("div.alert-error").css({'background': 'url("<?php echo $this->baseUrl('images/cross.png'); ?>") no-repeat #EDDBE3 5px 8px'});
+				validcode = false;
+			}
+			// check that email is provided
+			if(validcode) {
+				$("div#code_email_error").html('');
+				var url = '<?php echo $this->baseUrl("profile/changeemail"); ?>/id/'+id+'/actkey/'+code+'/ref/'+ref;
+				// alert(url);
+				window.location.href = url;
+			}
+		});
+		
+		$("#confirmphone").click(function(){
+			var code = $("#code").val();
+			var id = $(this).attr('userid');
+			var ref = $(this).attr('ref');
+			
+			var validcode = true;
+			var clength = code.length;
+			if(isEmptyString(code) || (!isEmptyString(code) && clength < 6)) {
+				$("div#code_phone_error").html('<div class="alert alert-error">Please enter 6 digit code</div>');
+				$("div.alert-error").css({'background': 'url("<?php echo $this->baseUrl('images/cross.png'); ?>") no-repeat #EDDBE3 5px 8px'});
+				validcode = false;
+			}
+			// check that email is provided
+			if(validcode) {
+				$("div#code_phone_error").html('');
+				var url = '<?php echo $this->baseUrl("profile/changephone"); ?>/id/'+id+'/actkey/'+code+'/ref/'+ref;
+				// alert(url);
+				window.location.href = url;
+			}
+		});
+		
+		$('.changesetting').click(function(){
+			var farmerid = $(this).attr('farmerid');
+			var field = $(this).attr('field');
+			var value = $(this).val();
+			// alert(farmerid+' - '+field+' - '+value);
+			var url = '<?php echo $this->baseUrl("farmer/changesettings"); ?>/farmerid/'+farmerid+'/field/'+field+'/value/'+value; 
+			// alert(url);
+			$.post( 
+				url,  
+				function(data){
+					//  alert(data); return false;
+					$("#"+field+"_wait").addClass('hidden');
+				}  
+			); // close the $.post
+			$("#"+field+"_wait").removeClass('hidden');								
+		});
+	<?php } ?>
 	
 }); 
 </script>
@@ -130,6 +228,7 @@ $(document).ready(function() {
 .alert.alert-success {
 	width:90%;
 }
+
 </style>
 <!--<h1><?php //echo $title; ?></h1>-->
 <div id="tabs">
@@ -294,34 +393,12 @@ $(document).ready(function() {
                             <table class="table">
                                 <tr>
                                     <td width="50%"><label class="control-label">Phone:</label>
-                                    	<?php
-											$phone = $farmer->getUser()->getPhone();
-											$userphone = $farmer->getUser()->getPrimaryPhone();
-											$userphoneid = $userphone->getID();
-											
-											$validated = false;
-											$valid_text = '';
-											if(!isEmptyString($phone)){
-												$valid_text = '&nbsp; (Unconfirmed)';
-											}
-											$allowrevalidate = false;
-											if($userphone->isValidated()){
-												$validated = true;
-												$valid_text = '&nbsp; <span class="pagedescription" style="color:#55A411;">(Validated)</span';
-											}
-											if($userphone->hasPendingActivation()){
-												$allowrevalidate = true;
-											}
-										?>
-										<?php echo isEmptyString($phone) ? '--' : $phone; ?> 
-										<?php echo $valid_text; ?>
+										<?php echo isEmptyString($phone) ? '--' : $phone; ?><?php echo $valid_text; ?>
                                         <?php if(!$validated && $allowrevalidate){ ?>
                                         	<a href="javascript: void(0);<?php //echo $this->baseUrl('farmer/validatephone/userphoneid/'.encode($userphoneid).'/pgc/true'); ?>" class="xaddpopup" rel="Re-send Validation Code" title="Re-send Validation Code" id="xvalidate" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmer/view/id/'.encode($farmer->getID()).'/tab/contacts'); ?>" action="<?php echo $this->baseUrl("farmer/processvalidatephone"); ?>" submittext="Request Code">Re-send</a>
                                         <?php } ?>
                                         <?php if(!$validated && !$allowrevalidate && !isEmptyString($phone)){ ?>
-                                        	<?php //if(!isEmptyString($userphone->getPhone())){ ?>
                                             <a style="display:block; margin-top:10px;" href="<?php echo $this->baseUrl('farmer/validatephone/userphoneid/'.encode($userphoneid).'/pgc/true'); ?>" class="btn btn-primary btn-mini addpopup width100" rel="Validate Phone" title="Validate Mobile Phone" id="validate" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmer/view/id/'.encode($farmer->getID()).'/tab/contacts'); ?>" action="<?php echo $this->baseUrl("farmer/processvalidatephone"); ?>" submittext="Request Code">Validate Phone</a>
-                                            <?php //} ?>
                                         <?php } ?>
                                         <?php if(!$validated && $allowrevalidate){ ?>
                                         	<span class="phone_before" id="phone_before_<?php echo $userphoneid; ?>">
@@ -339,33 +416,15 @@ $(document).ready(function() {
                                         <?php } ?>
                                     </td>
                                     <td><label class="control-label">Alt Phone:</label>
-                                    	<?php
-											$altphone = $farmer->getUser()->getAltPhone();
-											$userphone2id = $farmer->getUser()->getSecondaryPhone()->getID();
-											
-											$validated = false;
-											$valid_text = '';
-											if(!isEmptyString($altphone)){
-												$valid_text = '&nbsp; (Unconfirmed)';
-											}
-											$allowrevalidate = false;
-											if($farmer->getUser()->getSecondaryPhone()->isValidated()){
-												$validated = true;
-												$valid_text = '&nbsp; <span class="pagedescription" style="color:#55A411;">(Validated)</span';
-											}
-											if($farmer->getUser()->getSecondaryPhone()->hasPendingActivation()){
-												$allowrevalidate = true;
-											}
-										?>
-                                        <?php echo isEmptyString($altphone) ? '--' : $altphone; ?> 
-                                        <?php echo $valid_text; ?>
-                                        <?php if(!$validated && $allowrevalidate && !isEmptyString($altphone)){ ?>
-                                        	<a href="<?php echo $this->baseUrl('farmer/validatephone/userphoneid/'.encode($userphone2id).'/pgc/true'); ?>" class="addpopup" rel="Re-send Validation Code" title="Re-send Validation Code" id="validate" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmer/view/id/'.encode($farmer->getID()).'/tab/contacts'); ?>" action="<?php echo $this->baseUrl("farmer/processvalidatephone"); ?>" submittext="Request Code">Re-send</a>
+                                        <?php echo isEmptyString($altphone) ? '--' : $altphone; ?> <?php echo $svalid_text; ?>
+                                        <?php if(!$svalidated && $sallowrevalidate && !isEmptyString($altphone)){ ?>
+                                        	
+                                        	<a href="javascript:void(0)<?php //echo $this->baseUrl('farmer/validatephone/userphoneid/'.encode($userphone2id).'/pgc/true'); ?>" class="xaddpopup" rel="Re-send Validation Code" title="Re-send Validation Code" id="validate" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmer/view/id/'.encode($farmer->getID()).'/tab/contacts'); ?>" action="<?php echo $this->baseUrl("farmer/processvalidatephone"); ?>" submittext="Request Code">Re-send</a>
                                         <?php } ?>
-                                        <?php if(!$validated && !$allowrevalidate && !isEmptyString($altphone)){ ?>
+                                        <?php if(!$svalidated && !$sallowrevalidate && !isEmptyString($altphone)){ ?>
                                             <a style="display:block; margin-top:10px;" href="<?php echo $this->baseUrl('farmer/validatephone/userphoneid/'.encode($userphone2id).'/pgc/true'); ?>" class="btn btn-primary btn-mini addpopup width100" rel="Validate Phone" title="Validate Mobile Phone" id="validate" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmer/view/id/'.encode($farmer->getID()).'/tab/contacts'); ?>" action="<?php echo $this->baseUrl("farmer/processvalidatephone"); ?>" submittext="Request Code">Validate Phone</a>
                                         <?php } ?>
-                                        <?php if(!$validated && $allowrevalidate && !isEmptyString($altphone)){ ?>
+                                        <?php if(!$svalidated && $sallowrevalidate && !isEmptyString($altphone)){ ?>
                                         	<span class="phone_before" id="phone_before_<?php echo $userphoneid; ?>">
                                             	<input type="text" name="phone_<?php echo $userphone2id; ?>" id="phone_<?php echo $userphone2id; ?>" placeholder="enter 6 digit code" title="Confirm Phone" value="" maxlength="6" class="validate validate_<?php echo $userphone2id; ?>" />
                                                 <a href="javascript:doNothing();" class="btn btn-primary btn-mini validatetrigger" id="validate_<?php echo $userphone2id; ?>" title="Confirm Phone" successurl="<?php echo encode($this->baseUrl('farmer/view/id/'.encode($farmer->getID()).'/tab/contacts')); ?>"><i class="icon-envelope icon-white"></i> Confirm</a>
@@ -392,7 +451,7 @@ $(document).ready(function() {
 												<?php echo isEmptyString($farmer->getUser()->getEmail()) ? '--' : $farmer->getUser()->getEmail(); ?>
                                             <?php } else { ?>
                                                     <span class="inv_before" id="inv_before_<?php echo $id; ?>" style="margin-top:2px;">
-                                                        <input type="text" name="email_<?php echo $id; ?>" id="email_<?php echo $id; ?>" placeholder="enter email" title="Invite <?php echo $farmer->getFirstName(); ?> to join FARMREC" value="<?php echo $farmer->getUser()->getEmail(); ?>" class="invite invite_<?php echo $id; ?>" style="width:230px;" /><br />
+                                                        <input type="text" name="email_<?php echo $id; ?>" id="email_<?php echo $id; ?>" placeholder="enter email" title="Invite <?php echo $farmer->getFirstName(); ?> to join FARMIS" value="<?php echo $farmer->getUser()->getEmail(); ?>" class="invite invite_<?php echo $id; ?>" style="width:230px;" /><br />
                                                         <a href="javascript:doNothing();" class="btn btn-primary btn-mini invitetrigger" style="margin-top:5px;" id="invite_<?php echo $id; ?>" title="Invite <?php echo $farmer->getFirstName(); ?> to join <?php echo $this->translate('appname'); ?>"><i class="icon-envelope icon-white"></i> Invite</a>
                                                         <label class="hide invite_<?php echo $id; ?>" title="<?php echo $id; ?>"><?php echo $id; ?></label>                            
                                                         <div id="invite_<?php echo $id; ?>_error" style="margin-top:4px;"></div>
@@ -692,53 +751,7 @@ $(document).ready(function() {
             	<?php } ?>
             </form>
         </div>
-        <div id="account">
-            <h2>Account Settings</h2>
-            <form id="profileform-account" class="form-horizontal account">
-                <?php if($request->tab == 'account'){ ?>
-                <div class="row" style="margin-left:0px;">
-                    <span class="span6 marginleft0" style="width:72%;">
-                        <div class="well row marginleft0" style="min-height:150px; padding-left:10px;">     
-                        <h3 class="well-legend">Login Identity</h3>                   
-                            <table class="table">
-                                <tr>		  
-                                    <td></td>
-                                </tr>
-                            </table>
-                        </div>
-                    </span>
-                    <span class="span3 pull-right" style="width:22%; margin-right:20px; ">
-                        <div class="well row" style="min-height:150px;">
-                            <h3 class="well-legend">Quick Links</h3>
-                            <table class="table">  
-								
-                            </table>                            
-                        </div>
-                    </span>		
-                </div>
-                <div class="well row marginleft0" style="min-height:100px; width:94%;">
-                    <h3 class="well-legend">Notification Settings</h3>
-                    <table class="table">                       
-                       <tr>		                    
-                            <td>
-                                
-                            </td>
-                       </tr>
-                    </table>
-                </div>
-                <div class="well row marginleft0" style="min-height:150px; width:94%;">
-                    <h3 class="well-legend">Prefferences</h3>
-                    <table class="table">                       
-                       <tr>		                    
-                            <td>
-                                
-                            </td>
-                       </tr>
-                    </table>
-                </div>
-                <?php } ?>
-            </form>
-        </div>
+        <?php require APPLICATION_PATH."/views/scripts/farmer/settings.phtml"; ?>
     </div> 
 </div>
 <?php

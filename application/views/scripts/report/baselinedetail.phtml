@@ -2,7 +2,7 @@
 	require_once APPLICATION_PATH.'/includes/header.php';
 	require_once(APPLICATION_PATH.'/../'.PUBLICFOLDER.'/dompdf/dompdf_config.inc.php');
 		
-	$title = "Farmrec Baseline Detailed Report";
+	$title = "Farmis Baseline Detailed Report";
 	// meta data
 	$this->headTitle($title); 
 	
@@ -262,7 +262,7 @@ pdfquicklinks {
 					$farmis_logo = APPLICATION_PATH.DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR."public".DIRECTORY_SEPARATOR."images".DIRECTORY_SEPARATOR.'logo_gray.png';
 					$infotrade_logo = APPLICATION_PATH.DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR."public".DIRECTORY_SEPARATOR."images".DIRECTORY_SEPARATOR.'logo_infotrade.png';
 				}
-				$infotrade_logo = ''; $farmis_logo ='';
+				// $infotrade_logo = ''; $farmis_logo ='';
 				$html .= '
 				<div>
                   	<table style="margin-top:10px; height:auto; width:100%;">
@@ -290,7 +290,7 @@ pdfquicklinks {
                                             <td><label class="control-label nowrapping">Description / Services:</label>'.$description.'</td>
                                         </tr>
                                         <tr>
-                                            <td><label class="control-label">Date Registered on Farmrec:</label>'.$regdate.'</td> 
+                                            <td><label class="control-label">Date Registered on Farmis:</label>'.$regdate.'</td> 
                                             <td><label class="control-label">Farming Since:</label>'.$farmingdate.'</td> 
                                         </tr>
 										<tr>

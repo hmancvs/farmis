@@ -7,7 +7,10 @@ class LookupType extends BaseEntity  {
 		
 		$this->setTableName('lookuptype');
 		$this->hasColumn('name', 'string', 50, array('notnull' => true, 'unique' => true, 'notblank' => true));
-		$this->hasColumn('description', 'string', 255, array('notnull' => true, 'default' => '', 'length' => '255'));
+		$this->hasColumn('displayname', 'string', 50, array('notnull' => true, 'notblank' => true));
+		$this->hasColumn('description', 'string', 255);
+		$this->hasColumn('listable', 'integer', null, array('default' => 1));
+		$this->hasColumn('updatable', 'integer', null, array('default' => 1));
 	}
 	
 	public function setUp() {
@@ -94,6 +97,21 @@ class LookupType extends BaseEntity  {
 		
 		return $conn->fetchOne($sql); 
 	}
-	
+	# return all the variable data 
+	function getAllDataValues() {
+		$conn = Doctrine_Manager::connection(); 
+		$resultvalues = $conn->fetchAll("SELECT * FROM lookuptypevalue WHERE lookuptypeid = '".$this->getID()."' order by lookupvaluedescription asc ");
+		return $resultvalues;	
+	}
+	function getNextInsertIndex(){
+		$conn = Doctrine_Manager::connection(); 
+		$resultvalues = $conn->fetchOne("SELECT lookuptypevalue FROM lookuptypevalue WHERE lookuptypeid = '".$this->getID()."' order by CAST(lookuptypevalue AS SIGNED) desc limit 1 ");
+		
+		return intval($resultvalues)+1;
+	}
+	# determine if lookup value is updateble
+	function updatesAllowed() {
+		return $this->getupdatable() == 1 ? true : false;
+	}
 }
 ?>

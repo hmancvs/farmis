@@ -66,14 +66,14 @@
         <?php if(isAdmin() && $isInnerPage){ ?>
             <li id="farmgroup" class="<?php echo ($request->getControllerName() == 'farmer' && $request->getActionName() == 'list') ? 'active' : ''; ?>"><a href="<?php echo $this->baseUrl('farmer/list'); ?>" class="" id=""><span>Farmers</span></a></li>
             <li id="farmgroup" class="<?php echo ($request->getControllerName() == 'farmgroup') ? 'active' : ''; ?>">
-                <a href="<?php echo $this->baseUrl('farmgroup/list'); ?>"><span>DNA Profiles</span></a>
+                <a href="<?php echo $this->baseUrl('farmgroup/list'); ?>"><span>Group Profiles</span></a>
             </li>
         <?php } ?>
         <?php if(isFarmGroupAdmin() && $isInnerPage){ 
 			$farmgroup = new FarmGroup();
 			$farmgroup->populate($farmer->getFarmGroupID());
 		?>
-			<li id="farmgroup" class="<?php echo ($request->getControllerName() == 'farmgroup') ? 'active' : ''; ?>"><a href="<?php echo $this->baseUrl('farmgroup/view/id/'.encode($farmer->getFarmGroupID())); ?>" class="" id=""><span>DNA Profile</span></a></li>
+			<li id="farmgroup" class="<?php echo ($request->getControllerName() == 'farmgroup') ? 'active' : ''; ?>"><a href="<?php echo $this->baseUrl('farmgroup/view/id/'.encode($farmer->getFarmGroupID())); ?>" class="" id=""><span>Group Profile</span></a></li>
             <li id="farmgroup" class="<?php echo ($request->getControllerName() == 'farmer' && $request->getActionName() == 'list') ? 'active' : ''; ?>"><a href="<?php echo $this->baseUrl('farmer/list/farmgroupid/'.$farmer->getFarmGroupID()); ?>" class="" id=""><span>Farmers</span></a></li>
 		<?php } ?>  
         <?php if($isInnerPage){ ?>
@@ -83,20 +83,23 @@
             <li id="reports" class="<?php echo ($request->getControllerName() == 'report') ? 'active' : ''; ?>">
                 <a href="<?php echo $this->baseUrl('report/overview'); ?>"><span>Reports</span></a>	
             </li>
-            <?php // if(isFarmer()){ ?>
             <li id="inbox" style="width:98px;" class="<?php echo ($request->getControllerName() == 'message') ? 'active' : ''; ?>">
-            	<a href="<?php echo $this->baseUrl('message/list'); ?>" title="Inbox: <?php echo $unread_messages; ?> Unread" style="padding-right:20px; padding-left:0; position:relative; float:left; width:70%;"><span style="">Inbox </span><label class="error" style="background-image:none; float:right; position:absolute; right:3px; top:1px; padding:2px 8px 2px 8px;"><?php echo $unread_messages; ?></label></a>	
+            	<a href="<?php echo $this->baseUrl('message/list'); ?>" title="Inbox: <?php echo $unread_messages; ?> Unread" style="text-align:left;"><span style="">Inbox </span><label class="error" style="background-image:none; float:right; position:absolute; right:15px; top:1px; padding:2px 8px 2px 8px;"><?php echo $unread_messages; ?></label></a>	
             </li>
-            <?php // } ?>
+        <?php } ?>
+        <?php if(!$isInnerPage && !isEmptyString($session->getVar('userid'))){ ?>
+        	<li id="faqs'" class="<?php echo ($request->getControllerName() == 'faqs') ? 'active' : ''; ?>">
+                <a href="<?php echo $this->baseUrl('faqs'); ?>"><span>Help Center</span></a>	
+            </li>
         <?php } ?>
         <?php if(isEmptyString($session->getVar('userid'))){ ?>
-        <li id="forum" class="<?php echo ($request->getControllerName() == 'communityforum' || $request->getControllerName() == 'forum') ? 'active' : ''; ?>">
-            <a href="<?php echo $this->baseUrl('forum'); ?>"><span>Community Forum</span></a>	
-        </li>
+            <li id="forum" class="<?php echo ($request->getControllerName() == 'communityforum' || $request->getControllerName() == 'forum') ? 'active' : ''; ?>">
+                <a href="<?php echo $this->baseUrl('forum'); ?>"><span>Community Forum</span></a>	
+            </li>
         <?php } else { ?>
-        <li id="forum" class="<?php echo ($request->getControllerName() == 'communityforum' || $request->getControllerName() == 'forum') ? 'active' : ''; ?>">
-            <a href="<?php echo $this->baseUrl('communityforum/list'); ?>"><span>Community Forum</span></a>	
-        </li>
+            <li id="forum" class="<?php echo ($request->getControllerName() == 'communityforum' || $request->getControllerName() == 'forum') ? 'active' : ''; ?>">
+                <a href="<?php echo $this->baseUrl('communityforum/list'); ?>"><span>Community Forum</span></a>	
+            </li>
         <?php } ?>
     </ul>
 </div>
@@ -154,7 +157,7 @@ ul.mainnav li > a {
 <?php } ?>
 .subnavbar.loggedin#thenav ul.mainnav li > a {
 	color:#f9f9f9;
-	padding: 7px 14px 8px 14px;
+	padding: 7px 12px 7px 12px;
 	font-size:17px;
 }
 <?php if($islinux){ ?>
@@ -197,7 +200,7 @@ ul.mainnav li:hover a, ul.mainnav li.active a  {
 	color:#fff;   
 	background-color:#585858 ;
 	border:solid 2px #787878;
-	padding: 10px 12px 12px 12px;
+	padding: 8px 12px 10px 12px;
 	-webkit-border-radius: 3px;
 	-moz-border-radius: 3px;
 	border-radius: 3px;
@@ -209,7 +212,7 @@ ul.mainnav li:hover a, ul.mainnav li.active a  {
 	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#808080', endColorstr='#585858', GradientType=0);
 }
 .subnavbar.loggedin#thenav ul.mainnav li:hover > a, .subnavbar.loggedin#thenav ul.mainnav li.active > a {
-	padding: 6px 12px 7px 12px;
+	padding: 5px 10px 7px 10px;
 }
 ul.mainnav ul.submenu  {
 	width:98%;

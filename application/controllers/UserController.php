@@ -150,15 +150,57 @@ class UserController extends IndexController  {
     public function processrecoverpasswordAction(){
     	$this->_helper->layout->disableLayout();
 		$this->_helper->viewRenderer->setNoRender(TRUE);
+		$formvalues = $this->_getAllParams();
+		$session = SessionWrapper::getInstance();
 		
 		// debugMessage($this->_getAllParams());
-    	if (!isEmptyString($this->_getParam('email'))) {
+    	if (!isEmptyString($formvalues['email'])) {
     		// process the password recovery 
     		$user = new UserAccount(); 
-    		$user->setEmail($this->_getParam('email')); 
-    		
+    		$useraccount = new UserAccount(); 
+    		// $user->setEmail($this->_getParam('email')); 
+	    	# check which field user is using to login. default is username
+			$credcolumn = "username";
+	    	$login = (string)$formvalues['email'];
+	    	
+	    	# check if credcolumn is phone 
+	    	if(strlen($login) == 10 && is_numeric(substr($login, -6, 6))){
+	    		$credcolumn = 'phone';
+	    	}
+	    	
+	    	# check if credcolumn is emai
+	    	$validator = new Zend_Validate_EmailAddress();
+			if ($validator->isValid($login)) {
+	        	$credcolumn = 'email';
+	        }
+        	// debugMessage($credcolumn);
+        	$userfond = false;
+	        switch ($credcolumn) {
+	        	case 'email':
+	        		if($useraccount->findByEmail($formvalues['email'])){
+	        			$userfond = true;
+	        			// debugMessage($useraccount->toArray());
+	        		}
+	        		break;
+	        	case 'phone':
+	        		$useraccount = $user->populateByPhone(getFullPhone($formvalues['email']));
+	        		if(!isEmptyString($useraccount->getID())){
+	        			$userfond = true;
+	        			// debugMessage($useraccount->toArray());
+	        		}
+	        		break;
+	        	case 'username':
+	       			if($useraccount->findByUsername($formvalues['email'])){
+	        			$userfond = true;
+	        			// debugMessage($useraccount->toArray());
+	        		}
+	        		break;
+	        	default:
+	        		break;
+	        }
     		// debugMessage($user->toArray());
-    		if ($user->recoverPassword()) {
+	        if(!isEmptyString($useraccount->getID())){
+    			$useraccount->recoverPassword();
     			// send a link to enable the user to recover their password 
     			$this->_helper->redirector->gotoUrl($this->view->baseUrl("user/recoverpasswordconfirmation"));	
     		} else {
@@ -187,6 +229,7 @@ class UserController extends IndexController  {
     public function processresetpasswordAction(){
     	$this->_helper->layout->disableLayout();
 		$this->_helper->viewRenderer->setNoRender(TRUE);
+		$session = SessionWrapper::getInstance(); 
 		// debugMessage($this->_getAllParams());
 		$user = new UserAccount(); 
     	$user->populate(decode($this->_getParam('id')));
@@ -194,7 +237,8 @@ class UserController extends IndexController  {
     	
    		if ($user->resetPassword($this->_getParam('password'))) {
     		// send a link to enable the user to recover their password 
-    		$this->_helper->redirector->gotoUrl($this->view->baseUrl("user/resetpasswordconfirmation/id/".$this->_getParam('id')));
+    		$session->setVar(SUCCESS_MESSAGE, "Sucessfully saved. You can now log in using your new Password");
+    		$this->_helper->redirector->gotoUrl($this->view->baseUrl("user/login"));
     	} else {
     		// echo "cannot reset password"; 
     		// send an error message that no user with that email was found 
@@ -203,7 +247,6 @@ class UserController extends IndexController  {
     		$session->setVar(FORM_VALUES, $this->_getAllParams());
     		$this->_helper->redirector->gotoUrl(decode($this->_getParam(URL_FAILURE)));
     	}
-    	// exit();
     }
     public function resetpasswordconfirmationAction() {}
     
@@ -225,31 +268,7 @@ class UserController extends IndexController  {
 	public function changeemailAction(){
      	$this->_helper->layout->disableLayout();
 		$this->_helper->viewRenderer->setNoRender(TRUE);
-		$session = SessionWrapper::getInstance(); 
 		
-		$formvalues = $this->_getAllParams();
-		// debugMessage($formvalues);
-		
-		$newemail = decode($formvalues['ref']);
-		$contactid = $formvalues['cid'];
-		
-		$user = new UserAccount();
-		$user->populate(decode($formvalues['id']));
-		
-		$user->setActivationKey('');
-		$user->setEmail($newemail);
-		$user->getFarmer()->setEmail($newemail);
-		$user->save();
-		// debugMessage($user->toArray());
-		
-		$contact = new Contact();
-    	$contact->populate($contactid);
-    	$contact->setUnConfirmed(NULL);
-    	$contact->setIsPrimary(1);
-    	$contact->save();
-		
-    	$this->clearSession();
-   		$this->_helper->redirector->gotoUrl($this->view->baseUrl('user/login/refmsg/1'));
     }
 }
 

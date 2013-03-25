@@ -50,108 +50,13 @@ body.publicbody #contentcolumn {
 	background:none;
 }
 
-#logincontainer {
-	width:70%;
-	margin:15px auto;
-	padding:10px 20px;
-	border:solid 2px #cacaca;
-	background-color:#fff;
-	min-height:400px;
-	height:auto;
-	-webkit-box-shadow: 0 6px 8px rgba(0, 0, 0, 0.25), inset 0 -1px 0 rgba(0, 0, 0, 0.1);
- 	-moz-box-shadow: 0 6px 8px rgba(0, 0, 0, 0.25), inset 0 -1px 0 rgba(0, 0, 0, 0.1);
- 	box-shadow: 0 6px 8px rgba(0, 0, 0, 0.25), inset 0 -1px 0 rgba(0, 0, 0, 0.1);
-}
-#loginleft {
-	list-style:none;
-	margin:10px 0 0 0;
-	padding:0;
-}
-#loginleft li {
-	display:block;
-	margin:0;
-	padding:0 5px 5px 50px;
-	height:auto;
-	position:relative;
-	font-family:'calibri','Telex',sans-serif;
-	border-bottom:solid 1px #ebebeb;
-}
-#loginleft li:last-child {
-	border-bottom:none;
-}
-#loginleft li img {
-	position:absolute;
-	left:0;
-	top:10px;
-}
-#loginleft li span {
-	display:block;
-	padding-left:20px;
-}
-#loginleft li span h2 {
-	font-size:16px;
-	font-family:'calibri','Telex',sans-serif;
-}
-#loginleft li span label {
-	display:block;
-	font-size:16px;
-	color:#848282;
-	width:100%;
-}
-#logintable {
-	width:auto; 
-}
-#loginform {
-	width:300px; 
-	background-color:#f4f4f4; 
-	min-height:330px;
-	height:auto;
-	khtml-border-radius: 4px; 
-	-moz-border-radius: 4px; 
-	-opera-border-radius: 4px; 
-	-webkit-border-radius: 4px; 
-	border-radius: 4px;
-	border:solid 1px #e4e4e4;
-	padding-left:15px;
-}
-#loginform input {
-	width:250px;
-	padding:6px 8px;
-	margin-top:5px;
-}
-span.green {
-	color:#5CB114;
-}
 </style>
 <div id="logincontainer">
 	<h1 class="calfont" style="font-weight:bold; font-size:20px; border-bottom:1px solid #bdbdbd; color:#333333; padding:5px;">Welcome Back to <?php echo $this->translate('appname'); ?></h1>
     <table style="width:100%; margin:0;">
     	<tr>
         	<td style="width:50%; vertical-align:top;">
-            	<label id="intro" class="calfont" style="color:#595757; font-size:18px; margin:0; line-height:22px;">FARMIS is the easy way to manage your <br /> agricultural business online allowing you to <br />quickly evaluate your income and expenses.</label>
-                <ul id="loginleft">
-                	<li>
-                    	<img src="<?php echo $this->baseUrl('images/login1.png'); ?>" />
-                        <span>
-                        	<h2>Capture Activities</h2>
-                            <label>Start a season and capture all the activities that you want to track...</label>
-                        </span>
-                    </li>
-                    <li>
-                    	<img src="<?php echo $this->baseUrl('images/login2.png'); ?>" />
-                        <span>
-                        	<h2>Track Expenditures</h2>
-                            <label>Find out how much overhead is incured by your farming business...</label>
-                        </span>
-                    </li>
-                    <li>
-                    	<img src="<?php echo $this->baseUrl('images/login3.png'); ?>" />
-                        <span>
-                        	<h2>Find Anything Fast</h2>
-                            <label>Search for anything you want to know about your business and find it easily...</label>
-                        </span>
-                    </li>
-                </ul>
+            	<?php require APPLICATION_PATH."/views/scripts/user/leftwidget.phtml"; ?>
             </td>
             <td style="padding-left:15px; padding-top:0; vertical-align:top;">
             	<table id="logintable">

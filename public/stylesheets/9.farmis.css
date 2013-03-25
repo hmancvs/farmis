@@ -1167,6 +1167,9 @@ ul#datalist > li:nth-child(odd), ul.datalist > li:nth-child(odd) {
 .actionbuttons {
 	position:relative;
 }
+.makerelative {
+	position:relative;
+}
 /*auto complete*/
 .ac_results {
 	padding: 0px;
@@ -1410,7 +1413,8 @@ ul.sectionitems li a h2 {
 	font-style:20px;
 }
 ul.sectionitems li a.list img {
-	width: 48px; 
+	/*width: 48px; */
+	width:auto;
 }
 ul.sectionitems li:hover {
 	background: url("../images/listitem_on.png");
@@ -1939,4 +1943,115 @@ div.sectionfooter {
 	width:100%; 
 	height:250px;
 	margin-top:0;
+}
+/* Login, reset and change password pages */
+#logincontainer {
+	width:70%;
+	margin:15px auto;
+	padding:10px 20px;
+	border:solid 2px #cacaca;
+	background-color:#fff;
+	min-height:400px;
+	height:auto;
+	-webkit-box-shadow: 0 6px 8px rgba(0, 0, 0, 0.25), inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+ 	-moz-box-shadow: 0 6px 8px rgba(0, 0, 0, 0.25), inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+ 	box-shadow: 0 6px 8px rgba(0, 0, 0, 0.25), inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+}
+#loginleft {
+	list-style:none;
+	margin:10px 0 0 0;
+	padding:0;
+}
+#loginleft li {
+	display:block;
+	margin:0;
+	padding:0 5px 5px 50px;
+	height:auto;
+	position:relative;
+	font-family:'calibri','Telex',sans-serif;
+	border-bottom:solid 1px #ebebeb;
+}
+#loginleft li:last-child {
+	border-bottom:none;
+}
+#loginleft li img {
+	position:absolute;
+	left:0;
+	top:10px;
+}
+#loginleft li span {
+	display:block;
+	padding-left:20px;
+}
+#loginleft li span h2 {
+	font-size:16px;
+	font-family:'calibri','Telex',sans-serif;
+}
+#loginleft li span label {
+	display:block;
+	font-size:16px;
+	color:#848282;
+	width:100%;
+}
+#logintable {
+	width:auto; 
+}
+#loginform {
+	width:300px; 
+	background-color:#f4f4f4; 
+	min-height:330px;
+	height:auto;
+	khtml-border-radius: 4px; 
+	-moz-border-radius: 4px; 
+	-opera-border-radius: 4px; 
+	-webkit-border-radius: 4px; 
+	border-radius: 4px;
+	border:solid 1px #e4e4e4;
+	padding-left:15px;
+}
+#loginform input {
+	width:250px;
+	padding:6px 8px;
+	margin-top:5px;
+}
+span.green {
+	color:#5CB114;
+}
+
+.radio,
+.checkbox {
+    min-height: 18px;
+    padding-left: 18px;
+}
+.radio input[type="radio"],
+.checkbox input[type="checkbox"] {
+    float: left;
+    margin-left: -18px;
+}
+.controls > .radio:first-child,
+.controls > .checkbox:first-child {
+    padding-top: 5px;
+}
+.radio.inline,
+.checkbox.inline {
+    display: inline-block;
+    padding-top: 5px;
+    margin-bottom: 0;
+    vertical-align: middle;
+}
+.radio.inline + .radio.inline,
+.checkbox.inline + .checkbox.inline {
+    margin-left: 10px;
+}
+.radio.btn-group input[type=radio] {
+    display: none;
+}
+.radio.btn-group > label:first-of-type {
+    margin-left: 0;
+    -webkit-border-bottom-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+    -webkit-border-top-left-radius: 4px;
+    border-top-left-radius: 4px;
+    -moz-border-radius-bottomleft: 4px;
+    -moz-border-radius-topleft: 4px;
 }

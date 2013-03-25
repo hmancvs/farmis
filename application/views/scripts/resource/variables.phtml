@@ -1,0 +1,202 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+		
+	$lookuptype = new LookupType();
+	
+	$lookupid = $request->type;
+	$nextindex = '';
+	if(!isEmptyString($lookupid)){
+		$lookuptype->populate($lookupid);
+		$nextindex = $lookuptype->getNextInsertIndex();
+	}
+	// debugMessage($lookuptype->toArray());
+	
+	$title = "System Variables";
+	$this->headTitle($title); 
+?>
+<script>
+$(document).ready(function(){
+	
+	$(".updatevalue").click(function(){
+		var rowid = $(this).attr('rowid');
+		$("#html_"+rowid).css({'display':'block'});
+		$("#text_"+rowid).css({'display':'none'});
+		$("tr#lookup_"+rowid).removeClass('editable');
+	});
+	$(".cancel_edit").click(function(){
+		var rowid = $(this).attr('rowid');
+		$("#html_"+rowid).css({'display':'none'});
+		$("#text_"+rowid).css({'display':'block'});
+		$("tr#lookup_"+rowid).addClass('editable');
+	});
+	
+	// adding new items
+	$("#save").click(function(){
+		// alert('adding new');
+		var id = '';
+		var lookupid = $(this).attr('theid');
+		var value = $("#newvalue").val();
+		var index = '<?php echo $nextindex; ?>';
+		if(isEmptyString(value)) {
+			$("div#add_error").html('<div class="alert alert-error">Please enter value</div>');
+			$("div.alert-error").css({'background': 'url("<?php echo $this->baseUrl('images/cross.png'); ?>") no-repeat #EDDBE3 5px 8px'});
+			return false;
+		} else {
+			$(this).hide();
+			$("#wait_0").show();
+			var url = '<?php echo $this->baseUrl("resource/processvariable"); ?>/id/'+id+'/lookupid/'+lookupid+'/value/'+value+'/index/'+index;
+			// alert(url);
+			window.location.href = url;
+		}
+	});
+	// updating item
+	$(".update").click(function(){
+		// alert('adding new');
+		var id = $(this).attr('theid');
+		var lookupid = '<?php echo $lookuptype->getID(); ?>';
+		var value = $("#newvalue_"+id).val();
+		var index = $(this).attr('index');
+		if(isEmptyString(value)) {
+			$("div#add_error").html('<div class="alert alert-error">Please enter value</div>');
+			$("div.alert-error").css({'background': 'url("<?php echo $this->baseUrl('images/cross.png'); ?>") no-repeat #EDDBE3 5px 8px'});
+			return false;
+		} else {
+			$(this).hide(); $('#cancel_'+id).hide();
+			$("#wait_"+id).show();
+			var url = '<?php echo $this->baseUrl("resource/processvariable"); ?>/id/'+id+'/lookupid/'+lookupid+'/value/'+value+'/index/'+index;
+			// alert(url);
+			window.location.href = url;
+		}
+	});
+	
+	$(".filtertyppe").click(function(){
+		var imageurl = '<?php echo $this->baseUrl('images/farmisloader.gif'); ?>';
+		$("#contents").html("<a id='loading' class='xhidden' style='text-align:center; display:block; margin-top:75px;'><span style='display:block; margin-bottom:15px; font-weight:bold;'>Loading...</span><img style='margin-left:-10px;' src='<?php echo $this->baseUrl('images/farmisloader.gif'); ?>' /></a>").css({'display':'block'});
+	});
+});
+</script>
+<style>
+span.rounded {
+	-webkit-border-radius: 5px;
+	-moz-border-radius: 5px;
+	border-radius: 5px;
+}
+span.edit, .buttons {
+	display:none;
+}
+.table tbody tr.editable:hover td .buttons {
+	display:block;
+}
+</style>
+<?php require APPLICATION_PATH."/views/scripts/index/leftcolumn.phtml"; ?>
+    <div id="centercolumn">
+        <div class="widgetsection" style="min-height:850px; height:auto;">
+            <h3 style="color:#282727;"><?php echo $title; ?></h3>
+            
+            <div style="margin-top:10px;">
+                <span class="margin0 rounded" style="width:30%; float:left; border:1px solid #bababa;">
+                    <h2 style="padding-left:10px;">All Variable Types</h2>
+                    <div style="height:740px; overflow:scroll;"><ul class="nav nav-tabs nav-stacked margin5">
+                    	<?php 
+							$lists = getAllists();
+							// debugMessage($lists);
+						?>
+                        <?php foreach($lists as $key => $value){ ?>
+                        	<li class="filtertyppe"><a href="<?php echo $this->baseUrl('resource/variables/type/'.$value['id']); ?>"><?php echo $value['name']; ?></a></li>
+                        <?php } ?>
+                    </ul>
+                    </div>
+                </span>
+                <span class="margin0" style="width:67%; float:right;">
+                    <!--<div style="height:60px; width:100%;">
+                    
+                    </div>-->
+                    <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+                        <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+                    <?php } ?>	
+                    <?php if($sessionhaserror) { ?>
+                        <div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+                    <?php } ?>
+                    <div style="width:100%; border:1px solid #bababa; height:740px; overflow:scroll;">
+                        <?php if(isEmptyString($lookuptype->getID())){ ?>
+                        	<h3 class="well-legend">Select a Type to show values</h3>
+                        <?php } else { ?>
+                        	<h3 class="well-legend"><?php echo $lookuptype->getDisplayName(); ?></h3>
+                        <?php } ?>
+                        <div id="contents">
+                            <table class="table table-stripped table-bordered hasheader" style="margin:5px; width:98%;">
+                                <thead>
+                                    <tr>
+                                        <td style="width:20px;" class="centeralign">#</td>
+                                        <td>Display Value</td>
+                                        <td style="width:90px;">System Value</td>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php 
+                                        $itemvalues = $lookuptype->getAllDataValues();
+                                        // debugMessage($itemvalues);
+                                        $x = 1;
+                                        foreach($itemvalues as $value){
+                                    ?>
+                                    <tr id="lookup_<?php echo $value['id']; ?>" class="editable">
+                                        <td class="centeralign"><?php echo $x; ?></td>
+                                        <td>
+                                            <div style="position:relative;">
+                                                <span class="display" id="text_<?php echo $value['id']; ?>"><?php echo $value['lookupvaluedescription']; ?></span>
+                                                <span class="edit" id="html_<?php echo $value['id']; ?>">
+                                                    <input type="text" name="newvalue_<?php echo $value['id']; ?>" id="newvalue_<?php echo $value['id']; ?>" class="" style="width:65%; padding:4px;" value="<?php echo $value['lookupvaluedescription']; ?>" />
+                                                    <label class="pull-right">
+                                                        <a href="javascript:void(0)" id="save_<?php echo $value['id']; ?>" theid="<?php echo $value['id']; ?>" index="<?php echo $value['lookuptypevalue']; ?>" class="btn btn-primary btn-mini lineblocked padding5 update" title="Update Item" ><i class="icon-ok icon-white"></i> Save</a>&nbsp;<a href="javascript:void(0)" style="font-size:10px;" class="cancel_edit" id="cancel_<?php echo $value['id']; ?>" rowid="<?php echo $value['id']; ?>">Cancel</a>
+                                                        <label class="hidden margin0 padding0" id="wait_<?php echo $value['id']; ?>" style="position:absolute; right:0; top:0;">
+                                                            <span class="pagedescription">wait...</span>
+                                                            <img style="margin-left:0; width:26px;" src="<?php echo $this->baseUrl('images/farmisloader.gif'); ?>" />
+                                                        </label>
+                                                    </label>
+                                                    <div id="add_error_<?php echo $value['id']; ?>" class="margin0" style=""></div>
+                                                </span>
+                                                <?php if($lookuptype->updatesAllowed()){ ?>
+                                                <div class="buttons" id="buttons_<?php echo $value['id']; ?>" style="position:absolute; right:0; top:0;">
+                                                    <a href="javascript:void(0)" id="updatevalue_<?php echo $value['id']; ?>" rowid="<?php echo $value['id']; ?>" class="updatevalue btn btn-mini" title="Update Value"><i class="icon-pencil"></i></a>
+                                                    <a href="javascript:void(0)" id="deletevalue_<?php echo $value['id']; ?>" rowid="<?php echo $value['id']; ?>" class="deletevalue btn btn-mini deleteline removeline" title="Delete Value" action="<?php echo $this->baseUrl('resource/delete/id/'.$value['id']."/entityname/LookupTypeValue/successurl/".encode($this->baseUrl('resource/variables/type/'.$lookuptype->getID()))); ?>"><i class="icon-remove"></i></a>
+                                                </div>
+                                                <?php } ?>
+                                            </div>
+                                        </td>
+                                        <td class="centeralign"><?php echo $value['lookuptypevalue']; ?></td>
+                                    </tr>
+                                    <?php $x++;} ?>
+                                    <?php if($lookuptype->updatesAllowed() && !isEmptyString($lookuptype->getID())){ ?>
+                                        <tr>
+                                            <td class="centeralign"><?php echo $x; ?></td>
+                                            <td>
+                                                <div style="position:relative;">
+                                                    <input type="text" name="newvalue" id="newvalue" class="" style="width:70%; padding:4px;" />&nbsp;
+                                                    <label class="pull-right">
+                                                        <a href="javascript:void(0)" id="save" theid="<?php echo $lookuptype->getID(); ?>" class="btn btn-primary btn-mini lineblocked padding5" title="Save New Item" ><i class="icon-ok icon-white"></i> Add</a>
+                                                        <label class="margin0 padding0 hidden" id="wait_0" style="position:absolute; right:0; top:0;">
+                                                            <span class="pagedescription">wait...</span>
+                                                            <img style="margin-left:0; width:26px;" src="<?php echo $this->baseUrl('images/farmisloader.gif'); ?>" />
+                                                        </label>
+                                                    </label>
+                                                    <div id="add_error" class="margin0" style=""></div>
+                                                </div>
+                                            </td>
+                                            <td class="centeralign"><?php echo $x; ?></td>
+                                        </tr>
+                                    <?php } ?>
+                                </tbody>
+                            </table>
+							<?php if(!$lookuptype->updatesAllowed()){ ?>
+                                <div class="alert alert-info" style="margin:10px;">Updates to this variable are currently disabled. <br />Contact Super Admin</div>
+                            <?php } ?>
+						</div>
+                    </div>
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

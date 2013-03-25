@@ -409,5 +409,41 @@ class IndexController extends Zend_Controller_Action  {
     	if(!isEmptyString($this->_getParam(PAGE_CONTENTS_ONLY))) { 
     		$this->_helper->layout->disableLayout();
     	}
+    }
+    
+    public function addsuccessAction(){
+		$session = SessionWrapper::getInstance(); 
+     	$this->_helper->layout->disableLayout();
+		$this->_helper->viewRenderer->setNoRender(TRUE);
+		$formvalues = $this->_getAllParams();
+		
+		$session->setVar(SUCCESS_MESSAGE, "Successfully added");
+   		if(!isArrayKeyAnEmptyString('successmessage', $formvalues)){
+			$session->setVar(SUCCESS_MESSAGE, decode($formvalues['successmessage']));
+		}
+    } 
+    
+	public function profileupdatesuccessAction(){
+		$session = SessionWrapper::getInstance(); 
+     	$this->_helper->layout->disableLayout();
+		$this->_helper->viewRenderer->setNoRender(TRUE);
+		$formvalues = $this->_getAllParams();
+		
+		$session->setVar(SUCCESS_MESSAGE, "Profile successfully updated");
+		if(!isArrayKeyAnEmptyString('successmessage', $formvalues)){
+			$session->setVar(SUCCESS_MESSAGE, decode($formvalues['successmessage']));
+		}
+    }
+    
+	public function updatesuccessAction(){
+		$session = SessionWrapper::getInstance(); 
+     	$this->_helper->layout->disableLayout();
+		$this->_helper->viewRenderer->setNoRender(TRUE);
+		$formvalues = $this->_getAllParams();
+		
+		$session->setVar(SUCCESS_MESSAGE, "Successfully updated");
+		if(!isArrayKeyAnEmptyString('successmessage', $formvalues)){
+			$session->setVar(SUCCESS_MESSAGE, decode($formvalues['successmessage']));
+		}
     } 
 }

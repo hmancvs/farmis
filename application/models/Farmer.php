@@ -693,9 +693,9 @@ class Farmer extends BaseEntity {
 		# new subscription
 		$subscription = new Subscription();
 		$subscription->setUserID($this->getUserID());
-		$subscription->setMembershipPlanID($this->getUser()->getMembershipPlanID());
+		$subscription->setPlanID($this->getUser()->getMembershipPlanID());
 		$startdate = date("Y-m-d");	
-		$expirydate = date("Y-m-d", strtotime(date("Y-m-d", strtotime($startdate)) . " +".$plan->getTrialDays()." days "));
+		$expirydate = date("Y-m-d", strtotime(date("Y-m-d", strtotime($startdate)) . " +".$plan->getUsageDays()." days "));
 		$subscription->setStartDate($startdate);
 		$subscription->setEndDate($expirydate);
 		$subscription->setIsTrial(1);
@@ -787,7 +787,7 @@ class Farmer extends BaseEntity {
 
 		// assign values
 		$template->assign('firstname', isEmptyString($this->getFirstName()) ? 'Friend' : $this->getFirstName());
-		$template->assign('inviter', isEmptyString($this->getInvitedByID()) ? 'FARMREC Admin' : $this->getInvitedBy()->getName() );
+		$template->assign('inviter', isEmptyString($this->getInvitedByID()) ? 'FARMIS Admin' : $this->getInvitedBy()->getName() );
 		// the actual url will be built in the view
 		$viewurl = $template->serverUrl($template->baseUrl('signup/index/profile/'.encode($this->getID())."/")); 
 		$template->assign('invitelink', $viewurl);
@@ -891,7 +891,7 @@ class Farmer extends BaseEntity {
 		$template->assign('subject', $dataarray['subject']);
 		$template->assign('message', nl2br($dataarray['message']));
 		
-		$mail->setSubject("New FARMREC Contact Us Message: ".$dataarray['subject']);
+		$mail->setSubject("New FARMIS Contact Us Message: ".$dataarray['subject']);
 		// set the send of the email address
 		$mail->setFrom($dataarray['email'], $dataarray['name']);
 		
@@ -1052,7 +1052,7 @@ class Farmer extends BaseEntity {
 	function getSignupInviteContent(){
 		$template = new Zend_View();
 		$signup_url = $template->serverUrl($template->baseUrl('signup/activate'));
-		return "Dear ".$this->getUser()->getFirstName().", \nYour FARMREC activation code is: ".$this->getUser()->getActivationKey()." \nGo to ".$signup_url." and enter this code to complete.";
+		return "Dear ".$this->getUser()->getFirstName().", \nYour FARMIS activation code is: ".$this->getUser()->getActivationKey()." \nGo to ".$signup_url." and enter this code to complete.";
 	} 
 	# determine level of completion for primary profile
 	function getStep1_1_Status(){

@@ -101,7 +101,13 @@ class Farm extends BaseEntity {
 								'local' => 'historyid',
 								'foreign' => 'id'
 							)
-		);
+					);
+		$this->hasMany('FarmPreseasonDetail as preseasonlines',
+						 array(
+								'local' => 'id',
+								'foreign' => 'farmid'
+							)
+					);
 	}
 	
 	/**
@@ -243,13 +249,14 @@ class Farm extends BaseEntity {
 					// debugMessage($value);
 					if(!isArrayKeyAnEmptyString('cropid_'.$key, $formvalues)){
 						$cropdetails[$key]['cropid'] = $formvalues['cropid_'.$key];
+						$cropdetails[$key]['farmid'] = $formvalues['id'];
 						if(!isArrayKeyAnEmptyString('id_'.$key, $formvalues)){
 							$cropdetails[$key]['id'] = $formvalues['id_'.$key];
 						}
 						if(!isArrayKeyAnEmptyString('historyid', $formvalues)){
 							$cropdetails[$key]['preseasonid'] = $formvalues['historyid'];
 						} else {
-							$cropdetails[$key]['preseasonid'] = NULL;
+							unset($cropdetails[$key]['preseasonid']);
 						}
 						if(!isArrayKeyAnEmptyString('fieldsizeunit_'.$key, $formvalues)){
 							$cropdetails[$key]['fieldsizeunit'] = $formvalues['fieldsizeunit_'.$key];
@@ -493,6 +500,14 @@ class Farm extends BaseEntity {
     	# save changes 
     	if($update){
     		$this->save();
+    	}
+    	
+    	if(!isEmptyString($this->getHistoryID())){
+    		$detail = $this->getPreseasonLines()->get(0);
+	    	if(!isEmptyString($detail->getID()) && isEmptyString($detail->getPreseasonID())){
+	    		$detail->setPreseasonID($this->getHistoryID());
+	    		$detail->save();
+	    	}
     	}
     	// exit();
     	return true;

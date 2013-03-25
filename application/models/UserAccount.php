@@ -180,9 +180,9 @@ class UserAccount extends BaseEntity {
 			$username = $this->getUsername();
 		}
 		$query = "SELECT id FROM useraccount WHERE username = '".$username."' AND username <> '' ".$id_check;
-		// debugMessage($ref_query);
+		// debugMessage($query);
 		$result = $conn->fetchOne($query);
-		// debugMessage($ref_result);
+		// debugMessage($result);
 		if(isEmptyString($result)){
 			return false;
 		}
@@ -437,34 +437,26 @@ class UserAccount extends BaseEntity {
 	 * 
 	 * @param String $providedpassword The password provided on the screen
 	 * @param String $newpassword The new password
-     * @param boolean $verify Verify whether the provided password is the same as the user's current password
 	 *
 	 * @return TRUE if the password is changed, FAlSE if it fails to change the user's password.
 	 */
-	function changePassword($providedpassword, $newpassword, $verify = true){
-		// check if the provided password is the same as that for the user
-      	if ($verify) {
-          /*if ($this->getPassword() != sha1($providedpassword)) {
-              $this->getErrorStack()->add("oldpassword.invalid", $this->translate->_("useraccount_oldpassword_invalid_error"));
-              return false;
-          }*/
-          }
+	function changePassword($providedpassword, $newpassword){
 		// now change the password
 		$this->setPassword(sha1($newpassword));
       	$this->setActivationKey('');
       	
       	try {
-      	$this->save();
-      	# Log to audit trail that a password has been changed.
+      		$this->save();
+      		# Log to audit trail that a password has been changed.
 			$audit_values = array("transactiontype" => USER_CHANGE_PASSWORD, "userid" => $this->getID(), "executedby" => $this->getID(), "success" => 'Y');
 			$audit_values['transactiondetails'] = $this->getName()." changed account password";
-			$this->notify(new sfEvent($this, USER_CHANGE_PASSWORD, $audit_values));
+			// $this->notify(new sfEvent($this, USER_CHANGE_PASSWORD, $audit_values));
       	
       	} catch (Exception $e){
       		# Log to audit trail that user has failed to change password
 			$audit_values = array("transactiontype" => USER_CHANGE_PASSWORD, "userid" => $this->getID(), "executedby" => $this->getID(), "success" => 'N');
 			$audit_values['transactiondetails'] = $this->getName()." failed to change account password". $e->getMessage();
-			$this->notify(new sfEvent($this, USER_CHANGE_PASSWORD, $audit_values));
+			// $this->notify(new sfEvent($this, USER_CHANGE_PASSWORD, $audit_values));
       	}
 		return true;
 	}
@@ -482,11 +474,11 @@ class UserAccount extends BaseEntity {
 		}
 		
 		# check that the user's email exists and that they are signed up
-		if(!$this->findByEmail($this->getEmail())){
+		/*if(!$this->findByEmail($this->getEmail())){
 			$audit_values['transactiondetails'] = "Recovery of password for '".$this->getEmail()."' failed - user not found";
-			$this->notify(new sfEvent($this, USER_RECOVER_PASSWORD, $audit_values));
+			// $this->notify(new sfEvent($this, USER_RECOVER_PASSWORD, $audit_values));
 			return false;
-		}
+		}*/
 			
 		# reset the password and set the next password change date
 		$this->setActivationKey($this->generateActivationKey());
@@ -501,7 +493,7 @@ class UserAccount extends BaseEntity {
 		$audit_values['userid'] = $this->getID(); 
 		$audit_values['transactiondetails'] = "Password Recovery link for '".$this->getEmail()."' sent to '".$this->getEmail()."'";
 		$audit_values['success'] = 'Y';
-		$this->notify(new sfEvent($this, USER_RECOVER_PASSWORD, $audit_values));
+		// s$this->notify(new sfEvent($this, USER_RECOVER_PASSWORD, $audit_values));
 		
 		return true;
 	}
@@ -516,7 +508,9 @@ class UserAccount extends BaseEntity {
 		// assign values
 		$template->assign('firstname', $this->getFirstName());
 		// just send the parameters for the activationurl, the actual url will be built in the view 
-		$template->assign('resetpasswordurl', array("controller"=> "user","action"=> "resetpassword", "actkey" => $this->getActivationKey(), "id" => encode($this->getID())));
+		// $template->assign('resetpasswordurl', array("controller"=> "user","action"=> "resetpassword", "actkey" => $this->getActivationKey(), "id" => encode($this->getID())));
+		$viewurl = $template->serverUrl($template->baseUrl('user/resetpassword/id/'.encode($this->getID())."/actkey/".$this->getActivationKey()."/")); 
+		$template->assign('resetpasswordurl', $viewurl);
 		
 		$mail->clearRecipients();
 		$mail->clearSubject();
@@ -556,7 +550,7 @@ class UserAccount extends BaseEntity {
 			# Log to audit trail when an invalid activation key is used to activate account
 			$audit_values = array("executedby" => $this->getID(), "transactiontype" => USER_SIGNUP, "success" => "N");
 			$audit_values["transactiondetails"] = "Invalid Activation Code specified for User(".$this->getID().") (".$this->getEmail()."). "; 
-			$this->notify(new sfEvent($this, USER_SIGNUP, $audit_values));
+			// $this->notify(new sfEvent($this, USER_SIGNUP, $audit_values));
 			$this->getErrorStack()->add("user.activationkey", $this->translate->_("useraccount_invalid_actkey_error"));
 			return false;
 		}
@@ -596,36 +590,24 @@ class UserAccount extends BaseEntity {
 			}
 			
 			# set subscription entry for user
-			# current plan
-			$plan = new MembershipPlan();
-			$plan->populate($this->getMembershipPlanID());
-			# new subscription
-			$subscription = new Subscription();
-			$subscription->setUserID($this->getID());
-			$subscription->setMembershipPlanID($this->getMembershipPlanID());
-			$startdate = date("Y-m-d");	
-			$expirydate = date("Y-m-d", strtotime(date("Y-m-d", strtotime($startdate)) . " +".$plan->getTrialDays()." days "));
-			$subscription->setStartDate($startdate);
-			$subscription->setEndDate($expirydate);
-			$subscription->setIsTrial(1);
-			$subscription->setIsActive(1);
-			$subscription->save();
+			$this->getFarmer()->setNewSubscription();
 			// debugMessage($subscription->toArray());
 			
 			# Add to audittrail that a new user has been activated.
 			$audit_values = array("executedby" => $this->getID(), "transactiontype" => USER_SIGNUP, "success" => "Y");
 			$audit_values["transactiondetails"] = $this->getID()." (".$this->getEmail().") has completed the sign up process"; 
-			$this->notify(new sfEvent($this, USER_SIGNUP, $audit_values));
+			// $this->notify(new sfEvent($this, USER_SIGNUP, $audit_values));
 		
 			return true;
 			
 		} catch (Exception $e){
 			$this->getErrorStack()->add("user.activation", $this->translate->_("useraccount_activation_error"));
 			$this->logger->err("Error activating useraccount ".$this->getEmail()." ".$e->getMessage());
+			// debugMessage($e->getMessage());
 			# log to audit trail when an error occurs in updating payee details on user account
 			$audit_values = array("executedby" => $this->getID(), "transactiontype" => USER_SIGNUP, "success" => "N");
 			$audit_values["transactiondetails"] = "An error occured in activating account for User(".$this->getID().") (".$this->getEmail()."): ".$e->getMessage(); 
-			$this->notify(new sfEvent($this, USER_SIGNUP, $audit_values));
+			// $this->notify(new sfEvent($this, USER_SIGNUP, $audit_values));
 			return false;
 		}
    	}
@@ -698,7 +680,7 @@ class UserAccount extends BaseEntity {
 			# log to audit trail when an error occurs in updating payee details on user account
 			$audit_values = array("executedby" => $this->getID(), "transactiontype" => USER_SIGNUP, "success" => "N");
 			$audit_values["transactiondetails"] = "An error occured in activating account for ".$this->getFirstName()." ".$this->getLastName(). " (".$this->getEmail()."). ".$e->getMessage(); 
-			$this->notify(new sfEvent($this, USER_SIGNUP, $audit_values));
+			// $this->notify(new sfEvent($this, USER_SIGNUP, $audit_values));
 			return false;
 		}
    }
@@ -760,8 +742,8 @@ class UserAccount extends BaseEntity {
 	function getSignupAccountConfirmationContent(){
 		$baseUrl = Zend_Controller_Front::getInstance()->getBaseUrl();
 		$contactus_url = $baseUrl.'/contactus';
-		$password_url = $baseUrl.'/farmer/view/id/'.encode($this->getPersonID().'/tab/account');
-		return "Dear ".$this->getFirstName().", <br /><br />Your FARMREC Account has been successfully activated. You can now login anytime using either Email, Phone or Username with the password you provided during registration. <br /><br /> You can also change your password anytime by <a href='".$password_url."' title='Change Password'>clicking here</a>.  <br /><br />For any help or assistance, <a href='".$contactus_url."'>Contact us</a> ";
+		$password_url = $baseUrl.'/farmer/view/id/'.encode($this->getFarmerID().'/tab/account');
+		return "Dear ".$this->getFirstName().", <br /><br />Your FARMIS Account has been successfully activated. You can now login anytime using either Email, Phone or Username with the password you provided during registration. <br /><br /> You can also change your password anytime by <a href='".$password_url."' title='Change Password'>clicking here</a>.  <br /><br />For any help or assistance, <a href='".$contactus_url."'>Contact us</a> ";
 	}
 	# set activation code to change user's email
 	function triggerEmailChange($newemail) {
@@ -845,7 +827,7 @@ class UserAccount extends BaseEntity {
 		return true;
 	}
 	# change email notification to new address
-	function sendNewEmailNotification($newemail, $contactid) {
+	function sendNewEmailNotification($newemail) {
 		$template = new EmailTemplate(); 
 		# create mail object
 		$mail = getMailInstance(); 
@@ -854,7 +836,8 @@ class UserAccount extends BaseEntity {
 		$template->assign('firstname', $this->getFirstName());
 		$template->assign('fromemail', $this->getEmail());
 		$template->assign('toemail', $newemail);
-		$viewurl = $template->serverUrl($template->baseUrl('user/changeemail/id/'.encode($this->getID())."/actkey/".$this->getActivationKey()."/cid/".$contactid."/ref/".encode($newemail)."/"));
+		$template->assign('code', $this->getActivationKey());
+		$viewurl = $template->serverUrl($template->baseUrl('profile/changeemail/id/'.encode($this->getID())."/actkey/".$this->getActivationKey()."/ref/".encode($newemail)."/"));
 		$template->assign('activationurl', $viewurl);
 		
 		$mail->clearRecipients();
@@ -869,7 +852,7 @@ class UserAccount extends BaseEntity {
 		$mail->setSubject("Email Change Request");
 		// render the view as the body of the email
 		$mail->setBodyHtml($template->render('changeemail_newnotification.phtml'));
-		// debugMessage($template->render('changeemail_newnotification.phtml')); // exit();
+		// debugMessage($template->render('changeemail_newnotification.phtml')); exit();
 		$mail->send();
 		
 		$mail->clearRecipients();
@@ -881,7 +864,7 @@ class UserAccount extends BaseEntity {
 	}
 	
 	# change email notification to old address
-	function sendOldEmailNotification($newemail, $contactid) {
+	function sendOldEmailNotification($newemail) {
 		$template = new EmailTemplate(); 
 		# create mail object
 		$mail = getMailInstance(); 
@@ -980,8 +963,8 @@ class UserAccount extends BaseEntity {
 		$c->addComponent('p', 'u.phones p');
 		
 		$user_phone = $c->execute();
-		// debugMessage($user_phone->toArray());
-		return $user_phone;
+		// debugMessage($user_phone->get(0)->toArray());
+		return $user_phone->get(0);
 	}
 	function findByUsername($username) {
 		# query active user details using email

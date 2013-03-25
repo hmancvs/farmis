@@ -1,4 +1,3 @@
-
 <?php
 	require_once APPLICATION_PATH.'/includes/header.php';
 		
@@ -27,38 +26,43 @@
 </style>
 <?php require APPLICATION_PATH."/views/scripts/index/leftcolumn.phtml"; ?>
     <div id="centercolumn">
-        <div class="widgetsection" style="min-height:460px; height:auto;">
+        <div class="widgetsection" style="min-height:600px; height:auto;">
             <h3 style="color:#282727;"><?php echo $title; ?></h3>
             <div>
                 <span class="marginleft0">
                     <ul class="sectionitems">
                         <li>
-                            <a class="list" href="<?php echo $this->baseUrl('contact/list'); ?>" title="Business Directory"><img src="<?php echo $this->baseUrl('images/topmenu_market.png'); ?>" /><br /><h2>Business Directory</h2></a>
+                            <a class="list" href="<?php echo $this->baseUrl('contact/list'); ?>" title="Business Directory"><img src="<?php echo $this->baseUrl('images/icon_directory.png'); ?>" /><br /><h2>Business Directory</h2></a>
                         </li>
                         <?php if(isFarmer()){ ?>
                         <li>
-                            <a class="list" href="<?php echo $inventoryurl; ?>" title="Inventory"><img src="<?php echo $this->baseUrl('images/topmenu_market.png'); ?>" /><br /><h2>Inventory</h2></a>
+                            <a class="list" href="<?php echo $inventoryurl; ?>" title="Inventory"><img src="<?php echo $this->baseUrl('images/icon_inventory.png'); ?>" /><br /><h2>Inventory</h2></a>
                         </li>
                         <?php } ?>
                         <?php if(isAdmin()){ ?>
                         <li>
-                            <a class="list" href="<?php echo $this->baseUrl('commodity/list'); ?>" title="Manage Commodities"><img src="<?php echo $this->baseUrl('images/topmenu_market.png'); ?>" /><br /><h2>Manage Commodities</h2></a>
+                            <a class="list" href="<?php echo $this->baseUrl('commodity/list'); ?>" title="Manage Commodities"><img src="<?php echo $this->baseUrl('images/icon_commodity.png'); ?>" /><br /><h2>Commodities</h2></a>
                         </li>
                         <?php } ?>
                         <li>
-                            <a class="list" href="<?php echo $this->baseUrl("resource/allprices"); ?>" title="Market Prices"><img src="<?php echo $this->baseUrl('images/topmenu_market.png'); ?>" /><br /><h2>Current Market Prices</h2></a>
+                            <a class="list" href="<?php echo $this->baseUrl("resource/allprices"); ?>" title="Market Prices"><img src="<?php echo $this->baseUrl('images/icon_price.png'); ?>" /><br /><h2>Current Market Prices</h2></a>
                         </li>
                         <?php if(isAdmin()){ ?>
                         <li>
-                            <a class="list" href="<?php echo $this->baseUrl('resource/listvariables'); ?>" title="System Variables"><img src="<?php echo $this->baseUrl('images/topmenu_market.png'); ?>" /><br /><h2>System Variables</h2></a>
+                            <a class="list" href="<?php echo $this->baseUrl('resource/variables'); ?>" title="System Variables"><img src="<?php echo $this->baseUrl('images/icon_variable.png'); ?>" /><br /><h2>System Variables</h2></a>
                         </li>
                         <?php } ?>
                         <?php if(isAdmin() || isFarmGroupAdmin()){ ?>
                         <li>
-                            <a class="list" href="<?php echo $this->baseUrl('message/massmail'); ?>" title="Mass Mail"><img src="<?php echo $this->baseUrl('images/topmenu_market.png'); ?>" /><br /><h2>Mass Mail</h2></a>
+                            <a class="list" href="<?php echo $this->baseUrl('resource/massmail'); ?>" title="Mass Mail"><img src="<?php echo $this->baseUrl('images/icon_mail.png'); ?>" /><br /><h2>Mass Mail</h2></a>
                         </li>
                         <li>
-                            <a class="list" href="<?php echo $this->baseUrl('message/massmail'); ?>" title="Bulk Sms"><img src="<?php echo $this->baseUrl('images/topmenu_market.png'); ?>" /><br /><h2>Bulk Sms</h2></a>
+                            <a class="list" href="<?php echo $this->baseUrl('resource/bulksms'); ?>" title="Bulk Sms"><img src="<?php echo $this->baseUrl('images/icon_sms.png'); ?>" /><br /><h2>Bulk Sms</h2></a>
+                        </li>
+                        <?php } ?>
+                        <?php if(isAdmin()){ ?>
+                        <li>
+                            <a class="list" href="<?php echo $this->baseUrl('resource/locations'); ?>" title="Locations"><img src="<?php echo $this->baseUrl('images/icon_location.png'); ?>" /><br /><h2>Locations</h2></a>
                         </li>
                         <?php } ?>
                     </ul>

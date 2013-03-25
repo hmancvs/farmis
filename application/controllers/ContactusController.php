@@ -17,7 +17,7 @@ class ContactusController extends IndexController  {
 		// $farmer->tellFriendsNotification($data);
 		if($farmer->sendContactNotification($formvalues)){
 			// after send events
-			$session->setVar(SUCCESS_MESSAGE, "Thank you for your interest in the FARMREC program. We shall be getting back to you shortly.");
+			$session->setVar(SUCCESS_MESSAGE, "Thank you for your interest in the FARMIS program. We shall be getting back to you shortly.");
 			
 			$this->_redirect($this->view->baseUrl('contactus/index/result/success'));
 		} else {
@@ -73,7 +73,7 @@ class ContactusController extends IndexController  {
 			$tellfriend->setMessage($formvalues['subject']."<br /><br />".$formvalues['message']);
 			$tellfriend->save();
 			
-			$session->setVar(SUCCESS_MESSAGE, "Thank you for your interest in the FARMREC program.");
+			$session->setVar(SUCCESS_MESSAGE, "Thank you for your interest in the FARMIS program.");
 			$this->_redirect($this->view->baseUrl('contactus/tellfriend/result/success'));
 			
 		} else {

@@ -62,7 +62,7 @@
 	$has_no_data = (count($result) == 0) ? true : false; 
 	// debugMessage($result);
 	
-	$infotrade_logo = ''; $farmis_logo ='';
+	// $infotrade_logo = ''; $farmis_logo ='';
 ?>
 <script>
 $(document).ready(function() {
@@ -320,7 +320,7 @@ pdfquicklinks {
                     <td style="width:105px;">
                     	<label class="control-label">Crops:</label>
                         <?php
-							$availablecrops = getFarmrecCommodities();
+							$availablecrops = getFarmisCommodities();
 							$cropdropdown = new Zend_Form_Element_Select('u'.HTML_TABLE_COLUMN_SEPARATOR.'cropid',
 												array(
 													'multiOptions' => array_merge_maintain_keys(array('' => 'All'), $availablecrops),								
