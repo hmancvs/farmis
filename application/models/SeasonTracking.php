@@ -253,7 +253,7 @@ class SeasonTracking extends BaseEntity  {
 	}
 	# determine credit history for activity
 	function getCreditDetails() {
-    	$q = Doctrine_Query::create()->from('loan l')->where("l.trackingid = '".$this->getID()."'");
+    	$q = Doctrine_Query::create()->from('Loan l')->where("l.trackingid = '".$this->getID()."'");
 		$result = $q->execute();
 		return $result->get(0);
 	}

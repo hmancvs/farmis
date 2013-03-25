@@ -59,7 +59,7 @@ class UserController extends IndexController  {
 	    		$audit_values['transactiondetails'] = "Login for user with email '".$this->_getParam("email")."' failed. Invalid username or password";
 				$this->notify(new sfEvent($this, USER_LOGIN, $audit_values));
 				
-				$session->setVar(ERROR_MESSAGE, "Invalid Email Address, Phone or Password. <br />Please Try Again."); 
+				$session->setVar(ERROR_MESSAGE, "Invalid Identity or Password. <br />Please Try Again."); 
 				$session->setVar(FORM_VALUES, $this->_getAllParams());
 				// return to the home page
 	    		$this->_helper->redirector->gotoSimple('login', "user");

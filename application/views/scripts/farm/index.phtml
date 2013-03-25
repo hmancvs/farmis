@@ -17,7 +17,8 @@
 	}
 	
 	$thefarmid = $farm->getID();
-	
+	$theaddress = $farm->getAddresses()->get(0);
+		
 	if(!isEmptyString($request->farmerid)){
 		$farmer = new Farmer();
 		$farmer->populate(decode($request->farmerid));
@@ -30,7 +31,6 @@
 			$hasmultiplefarms = true;
 		}
 		
-		$theaddress = $farm->getAddresses()->get(0);
 		$useraddress = $farmer->getUser()->getAddresses()->get(0);
 		if(!isEmptyString($useraddress->getID())){
 			
@@ -120,6 +120,7 @@ $(document).ready(function() {
 			}
 			return true;
 		}, "Should'nt be after today");
+		
 		
 		$(".savethenview").hide();
 		// chained select to load the counties for a district
