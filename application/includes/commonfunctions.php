@@ -243,17 +243,19 @@ function sendTestMessage($subject = "", $message = "") {
 	
 	# get an instance of the PHP Mailer
 	$from_email = $mailer->getDefaultFrom(); 
-	$mailer->AddTo($from_email['email']);
+	// $mailer->AddTo($from_email['email']);
 	$mailer->AddTo("hmanmstw@gmail.com");
 	
 	$mailer->setSubject($subject);
 	$mailer->setBodyHTML($message);
 	try {
 		$result = $mailer->send();
-		//debugMessage("The email sending result is ".$result);
-		if (! $result) {
+		// debugMessage("The email sending result is ".$result);
+		if (!$result) {
 			# Log the error
 			echo "an error occured while sending the message " . $mailer->ErrorInfo;
+		} else {
+			debugMessage("message sent to ".APPLICATION_ENV);
 		}
 	} catch ( Exception $e ) {
 		debugMessage("Error sending email ".$e);
@@ -812,7 +814,9 @@ function _is_curl_installed() {
     }
 }
 function clean_num($num){
-	// return trim(trim($num, '0'), '.');
+	if(isEmptyString($num)){
+		return '';		
+	}
 	return rtrim(rtrim(number_format($num, 2, ".", ""), '0'), '.');
 }
 // function to covert simple xml to an array

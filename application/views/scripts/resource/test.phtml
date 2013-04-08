@@ -1,0 +1,50 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+		
+	$message = new Message(); 
+	
+	$posturl = $this->baseUrl("message/processbulksms");
+	
+	$user = new UserAccount();
+	$user->populate($userid);
+		
+	$farmer = new Farmer();
+	$farmer->populate($farmerid);
+	
+	$farmid = $farmer->getFarms()->get(0)->getID();
+	
+	$title = "Test Search";
+	$this->headTitle($title); 
+?>
+<script>
+$(document).ready(function(){
+	
+});
+</script>
+<style>
+
+</style>
+<?php require APPLICATION_PATH."/views/scripts/index/leftcolumn.phtml"; ?>
+    <div id="centercolumn">
+        <div class="widgetsection" style="min-height:625px; height:auto;">
+            <h3 style="color:#282727;"><?php echo $title; ?></h3>
+            <div style="margin-top:10px;">
+               
+               <table class="table">                       
+                    <tr>
+                        <td>  
+                        <form id="massmailform" action="<?php echo $posturl; ?>" method="post">                      
+                            
+                        </form>
+                        </td>
+                   </tr>
+                   
+               </table> 
+               
+            </div>
+        </div>
+    </div>
+</div>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

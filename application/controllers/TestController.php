@@ -233,5 +233,12 @@ class TestController extends IndexController  {
 	    // debugMessage($allfarmers->toArray());
 	    debugMessage('count is '.$allfarmers->count());
     }
+    
+	function emailAction(){
+    	$this->_helper->layout->disableLayout();
+	    $this->_helper->viewRenderer->setNoRender(TRUE);
+	    
+	    sendTestMessage('test farmis email','this is a test message for farmis please ignore - '.APPLICATION_ENV);
+    }
 }
 

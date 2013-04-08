@@ -1,7 +1,7 @@
 <?php
 	require_once APPLICATION_PATH.'/includes/header.php';
 	
-	$title = "Groups Directory";	
+	$title = "DNA Profiles";	
 	$this->headTitle($title);
 	
 	$searchnames = '';
@@ -28,7 +28,7 @@
 	$paginate->setItemCountPerPage("25");
 	
 	# define the letter to be clicked to ease navigation 
-	$where_query = " WHERE f.id <> '' ";
+	$where_query = " WHERE f.id <> '' AND f.parentid IS NULL ";
 	
 	if (!isEmptyString($request->letter)){
 		$where_query .= " AND (f.`orgname` LIKE '".$request->letter."%') ";
@@ -199,7 +199,7 @@ $(document).ready(function() {
                         <table class="table noborder margin0">
                             <tr>                                
                                 <td width="85">
-                                        <div class="thumbinfo logo"> 
+                                        <div class="thumbinfo logo" style="width:80px;"> 
                                             <a href="<?php echo $this->baseUrl("farmgroup/view/id/".encode($line['id'])); ?>" title="<?php echo $this->translate("person_button_view_profile"); ?>"><img src="<?php echo $farmgroup->getThumbnailLogoPath(); ?>" /></a>
                                         </div>
                                     </td>

@@ -97,4 +97,14 @@ class ReportController extends SecureController   {
     											$this->getRequest()->getModuleName(),
     											array_remove_empty(array_merge_maintain_keys($this->_getAllParams(), $this->getRequest()->getQuery())));
 	}
+	
+	function certificateAction(){
+		
+	}
+	
+	function certificatesearchAction(){
+		$this->_helper->redirector->gotoSimple("certificate", "report", 
+    											$this->getRequest()->getModuleName(),
+    											array_remove_empty(array_merge_maintain_keys($this->_getAllParams(), $this->getRequest()->getQuery())));
+	}
 }

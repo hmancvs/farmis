@@ -13,7 +13,8 @@
 		$hcounter = $harvest->getNextReferencePointer();
 		$harvest->setYieldUnit('1');
 		$harvest->setTotalHarvestUnit('1');
-		$harvest->setFieldSizeUnit('4');
+		$harvest->setFieldSizeUnit('1');
+		$harvest->setActivityName('Harvesting');
 		$successurl = encode($this->baseUrl("season/harvest/sid/".$request->sid));
 	}
 	
@@ -41,14 +42,23 @@
 	// $harvesttypes = getAllTillageTypes();
 		
 	$this->headTitle($title);  
-	
+	$farmtitle = isFarmer() ? "Manage Farm" : "Manage Farm: ".$harvest->getFarm()->getName();
 ?>
 <script>
 	$(document).ready(function() {
 		$("#indexform").validate({		
 			// define the validation rules one field at a time
 			rules: {
+				activityname: {
+					required: true,
+					maxlength: 25,
+					minlength: 4
+				},
+				ref: "required",
 				startdate: "required",
+				enddate: {
+					required: true
+				},
 				method: "required",
 				status: "required",
 				totalharvest: {
@@ -59,12 +69,20 @@
 				},
 				yield: {
 					required: true
-				},
-				cropid: "required"
+				}
 			}, 
 			// the messages for each of the fields being validated
 			messages: {		
-				startdate: "<?php echo $this->translate("season_startdate_error"); ?>",
+				activityname: {
+					required: "Please specify activity name",
+					maxlength: "Maximum of 25 character needed",
+					minlength: "Minimum of 4 characters needed"
+				},
+				ref: "Reference not specified",		
+				startdate: "<?php echo $this->translate("season_activity_startdate_error"); ?>",
+				enddate: {
+					required: "<?php echo $this->translate("season_activity_enddate_error"); ?>"
+				},
 				method: "<?php echo $this->translate("season_method_error"); ?>",
 				status: "<?php echo $this->translate("season_status_error"); ?>",
 				totalharvest: {
@@ -75,8 +93,7 @@
 				},
 				yield: {
 					required: "<?php echo $this->translate("season_harvest_yield_error"); ?>"
-				},
-				cropid: "<?php echo $this->translate("season_cropid_error"); ?>"
+				}
 			},
 			// custom error positions
 			errorPlacement: function(error, element) {
@@ -140,17 +157,15 @@
 			var harv = $("#totalharvest").val();
 		
 			computed = 0;
-			if(!isEmptyString(size) && parseInt(size)>0 && !isEmptyString(harv) && parseInt(harv)>0){
+			if(!isEmptyString(size) && parseInt(size)> 0 && !isEmptyString(harv) && parseInt(harv)>0){
 				var computed = harv / size;
-				// alert(linetotal);
 			}
 			
-			$("#yield").val(computed);
+			$("#yield").val(computed.toFixed(2));
 		});
-		// $("#fieldsize, #totalharvest").trigger('keyup');
 	}); 
 </script>
-<h1><?php echo $this->translate('farm_title'); ?></h1>
+<h1><?php echo $farmtitle; ?></h1>
 <div id="tabs">
     <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
     <div class="span9 tab-content" id="center">
@@ -169,16 +184,16 @@
                         <h3 class="well-legend"><?php echo $title; ?></h3>
                         <table class="table margin0" style="margin-top:15px;">
                             <tr>
-                                <td style="width:25%;"><label class="control-label"><?php echo $this->translate("season_activityref_label"); ?>: </label></td>
-                                <td style="width:30%;"><span id="reflabel"></span><input type="hidden" id="ref" name="ref" value="<?php echo $harvest->getRef(); ?>" /></td>
-                                <td style="width:20%;"><label class="control-label"><?php echo $this->translate("season_ref_label"); ?>: </label></td>
-                                <td><a href="<?php $this->baseUrl('season/view/id/'.encode($harvest->getSeasonID())); ?>" title="Season details"><?php echo $harvest->getSeason()->getRef(); ?></a></td>
+                                <td style="width:20%;"><label class="control-label"><?php echo $this->translate("season_activity_name_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                                <td style="width:35%;"><input type="text" name="activityname" id="activityname" class="hastooltip" style="width:80%;" title="<?php echo $this->translate("season_activityname_tooltip"); ?>" value="<?php echo $harvest->getActivityName(); ?>" /><div id="activityname_error"></div></td>
+                                <td style="width:15%;"><label class="control-label"><?php echo $this->translate("season_activity_ref_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                                <td><span id="reflabel"></span><input type="hidden" id="ref" name="ref" value="<?php echo $harvest->getRef(); ?>" /><div id="ref_error"></div></td>
                             </tr>
                             <tr>
                                 <td><label class="control-label"><?php echo $this->translate("season_activitystartdate_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
-                                <td><input type="text" name="startdate" id="startdate" class="datefield width100" value="<?php echo changeMySQLDateToPageFormat($harvest->getStartDate()); ?>" /><div id="startdate_error"></div></td>
-                                <td><label class="control-label"><?php echo $this->translate("season_activityenddate_label"); ?>:</label></td>
-                                <td><input type="text" name="enddate" id="enddate" class="datefield width100" value="<?php echo changeMySQLDateToPageFormat($harvest->getEndDate()); ?>" /><div id="enddate_error"></div></td>
+                                <td><input type="text" name="startdate" id="startdate" class="datefield width100 startdate" value="<?php echo changeMySQLDateToPageFormat($harvest->getStartDate()); ?>" /><div id="startdate_error"></div></td>
+                                <td><label class="control-label"><?php echo $this->translate("season_activityenddate_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                                <td><input type="text" name="enddate" id="enddate" class="datefield width100 endafterstart" value="<?php echo changeMySQLDateToPageFormat($harvest->getEndDate()); ?>" /><div id="enddate_error"></div></td>
                             </tr>
                             <tr>
                                 <td><label class="control-label"><?php echo $this->translate("season_status_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
@@ -238,11 +253,7 @@
                                             <tr>
                                                 <td style="width:35%;"><label class="control-label"><?php echo $this->translate("season_commodity_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
                                                 <td><?php
-														$availablecrops = getSeasonCommodities($harvest->getSeasonID());
-														if(isEmptyString($harvest->getID())){
-															$key1 = array_shift(array_keys($availablecrops));
-															$harvest->setCropID($key1);
-														}
+														$availablecrops = array($harvest->getSeason()->getCropID() => $harvest->getSeason()->getCrop()->getName());
 														$cropdropdown = new Zend_Form_Element_Select('cropid',
 																			array(
 																				'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $availablecrops),								
@@ -252,7 +263,7 @@
 																				'title' => $this->translate("season_commodity_tooltip")
 																			)
 																		);
-														$cropdropdown->setValue($harvest->getCropID()); 
+														$cropdropdown->setValue($harvest->getSeason()->getCropID()); 
 														echo $cropdropdown->render();
 												   ?><div id="cropid_error"></div></td>
                                             </tr>
@@ -280,7 +291,7 @@
                                         <table class="table">
                                             <tr>
                                                 <td style="width:32%;"><label class="control-label"><?php echo $this->translate("season_harvest_area_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
-                                                <td><input style="width:50px;" type="text" name="fieldsize" id="fieldsize" class="centeralign isnumber" value="<?php echo $harvest->getFieldSize(); ?>" />&nbsp;
+                                                <td><input style="width:50px;" type="text" name="fieldsize" id="fieldsize" class="centeralign isdecimal" value="<?php echo clean_num($harvest->getFieldSize()); ?>" />&nbsp;
 													<?php
                                                         $areavalues = getAreaUnits();
                                                         $unitdropdown = new Zend_Form_Element_Select('fieldsizeunit',
@@ -298,7 +309,7 @@
                                             </tr>
                                             <tr>
                                                 <td><label class="control-label"><?php echo $this->translate("season_harvest_quantity_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
-                                                <td><input style="width:50px;" type="text" name="totalharvest" id="totalharvest" class="centeralign isnumber" value="<?php echo $harvest->getTotalHarvest(); ?>" />&nbsp;
+                                                <td><input style="width:50px;" type="text" name="totalharvest" id="totalharvest" class="centeralign isdecimal" value="<?php echo clean_num($harvest->getTotalHarvest()); ?>" />&nbsp;
 													<?php
                                                         $univalues = getHarvestQuantityUnits();
                                                         $unitdropdown = new Zend_Form_Element_Select('totalharvestunit',
@@ -317,7 +328,7 @@
                                             </tr>
                                             <tr>
                                                 <td><label class="control-label"><?php echo $this->translate("season_harvest_yield_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
-                                                <td><input style="width:50px;" type="text" name="yield" id="yield" class="centeralign isnumber" value="<?php echo $harvest->getYield(); ?>" />&nbsp;
+                                                <td><input style="width:50px;" type="text" name="yield" id="yield" class="centeralign isdecimal" value="<?php echo clean_num($harvest->getYield()); ?>" />&nbsp;
 													<?php
                                                         $yieldvalues = getHarvestYieldUnits();
                                                         $unitdropdown = new Zend_Form_Element_Select('yieldunit',
@@ -343,162 +354,8 @@
                         </div>
                     </span>
                 </div>
-                <div class="row margin0" style="padding:2px; margin-bottom:10px;">
-                    <span class="pull-left" style="width:100%; margin-right:5px;">
-                        <div id="location_left" class="well lighter margin0" style="min-height:150px;"> 
-                            <h3 class="well-legend"><?php echo $this->translate("season_credit_finance_title"); ?></h3>
-                            <table class="table">
-                                <tr>
-                                    <td style="width:35%; padding-left:0;">
-										<table class="table">
-                                            <tr>
-                                            	<td><label class="control-label" style="font-size:14px;"><?php echo $this->translate("season_credit_type_label"); ?></label></td>
-                                            </tr>
-                                            <tr>
-                                                <td id="sourceradio">
-                                                <?php
-                                                     $data = getActivityFinanceSources(2);						  
-                                                     $capitalradio = new Zend_Form_Element_Radio('financetype',
-                                                              array(
-                                                                      'multiOptions' => $data, 
-                                                                      'view' => new Zend_View(),
-                                                                      'disableLoadDefaultDecorators' => true,
-                                                                      'class' => array('financetype'),
-                                                                      'decorators' => array('ViewHelper',
-                                                                                          array('HtmlTag', array('tag' => 'div', 'class' => array('inline', 'radio', 'zendradio'))) // use a sorrounding DIV with classes which are copied to the label by JQuery
-                                                                                      )
-                                                              )
-                                                      );
-                                                      $capitalradio->setValue($harvest->getFinanceType());
-                                                      echo $capitalradio->render();
-                                                ?>
-                                                </td>
-                                            </tr>
-                                        </table>
-									</td>
-                                    <td>
-                                    	<table class="table">
-                                            <tbody id="hasloan" class="hide">
-                                                <tr>
-                                                    <td colspan="2"><label class="control-label" style="font-size:14px;"><?php echo $this->translate("season_credit_finance_details"); ?></label></td>
-                                                </tr>
-                                                <tr>
-                                                    <td style="width:40%;"><label class="control-label"><?php echo $this->translate("season_credit_principal_label"); ?>:</label>
-                                                        <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" style="width:80px;" name="principal" id="principal" class="width100 hastooltip isamount rightalign" value="<?php echo $loan->getPrincipal(); ?>" title="<?php echo $this->translate("season_principal_tooltip"); ?>" /></div><div id="principal_error"></div></td>
-                                                    <td><label class="control-label"><?php echo $this->translate("season_credit_interestrate_label"); ?>:</label>
-                                                    <input style="width:50px;" type="text" name="interestrate" id="interestrate" class="centeralign isnumber hastooltip" value="<?php echo $loan->getInterestRate(); ?>" title="<?php echo $this->translate("season_interestrate_tooltip"); ?>" />&nbsp;<span class="pagedescription">(%)</span><div id="interestrate_error"></div>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td><label class="control-label"><?php echo $this->translate("season_credit_repayment_label"); ?>:</label>
-                                                        <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" style="width:80px;" name="paybackamount" id="paybackamount" class="width100 hastooltip isamount rightalign" value="<?php echo $loan->getPayBackAmount(); ?>" title="<?php echo $this->translate("season_paybackamount_tooltip"); ?>" /></div><div id="paybackamount_error"></div></td>
-                                                    <td><label class="control-label"><?php echo $this->translate("season_credit_payperiod_label"); ?>:</label>
-                                                        <input style="width:50px;" type="text" name="paybackperiod" id="paybackperiod" class="centeralign isnumber" value="<?php echo $loan->getPayBackPeriod(); ?>" />
-                                                        <?php
-                                                            $univalues = getLoanFrequencyValues();
-                                                            $unitdropdown = new Zend_Form_Element_Select('paybackperiodunit',
-                                                                                array(
-                                                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
-                                                                                    'view' => new Zend_View(),
-                                                                                    'decorators' => array('ViewHelper'),
-                                                                                    'class' => array('span2','width100','hastooltip'),
-																					'title' => $this->translate("season_paybackperiod_tooltip")
-                                                                                )
-                                                                            );
-                                                            $unitdropdown->setValue($loan->getPayBackPeriodUnit()); 
-                                                            echo $unitdropdown->render(); 
-                                                        ?>
-                                                        <div id="paybackperiod_error"></div></td>
-                                                </tr>
-                                                <tr>
-                                                    <td><label class="control-label"><?php echo $this->translate("season_credit_datereceived_label"); ?>:</label>
-                                                    <input type="text" name="creditdate" id="creditdate" class="datefield width100" value="<?php echo changeMySQLDateToPageFormat($loan->getcreditdate()); ?>" /><div id="creditdate_error"></div></td>
-                                                    <td><label class="control-label"><?php echo $this->translate("season_credit_regularpay_label"); ?>:</label>
-                                                        <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" style="width:65px;" name="installment" id="installment" class="width50 isamount rightalign" value="<?php echo $loan->getInstallment(); ?>" /></div>
-                                                        &nbsp;/&nbsp;
-                                                        <?php
-                                                            $univalues = getLoanRepaymentFrequencyValues();
-                                                            $unitdropdown = new Zend_Form_Element_Select('installmentunit',
-                                                                                array(
-                                                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
-                                                                                    'view' => new Zend_View(),
-                                                                                    'decorators' => array('ViewHelper'),
-                                                                                    'class' => array('span2','width80','hastooltip'),
-																					'title' => $this->translate("season_installment_tooltip")
-                                                                                )
-                                                                            );
-                                                            $unitdropdown->setValue($loan->getInstallmentUnit()); 
-                                                            echo $unitdropdown->render(); 
-                                                        ?>
-                                                        <div id="installment_error"></div></td>
-                                                </tr>
-                                                <tr>
-                                                    <td colspan="2"><label class="control-label"><?php echo $this->translate("season_credit_source_label"); ?>:</label>
-														<span id="bankrow">
-														<?php
-                                                            $allsources = getAllFinancialInstitutions();
-                                                            $sourcedropdown = new Zend_Form_Element_Select('financesourceid',
-                                                                                array(
-                                                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $allsources),								
-                                                                                    'view' => new Zend_View(),
-                                                                                    'decorators' => array('ViewHelper'),
-                                                                                    'class' => array('hastooltip', 'width150'),
-                                                                                    'style' => 'width:215px;',
-                                                                                    'title' => $this->translate("season_financesource_tooltip")
-                                                                                )
-                                                                            );
-                                                            
-                                                            $sourcedropdown->setValue($loan->getFinanceSourceID());
-                                                            echo $sourcedropdown->render();
-                                                       ?>
-                                                       </span>
-                                                       <span id="softrow">
-                                                   		<input type="text" name="financesourcetext" id="financesourcetext" class="width150 hastooltip" value="<?php echo $loan->getFinanceSourceText(); ?>" placeholder="" title="<?php echo $this->translate("season_financesource_tooltip"); ?>" />
-                                                       </span>
-                                                       <div id="financesource_error"></div>
-                                                    </td>
-                                                </tr>
-                                           	</tbody>
-                                            <tbody id="cropfinancing" class="hide">
-                                            	<tr>
-                                                	<td colspan="2">
-                                                    	<label class="control-label"><?php echo $this->translate("season_credit_client_label"); ?>:</label>
-                                                    	<?php
-                                                            $allclients = getAllClients();
-                                                            $sourcedropdown = new Zend_Form_Element_Select('clientid',
-                                                                                array(
-                                                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $allclients),								
-                                                                                    'view' => new Zend_View(),
-                                                                                    'decorators' => array('ViewHelper'),
-                                                                                    'class' => array('hastooltip', 'width150'),
-                                                                                    'style' => 'width:215px;',
-                                                                                    'title' => $this->translate("season_credit_clientid_tooltip")
-                                                                                )
-                                                                            );
-                                                            
-                                                            $sourcedropdown->setValue($loan->getClientID());
-                                                            echo $sourcedropdown->render();
-                                                       ?>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                	<td colspan="2"><label class="control-label"><?php echo $this->translate("season_credit_value_label"); ?>:</label>
-                                                        <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" style="width:80px;" name="price" id="price" class="width100 hastooltip isamount rightalign" value="<?php echo $loan->getPrice(); ?>" title="<?php echo $this->translate("season_creditvalue_tooltip"); ?>" /></div><div id="price_error"></div></td>
-                                                </tr>
-                                            	<tr>
-                                                	<td colspan="2">
-                                                    	<label class="control-label"><?php echo $this->translate("season_credit_terms_label"); ?>:</label>
-                                                    	<textarea id="contract" name="contract" class="hastooltip" title="<?php echo $this->translate("season_contract_tooltip"); ?>" style="width:85%;"><?php echo $loan->getContract(); ?></textarea>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-                    </span>
-                </div>
+                <?php require APPLICATION_PATH."/views/scripts/season/finance.phtml"; ?>  
+                <?php require APPLICATION_PATH."/views/scripts/season/labour.phtml"; ?>
             <?php } ?>    
             </form>
 		</div>

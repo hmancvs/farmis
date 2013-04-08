@@ -64,7 +64,7 @@ $(window).load(function() {
                <table class="table">                       
                     <tr>
                         <td width="20%"><label class="control-label">Sender Phone: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
-                        <td><input type="text" name="from" id="from" class="span2 hastooltip" title="<?php echo $this->translate("message_senderemail_tooltip"); ?>" value="<?php echo $farmer->getUser()->getPhone(); ?>" /><div id="from_error"></div></td>
+                        <td><input type="text" name="from" id="from" class="span2 hastooltip" title="<?php echo $this->translate("message_senderphone_tooltip"); ?>" value="<?php echo $farmer->getUser()->getPhone(); ?>" /><div id="from_error"></div></td>
                    </tr>
                    <tr>
                         <td><label class="control-label"><?php echo $this->translate("message_recipient_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
@@ -72,7 +72,7 @@ $(window).load(function() {
                         </td>
                         <td><?php 
 								 $farmers = getFarmers($farmer->getFarmGroupID());
-								 $list = array('1'=>'All Farmers with emails', '2'=>'Select Farmers',);
+								 $list = array('1'=>'All Farmers with Mobile Phones', '2'=>'Select Farmers',);
 								 $typeradio = new Zend_Form_Element_Radio('type',
 											  array(
 													  'multiOptions' => $list, 

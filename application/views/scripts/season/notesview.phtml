@@ -1,0 +1,112 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$controller = $request->getControllerName();
+	$action = $request->getActionName();
+	
+	switch($action){
+		case 'inputview':
+			$object = $input;
+			$actionstring = 'input';
+			$viewurl = 'inputview';
+			$class = 'SeasonInput';
+			break;
+		case 'tillageview':
+			$object = $tillage;
+			$actionstring = 'tillage';
+			$viewurl = 'tillageview';
+			$class = 'SeasonTillage';
+			break;
+		case 'plantview':
+			$object = $plant;
+			$actionstring = 'plant';
+			$viewurl = 'plantview';
+			$class = 'SeasonPlanting';
+			break;
+		case 'treatview':
+			$object = $treat;
+			$actionstring = 'treat';
+			$viewurl = 'treatview';
+			$class = 'SeasonTracking';
+			break;
+		case 'harvestview':
+			$object = $harvest;
+			$actionstring = 'harvest';
+			$viewurl = 'harvestview';
+			$class = 'SeasonHarvest';
+			break;
+		case 'activityview':
+			$object = $activity;
+			$actionstring = 'activity';
+			$viewurl = 'activityview';
+			$class = 'SeasonActivity';
+			break;
+		case 'saleview':
+			$object = $sale;
+			$actionstring = 'sale';
+			$viewurl = 'saleview';
+			$class = 'Sales';
+			break;
+		default:
+			break;
+	}
+	
+?>
+<div class="row margin0" style="padding:2px; margin-bottom:10px;">
+    <span class="pull-left" style="width:100%; margin-right:5px;">
+        <div id="location_left" class="well lighter margin0" style="min-height:100px; position:relative;"> 
+            <?php
+                $notelines = $object->getNotesDetails();
+                // debugMessage($expenselines->toArray());
+                $count = $notelines->count();
+                $notes_label = '';
+                if($count > 0){
+                    $notes_label = '<span class="pagedescription">('.$count.')</span>';
+                }
+            ?>
+            <h3 class="well-legend">Notes | Comments <?php echo $notes_label; ?></h3>
+            <div class="margin0" style="position:absolute; right:10px; top:5px;">
+                <a href="<?php echo $this->baseUrl('season/notes/type/'.$class.'/pgc/true/refid/'.encode($object->getID())); ?>" class="btn btn-mini addpopup" title="Add Notes" rel="Add Notes" id="newnote" formtitle="indexform" successurl="<?php echo $this->baseUrl('season/'.$viewurl.'/id/'.encode($object->getID())); ?>" action="<?php echo $this->baseUrl('season/notescreate/successurl/'.encode($this->baseUrl('season/addnotessuccess/successmessage/global_save_success/'))); ?>"><i class="icon-plus"></i> Add</a>                                            
+            </div>
+            <?php if($count == 0){ ?>
+                <br /><span class="pagedescription">None currently available.</span>
+            <?php } else { ?>
+                <ul id="datalist" class="nav nav-stacked">
+                <?php 
+                    $x = 1;
+                    foreach($notelines as $note){
+                        $farmer = $note->getNotedBy()->getFarmer();
+                ?>
+                    <li>
+                        <table class="table noborder margin0">
+                            <tr>                                
+                                <td class="" style="width:90%;">
+                                    <table class="itemlist table noborder margin0">
+                                        <tr>
+                                            <td style="width:75px; padding-top:10px;">
+                                                <div id="thumbinfo" class="<?php echo $farmer->hasProfileImage() ? 'new_pic': ''; ?>"> 
+                                                    <a href="<?php //echo $this->baseUrl("farmer/view/id/".encode($line['id'])); ?>" title="<?php echo $this->translate("person_button_view_profile"); ?>"><img src="<?php echo $farmer->getUser()->getThumbnailPicturePath(); ?>" /></a>
+                                                </div>
+                                            </td>
+                                            <td style="padding-left:15px;"><label class="control-label"><?php echo date('M j, Y g:i A', strtotime($note->getDateNoted())); ?></label><span><?php echo nl2br($note->getDescription()); ?></span>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                                <td class="padding0">
+                                    <div style="position:relative;">
+                                        <div class="threadicons" style="position:absolute; right:5px; top:10px;">
+                                            <a href="javascript: void(0)" id="deleteline_multiple" title="Delete Entry" class="btn btn-mini deleteline noimgbutton" action="<?php echo $this->baseUrl('season/delete/id/'.$note->getID()."/entityname/Notes/successurl/".encode($this->baseUrl('season/'.$viewurl.'/id/'.encode($object->getID())))); ?>" message="Are you sure you want to delete this note?"><i class="icon-trash"></i></a>
+                                        </div>
+                            
+                                    </div>
+                                </td>
+                             </tr>
+                        </table>
+                     </li>
+                <?php } ?>
+                </ul>
+            <?php } ?>
+        </div>
+    </span>
+</div>

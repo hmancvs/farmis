@@ -32,8 +32,6 @@ class FarmPreseasonDetail extends BaseRecord {
 		$this->hasColumn('nextseasonprodn', 'decimal', 10, array('default' => NULL));
 		$this->hasColumn('nextseasonprodnunit', 'integer', null);
 		$this->hasColumn('financetype', 'integer', null, array('default' => '0'));
-		$this->hasColumn('loanid', 'integer', null);
-		
 	}
 	/**
 	 * Contructor method for custom initialization
@@ -72,9 +70,10 @@ class FarmPreseasonDetail extends BaseRecord {
 									'foreign' => 'id'
 								)
 						);
-		$this->hasOne('Loan as loan',
-							array('local' => 'loanid',
-									'foreign' => 'id'
+		$this->hasMany('Loan as loans',
+					 		array(
+								'local' => 'id',
+								'foreign' => 'preseasonid'
 							)
 						);
 	}
@@ -146,10 +145,6 @@ class FarmPreseasonDetail extends BaseRecord {
 		if(isArrayKeyAnEmptyString('financetype', $formvalues)){
 			$formvalues['financetype'] = NULL; 
 		}
-		if(isArrayKeyAnEmptyString('loanid', $formvalues)){
-			unset($formvalues['loanid']); 
-		}
-		
 		# process address information
         // debugMessage($formvalues); 
         // exit();

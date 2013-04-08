@@ -17,7 +17,7 @@ class SeasonController extends SecureController   {
 		}
     	if($action == "inputview" || $action == "tillageview" || $action == "plantview" || $action == "treatview" ||
     		$action == "harvestview" || $action == "expenseview" || $action == "notesview" || $action == "saleview" || $action == "activityview" || 
-    		$action == "calendar" || $action == "events" || $action == "delete" || $action == "addexpsuccess" ||
+    		$action == "calendar" || $action == "delete" || $action == "addexpsuccess" ||
     		$action == "addnotessuccess"
     	) {
 			return ACTION_VIEW; 
@@ -195,42 +195,6 @@ class SeasonController extends SecureController   {
 		$this->_helper->viewRenderer->setNoRender(TRUE);
 		$session = SessionWrapper::getInstance(); 
 		$session->setVar(SUCCESS_MESSAGE, $this->_translate->translate($this->_getParam(SUCCESS_MESSAGE)));
-	}
-	
-	function eventsAction(){
-		$this->_helper->layout->disableLayout();
-		$this->_helper->viewRenderer->setNoRender(TRUE);
-		$formvalues = $this->_getAllParams();
-		
-		$season = new Season(); 
-		$season->populate($formvalues['id']);
-		$timeline = sort_multi_array($season->getTimeLineDetails(), 'order');
-		$acount = count($timeline);
-		
-		// debugMessage($timeline);
-		$jsondata = array();
-		$i = 0;
-		foreach($timeline as $key => $activity){
-			$jsondata[$i]['id'] = $i;
-			$jsondata[$i]['title'] = $activity['title'];
-			$jsondata[$i]['start'] = $activity['startdate'];
-			$jsondata[$i]['formatedstart'] = changeMySQLDateToPageFormat($activity['startdate']);
-			if(!isEmptyString($activity['enddate'])){
-				$jsondata[$i]['end'] = $activity['enddate'];
-				$jsondata[$i]['formatedend'] = changeMySQLDateToPageFormat($activity['enddate']);	
-			}
-			$jsondata[$i]['url'] = $activity['url'];
-			$jsondata[$i]['className'] = $activity['uniqueid'];
-			$jsondata[$i]['description'] = $activity['description'];
-			$jsondata[$i]['type'] = $activity['type'];
-			$jsondata[$i]['url'] = $activity['url'];
-			$jsondata[$i]['editurl'] = $activity['editurl'];
-			$jsondata[$i]['status'] = $activity['status'];
-			$jsondata[$i]['expenses'] = $activity['expenses'];
-			$i++;
-		}
-		//debugMessage(json_encode($jsondata));
-		echo json_encode($jsondata); 
 	}
 	
 	function deleteAction() {

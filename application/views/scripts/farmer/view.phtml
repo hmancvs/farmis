@@ -107,10 +107,18 @@
 	$this->headTitle($title);
 	
 ?>
-<?php if($loadgps && $farmer->hasGPSCoordinates() && $request->tab == 'basics'){ ?>
+<?php if($loadgps && $farmer->hasGPSCoordinates() && $request->tab == 'contacts'){ ?>
 <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyD5m-H5m0gaaw1EfpFXa2R9HIkbXN-dGsA&sensor=false"></script>
 <script type="text/javascript" src="<?php echo $this->baseUrl('javascript/maps/8.gmap3.min.js'); ?>"></script>
 <?php } ?>
+<!--<script type="text/javascript" src="http://www.google.com/jsapi?key=AIzaSyD5m-H5m0gaaw1EfpFXa2R9HIkbXN-dGsA"></script>
+<script type="text/javascript">
+	google.load('maps','2');
+	function loadmapdiv() {
+		var map = new google.maps.Map2(document.getElementById('mydiv')) ;
+		map.setCenter(new google.maps.LatLng(50,5),5);
+	}
+</script>-->
 <script>
 $(document).ready(function() {
 	
@@ -122,7 +130,7 @@ $(document).ready(function() {
 	equalHeight($("#row1_left, #row1_right"));
 	equalHeight($("#row2_left, #row2_right"));
 	
-	<?php if($loadgps && $farmer->hasGPSCoordinates() && $request->tab == 'basics'){ ?>
+	<?php if($loadgps && $farmer->hasGPSCoordinates() && $request->tab == 'contacts'){ ?>
 		var name = '<?php echo $farmer->getFirstName(); ?>';
 		var lat = '<?php echo $farmer->getLat(); ?>';
 		var lng = '<?php echo $farmer->getLng(); ?>';
@@ -130,20 +138,20 @@ $(document).ready(function() {
 		var lng_gps = '<?php echo $farmer->getLngGPSFormatted2(); ?>';
 		// var pos = [0.308828, 32.551072];
 		var pos = [lat, lng];
-			$("#map").gmap3(
-				{action:'addMarker',
-					latLng: pos,
-					map:{
-						center: true,
-						zoom: 14
-					},
-					infowindow:{
-						options:{
-							content: name+" 's Location (Sitting Room) <br /> "+lat+", "+lng+"<br />N"+lat_gps+", S"+lng_gps
-						}
+		$("#map").gmap3(
+			{action:'addMarker',
+				latLng: pos,
+				map:{
+					center: true,
+					zoom: 14
+				},
+				infowindow:{
+					options:{
+						content: name+" 's Location (Sitting Room) <br /> "+lat+", "+lng+"<br />N"+lat_gps+", S"+lng_gps
 					}
 				}
-			);
+			}
+		);
 	<?php } ?>
 	<?php if($request->tab == 'contacts'){ ?>
 		$('.validate').keydown(function (event) {
@@ -311,7 +319,7 @@ $(document).ready(function() {
                             <?php } ?>
                         </table>
                     </div>
-                    <div id="xrow2_left" class="well row marginleft0" style="min-height:115px;">
+                    <div id="xrow2_left" class="well row marginleft0" style="height:170px;">
                         <h3 class="well-legend margin0">About</h3>
                         <table class="table">                       
                            <tr>		                    
@@ -338,7 +346,7 @@ $(document).ready(function() {
                            </tr>
                         </table>
                     </div>
-                    <div id="xrow2_right" class="well row" style="min-height:310px;">
+                    <div id="xrow2_right" class="well row" style="min-height:305px;">
                         <h3 class="well-legend margin0">Summary</h3>
                         <table class="table table-striped table-bordered table-condensed" id="stats">
                             <tr>		                    
@@ -362,14 +370,6 @@ $(document).ready(function() {
                     </div>
                 </span>		
         	</div>
-            <div class="well row marginleft0" style="width:940px; height:auto; margin-left:-230px;">
-                <h3 class="well-legend margin0">Location Map</h3>
-                <table class="table table-bordered margin0 padding0" style="margin-top:5px;">                       
-                    <tr>		                    
-                        <td class="padding0"><div id="map"></div></td>
-                    </tr>
-                </table>
-            </div>
             <?php } ?>
         	</form> 
         </div>
@@ -398,7 +398,7 @@ $(document).ready(function() {
                                         	<a href="javascript: void(0);<?php //echo $this->baseUrl('farmer/validatephone/userphoneid/'.encode($userphoneid).'/pgc/true'); ?>" class="xaddpopup" rel="Re-send Validation Code" title="Re-send Validation Code" id="xvalidate" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmer/view/id/'.encode($farmer->getID()).'/tab/contacts'); ?>" action="<?php echo $this->baseUrl("farmer/processvalidatephone"); ?>" submittext="Request Code">Re-send</a>
                                         <?php } ?>
                                         <?php if(!$validated && !$allowrevalidate && !isEmptyString($phone)){ ?>
-                                            <a style="display:block; margin-top:10px;" href="<?php echo $this->baseUrl('farmer/validatephone/userphoneid/'.encode($userphoneid).'/pgc/true'); ?>" class="btn btn-primary btn-mini addpopup width100" rel="Validate Phone" title="Validate Mobile Phone" id="validate" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmer/view/id/'.encode($farmer->getID()).'/tab/contacts'); ?>" action="<?php echo $this->baseUrl("farmer/processvalidatephone"); ?>" submittext="Request Code">Validate Phone</a>
+                                            <a style="display:block; margin-top:10px;" href="<?php echo $this->baseUrl('farmer/validatephone/userphoneid/'.encode($userphoneid).'/pgc/true'); ?>" class="btn btn-primary btn-mini addpopup width75" rel="Validate Phone" title="Validate Mobile Phone" id="validate" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmer/view/id/'.encode($farmer->getID()).'/tab/contacts'); ?>" action="<?php echo $this->baseUrl("farmer/processvalidatephone"); ?>" submittext="Request Code">Validate Phone</a>
                                         <?php } ?>
                                         <?php if(!$validated && $allowrevalidate){ ?>
                                         	<span class="phone_before" id="phone_before_<?php echo $userphoneid; ?>">
@@ -507,25 +507,27 @@ $(document).ready(function() {
                         </tr>
                     </table>
                 </div>
-               <div class="well row marginleft0" style="min-height:100px; width:94%;">
-                    <h3 class="well-legend">Location / Position</h3>
-                    <table class="table">  
-                       <tr>
-                            <td colspan="2"><label class="control-label">Geographical Cordinates</label></td>
-                            <td colspan="2"><label class="control-label">GPS Cordinates:</label></td>
-                       </tr>
-                       <tr>
+                <div class="well row marginleft0" style="width:94%;">
+                    <h3 class="well-legend margin0">Location Map</h3>
+                    <table class="table table-bordered margin0 padding0" style="margin-top:5px;">
+                    	<tr>
                             <td width="15%"><label class="control-label">Latitude:</label></td>
                             <td width="30%"><?php echo $farmer->getLat(); ?></td>
                             <td width="15%"><label class="control-label">Latitude:</label></td>
                             <td><?php echo $farmer->getLatGPSFormatted(); ?></td>
                        </tr>
                        <tr>
-                            <td><label class="control-label">Longitude:</label></td>
+                            <td><label class="control-label">GPS Longitude:</label></td>
                             <td><?php echo $farmer->getLng(); ?></td>
-                            <td><label class="control-label">Longitude:</label></td>
+                            <td><label class="control-label">GPS Longitude:</label></td>
                             <td><?php echo $farmer->getLngGPSFormatted(); ?></td>
-                       </tr>
+                       </tr>                       
+                        <tr>		                    
+                            <td class="padding0" colspan="4"><div id="map"></div>
+                            	<!--<div id="mydiv" style="width:300px; height:300px; background-color:silver;"></div>
+								<a href="#" onClick="loadmapdiv(); return false;">Load map in div</a>-->
+                            </td>
+                        </tr>
                     </table>
                 </div>
                 <?php } ?>

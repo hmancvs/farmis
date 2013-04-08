@@ -57,7 +57,7 @@
 	$button_title = $this->translate("farm_button_save");
 	$posturl = $this->baseUrl("farm/edit"); 
 		
-	$title = "Update Farm";
+	$title = isFarmer() ? "Update Farm" : "Update: ".$farm->getName();
 	if(isEmptyString($farm->getID())){
 		$title = "Setup Farm Business";
 	}
@@ -192,26 +192,35 @@ $(document).ready(function() {
 			// define the validation rules one field at a time
 			rules: {
 				landsize: {
-					required: false,
+					required: true,
 					validate_decimal: true
 				},
 				landactivesize: {
-					required: false,
+					required: true,
 					validate_decimal: true,
 					validate_diff: true
 				},
 				landunits: {
-					required: false,
-					size_validate: true
+					required: true
+				},
+				landacquiremethod: {
+					required: true
 				}
 			}, 
 			// the messages for each of the fields being validated
 			messages: {		
+				landsize: {
+					required: "Please enter value"
+				},
 				landactivesize: {
-					validate_diff: "Should be less than total above",
+					required: "Please enter value",
+					validate_diff: "Should be less than total above"
 				},
 				landunits: {
-					size_validate: "Please select a Unit"
+					required: "Please select a Unit"
+				},
+				landacquiremethod: {
+					required: "Please select a method"
 				}
 			},
 			// custom error positions
@@ -233,16 +242,6 @@ $(document).ready(function() {
 			return true;
 		}, "Should be less than total above");
 		
-		$.validator.addMethod("size_validate", function(value, element) {
-			var total = $("#landsize").val();
-			var avail = $("#landactivesize").val();
-			// alert(parseFloat(value)+' - '+parseFloat(total));			
-			if((!isEmptyString(avail) || !isEmptyString(total)) && isEmptyString(value)){
-				return false;
-			}
-			return true;
-		}, "Please select a Unit");
-	
 		// personal custom failure and success url
 		$("#profileform-land .savethenview").click(function() {
 			$("#profileform-land .successurl").val('<?php echo encode($this->baseUrl('farm/view/tab/land')); ?>');
@@ -371,11 +370,11 @@ $(document).ready(function() {
 			$(".hidden_row_"+type+":first").removeClass("hidden_row_"+type).addClass("visible_row_"+type);	
 			
 			// remove disabled attr from the fields
-			$("tr.visible_row_"+type+" input").attr("disabled", false);
-			$("tr.visible_row_"+type+" select").attr("disabled", false);	
+			$(".visible_row_"+type+" input").attr("disabled", false);
+			$(".visible_row_"+type+" select").attr("disabled", false);	
 				
 			//if the maximum no of rows is added, hide the link to add another row
-			if ($("tr.visible_row_"+type+"").size() == 5) {
+			if ($(".visible_row_"+type+"").size() == 5) {
 				$("#"+type).hide();	
 			} else {
 				$("#"+type).show();	
@@ -393,10 +392,10 @@ $(document).ready(function() {
 				if(confirmed){
 					$(".visible_row_"+type).has('a#'+row_to_hide).addClass("hidden_row_"+type).removeClass("visible_row_"+type);
 					// $("input, select").attr("disabled", true);	
-					$("tr."+row_to_hide+" input").val('').attr("disabled", true);
-					$("tr."+row_to_hide+" select").val('').attr("disabled", true);	
+					$("."+row_to_hide+" input").val('').attr("disabled", true);
+					$("."+row_to_hide+" select").val('').attr("disabled", true);	
 					//if the maximum no of rows is added, hide the link to add another row
-					if ($("tr.visible_row_"+type).size() == 5) {
+					if ($(".visible_row_"+type).size() == 5) {
 						$("#"+type).hide();		
 					} else {
 						$("#"+type).show();	
@@ -697,7 +696,7 @@ select.unitselect {
                                                             );
                                             $landmethoddropdown->setValue($farm->getLandAcquireMethod()); 
                                             echo $landmethoddropdown->render(); 
-                                       ?>
+                                       ?><div id="landacquiremethod_error"></div>
                                     </td>
                                 </tr>
                                 <tr>
@@ -707,7 +706,7 @@ select.unitselect {
                                             $fieldcount = array("1"=>"1","2"=>"2","3"=>"3","4"=>"4");
                                             $fieldsdropdown = new Zend_Form_Element_Select('numberoffields',
                                                                 array(
-                                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $fieldcount),								
+                                                                    'multiOptions' => $fieldcount,								
                                                                     'view' => new Zend_View(),
                                                                     'decorators' => array('ViewHelper'),
                                                                     'class' => array('filterselect', 'hastooltip', 'unitselect'),
@@ -770,15 +769,10 @@ select.unitselect {
         	<h2>Preseason Estimates</h2>
             <form id="profileform-preseason" class="form-horizontal preseason" action="<?php echo $posturl; ?>" method="post">
             <?php if($request->tab == 'preseason'){ 
-				$farmpreseason = new FarmPreseason(); 
 				$availablecrops = getCommoditiesForFarmer($farm->getFarmerID());
-				
-				// $historyid = $farm->getPreseasons()->get(0)->getID();
-				$historyid = $farm->getHistoryID();
-				// debugMessage();
-				if(!isEmptyString($historyid)){
-					$farmpreseason->populate($historyid);
-				} else { 
+				$farmpreseason = $farm->getPreseasons()->get(0);
+				// debugMessage($farmpreseason->toArray());
+				if(isEmptyString($farmpreseason->getID())){
 					$farmpreseason->setFarmID($farm->getID());
 					$farmpreseason->setFarmerID($farm->getFarmerID());
 					$farmpreseason->setUserID($farm->getFarmer()->getUserID());
@@ -900,7 +894,6 @@ select.unitselect {
                                         <input type="hidden" id="farmerid" name="farmerid" value="<?php echo $farmpreseason->getFarmerID(); ?>" />
                                         <input type="hidden" id="farmid" name="farmid" value="<?php echo $farmpreseason->getFarmID(); ?>" />
                                         <input type="hidden" id="createdby" name="createdby" value="<?php echo $userid; ?>" />
-                                        <input type="hidden" id="historyid" name="historyid" value="<?php echo $farm->getHistoryID(); ?>" />
                                         <input type="hidden" id="<?php echo SUCCESS_MESSAGE; ?>" name="<?php echo SUCCESS_MESSAGE; ?>" value="<?php echo $this->translate("global_save_success"); ?>" /> 
                                         <input type="hidden" class="successurl" id="<?php echo URL_SUCCESS; ?>" name="<?php echo URL_SUCCESS; ?>" title="preseason" />
                                         <input type="hidden" class="failureurl" id="<?php echo URL_FAILURE; ?>" name="<?php echo URL_FAILURE; ?>" title="preseason" />
@@ -912,11 +905,12 @@ select.unitselect {
                 </div>
                 <div class="row margin0 lastseason" style="padding:2px; margin-bottom:10px;">
 					<?php 
-                        $preseasondetails = $farm->getpreseasons()->get(0)->getDetails();
-                        $nooflines = $preseasondetails->count();
+						$preseasondetails = $farm->getPreseasons()->get(0)->getDetails();
+						$nooflines = $preseasondetails->count();
                         $e = 0; $x = 0;
                         foreach($preseasondetails as $detail){
                             $class = "visible_row_input";
+							$loan = $detail->getLoans()->get(0);
                     ?>
                     <span class="pull-left well lighter margin0 <?php echo $class; ?> row_input_<?php echo $e; ?>" id="row_input_<?php echo $e; ?>" style="width:97%; min-height:180px; height:auto; margin-bottom:10px;">
                         <h3 class="well-legend" style="padding-bottom:10px; position:relative;">Crop <?php echo $e+1; ?>: 
@@ -1112,23 +1106,23 @@ select.unitselect {
                             <tr class="hasloan_<?php echo $e; ?>">
                             	<td>
                                    <label class="control-label"><?php echo $this->translate("season_credit_principal_label"); ?>:</label>
-                                   <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo $e; ?>][principal]" id="details_principal_<?php echo $e; ?>" class="width100 hastooltip isamount rightalign useid_error inputrequired principal_<?php echo $e; ?>" value="<?php echo $detail->getLoan()->getprincipal(); ?>" title="<?php echo $this->translate("season_principal_tooltip"); ?>" /></div>
+                                   <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo $e; ?>][principal]" id="details_principal_<?php echo $e; ?>" class="width100 hastooltip isamount rightalign useid_error inputrequired greaterthanzero principal_<?php echo $e; ?>" value="<?php echo $loan->getprincipal(); ?>" title="<?php echo $this->translate("season_principal_tooltip"); ?>" /></div>
                                    <div id="details_principal_<?php echo $e; ?>_error"></div>
                                 </td>
                                 <td>
                                     <label class="control-label"><?php echo $this->translate("season_credit_interestrate_label"); ?>:</label>
-                                    <input style="width:50px;" type="text" name="details[<?php echo $e; ?>][interestrate]" id="details_interestrate_<?php echo $e; ?>" class="centeralign isdecimal hastooltip useid_error inputrequired interestrate_<?php echo $e; ?>" value="<?php echo $detail->getLoan()->getInterestRate(); ?>" title="<?php echo $this->translate("season_interestrate_tooltip"); ?>" />&nbsp;<span class="pagedescription">(%)</span><div id="details_interestrate_<?php echo $e; ?>_error"></div>
+                                    <input style="width:50px;" type="text" name="details[<?php echo $e; ?>][interestrate]" id="details_interestrate_<?php echo $e; ?>" class="centeralign isdecimal hastooltip useid_error inputrequired interestrate_<?php echo $e; ?> greaterthanzero" value="<?php echo $loan->getInterestRate(); ?>" title="<?php echo $this->translate("season_interestrate_tooltip"); ?>" />&nbsp;<span class="pagedescription">(%)</span><div id="details_interestrate_<?php echo $e; ?>_error"></div>
                                 </td>
                                 <td>
                                 	<label class="control-label"><?php echo $this->translate("season_credit_repayment_label"); ?>:</label>
-                                    <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo $e; ?>][paybackamount]" id="details_paybackamount_<?php echo $e; ?>" class="width100 hastooltip isamount rightalign useid_error inputrequired paybackamount_<?php echo $e; ?>" value="<?php echo $detail->getLoan()->getpaybackamount(); ?>" title="<?php echo $this->translate("season_paybackamount_tooltip"); ?>" /></div>
+                                    <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="details[<?php echo $e; ?>][paybackamount]" id="details_paybackamount_<?php echo $e; ?>" class="width100 hastooltip isamount rightalign useid_error inputrequired greaterthanzero paybackamount_<?php echo $e; ?>" value="<?php echo $loan->getpaybackamount(); ?>" title="<?php echo $this->translate("season_paybackamount_tooltip"); ?>" /></div>
                                    <div id="details_paybackamount_<?php echo $e; ?>_error"></div>
                                 </td>
                             </tr>
                             <tr class="hasloan_<?php echo $e; ?>">
                             	<td>
                                    <label class="control-label"><?php echo $this->translate("season_credit_payperiod_label"); ?>:</label>
-                                   <input style="width:50px;" type="text" name="details[<?php echo $e; ?>][paybackperiod]" id="details_paybackperiod_<?php echo $e; ?>" class="centeralign isnumber useid_error inputrequired paybackperiod_<?php echo $e; ?>" value="<?php echo $detail->getLoan()->getPayBackPeriod(); ?>" />
+                                   <input style="width:50px;" type="text" name="details[<?php echo $e; ?>][paybackperiod]" id="details_paybackperiod_<?php echo $e; ?>" class="centeralign isnumber useid_error inputrequired paybackperiod_<?php echo $e; ?> greaterthanzero" value="<?php echo $loan->getPayBackPeriod(); ?>" />
 								   <?php
                                         $univalues = getLoanFrequencyValues();
                                         $unitdropdown = new Zend_Form_Element_Select('paybackperiodunit_'.$e,
@@ -1140,13 +1134,13 @@ select.unitselect {
                                                                 'title' => $this->translate("season_paybackperiod_tooltip")
                                                             )
                                                         );
-                                        $unitdropdown->setValue($detail->getLoan()->getPayBackPeriodUnit()); 
+                                        $unitdropdown->setValue($loan->getPayBackPeriodUnit()); 
                                         echo $unitdropdown->render(); 
                                     ?><div id="details_paybackperiod_<?php echo $e; ?>_error"></div><div id="paybackperiodunit_<?php echo $e; ?>_error"></div>
                                 </td>
                                 <td>
                                 	<label class="control-label"><?php echo $this->translate("season_credit_source_label"); ?>:</label>
-                                    <input style="width:80%;" class="hastooltip useid_error <?php echo 'financesourcetext_'.$e; ?>" type="text" name="details[<?php echo $e; ?>][financesourcetext]" id="details_financesourcetext_<?php echo $e; ?>" value="<?php echo $detail->getLoan()->getfinancesourcetext(); ?>" title="<?php echo $this->translate("season_financesource_tooltip"); ?>" /><div id="details_financesourcetext_<?php echo $e; ?>_error"></div>
+                                    <input style="width:80%;" class="hastooltip useid_error <?php echo 'financesourcetext_'.$e; ?>" type="text" name="details[<?php echo $e; ?>][financesourcetext]" id="details_financesourcetext_<?php echo $e; ?>" value="<?php echo $loan->getfinancesourcetext(); ?>" title="<?php echo $this->translate("season_financesource_tooltip"); ?>" /><div id="details_financesourcetext_<?php echo $e; ?>_error"></div>
                                 </td>
                                 <td></td>
                             </tr>

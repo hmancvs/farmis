@@ -31,7 +31,6 @@ class Farm extends BaseEntity {
 		$this->hasColumn('notes', 'string', 1000);
 		$this->hasColumn('addressid', 'integer', null);
 		$this->hasColumn('hashistory', 'integer', null, array('default' => 0));
-		$this->hasColumn('historyid', 'integer', null);
 		$this->hasColumn('farmingtools', 'string', 50);
 	}
 	/**
@@ -94,12 +93,6 @@ class Farm extends BaseEntity {
 						 array(
 								'local' => 'id',
 								'foreign' => 'farmid'
-							)
-					);
-		$this->hasOne('FarmPreseason as preseason',
-			 			 array(
-								'local' => 'historyid',
-								'foreign' => 'id'
 							)
 					);
 		$this->hasMany('FarmPreseasonDetail as preseasonlines',
@@ -165,9 +158,6 @@ class Farm extends BaseEntity {
 		if(isArrayKeyAnEmptyString('hashistory', $formvalues)){
 			unset($formvalues['hashistory']);
 		}
-		if(isArrayKeyAnEmptyString('historyid', $formvalues)){
-			$formvalues['historyid'] = NULL;
-		}
 		
 		# process address information
 		$address = array(); 
@@ -224,25 +214,22 @@ class Farm extends BaseEntity {
 		
 		if(!isArrayKeyAnEmptyString('hashistory', $formvalues)){
 			if($formvalues['hashistory'] == 1){
-				if(!isArrayKeyAnEmptyString('historyid', $formvalues)){
-					$formvalues['preseason']['id'] = $formvalues['historyid'];
-				}
 				if(!isArrayKeyAnEmptyString('startyear', $formvalues)){
-					$formvalues['preseason']['startyear'] = $formvalues['startyear'];
+					$formvalues['preseasons'][0]['startyear'] = $formvalues['startyear'];
 				}
 				if(!isArrayKeyAnEmptyString('startmonth', $formvalues)){
-					$formvalues['preseason']['startmonth'] = $formvalues['startmonth'];
+					$formvalues['preseasons'][0]['startmonth'] = $formvalues['startmonth'];
 				}
 				if(!isArrayKeyAnEmptyString('endyear', $formvalues)){
-					$formvalues['preseason']['endyear'] = $formvalues['endyear'];
+					$formvalues['preseasons'][0]['endyear'] = $formvalues['endyear'];
 				}
 				if(!isArrayKeyAnEmptyString('endmonth', $formvalues)){
-					$formvalues['preseason']['endmonth'] = $formvalues['endmonth'];
+					$formvalues['preseasons'][0]['endmonth'] = $formvalues['endmonth'];
 				}
-				$formvalues['preseason']['userid'] = $formvalues['userid'];
-				$formvalues['preseason']['farmerid'] = $formvalues['farmerid'];
-				$formvalues['preseason']['farmid'] = $formvalues['farmid'];
-				$formvalues['preseason']['createdby'] = 1;
+				$formvalues['preseasons'][0]['userid'] = $formvalues['userid'];
+				$formvalues['preseasons'][0]['farmerid'] = $formvalues['farmerid'];
+				$formvalues['preseasons'][0]['farmid'] = $formvalues['farmid'];
+				$formvalues['preseasons'][0]['createdby'] = 1;
 				
 				$cropdetails = $formvalues['details'];
 				foreach ($cropdetails as $key => $value){
@@ -252,11 +239,6 @@ class Farm extends BaseEntity {
 						$cropdetails[$key]['farmid'] = $formvalues['id'];
 						if(!isArrayKeyAnEmptyString('id_'.$key, $formvalues)){
 							$cropdetails[$key]['id'] = $formvalues['id_'.$key];
-						}
-						if(!isArrayKeyAnEmptyString('historyid', $formvalues)){
-							$cropdetails[$key]['preseasonid'] = $formvalues['historyid'];
-						} else {
-							unset($cropdetails[$key]['preseasonid']);
 						}
 						if(!isArrayKeyAnEmptyString('fieldsizeunit_'.$key, $formvalues)){
 							$cropdetails[$key]['fieldsizeunit'] = $formvalues['fieldsizeunit_'.$key];
@@ -326,20 +308,22 @@ class Farm extends BaseEntity {
 						if(!isArrayKeyAnEmptyString('financetype_'.$key, $formvalues)){
 							if($formvalues['financetype_'.$key] == 1){
 								// debugMessage('processing loan');
-								$cropdetails[$key]['loan']['createdby'] = $formvalues['userid'];
-								$cropdetails[$key]['loan']['userid'] = $formvalues['userid'];
-								$cropdetails[$key]['loan']['farmid'] = $formvalues['farmid'];
-								$cropdetails[$key]['loan']['farmerid'] = $formvalues['farmerid'];
-								isArrayKeyAnEmptyString('principal', $value) ? $cropdetails[$key]['loan']['principal'] = NULL : $cropdetails[$key]['loan']['principal'] = $value['principal'];
-								isArrayKeyAnEmptyString('interestrate', $value) ? $cropdetails[$key]['loan']['interestrate'] = NULL : $cropdetails[$key]['loan']['interestrate'] = $value['interestrate'];
-								isArrayKeyAnEmptyString('paybackamount', $value) ? $cropdetails[$key]['loan']['paybackamount'] = NULL : $cropdetails[$key]['loan']['paybackamount'] = $value['paybackamount'];
-								isArrayKeyAnEmptyString('installment', $value) ? $cropdetails[$key]['loan']['installment'] = NULL : $cropdetails[$key]['loan']['installment'] = $value['installment'];
-								isArrayKeyAnEmptyString('installmentunit', $value) ? $cropdetails[$key]['loan']['installmentunit'] = NULL : $cropdetails[$key]['loan']['installmentunit'] = $value['installmentunit'];
-								isArrayKeyAnEmptyString('paybackperiod', $value) ? $cropdetails[$key]['loan']['paybackperiod'] = NULL : $cropdetails[$key]['loan']['paybackperiod'] = $value['paybackperiod'];
-								isArrayKeyAnEmptyString('paybackperiodunit_'.$key, $formvalues) ? $cropdetails[$key]['loan']['paybackperiodunit'] = NULL : $cropdetails[$key]['loan']['paybackperiodunit'] = $formvalues['paybackperiodunit_'.$key];
-								isArrayKeyAnEmptyString('creditdate', $value) ? $cropdetails[$key]['loan']['creditdate'] = NULL : $cropdetails[$key]['loan']['creditdate'] = $value['creditdate'];
-								isArrayKeyAnEmptyString('financesourceid', $value) ? $cropdetails[$key]['loan']['financesourceid'] = NULL : $cropdetails[$key]['loan']['financesourceid'] = $value['financesourceid'];
-								isArrayKeyAnEmptyString('financesourcetext', $value) ? $cropdetails[$key]['loan']['financesourcetext'] = NULL : $cropdetails[$key]['loan']['financesourcetext'] = $value['financesourcetext'];
+								$cropdetails[$key]['loans'][0]['createdby'] = $formvalues['userid'];
+								$cropdetails[$key]['loans'][0]['userid'] = $formvalues['userid'];
+								$cropdetails[$key]['loans'][0]['farmid'] = $formvalues['farmid'];
+								$cropdetails[$key]['loans'][0]['farmerid'] = $formvalues['farmerid'];
+								isArrayKeyAnEmptyString('principal', $value) ? $cropdetails[$key]['loans'][0]['principal'] = NULL : $cropdetails[$key]['loans'][0]['principal'] = $value['principal'];
+								isArrayKeyAnEmptyString('interestrate', $value) ? $cropdetails[$key]['loans'][0]['interestrate'] = NULL : $cropdetails[$key]['loans'][0]['interestrate'] = $value['interestrate'];
+								isArrayKeyAnEmptyString('paybackamount', $value) ? $cropdetails[$key]['loans'][0]['paybackamount'] = NULL : $cropdetails[$key]['loans'][0]['paybackamount'] = $value['paybackamount'];
+								isArrayKeyAnEmptyString('installment', $value) ? $cropdetails[$key]['loans'][0]['installment'] = NULL : $cropdetails[$key]['loans'][0]['installment'] = $value['installment'];
+								isArrayKeyAnEmptyString('installmentunit', $value) ? $cropdetails[$key]['loans'][0]['installmentunit'] = NULL : $cropdetails[$key]['loans'][0]['installmentunit'] = $value['installmentunit'];
+								isArrayKeyAnEmptyString('paybackperiod', $value) ? $cropdetails[$key]['loans'][0]['paybackperiod'] = NULL : $cropdetails[$key]['loans'][0]['paybackperiod'] = $value['paybackperiod'];
+								isArrayKeyAnEmptyString('paybackperiodunit_'.$key, $formvalues) ? $cropdetails[$key]['loans'][0]['paybackperiodunit'] = NULL : $cropdetails[$key]['loans'][0]['paybackperiodunit'] = $formvalues['paybackperiodunit_'.$key];
+								isArrayKeyAnEmptyString('creditdate', $value) ? $cropdetails[$key]['loans'][0]['creditdate'] = NULL : $cropdetails[$key]['loans'][0]['creditdate'] = $value['creditdate'];
+								isArrayKeyAnEmptyString('financesourceid', $value) ? $cropdetails[$key]['loans'][0]['financesourceid'] = NULL : $cropdetails[$key]['loans'][0]['financesourceid'] = $value['financesourceid'];
+								isArrayKeyAnEmptyString('financesourcetext', $value) ? $cropdetails[$key]['loans'][0]['financesourcetext'] = NULL : $cropdetails[$key]['loans'][0]['financesourcetext'] = $value['financesourcetext'];
+							} else {
+								$cropdetails[$key]['loans'] = array();
 							}
 						} 
 						$cropdetails[$key]['financetype'] = $formvalues['financetype_'.$key];
@@ -348,14 +332,14 @@ class Farm extends BaseEntity {
 					}
 				}
 				if(count($cropdetails)){
-					$formvalues['preseason']['details'] = $cropdetails;
+					$formvalues['preseasons'][0]['details'] = $cropdetails;
 				} else {
-					unset($formvalues['preseason']['details']);
+					$formvalues['preseasons'][0]['details'] = array();
 				}
 				unset($formvalues['details']);
+			} else {
+				$formvalues['preseasons'] = array();
 			}
-		} else {
-			unset($formvalues['historyid']);
 		}
 		
 		if(!isArrayKeyAnEmptyString('farmingtoolsids', $formvalues)) {
@@ -373,7 +357,7 @@ class Farm extends BaseEntity {
 			unset($formvalues['farmingtools']); 
 		}
 		
-        // debugMessage($formvalues); exit();
+        debugMessage($formvalues); // exit();
 		parent::processPost($formvalues);
 	}
 	/**
@@ -502,13 +486,6 @@ class Farm extends BaseEntity {
     		$this->save();
     	}
     	
-    	if(!isEmptyString($this->getHistoryID())){
-    		$detail = $this->getPreseasonLines()->get(0);
-	    	if(!isEmptyString($detail->getID()) && isEmptyString($detail->getPreseasonID())){
-	    		$detail->setPreseasonID($this->getHistoryID());
-	    		$detail->save();
-	    	}
-    	}
     	// exit();
     	return true;
     }
@@ -524,7 +501,7 @@ class Farm extends BaseEntity {
 	# determine path to thumbnail profile picture
 	function getThumbnailLogoPath() {
 		$baseUrl = Zend_Controller_Front::getInstance()->getBaseUrl();
-		$path = $baseUrl.'/uploads/farms/default/thumbnail_logo.jpg';
+		$path = $baseUrl.'/uploads/farms/default/thumbnail_default.jpg';
 		if($this->hasLogo()){
 			$path = $baseUrl.'/uploads/user_'.$this->getFarmer()->getUserID().'/farm_'.$this->getID().'/thumbnail_'.$this->getLogo();
 		}
@@ -533,7 +510,7 @@ class Farm extends BaseEntity {
 	# determine path to medium profile picture
 	function getMediumLogoPath() {
 		$baseUrl = Zend_Controller_Front::getInstance()->getBaseUrl();
-		$path = $baseUrl.'/uploads/farms/default/medium_logo.jpg';
+		$path = $baseUrl.'/uploads/farms/default/medium_default.jpg';
 		if($this->hasLogo()){
 			$path = $baseUrl.'/uploads/user_'.$this->getFarmer()->getUserID().'/farm_'.$this->getID().'/medium_'.$this->getLogo();
 		}
@@ -542,7 +519,7 @@ class Farm extends BaseEntity {
 	# determine path to large profile picture
 	function getLargeLogoPath() {
 		$baseUrl = Zend_Controller_Front::getInstance()->getBaseUrl();
-		$path = $baseUrl.'/uploads/farms/default/large_logo.jpg'; 
+		$path = $baseUrl.'/uploads/farms/default/large_default.jpg'; 
 		if($this->hasLogo()){
 			$path = $baseUrl.'/uploads/user_'.$this->getFarmer()->getUserID().'/farm_'.$this->getID().'/large_'.$this->getLogo();
 		}
@@ -806,6 +783,12 @@ class Farm extends BaseEntity {
 			}
 		}
 		return $total = 0;
+	}
+	# fetch order farm seasons 
+	function getOrderedSeasons() {
+		$q = Doctrine_Query::create()->from('Season s')->where("s.farmid = '".$this->getID()."' ")->orderby('s.datecreated desc');
+		$result = $q->execute();
+		return $result;
 	}
 }
 

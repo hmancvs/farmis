@@ -252,5 +252,33 @@ class ProfileController extends SecureController  {
 	   		$this->_helper->redirector->gotoUrl($this->view->baseUrl("profile/view/id/".encode($user->getID())));
     	}
    	}
+   	
+	public function dashupdateAction(){
+		$this->_helper->layout->disableLayout();
+		$this->_helper->viewRenderer->setNoRender(TRUE);
+		
+		$formvalues = $this->_getAllParams();
+		$session = SessionWrapper::getInstance(); 
+		// debugMessage($formvalues);
+		
+		$user = new UserAccount();
+		$user->populate($formvalues['id']);
+		switch ($formvalues['area']) {
+			case 'welcome':
+				$user->setDashWelcome(0);
+				break;
+			case 'wizard':
+				$user->setDashWizard(0);
+				break;
+			default:
+				break;
+		}
+		
+		$user->save();
+		
+		// debugMessage($user->toArray());
+		$this->_helper->redirector->gotoUrl($this->view->baseUrl("dashboard"));
+		// exit();
+	}
 }
 

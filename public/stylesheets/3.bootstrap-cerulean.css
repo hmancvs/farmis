@@ -167,7 +167,9 @@ a:hover {
 .container,
 .navbar-fixed-top .container,
 .navbar-fixed-bottom .container {
-  width: 980px;
+ /* width: 980px;*/
+  min-width:980px;
+  width: 100%;
 }
 .span12 {
   width: 940px;
@@ -297,9 +299,12 @@ a:hover {
   width: 6.382978723%;
 }
 .container {
-  margin-left: auto;
+  margin-left: -3px;
   margin-right: auto;
   *zoom: 1;
+}
+.publicbody .container {
+  margin-left: auto;
 }
 .container:before,
 .container:after {
@@ -2876,10 +2881,8 @@ input[type="submit"].btn.btn-mini {
 .navbar .brand {
   float: left;
   display: block;
-  padding: 8px 20px 12px;
-  margin-left: -20px;
+  margin: 0;
   font-size: 20px;
-  font-weight: 200;
   line-height: 1;
   color: #ffffff;
 }
@@ -2978,7 +2981,7 @@ input[type="submit"].btn.btn-mini {
   position: fixed;
   right: 0;
   left: 0;
-  z-index: 1030;
+  z-index: 30;
   margin-bottom: 0;
 }
 .navbar-fixed-top .navbar-inner,
@@ -2991,7 +2994,9 @@ input[type="submit"].btn.btn-mini {
 }
 .navbar-fixed-top .container,
 .navbar-fixed-bottom .container {
-  width: 980px;
+  /*width: 980px;*/
+  min-width:980px;
+  width: 100%;
 }
 .navbar-fixed-top {
   top: 0;

@@ -1,0 +1,277 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$controller = $request->getControllerName();
+	$action = $request->getActionName();
+	
+?>
+			<div class="row margin0" style="padding:2px; margin-bottom:10px;">
+                    <span class="pull-left well lighter margin0" style="width:97%; min-height:230px;">
+                    	<h3 class="well-legend"><?php echo $this->translate("season_labour_estimates_label"); ?></h3>
+                        <table class="table table-stripped table-bordered hasheader" style="margin-top:15px; margin-bottom:15px;">
+                            <thead>
+                                <tr class="rowheader">
+                                    <td rowspan="2" style="width:31%; background-color:#FFF; color:#333333;"><label class="control-label green"><?php echo $this->translate("season_labour_family_label"); ?></label></td>
+                                    <td style="width:23%;" colspan="3" class="centeralign"><?php echo $this->translate("season_labour_men_label"); ?></td>
+                                    <td style="width:23%;" colspan="3" class="centeralign"><?php echo $this->translate("season_labour_women_label"); ?></td>
+                                    <td style="width:23%;" colspan="4" class="centeralign"><?php echo $this->translate("season_labour_children_label"); ?></td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            	<tr>
+                                	<td><label class="control-label"><?php echo $this->translate("season_labour_activity_label"); ?></label></td>
+                                    <td style="width:7%;"><label class="control-label centeralign"><?php echo $this->translate("season_labour_number_label"); ?></label></td>
+                                    <td style="width:9%;"><label class="control-label centeralign"><?php echo $this->translate("season_labour_hrs_label"); ?></label></td>
+                                    <td style="width:7%;"><label class="control-label centeralign"><?php echo $this->translate("season_labour_days_label"); ?></label></td>
+                                    <td style="width:7%;"><label class="control-label centeralign"><?php echo $this->translate("season_labour_number_label"); ?></label></td>
+                                    <td style="width:9%;"><label class="control-label centeralign"><?php echo $this->translate("season_labour_hrs_label"); ?></label></td>
+                                    <td style="width:7%;"><label class="control-label centeralign"><?php echo $this->translate("season_labour_days_label"); ?></label></td>
+                                    <td style="width:7%;"><label class="control-label centeralign"><?php echo $this->translate("season_labour_number_label"); ?></label></td>
+                                    <td style="width:9%;"><label class="control-label centeralign"><?php echo $this->translate("season_labour_hrs_label"); ?></label></td>
+                                    <td style="width:7%;"><label class="control-label centeralign"><?php echo $this->translate("season_labour_days_label"); ?></label></td>
+                                    <td style="width:4%;"><span title="Delete row"><a>Del</a></span></td>
+                                </tr>
+                                <?php 
+									switch($action){
+										case 'tillage':
+											$labourdetails = $tillage->getFamilyLabourDetails();
+											break;
+										case 'plant':
+											$labourdetails = $plant->getFamilyLabourDetails();
+											break;
+										case 'treat':
+											$labourdetails = $treat->getFamilyLabourDetails();
+											break;
+										case 'harvest':
+											$labourdetails = $harvest->getFamilyLabourDetails();
+											break;
+										case 'activity':
+											$labourdetails = $activity->getFamilyLabourDetails();
+											break;
+										case 'sale':
+											$labourdetails = $sale->getFamilyLabourDetails();
+											break;
+										default:
+											break;
+									}
+                                    
+                                    $nooflines = $labourdetails->count();
+                                    $e = 0; $x = 0;
+                                    foreach($labourdetails as $labour){
+                                        $class = "visible_row_labour";
+                                ?>
+                                	<tr class="<?php echo $class; ?> row_labour_<?php echo $e; ?>" id="row_labour_<?php echo $e; ?>">
+                                    	<td><input type="text" style="width:94%;" name="labourdetails[<?php echo md5($e); ?>][activityname]" id="labourdetails_activityname_<?php echo $e; ?>" class="activityname 94width activityname_validate_<?php echo $e; ?> useid_error" value="<?php echo $labour->getActivityName(); ?>" />
+                                            <div id="labourdetails_activityname_<?php echo $e; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($e); ?>][mcount]" id="labourdetails_mcount_<?php echo $e; ?>" class="mcount 94width mcount_validate_<?php echo $e; ?> useid_error isnumber centeralign" value="<?php echo clean_num($labour->getmcount()); ?>" />
+                                            <div id="labourdetails_mcount_<?php echo $e; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($e); ?>][mhoursperday]" id="labourdetails_mhoursperday_<?php echo $e; ?>" class="mhoursperday 94width mcount_validate_<?php echo $e; ?> useid_error isdecimal centeralign" value="<?php echo clean_num($labour->getmhoursperday()); ?>" />
+                                            <div id="labourdetails_mhoursperday_<?php echo $e; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($e); ?>][mtotaldays]" id="labourdetails_mtotaldays_<?php echo $e; ?>" class="mtotaldays 94width mcount_validate_<?php echo $e; ?> useid_error isdecimal centeralign" value="<?php echo clean_num($labour->getmtotaldays()); ?>" />
+                                            <div id="labourdetails_mtotaldays_<?php echo $e; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($e); ?>][wcount]" id="labourdetails_wcount_<?php echo $e; ?>" class="wcount 94width wcount_validate_<?php echo $e; ?> useid_error isnumber centeralign" value="<?php echo clean_num($labour->getwcount()); ?>" />
+                                            <div id="labourdetails_wcount_<?php echo $e; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($e); ?>][whoursperday]" id="labourdetails_whoursperday_<?php echo $e; ?>" class="whoursperday 94width wcount_validate_<?php echo $e; ?> useid_error isdecimal centeralign" value="<?php echo clean_num($labour->getwhoursperday()); ?>" />
+                                            <div id="labourdetails_whoursperday_<?php echo $e; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($e); ?>][wtotaldays]" id="labourdetails_wtotaldays_<?php echo $e; ?>" class="wtotaldays 94width wcount_validate_<?php echo $e; ?> useid_error isdecimal centeralign" value="<?php echo clean_num($labour->getwtotaldays()); ?>" />
+                                            <div id="labourdetails_wtotaldays_<?php echo $e; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($e); ?>][kcount]" id="labourdetails_kcount_<?php echo $e; ?>" class="kcount 94width kcount_validate_<?php echo $e; ?> useid_error isnumber centeralign" value="<?php echo clean_num($labour->getkcount()); ?>" />
+                                            <div id="labourdetails_kcount_<?php echo $e; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($e); ?>][khoursperday]" id="labourdetails_khoursperday_<?php echo $e; ?>" class="khoursperday 94width kcount_validate_<?php echo $e; ?> useid_error isdecimal centeralign" value="<?php echo clean_num($labour->getkhoursperday()); ?>" />
+                                            <div id="labourdetails_khoursperday_<?php echo $e; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($e); ?>][ktotaldays]" id="labourdetails_ktotaldays_<?php echo $e; ?>" class="ktotaldays 94width kcount_validate_<?php echo $e; ?> useid_error isdecimal centeralign" value="<?php echo clean_num($labour->getktotaldays()); ?>" />
+                                            <div id="labourdetails_ktotaldays_<?php echo $e; ?>_error"></div></td>
+                                        <td class="centeralign"><a href="javascript: doNothing();" title="<?php echo $this->translate("global_button_remove"); ?>" id="row_labour_<?php echo $e; ?>" class="removeline close button btn" rel="labour">&times;</a>
+                                        	<input type="hidden" name="labourdetails[<?php echo md5($e); ?>][type]" id="labourdetails_type_<?php echo $e; ?>" value="1" />
+                                            <input type="hidden" name="labourdetails[<?php echo md5($e); ?>][id]" id="labourdetails_id_<?php echo $e; ?>" value="<?php echo $labour->getID(); ?>" />
+                                        </td>
+                                    </tr>
+                                <?php $e++; $x++; } ?>
+                                <?php 
+                                    $defaultlines = 1;
+                                    if($nooflines >= 1){
+                                        $defaultlines = $nooflines + 1;
+                                    }
+                                    for($i = $e; $i<10; $i++){
+                                        // debugMessage($i);
+                                        $class = "visible_row_labour";
+                                        if($i >= $defaultlines){
+                                            $class = "hidden_row_labour";
+                                        }
+                                    
+                                ?>
+                                	<tr class="<?php echo $class; ?> row_labour_<?php echo $i; ?>" id="row_labour_<?php echo $i; ?>">
+                                    	<td><input type="text" style="width:94%;" name="labourdetails[<?php echo md5($i); ?>][activityname]" id="labourdetails_activityname_<?php echo $i; ?>" class="activityname 94width activityname_validate_<?php echo $i; ?> useid_error" value="" />
+                                            <div id="labourdetails_activityname_<?php echo $i; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($i); ?>][mcount]" id="labourdetails_mcount_<?php echo $i; ?>" class="mcount 94width mcount_validate_<?php echo $i; ?> useid_error isnumber centeralign" value="" />
+                                            <div id="labourdetails_mcount_<?php echo $i; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($i); ?>][mhoursperday]" id="labourdetails_mhoursperday_<?php echo $i; ?>" class="mhoursperday 94width mcount_validate_<?php echo $i; ?> useid_error  isdecimal centeralign" value="" />
+                                            <div id="labourdetails_mhoursperday_<?php echo $i; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($i); ?>][mtotaldays]" id="labourdetails_mtotaldays_<?php echo $i; ?>" class="mtotaldays 94width mcount_validate_<?php echo $i; ?> useid_error isdecimal centeralign" value="" />
+                                            <div id="labourdetails_mtotaldays_<?php echo $i; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($i); ?>][wcount]" id="labourdetails_wcount_<?php echo $i; ?>" class="wcount 94width wcount_validate_<?php echo $i; ?> useid_error isnumber centeralign" value="" />
+                                            <div id="labourdetails_wcount_<?php echo $i; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($i); ?>][whoursperday]" id="labourdetails_whoursperday_<?php echo $i; ?>" class="whoursperday 94width wcount_validate_<?php echo $i; ?> useid_error isdecimal centeralign" value="" />
+                                            <div id="labourdetails_whoursperday_<?php echo $i; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($i); ?>][wtotaldays]" id="labourdetails_wtotaldays_<?php echo $i; ?>" class="wtotaldays 94width wcount_validate_<?php echo $i; ?> useid_error isdecimal centeralign" value="" />
+                                            <div id="labourdetails_wtotaldays_<?php echo $i; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($i); ?>][kcount]" id="labourdetails_kcount_<?php echo $i; ?>" class="kcount 94width kcount_validate_<?php echo $i; ?> useid_error isnumber centeralign" value="" />
+                                            <div id="labourdetails_kcount_<?php echo $i; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($i); ?>][khoursperday]" id="labourdetails_khoursperday_<?php echo $i; ?>" class="khoursperday 94width kcount_validate_<?php echo $i; ?> useid_error isdecimal centeralign" value="" />
+                                            <div id="labourdetails_khoursperday_<?php echo $i; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($i); ?>][ktotaldays]" id="labourdetails_ktotaldays_<?php echo $i; ?>" class="ktotaldays 94width kcount_validate_<?php echo $i; ?> useid_error isdecimal centeralign" value="" />
+                                            <div id="labourdetails_ktotaldays_<?php echo $i; ?>_error"></div></td>
+                                        <td class="centeralign"><a href="javascript: doNothing();" title="<?php echo $this->translate("global_button_remove"); ?>" id="row_labour_<?php echo $i; ?>" class="removeline close button btn" rel="labour">&times;</a>
+                                        	<input type="hidden" name="labourdetails[<?php echo md5($i); ?>][type]" id="labourdetails_type_<?php echo $i; ?>" value="1" />
+                                        </td>
+                                    </tr>
+                                <?php $x++; } ?>
+                            </tbody>
+                            <tbody>
+                            	<tr>
+                                    <td><a href="javascript: void(0)" title="Add another" class="addline btn btn-mini pull-left" id="labour">Add Row</a></td>
+                                    <td colspan="3"></td>
+                                    <td colspan="3"></td>
+                                    <td colspan="3"></td>
+                                    <td></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table class="table table-stripped table-bordered hasheader" style="margin-top:15px; margin-bottom:15px;">
+                            <thead>
+                                <tr class="rowheader">
+                                    <td rowspan="2" style="background-color:#FFF; color:#333333;"><label class="control-label green"><?php echo $this->translate("season_labour_hired_label"); ?></label></td>
+                                    <td style="width:25%;" colspan="2" class="centeralign"><?php echo $this->translate("season_labour_cashexpenditure_label"); ?></td>
+                                    <td style="width:50%;" colspan="5" class="centeralign"><?php echo $this->translate("season_labour_kindexpenditure_label"); ?></td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            	<tr>
+                                	<td><label class="control-label"><?php echo $this->translate("season_labour_activity_label"); ?></label></td>
+                                    <td style="width:15%;"><label class="control-label centeralign"><?php echo $this->translate("season_labour_landsize_label"); ?></label></td>
+                                    <td style="width:9%;"><label class="control-label centeralign"><?php echo $this->translate("season_labour_cost_label"); ?></label></td>
+                                    <td style="width:20%;"><label class="control-label centeralign"><?php echo $this->translate("season_labour_kinditem_label"); ?></label></td>
+                                    <td style="width:8%;"><label class="control-label centeralign"><?php echo $this->translate("season_labour_qty_label"); ?></label></td>
+                                    <td style="width:9%;"><label class="control-label centeralign"><?php echo $this->translate("season_labour_unitcost_label"); ?></label></td>
+                                    <td style="width:9%;"><label class="control-label centeralign"><?php echo $this->translate("season_labour_amount_label"); ?></label></td>
+                                    <td style="width:4%;"><span title="Delete row"><a>Del</a></span></td>
+                                </tr>
+                                <?php
+									switch($action){
+										case 'tillage':
+											$labourdetails = $tillage->getHiredLabourDetails();
+											break;
+										case 'plant':
+											$labourdetails = $plant->getHiredLabourDetails();
+											break;
+										case 'treat':
+											$labourdetails = $treat->getHiredLabourDetails();
+											break;
+										case 'harvest':
+											$labourdetails = $harvest->getHiredLabourDetails();
+											break;
+										case 'activity':
+											$labourdetails = $activity->getHiredLabourDetails();
+											break;
+										case 'sale':
+											$labourdetails = $sale->getHiredLabourDetails();
+											break;
+										default:
+											break;
+									}
+									
+                                    $nooflines = $labourdetails->count();
+                                    $e = $x;
+									$areavalues = getAreaUnits();
+                                    foreach($labourdetails as $labour){
+                                        $class = "visible_row_hired";
+                                ?>
+                                	<tr class="<?php echo $class; ?> row_hired_<?php echo $e; ?>" id="row_hired_<?php echo $e; ?>">
+                                    	<td><input type="text" style="width:94%;" name="labourdetails[<?php echo md5($e); ?>][activityname]" id="labourdetails_activityname_<?php echo $e; ?>" class="activityname 94width activityname_validate_<?php echo $e; ?> useid_error" value="<?php echo $labour->getActivityName(); ?>" />
+                                            <div id="labourdetails_activityname_<?php echo $e; ?>_error"></div></td>
+                                        <td style="padding-left:5px; padding-right:2px;"><input type="text" style="width:38%;" name="labourdetails[<?php echo md5($e); ?>][fieldsize]" id="labourdetails_fieldsize_<?php echo $e; ?>" class="itemqty 94width fieldsize_validate_<?php echo $e; ?> useid_error isdecimal centeralign" value="<?php echo clean_num($labour->getFieldSize()); ?>" />
+                                            &nbsp;
+                                            <?php
+                                                $unitdropdown = new Zend_Form_Element_Select('labourdetails_fieldsizeunit_'.md5($e),
+                                                                    array(
+                                                                        'multiOptions' => array_merge_maintain_keys(array('' => '< >'), $areavalues),								
+                                                                        'view' => new Zend_View(),
+                                                                        'decorators' => array('ViewHelper'),
+                                                                        'class' => array('fieldsizeunit_validate_'.$e),
+																		'style' => 'width:38%'
+                                                                    )
+                                                                );
+                                                $unitdropdown->setValue($labour->getFieldSizeUnit()); 
+                                                echo $unitdropdown->render(); 
+                                           ?><div id="labourdetails_fieldsize_<?php echo $e; ?>_error"></div><div id="labourdetails_fieldsizeunit_<?php echo $e; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($e); ?>][fieldcost]" id="labourdetails_fieldcost_<?php echo $e; ?>" class="fieldcost 94width fieldcost_validate_<?php echo $e; ?> useid_error isamount centeralign" value="<?php echo $labour->getfieldcost(); ?>" />
+                                            <div id="labourdetails_fieldcost_<?php echo $e; ?>_error"></div></td>
+                                        <td><input type="text" style="width:90%;" name="labourdetails[<?php echo md5($e); ?>][itempaid]" id="labourdetails_itempaid_<?php echo $e; ?>" class="itempaid 94width itempaid_validate_<?php echo $e; ?> useid_error" value="<?php echo $labour->getitempaid(); ?>" />
+                                            <div id="labourdetails_itempaid_<?php echo $e; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($e); ?>][itemqty]" id="labourdetails_itemqty_<?php echo $e; ?>" class="itemqty 94width itemqty_validate_<?php echo $e; ?> useid_error isdecimal centeralign" value="<?php echo clean_num($labour->getitemqty()); ?>" />
+                                            <div id="labourdetails_itemqty_<?php echo $e; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($e); ?>][unitprice]" id="labourdetails_unitprice_<?php echo $e; ?>" class="unitprice 94width unitprice_validate_<?php echo $e; ?> useid_error isamount centeralign" value="<?php echo $labour->getunitprice(); ?>" />
+                                            <div id="labourdetails_unitprice_<?php echo $e; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($e); ?>][amount]" id="labourdetails_amount_<?php echo $e; ?>" class="amount 94width amount_validate_<?php echo $e; ?> useid_error isamount centeralign" value="<?php echo $labour->getamount(); ?>" />
+                                            <div id="labourdetails_amount_<?php echo $e; ?>_error"></div></td>
+                                        <td><a href="javascript: doNothing();" title="<?php echo $this->translate("global_button_remove"); ?>" id="row_hired_<?php echo $e; ?>" class="removeline close button btn" rel="hired" size="20">&times;</a>
+                                        	<input type="hidden" name="labourdetails[<?php echo md5($e); ?>][type]" id="labourdetails_type_<?php echo $e; ?>" value="2" />
+                                            <input type="hidden" name="labourdetails[<?php echo md5($e); ?>][id]" id="labourdetails_id_<?php echo $e; ?>" value="<?php echo $labour->getID(); ?>" /></td>
+                                    </tr>
+                                <?php $e++; $x++; } ?>
+                                <?php 
+                                    $defaultlines = 11;
+                                    if($nooflines >= 1){
+                                        $defaultlines = $nooflines + 11;
+                                    }
+                                    for($i = $e; $i < 20; $i++){
+                                        $class = "visible_row_hired";
+                                        if($i >= $defaultlines){
+                                            $class = "hidden_row_hired";
+                                        }
+                                    	// debugMessage($defaultlines);
+                                ?>
+                                	<tr class="<?php echo $class; ?> row_hired_<?php echo $i; ?>" id="row_hired_<?php echo $i; ?>">
+                                    	<td><input type="text" style="width:94%;" name="labourdetails[<?php echo md5($i); ?>][activityname]" id="labourdetails_activityname_<?php echo $i; ?>" class="activityname 94width activityname_validate_<?php echo $i; ?> useid_error" value="" />
+                                            <div id="labourdetails_activityname_<?php echo $i; ?>_error"></div></td>
+                                        <td style="padding-left:5px; padding-right:2px;"><input type="text" style="width:38%;" name="labourdetails[<?php echo md5($i); ?>][fieldsize]" id="labourdetails_fieldsize_<?php echo $i; ?>" class="itemqty 94width fieldsize_validate_<?php echo $i; ?> useid_error isdecimal centeralign" value="" />
+                                            &nbsp;
+                                            <?php
+                                                $unitdropdown = new Zend_Form_Element_Select('labourdetails_fieldsizeunit_'.md5($i),
+                                                                    array(
+                                                                        'multiOptions' => array_merge_maintain_keys(array('' => '< >'), $areavalues),								
+                                                                        'view' => new Zend_View(),
+                                                                        'decorators' => array('ViewHelper'),
+                                                                        'class' => array('fieldsizeunit_validate_'.$i),
+																		'style' => 'width:38%'
+                                                                    )
+                                                                );
+                                                $unitdropdown->setValue(1); 
+                                                echo $unitdropdown->render(); 
+                                           ?><div id="labourdetails_fieldsize_<?php echo $i; ?>_error"></div><div id="labourdetails_fieldsizeunit_<?php echo $i; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($i); ?>][fieldcost]" id="labourdetails_fieldcost_<?php echo $i; ?>" class="fieldcost 94width fieldcost_validate_<?php echo $i; ?> useid_error isamount centeralign" value="" />
+                                            <div id="labourdetails_fieldcost_<?php echo $i; ?>_error"></div></td>
+                                        <td><input type="text" style="width:90%;" name="labourdetails[<?php echo md5($i); ?>][itempaid]" id="labourdetails_itempaid_<?php echo $i; ?>" class="itempaid 94width itempaid_validate_<?php echo $i; ?> useid_error" value="" />
+                                            <div id="labourdetails_itempaid_<?php echo $i; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($i); ?>][itemqty]" id="labourdetails_itemqty_<?php echo $i; ?>" class="itemqty 94width itemqty_validate_<?php echo $i; ?> useid_error isdecimal centeralign" value="" />
+                                            <div id="labourdetails_itemqty_<?php echo $i; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($i); ?>][unitprice]" id="labourdetails_unitprice_<?php echo $i; ?>" class="unitprice 94width unitprice_validate_<?php echo $i; ?> useid_error isamount centeralign" value="" />
+                                            <div id="labourdetails_unitprice_<?php echo $i; ?>_error"></div></td>
+                                        <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($i); ?>][amount]" id="labourdetails_amount_<?php echo $i; ?>" class="amount 94width amount_validate_<?php echo $i; ?> useid_error isamount centeralign" value="" />
+                                            <div id="labourdetails_amount_<?php echo $i; ?>_error"></div></td>
+                                        <td><a href="javascript: doNothing();" title="<?php echo $this->translate("global_button_remove"); ?>" id="row_hired_<?php echo $i; ?>" class="removeline close button btn" rel="hired" size="20">&times;</a>
+                                        	<input type="hidden" name="labourdetails[<?php echo md5($i); ?>][type]" id="labourdetails_type_<?php echo $i; ?>" value="2" /></td>
+                                    </tr>
+                                <?php $x++; } ?>
+                        	</tbody>
+                            <tbody>
+                            	<tr>
+                                    <td><a href="javascript: void(0)" title="Add another" class="addline btn btn-mini pull-left" id="hired">Add Row</a></td>
+                                    <td colspan="2"></td>
+                                    <td colspan="4"></td>
+                                    <td></td>
+                                </tr>
+                            </tbody>
+                        </table>
+					</span>
+				</div>

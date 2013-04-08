@@ -1127,4 +1127,16 @@
 		$all_lists = $conn->fetchAll("SELECT l.id as id, l.displayname as name FROM lookuptype AS l WHERE l.listable = 1 order by l.displayname ASC ");
 		return $all_lists;
 	}
+	# latest system user farmers
+	function getLatestUsers($limit){
+		$conn = Doctrine_Manager::connection();
+		$all_users = $conn->fetchAll("SELECT u.id as id, concat(u.firstname, ' ', u.lastname, ' ', u.othernames) as name FROM useraccount AS u inner join farmer f on (u.farmerid = f.id) WHERE u.isactive = 1 order by u.activationdate DESC limit ".$limit);
+		return $all_users;
+	}
+	# latest farm groups activated
+	function getLatestGroups($limit){
+		$conn = Doctrine_Manager::connection();
+		$all_grps = $conn->fetchAll("SELECT g.id as id, g.orgname as name FROM farmgroup AS g WHERE g.id <> '' order by g.regdate DESC limit ".$limit);
+		return $all_grps;
+	}
 ?>

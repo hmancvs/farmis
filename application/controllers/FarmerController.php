@@ -17,7 +17,7 @@ class FarmerController extends SecureController   {
 	    	$action == "picture" || $action == "processpicture" || $action == "croppicture" ||
 	    	$action == "autosearch" || $action == "delete" || 
 	    	$action == "delete" || $action == "privacy" || $action == "resetprivacy" || $action == "processadd" || 
-	    	$action == "report" || $action == 'validatephonesuccess' || $action == 'verifyphone'
+	    	$action == "report" || $action == 'validatephonesuccess' || $action == 'verifyphone' || $action == 'dashupdate'
 	    	 
     	) {
 			return ACTION_VIEW; 
@@ -643,4 +643,5 @@ class FarmerController extends SecureController   {
 				break;
 		}
 	}
+	
 }

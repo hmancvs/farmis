@@ -118,9 +118,6 @@ $(document).ready(function() {
 	right:20px; 
 	top:8px;
 }
-#generate {
-	margin-top:-10px;
-}
 .printpage {
 	display:none;
 }
@@ -158,32 +155,37 @@ pdfquicklinks {
 <?php } ?>
 </style>
 <div>
-  <div id="centercolumn">
+  <div id="centercolumn" class="reportpage">
   	<div class="printpage"></div>
-    
     <div class="hideonprint" style="width:100%;">
-    	<span class="reportlinks">
-        	<a id="dash" href="<?php echo $this->baseUrl('report/overview'); ?>" class="btn btn-primary" title="Report Dashboard<"><i class="icon-list-alt icon-white"></i> Report Dashboard</a>&nbsp;
-        </span>
         <?php if((isAdmin() || isFarmGroupAdmin())){ ?>
-    	<span class="reportfilter">
-            <label class="reportlabel cal-font">Farmer: </label>
-            <?php
-                $farmerarray = getFarmers($farmgroupid);
-                $farmerdropdown = new Zend_Form_Element_Select('id',
-                                    array(
-                                        'multiOptions' => array_merge_maintain_keys(array('' => '<Browse Farmer>'), $farmerarray),								
-                                        'view' => new Zend_View(),
-                                        'decorators' => array('ViewHelper'),
-                                        'class' => array('autofilter', 'width180')
-                                    )
-                                );
-                $farmerdropdown->setValue($request->getParam('id')); 
-                echo $farmerdropdown->render(); 
-              ?>&nbsp;&nbsp;
-             <a id="generate" href="<?php echo $this->baseUrl('report/primarybaseline/id/'.$farmer->getID()); ?>" class="btn btn-primary" title="Genenerate Report"><i class="icon-list-alt icon-white"></i> Generate</a>&nbsp;
-        </span>
-        <?php } ?>
+        	<table class="table table-condensed noborder margin0" style="width:100%;">
+            	<tr>
+                    <td style="width:70%;"></td>
+                    <td>
+                    	<?php if(isAdmin() || isFarmGroupAdmin()){ ?>
+                            <span class="reportfilter pull-left">
+                                <label class="reportlabel cal-font">Farmer: </label>
+                                <?php
+                                    $farmerarray = getFarmers($farmgroupid);
+                                    $farmerdropdown = new Zend_Form_Element_Select('id',
+                                                        array(
+                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Browse Farmer>'), $farmerarray),								
+                                                            'view' => new Zend_View(),
+                                                            'decorators' => array('ViewHelper'),
+                                                                'class' => array('chzn-select', 'width180', 'novalidate')
+                                                        )
+                                                    );
+                                    $farmerdropdown->setValue($request->getParam('id')); 
+                                    echo $farmerdropdown->render(); 
+                                  ?>&nbsp;&nbsp;
+                                 <a id="generate" href="<?php echo $this->baseUrl('report/primarybaseline/id/'); ?>" class="btn btn-primary" title="Generate Report"><i class="icon-list-alt icon-white"></i> Generate</a>&nbsp;
+                            </span>
+                        <?php } ?>
+                    </td>
+                </tr>
+            </table>
+		<?php } ?>
     </div>
     
     <?php if(isEmptyString($id)){  ?>

@@ -19,7 +19,6 @@ class FarmPreseason extends BaseEntity {
 		$this->hasColumn('prevrevenue', 'decimal', 10, array('default' => 0));
 		$this->hasColumn('prevprofit', 'decimal', 10, array('default' => 0));
 		$this->hasColumn('prevexpenses', 'decimal', 10, array('default' => 0));
-		$this->hasColumn('loanid', 'integer', null);
 		$this->hasColumn('usedloan', 'integer', null);
 		$this->hasColumn('notes','string', 1000);
 	}
@@ -58,11 +57,6 @@ class FarmPreseason extends BaseEntity {
 									'foreign' => 'id'
 								)
 						);
-		$this->hasOne('Loan as loan',
-							array('local' => 'loanid',
-									'foreign' => 'id'
-							)
-						);
 		$this->hasMany('FarmPreseasonDetail as details',
 						 array(
 								'local' => 'id',
@@ -89,9 +83,6 @@ class FarmPreseason extends BaseEntity {
 		}
 		if(isArrayKeyAnEmptyString('farmid', $formvalues)){
 			unset($formvalues['farmid']); 
-		}
-		if(isArrayKeyAnEmptyString('loanid', $formvalues)){
-			unset($formvalues['loanid']); 
 		}
 		if(isArrayKeyAnEmptyString('isdefault', $formvalues)){
 			unset($formvalues['isdefault']); 

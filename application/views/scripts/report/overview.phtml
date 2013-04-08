@@ -24,7 +24,10 @@
             <div>
                 <span class="marginleft0">
                     <ul class="sectionitems">
-                    	<?php if(isAdmin() || isFarmGroupAdmin()){ ?>
+                    	<li>
+                            <a class="list" href="<?php echo $this->baseUrl('report/certificate'); ?>" title="Provisional Membership Certificate"><img src="<?php echo $this->baseUrl('images/benefit_report.png'); ?>" /><br /><h2>Provisional Membership <br />Certificate</h2></a>
+                        </li>
+						<?php if(isAdmin() || isFarmGroupAdmin()){ ?>
                             <li>
                                 <a class="list" href="<?php echo $this->baseUrl('report/primarybaseline'); ?>" title="Farmers Profile Summary Report"><img src="<?php echo $this->baseUrl('images/benefit_report.png'); ?>" /><br /><h2>Farmers Profile <br />Summary Report</h2></a>
                             </li>

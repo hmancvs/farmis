@@ -1,0 +1,91 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$controller = $request->getControllerName();
+	$action = $request->getActionName();
+	
+	switch($action){
+		case 'inputview':
+			$object = $input;
+			break;
+		case 'tillageview':
+			$object = $tillage;
+			break;
+		case 'plantview':
+			$object = $plant;
+			break;
+		case 'treatview':
+			$object = $treat;
+			break;
+		case 'harvestview':
+			$object = $harvest;
+			break;
+		case 'activityview':
+			$object = $activity;
+			break;
+		case 'saleview':
+			$object = $sale;
+			break;
+		default:
+			break;
+	}
+	
+?>
+<div class="row margin0" style="padding:2px; margin-bottom:10px;">
+    <span class="pull-left well lighter margin0" id="row2_left" style="width:97%; min-height:50px; height:auto;">
+        <?php 
+            $loan = $object->getCreditDetails();
+        ?>
+        <h3 class="well-legend"><?php echo $this->translate("season_credit_finance_title"); ?></h3>
+        <table class="table noborder margin0" style="margin-top:10px;">
+            <tr>
+                <td style="width:20%;"><label class="control-label"><?php echo $this->translate("season_credit_type_label"); ?>:</label></td>
+                <td colspan="3"><?php $data = getCapitalSources(); echo $data[$object->getFinanceType()]; ?></td>
+            </tr>
+            <?php if($object->getFinanceType() == 5){ ?>
+            <tr>
+                <td><label class="control-label"><?php echo $this->translate("season_credit_client_label"); ?>:</label></td>
+                <td colspan="3"><?php echo $loan->getTheClient(); ?></td>
+            </tr>
+            <tr>
+                <td><label class="control-label"><?php echo $this->translate("season_credit_value_label"); ?>:</label></td>
+                <td colspan="3"><?php echo isEmptyString($loan->getPrice()) ? '--' : nl2br($loan->getPrice()); ?></td>
+            </tr>
+            <tr>
+                <td><label class="control-label"><?php echo $this->translate("season_credit_terms_label"); ?>:</label></td>
+                <td colspan="3"><?php echo isEmptyString($loan->getContract()) ? '--' : nl2br($loan->getContract()); ?></td>
+            </tr>
+            <?php } ?>
+            <tbody id="hasloan">
+                <?php if($object->getFinanceType() == 3 || $object->getFinanceType() == 4){ ?>
+                <tr>
+                    <td><label class="control-label"><?php echo $this->translate("season_credit_principal_label"); ?>:</label>
+                    <?php echo formatMoney($loan->getPrincipal()); ?></td>
+                    <td><label class="control-label"><?php echo $this->translate("season_credit_interestrate_label"); ?>:</label>
+                    <?php echo $loan->getInterestRate().'&nbsp;<span class="pagedescription">(%)</span>'; ?>&nbsp;</td>
+                    <td><label class="control-label"><?php echo $this->translate("season_credit_payperiod_label"); ?>:</label>
+                    <?php echo isEmptyString($loan->getPayBackPeriodText()) ? '--' : $loan->getPayBackPeriodText(); ?></td>
+                    <td><label class="control-label"><?php echo $this->translate("season_credit_repayment_label"); ?>:</label>
+                    <?php echo formatMoney($loan->getPayBackAmount()); ?></td>
+                </tr>
+                <tr>
+                    <td><label class="control-label"><?php echo $this->translate("season_credit_regularpay_label"); ?>:</label>
+                    <?php echo $loan->getInstallmentText(); ?></td>
+                    <td><label class="control-label"><?php echo $this->translate("season_credit_datereceived_label"); ?>:</label>
+                    <?php echo isEmptyString($loan->getcreditdate()) ? '--' : changeMySQLDateToPageFormat($loan->getcreditdate()); ?></td>
+                    <td colspan="2">
+                    <?php if($object->getFinanceType() == 4){ ?>
+                        <label class="control-label"><?php echo $this->translate("season_credit_source_label"); ?>:</label>
+                        <?php echo $loan->getFinancialSourceValue(); ?>
+                    <?php } ?>
+                    <?php if($object->getFinanceType() == 3){ ?>
+                        <label class="control-label"><?php echo $this->translate("season_credit_source_label"); ?>:</label>
+                        <?php echo isEmptyString($loan->getFinanceSourceText()) ? '--' : $loan->getFinanceSourceText(); ?>
+                    <?php } ?>
+                    </td>
+                </tr>
+                <?php } ?>
+            </tbody>
+        </table>
+    </span>
+</div>

@@ -14,6 +14,7 @@
 		$sale->setStatus(3);
 		$scounter = $sale->getNextReferencePointer();
 		$sale->setQuantityUnit('1');
+		$sale->setActivityName('Season Sales');
 		$successurl = encode($this->baseUrl("season/sale/sid/".$request->sid));
 	}
 	
@@ -31,6 +32,7 @@
 		$successurl = encode($this->baseUrl("season/sale/id/".$request->id));
 	}
 	$thefarmid = $sale->getSeason()->getFarmID();
+	$loan = $sale->getCreditDetails();
 	
 	#in case of errors in session, populate the fields from session
 	if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
@@ -39,13 +41,19 @@
 	
 	// $saletypes = getAllTillageTypes();
 	$this->headTitle($title);  
-	
+	$farmtitle = isFarmer() ? "Manage Farm" : "Manage Farm: ".$sale->getFarm()->getName();
 ?>
 <script>
 	$(document).ready(function() {
 		$("#indexform").validate({		
 			// define the validation rules one field at a time
 			rules: {
+				activityname: {
+					required: true,
+					maxlength: 25,
+					minlength: 4
+				},
+				ref: "required",
 				startdate: "required",
 				status: "required",
 				quantity: {
@@ -58,7 +66,13 @@
 			}, 
 			// the messages for each of the fields being validated
 			messages: {		
-				startdate: "<?php echo $this->translate("season_startdate_error"); ?>",
+				activityname: {
+					required: "Please specify activity name",
+					maxlength: "Maximum of 25 character needed",
+					minlength: "Minimum of 4 characters needed"
+				},
+				ref: "Reference not specified",		
+				startdate: "<?php echo $this->translate("season_activity_startdate_error"); ?>",
 				status: "<?php echo $this->translate("season_status_error"); ?>",
 				quantity:  {
 					required: "<?php echo $this->translate("season_quantity_error"); ?>"
@@ -98,6 +112,33 @@
 		});
 		$("#startdate").change();
 		
+		$("#creditdate").datepicker(datepickerOpts);
+		$("#sourcetype").val("");
+		$("#clienttype").val("");
+		$("#financetype-1, #financetype-2").click(function(){
+			multipleDisableContainerByID('hasloan,bankrow,softrow,cropfinancing');
+		});
+		$("#financetype-3").click(function(){
+			multipleEnableContainerByID('hasloan,softrow');
+			multipleDisableContainerByID('bankrow','cropfinancing');
+			$("#sourcetype").val(2);
+		});
+		$("#financetype-4").click(function(){
+			enableContainerByID('hasloan');
+			enableContainerByID('bankrow');
+			multipleDisableContainerByID('cropfinancing,softrow');
+			$("#sourcetype").val(1);
+		});
+		$("#financetype-5").click(function(){
+			enableContainerByID('cropfinancing');
+			multipleDisableContainerByID('hasloan,bankrow,softrow');
+			$("#clienttype").val(1);
+		});
+		<?php if(!isEmptyString($sale->getFinanceType())){ ?>
+			var currentval = '<?php echo $sale->getFinanceType(); ?>';
+			$("#financetype-"+currentval).click();
+		<?php } ?>
+		
 		$("#unitprice, #quantity").keyup(function(){
 			var price = $("#unitprice").val();
 			var qty = $("#quantity").val();
@@ -105,7 +146,7 @@
 			if(!isEmptyString(price) && !isEmptyString(qty) && parseInt(price)>0 && parseInt(qty)>0){
 				var linetotal = qty * price;
 			}
-			$("#totalamount").val(linetotal);
+			$("#totalamount").val(linetotal.toFixed(0));
 		});
 		$("#unitprice, #quantity").trigger('keyup');
 	}); 
@@ -129,21 +170,16 @@
                         <h3 class="well-legend"><?php echo $title; ?></h3>
                         <table class="table margin0" style="margin-top:15px;">
                             <tr>
-                                <td style="width:25%;"><label class="control-label"><?php echo $this->translate("season_activityref_label"); ?>: </label></td>
-                                <td style="width:30%;"><span id="reflabel"></span><input type="hidden" id="ref" name="ref" value="<?php echo $sale->getRef(); ?>" /></td>
-                                <td style="width:20%;"><label class="control-label"><?php echo $this->translate("season_ref_label"); ?>: </label></td>
-                                <td><a href="<?php $this->baseUrl('season/view/id/'.encode($sale->getSeasonID())); ?>" title="Season details"><?php echo $sale->getSeason()->getRef(); ?></a></td>
+                                <td style="width:20%;"><label class="control-label"><?php echo $this->translate("season_activity_name_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                                <td style="width:35%;"><input type="text" name="activityname" id="activityname" class="hastooltip" style="width:80%;" title="<?php echo $this->translate("season_activityname_tooltip"); ?>" value="<?php echo $sale->getActivityName(); ?>" /><div id="activityname_error"></div></td>
+                                <td style="width:15%;"><label class="control-label"><?php echo $this->translate("season_activity_ref_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                                <td><span id="reflabel"></span><input type="hidden" id="ref" name="ref" value="<?php echo $sale->getRef(); ?>" /><div id="ref_error"></div></td>
                             </tr>
                             <tr>
                                 <td><label class="control-label"><?php echo $this->translate("season_sale_startdate_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
-                                <td><input type="text" name="startdate" id="startdate" class="datefield width100" value="<?php echo changeMySQLDateToPageFormat($sale->getStartDate()); ?>" /><div id="startdate_error"></div></td>
-                                <td></td>
-                                <td></td>
-                            </tr>
-                            <tr>
+                                <td><input type="text" name="startdate" id="startdate" class="datefield width100 startdate" value="<?php echo changeMySQLDateToPageFormat($sale->getStartDate()); ?>" /><div id="startdate_error"></div></td>
                                 <td><label class="control-label"><?php echo $this->translate("season_status_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
-                                <td colspan="3">
-                                    <?php
+                                <td><?php
                                         $allstatuses = getStatusValues();
                                         $statusesdropdown = new Zend_Form_Element_Select('status',
                                                             array(
@@ -156,10 +192,8 @@
                                                         );
                                         $statusesdropdown->setValue($sale->getStatus()); 
                                         echo $statusesdropdown->render(); 
-                                   ?><div id="status_error"></div>
-                                </td>
+                                   ?><div id="status_error"></div></td>
                             </tr>
-                            
                         </table>
                     </span>
                     <span class="pull-right padding0" style="width:24%; margin-left:5px;">
@@ -196,11 +230,7 @@
                                             <tr>
                                                 <td style="width:30%;"><label class="control-label"><?php echo $this->translate("season_commodity_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
                                                 <td><?php
-														$availablecrops = getSeasonCommodities($sale->getSeasonID());
-														if(isEmptyString($sale->getID())){
-															$key1 = array_shift(array_keys($availablecrops));
-															$sale->setCropID($key1);
-														}
+														$availablecrops = array($sale->getSeason()->getCropID() => $sale->getSeason()->getCrop()->getName());
 														$cropdropdown = new Zend_Form_Element_Select('cropid',
 																			array(
 																				'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $availablecrops),								
@@ -210,13 +240,13 @@
 																				'title' => $this->translate("season_commodity_tooltip")
 																			)
 																		);
-														$cropdropdown->setValue($sale->getCropID()); 
+														$cropdropdown->setValue($sale->getSeason()->getCropID()); 
 														echo $cropdropdown->render();
 												   ?><div id="cropid_error"></div></td>
                                             </tr>
                                             <tr>
                                                 <td><label class="control-label"><?php echo $this->translate("season_sale_quantity_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
-                                                <td><input style="width:50px;" type="text" name="quantity" id="quantity" class="centeralign isnumber" value="<?php echo $sale->getQuantity(); ?>" />&nbsp;
+                                                <td><input style="width:50px;" type="text" name="quantity" id="quantity" class="centeralign isdecimal" value="<?php echo clean_num($sale->getQuantity()); ?>" />&nbsp;
                                                     <?php
                                                         $univalues = getHarvestQuantityUnits();
                                                         $unitdropdown = new Zend_Form_Element_Select('quantityunit',
@@ -224,7 +254,7 @@
                                                                                 'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
                                                                                 'view' => new Zend_View(),
                                                                                 'decorators' => array('ViewHelper'),
-                                                                                'class' => array('hastooltip', 'span2'),
+                                                                                'class' => array('hastooltip', 'span2', 'selectrequired'),
                                                                                 'title' => $this->translate("season_sale_quantity_tooltip"),
                                                                                 'style' => 'width: 80px;'
                                                                             )
@@ -232,16 +262,16 @@
                                                         $unitdropdown->setValue($sale->getQuantityUnit()); 
                                                         echo $unitdropdown->render(); 
                                                     ?>
-                                                    <div id="quantity_error"></div>
+                                                    <div id="quantity_error"></div><div id="quantityunit_error"></div>
                                                 </td>
                                             </tr>
                                             <td><label class="control-label"><?php echo $this->translate("season_sale_unitprice_label"); ?>:</label></td>
                                             <td>
-                                            	<div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="unitprice" id="unitprice" class="width100 hastooltip isamount rightalign" value="<?php echo $sale->getUnitPrice(); ?>" title="<?php echo $this->translate("season_sale_unitprice_tooltip"); ?>" /></div><div id="unitprice_error"></div>
+                                            	<div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="unitprice" id="unitprice" class="width100 hastooltip isamount rightalign inputrequired" value="<?php echo clean_num($sale->getUnitPrice()); ?>" title="<?php echo $this->translate("season_sale_unitprice_tooltip"); ?>" /></div><div id="unitprice_error"></div>
                                             </td>
                                             <tr>
                                                 <td><label class="control-label"><?php echo $this->translate("season_sale_amount_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
-                                                <td><div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="totalamount" id="totalamount" class="width100 hastooltip isamount rightalign" value="<?php echo $sale->getTotalAmount(); ?>" title="<?php echo $this->translate("season_sale_totalamount_tooltip"); ?>" /></div><div id="totalamount_error"></div>
+                                                <td><div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="totalamount" id="totalamount" class="width100 hastooltip isamount rightalign inputrequired" value="<?php echo clean_num($sale->getTotalAmount()); ?>" title="<?php echo $this->translate("season_sale_totalamount_tooltip"); ?>" /></div><div id="totalamount_error"></div>
                                                 </td>
                                             </tr>
                                         </table>
@@ -292,6 +322,8 @@
                         </div>
                     </span>
                 </div>
+                <?php require APPLICATION_PATH."/views/scripts/season/finance.phtml"; ?>  
+                <?php require APPLICATION_PATH."/views/scripts/season/labour.phtml"; ?>
             <?php } ?>    
             </form>
 		</div>

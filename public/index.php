@@ -21,7 +21,7 @@ set_include_path(implode(PATH_SEPARATOR, array(
 
 // public folder directory
 if(APPLICATION_ENV == 'production'){
-	define('PUBLICFOLDER', 'public_html');
+	define('PUBLICFOLDER', 'public');
 	$host_split = explode('.',$_SERVER['HTTP_HOST']);
 	$sandbox = $host_split[0] == 'veritracker' ? true : false;
 	$domain = $sandbox ? 'http://timbusbooks.veritracker.com/' : 'https://timbusbooks.com/';

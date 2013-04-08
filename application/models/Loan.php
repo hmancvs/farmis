@@ -18,6 +18,7 @@ class Loan extends BaseEntity  {
 		$this->hasColumn('seasonid', 'integer', null);
 		$this->hasColumn('type', 'integer', null, array('default' => 1)); // 1 Season, 2 Non Season/Other sales
 		
+		$this->hasColumn('preseasonid', 'integer', null);
 		$this->hasColumn('inventoryid', 'integer', null);
 		$this->hasColumn('inputid', 'integer', null);
 		$this->hasColumn('tillageid', 'integer', null);	
@@ -27,13 +28,13 @@ class Loan extends BaseEntity  {
 		$this->hasColumn('harvestid', 'integer', null);	
 		$this->hasColumn('saleid', 'integer', null);
 		
-		$this->hasColumn('principal', 'decimal', 11, array('default' => '0'));
-		$this->hasColumn('interestrate', 'decimal', 11, array('default' => '0'));
-		$this->hasColumn('installment', 'decimal', 11, array('default' => '0'));
-		$this->hasColumn('installmentunit', 'integer', null);
-		$this->hasColumn('paybackamount', 'decimal', 11, array('default' => '0'));
-		$this->hasColumn('paybackperiod', 'integer', null);
-		$this->hasColumn('paybackperiodunit', 'integer', null);
+		$this->hasColumn('principal', 'decimal', 11, array('default' => NULL));
+		$this->hasColumn('interestrate', 'decimal', 11, array('default' => NULL));
+		$this->hasColumn('installment', 'decimal', 11, array('default' => NULL));
+		$this->hasColumn('installmentunit', 'integer', null, array('default' => NULL));
+		$this->hasColumn('paybackamount', 'decimal', 11, array('default' => NULL));
+		$this->hasColumn('paybackperiod', 'integer', null, array('default' => NULL));
+		$this->hasColumn('paybackperiodunit', 'integer', null, array('default' => NULL));
 		$this->hasColumn('creditdate','date', null);
 		$this->hasColumn('sourcetype', 'integer', null);
 		$this->hasColumn('financesourceid', 'integer', null);
@@ -43,9 +44,9 @@ class Loan extends BaseEntity  {
 		$this->hasColumn('clienttext','string', 255);
 		$this->hasColumn('stage', 'integer', null);
 		$this->hasColumn('contract', 'string', 1000);
-		$this->hasColumn('quantity', 'integer', null);
-		$this->hasColumn('quantityunit', 'integer', null);
-		$this->hasColumn('price', 'decimal', 11, array('default' => '0'));
+		$this->hasColumn('quantity', 'integer', null, array('default' => NULL));
+		$this->hasColumn('quantityunit', 'integer', null, array('default' => NULL));
+		$this->hasColumn('price', 'decimal', 11, array('default' => NULL));
 		$this->hasColumn('notes','string', 1000);
 	}
 	

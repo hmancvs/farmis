@@ -15,9 +15,10 @@ class SeasonTracking extends BaseEntity  {
 		$this->setTableName('seasontracking');
 		$this->hasColumn('seasonid', 'integer', null, array('notnull' => true, 'notblank' => true));	
 		$this->hasColumn('farmid', 'integer', null, array( 'notnull' => true, 'notblank' => true));
-		$this->hasColumn('cropid', 'integer', null, array('notnull' => true, 'notblank' => true));
+		$this->hasColumn('cropid', 'integer', null);
 		$this->hasColumn('type', 'integer', null, array('notnull' => true, 'notblank' => true)); // 1 - Herbicide, 2 - Insectcide, 3 - Fungicide, 4 - Fertiliser, 5 - Manure, 6 - Irrigation
 		$this->hasColumn('ref', 'string', 50);
+		$this->hasColumn('activityname', 'string', 255);
 		$this->hasColumn('itemname', 'string', 255);
 		$this->hasColumn('itemtype', 'integer', null);
 		$this->hasColumn('itemform', 'integer', null);
@@ -27,11 +28,11 @@ class SeasonTracking extends BaseEntity  {
 		$this->hasColumn('method', 'integer', null, array( 'notnull' => true, 'notblank' => true));
 		$this->hasColumn('timing', 'integer', null);
 		$this->hasColumn('status', 'integer', null);
-		$this->hasColumn('itemrate', 'integer', null);
+		$this->hasColumn('itemrate', 'decimal', 10, array('default' => NULL));
 		$this->hasColumn('itemrateunit', 'integer', null);
-		$this->hasColumn('totalapplied', 'integer', null);
+		$this->hasColumn('totalapplied', 'decimal', 10, array('default' => NULL));
 		$this->hasColumn('totalappliedunit', 'integer', null);
-		$this->hasColumn('totalexpenses', 'decimal', 11, array('default' => '0'));
+		$this->hasColumn('totalexpenses', 'decimal', 10, array('default' => NULL));
 		$this->hasColumn('financetype', 'integer', null, array('default' => '1'));
 		$this->hasColumn('target','string', 500);
 		$this->hasColumn('additives','string', 500);
@@ -50,7 +51,6 @@ class SeasonTracking extends BaseEntity  {
        	$this->addCustomErrorMessages(array(
        									"farmid.notblank" => $this->translate->_("season_farmid_error"),
        									"seasonid.notblank" => $this->translate->_("season_seasonid_error"),
-       									"cropid.notblank" => $this->translate->_("season_cropid_error"),
        									"type.notblank" => $this->translate->_("season_trackingtype_error"),
        									"startdate.notblank" => $this->translate->_("season_activitydate_error"),
        									"method.notblank" => $this->translate->_("season_method_error")
@@ -80,12 +80,21 @@ class SeasonTracking extends BaseEntity  {
 								'foreign' => 'trackingid'
 							)
 						);
+		$this->hasMany('SeasonLabour as labourdetails',
+					 		array(
+								'local' => 'id',
+								'foreign' => 'trackingid'
+							)
+						);
 	}
 	/*
 	 * Pre process model data
 	 */
 	function processPost($formvalues) {
 		// trim spaces from the name field
+		if(isArrayKeyAnEmptyString('cropid', $formvalues)){
+			$formvalues['cropid'] = NULL;
+		}
 		if(isArrayKeyAnEmptyString('status', $formvalues)){
 			$formvalues['status'] = NULL;
 		}
@@ -121,30 +130,73 @@ class SeasonTracking extends BaseEntity  {
 		}
 		
 		if(!isArrayKeyAnEmptyString('financetype', $formvalues)){
-			$formvalues['activitycredit'][0]['financetype'] = $formvalues['financetype'];
-			$formvalues['activitycredit'][0]['farmerid'] = $formvalues['farmerid'];
-			$formvalues['activitycredit'][0]['farmid'] = $formvalues['farmid'];
-			$formvalues['activitycredit'][0]['stage'] = $formvalues['stage'];
-			$formvalues['activitycredit'][0]['type'] = $formvalues['type'];
-			isArrayKeyAnEmptyString('principal', $formvalues) ? $formvalues['activitycredit'][0]['principal'] = NULL : $formvalues['activitycredit'][0]['principal'] = $formvalues['principal'];
-			isArrayKeyAnEmptyString('interestrate', $formvalues) ? $formvalues['activitycredit'][0]['interestrate'] = NULL : $formvalues['activitycredit'][0]['interestrate'] = $formvalues['interestrate'];
-			isArrayKeyAnEmptyString('paybackamount', $formvalues) ? $formvalues['activitycredit'][0]['paybackamount'] = NULL : $formvalues['activitycredit'][0]['paybackamount'] = $formvalues['paybackamount'];
-			isArrayKeyAnEmptyString('installment', $formvalues) ? $formvalues['activitycredit'][0]['installment'] = NULL : $formvalues['activitycredit'][0]['installment'] = $formvalues['installment'];
-			isArrayKeyAnEmptyString('installmentunit', $formvalues) ? $formvalues['activitycredit'][0]['installmentunit'] = NULL : $formvalues['activitycredit'][0]['installmentunit'] = $formvalues['installmentunit'];
-			isArrayKeyAnEmptyString('paybackperiod', $formvalues) ? $formvalues['activitycredit'][0]['paybackperiod'] = NULL : $formvalues['activitycredit'][0]['paybackperiod'] = $formvalues['paybackperiod'];
-			isArrayKeyAnEmptyString('paybackperiodunit', $formvalues) ? $formvalues['activitycredit'][0]['paybackperiodunit'] = NULL : $formvalues['activitycredit'][0]['paybackperiodunit'] = $formvalues['paybackperiodunit'];
-			isArrayKeyAnEmptyString('creditdate', $formvalues) ? $formvalues['activitycredit'][0]['creditdate'] = NULL : $formvalues['activitycredit'][0]['creditdate'] = changeDateFromPageToMySQLFormat($formvalues['creditdate']);
-			isArrayKeyAnEmptyString('financesourceid', $formvalues) ? $formvalues['activitycredit'][0]['financesourceid'] = NULL : $formvalues['activitycredit'][0]['financesourceid'] = $formvalues['financesourceid'];
-			isArrayKeyAnEmptyString('financesourcetext', $formvalues) ? $formvalues['activitycredit'][0]['financesourcetext'] = NULL : $formvalues['activitycredit'][0]['financesourcetext'] = $formvalues['financesourcetext'];
-			isArrayKeyAnEmptyString('clientid', $formvalues) ? $formvalues['activitycredit'][0]['clientid'] = NULL : $formvalues['activitycredit'][0]['clientid'] = $formvalues['clientid'];
-			isArrayKeyAnEmptyString('quantity', $formvalues) ? $formvalues['activitycredit'][0]['quantity'] = NULL : $formvalues['activitycredit'][0]['quantity'] = $formvalues['quantity'];
-			isArrayKeyAnEmptyString('quantityunit', $formvalues) ? $formvalues['activitycredit'][0]['quantityunit'] = NULL : $formvalues['activitycredit'][0]['quantityunit'] = $formvalues['quantityunit'];
-			isArrayKeyAnEmptyString('price', $formvalues) ? $formvalues['activitycredit'][0]['price'] = NULL : $formvalues['activitycredit'][0]['price'] = $formvalues['price'];
-			isArrayKeyAnEmptyString('clienttype', $formvalues) ? $formvalues['activitycredit'][0]['clienttype'] = NULL : $formvalues['activitycredit'][0]['clienttype'] = $formvalues['clienttype'];
-			isArrayKeyAnEmptyString('sourcetype', $formvalues) ? $formvalues['activitycredit'][0]['sourcetype'] = NULL : $formvalues['activitycredit'][0]['sourcetype'] = $formvalues['sourcetype'];
-			isArrayKeyAnEmptyString('contract', $formvalues) ? $formvalues['activitycredit'][0]['contract'] = NULL : $formvalues['activitycredit'][0]['contract'] = $formvalues['contract'];
+			if($formvalues['financetype'] == 3 || $formvalues['financetype'] == 4 || $formvalues['financetype'] == 5){
+				$formvalues['activitycredit'][0]['financetype'] = $formvalues['financetype'];
+				$formvalues['activitycredit'][0]['farmerid'] = $formvalues['farmerid'];
+				$formvalues['activitycredit'][0]['farmid'] = $formvalues['farmid'];
+				$formvalues['activitycredit'][0]['stage'] = $formvalues['stage'];
+				$formvalues['activitycredit'][0]['type'] = $formvalues['type'];
+				isArrayKeyAnEmptyString('principal', $formvalues) ? $formvalues['activitycredit'][0]['principal'] = NULL : $formvalues['activitycredit'][0]['principal'] = $formvalues['principal'];
+				isArrayKeyAnEmptyString('interestrate', $formvalues) ? $formvalues['activitycredit'][0]['interestrate'] = NULL : $formvalues['activitycredit'][0]['interestrate'] = $formvalues['interestrate'];
+				isArrayKeyAnEmptyString('paybackamount', $formvalues) ? $formvalues['activitycredit'][0]['paybackamount'] = NULL : $formvalues['activitycredit'][0]['paybackamount'] = $formvalues['paybackamount'];
+				isArrayKeyAnEmptyString('installment', $formvalues) ? $formvalues['activitycredit'][0]['installment'] = NULL : $formvalues['activitycredit'][0]['installment'] = $formvalues['installment'];
+				isArrayKeyAnEmptyString('installmentunit', $formvalues) ? $formvalues['activitycredit'][0]['installmentunit'] = NULL : $formvalues['activitycredit'][0]['installmentunit'] = $formvalues['installmentunit'];
+				isArrayKeyAnEmptyString('paybackperiod', $formvalues) ? $formvalues['activitycredit'][0]['paybackperiod'] = NULL : $formvalues['activitycredit'][0]['paybackperiod'] = $formvalues['paybackperiod'];
+				isArrayKeyAnEmptyString('paybackperiodunit', $formvalues) ? $formvalues['activitycredit'][0]['paybackperiodunit'] = NULL : $formvalues['activitycredit'][0]['paybackperiodunit'] = $formvalues['paybackperiodunit'];
+				isArrayKeyAnEmptyString('creditdate', $formvalues) ? $formvalues['activitycredit'][0]['creditdate'] = NULL : $formvalues['activitycredit'][0]['creditdate'] = changeDateFromPageToMySQLFormat($formvalues['creditdate']);
+				isArrayKeyAnEmptyString('financesourceid', $formvalues) ? $formvalues['activitycredit'][0]['financesourceid'] = NULL : $formvalues['activitycredit'][0]['financesourceid'] = $formvalues['financesourceid'];
+				isArrayKeyAnEmptyString('financesourcetext', $formvalues) ? $formvalues['activitycredit'][0]['financesourcetext'] = NULL : $formvalues['activitycredit'][0]['financesourcetext'] = $formvalues['financesourcetext'];
+				isArrayKeyAnEmptyString('clientid', $formvalues) ? $formvalues['activitycredit'][0]['clientid'] = NULL : $formvalues['activitycredit'][0]['clientid'] = $formvalues['clientid'];
+				isArrayKeyAnEmptyString('quantity', $formvalues) ? $formvalues['activitycredit'][0]['quantity'] = NULL : $formvalues['activitycredit'][0]['quantity'] = $formvalues['quantity'];
+				isArrayKeyAnEmptyString('quantityunit', $formvalues) ? $formvalues['activitycredit'][0]['quantityunit'] = NULL : $formvalues['activitycredit'][0]['quantityunit'] = $formvalues['quantityunit'];
+				isArrayKeyAnEmptyString('price', $formvalues) ? $formvalues['activitycredit'][0]['price'] = NULL : $formvalues['activitycredit'][0]['price'] = $formvalues['price'];
+				isArrayKeyAnEmptyString('clienttype', $formvalues) ? $formvalues['activitycredit'][0]['clienttype'] = NULL : $formvalues['activitycredit'][0]['clienttype'] = $formvalues['clienttype'];
+				isArrayKeyAnEmptyString('sourcetype', $formvalues) ? $formvalues['activitycredit'][0]['sourcetype'] = NULL : $formvalues['activitycredit'][0]['sourcetype'] = $formvalues['sourcetype'];
+				isArrayKeyAnEmptyString('contract', $formvalues) ? $formvalues['activitycredit'][0]['contract'] = NULL : $formvalues['activitycredit'][0]['contract'] = $formvalues['contract'];
+			} else {
+				$formvalues['activitycredit'] = array();
+			}
 		}
-		// debugMessage($formvalues); exit();
+		
+		# process season labour details
+		$detailsarray = array();
+		if(!isArrayKeyAnEmptyString('labourdetails', $formvalues)){
+			foreach ($formvalues['labourdetails'] as $key => $value){
+				if(isEmptyString($value['activityname'])){
+					unset($value[$key]);
+				} else {
+					$countfields = array('itempaid','fieldsize','fieldsizeunit');
+					foreach ($value as $thekey => $thevalue){
+						if(isEmptyString($thevalue)){
+							if(in_array($thekey, $countfields)){
+								$value[$thekey] = NULL;
+							} else {
+								$value[$thekey] = 0;
+							}
+						}
+					}
+					$detailsarray[$key] = $value;
+					if(!isArrayKeyAnEmptyString('id', $value)){
+						$detailsarray[$key]['id'] = $value['id'];
+					}
+					$detailsarray[$key]['farmerid'] = $formvalues['farmerid'];
+					$detailsarray[$key]['farmid'] = $formvalues['farmid'];
+					$detailsarray[$key]['seasonid'] = $formvalues['seasonid'];
+					if(!isArrayKeyAnEmptyString('labourdetails_fieldsizeunit_'.$key, $formvalues)){
+						$detailsarray[$key]['fieldsizeunit'] = $formvalues['labourdetails_fieldsizeunit_'.$key];
+					} else {
+						$detailsarray[$key]['fieldsizeunit'] = NULL;
+					}
+				}
+			}
+			// unset($formvalues['labourdetails']);
+		}
+		if(count($detailsarray) > 0){
+			$formvalues['labourdetails'] = $detailsarray;
+		} else {
+			$formvalues['labourdetails'] = array();
+		}
+		// debugMessage($formvalues); // exit();
 		parent::processPost($formvalues);
 	}
 	# determine method display text
@@ -211,7 +263,7 @@ class SeasonTracking extends BaseEntity  {
     	return $text;
     }
 	# determine timing display text
-    function getActivityName() {
+    function getTypeName() {
     	$text = '--';
     	if(!isEmptyString($this->getType())){
     		$values = getTreatmentTypes();
@@ -256,6 +308,18 @@ class SeasonTracking extends BaseEntity  {
     	$q = Doctrine_Query::create()->from('Loan l')->where("l.trackingid = '".$this->getID()."'");
 		$result = $q->execute();
 		return $result->get(0);
+	}
+	# determine the family labour history
+	function getFamilyLabourDetails() {
+    	$q = Doctrine_Query::create()->from('SeasonLabour l')->where("l.trackingid = '".$this->getID()."' AND l.type = 1 ");
+		$result = $q->execute();
+		return $result;
+	}
+	# determine the hired labour history
+	function getHiredLabourDetails() {
+    	$q = Doctrine_Query::create()->from('SeasonLabour l')->where("l.trackingid = '".$this->getID()."' AND l.type = 2 ");
+		$result = $q->execute();
+		return $result;
 	}
 }
 

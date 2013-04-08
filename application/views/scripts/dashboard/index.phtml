@@ -96,6 +96,101 @@ $(document).ready(function(){
 			$('#fuelprices').html(data);
 		}
 	);
+	
+	$("a.welcome_farmgrp, a.welcome_farmer").click(function(){
+		var message = '<label class="blockcontainer">Confirm hiding this panel';
+		hideArea(message, '<?php echo $this->baseUrl('profile/dashupdate/area/welcome/id/'.$user->getID()); ?>');
+	});
+	
+	function hideArea(message, url) {
+		bootbox.confirm(message, function(confirmed) {
+			if(confirmed){
+				window.location.href = url;					
+			} else {
+				return false;
+			}
+		});
+	}
+	
+	<?php if(!$user->showWelcome()){ ?>
+		function showTime(){
+			var timeNow = new Date(); 
+			var currentHours = timeNow.getHours();
+			var currentMinutes = timeNow.getMinutes ( );
+			var currentSeconds = timeNow.getSeconds ( );
+			currentMinutes = ( currentMinutes < 10 ? "0" : "" ) + currentMinutes;
+			currentSeconds = ( currentSeconds < 10 ? "0" : "" ) + currentSeconds;
+			var timeOfDay = ( currentHours < 12 ) ? "AM" : "PM";
+		
+			document.getElementById('spHrs').innerHTML = currentHours;
+			document.getElementById('spMins').innerHTML = currentMinutes;
+			document.getElementById('spSecs').innerHTML = currentSeconds;
+			// document.getElementById('spTime').innerHTML = timeOfDay;
+		}
+		setInterval(showTime,1000);
+		
+		var newDate = new Date();
+		newDate.setDate(newDate.getDate());
+		// $('#Date').text($.format.date(newDate.toString(), 'ddd dd MMMM yyyy'));​
+		
+		var monthNames = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
+		var dayNames= ["Sunday","Monday","Tueday","Wednesday","Thurday","Friday","Saturday"];
+	
+		var newDate = new Date();
+		newDate.setDate(newDate.getDate()); 
+		
+		var themonth = monthNames[newDate.getMonth()];
+		themonth = themonth.substr(0,3);    
+		var thedate = newDate.getDate();
+		thedate = ( thedate < 10 ? "0" : "" ) + thedate;
+		$('#Date').html(dayNames[newDate.getDay()] + " " + thedate + ' ' + themonth + ', ' + newDate.getFullYear());
+		// alert();
+		
+		$('#calendarcontainer').fullCalendar({
+			header: {
+				left: 'prev,next today',
+				center: 'title',
+				right: 'month,basicWeek,basicDay'
+			},
+			defaultView: 'month',
+			editable: false,
+			events: "<?php echo $this->baseUrl('farm/events/id/'.$farm->getID()); ?>",
+			eventRender: function(event, element) {
+				var type = $("#targetposition").html();
+				var tippos = $("#tipposition").html();
+				var tooltip_title = event.formatedstart+': '+event.title+' - ['+event.seasonref+']';
+				var idclass = event.className;
+				if(!isEmptyString(event.end)){
+					tooltip_title = event.formatedstart+' - '+event.formatedend+'<br> '+event.title+' - ['+event.seasonref+']';
+				}
+				element.qtip({
+					content: {
+						text: '<a id="loading"><img style="margin-left:250px;" src="<?php echo $this->baseUrl('images/loader.gif'); ?>" /></a>',
+						title: {
+							text: tooltip_title
+						}
+					},
+					hide: { when: 'mouseout', fixed: true },
+					show: { solo: true, effect: 'slide'},
+					position: {adjust: {x: 30, y: 0} },
+					position: {
+						corner: {target: 'bottomMiddle', tooltip: 'topMiddle'}
+					},
+					style: { 
+						name: 'blue', width: 350, height: 175, padding: 5, background: '#F9F9F9',
+						tip: {corner: 'topMiddle', size: {x: 20, y : 10 }},
+						border:{width: 2,radius: 4, color: '#8F8F8F'},
+						title: { 'color': 'white', 'background': '#81D122'}
+					},
+					api: {
+						onShow: function(){
+							$(".qtip-content").html($("ul#"+idclass).html());
+						}
+					}
+				});
+			}
+		});
+	<?php } ?>
 });
 </script>
 <style>
@@ -106,6 +201,11 @@ $(document).ready(function(){
 #dashleft {
 	margin:0 5px 0 0;
 	width:68%;
+	float:left;
+}
+#admindash {
+	margin:0 5px 0 0;
+	width:100%;
 	float:left;
 }
 #dashleft .widgetsection {
@@ -178,7 +278,8 @@ $(document).ready(function(){
 }
 #nexttasks li.well {	
 	margin-right:2px;
-	width:55px;
+	/*width:55px;*/
+	width:13%;
 	height:70px;
 	padding:4px;;
 	background-color:#FFFFFF;
@@ -217,7 +318,8 @@ $(document).ready(function(){
 #nexttasks li.well img {
 	position:absolute;
 	bottom:-55px;
-	left:15px;
+	/*left:15px;*/
+	left:35%;
 	z-index:100;
 }
 #nexttasks li.well span.percent {
@@ -243,7 +345,8 @@ $(document).ready(function(){
 	color:#498D0F;
 	font-size:16px;
 	font-weight:bold;
-	width:380px;
+	/*width:380px;*/
+	width:98%;
 	border-bottom:1px solid #edebeb;
 	padding-bottom:5px;
 }
@@ -259,7 +362,8 @@ $(document).ready(function(){
 	padding-bottom:5px;
 }
 #nexttasks li.output {
-	width:105px;
+	/*width:105px;*/
+	width:18%;
 	height:150px;
 	vertical-align:top;
 	position:relative;
@@ -279,423 +383,570 @@ $(document).ready(function(){
 	font-weight:bold;
 	font-size:12px;
 }
+a.removeline {
+	border:solid 1px #000000;
+}
 </style>	
-<div>
+<div class="blocked clear maxwidth">
 	<?php require APPLICATION_PATH."/views/scripts/index/leftcolumn.phtml"; ?>
     <div id="centercolumn">
-    	<div style="display:block; width:100%;">
-            <div class="pull-left" id="dashleft">
-				<?php if(isFarmer()){ ?>
-                <div class="widgetsection" style="min-height:130px;">
-                    <h3 style="color:#282727;">Welcome <?php echo $farmer->getFirstName(); ?></h3>
-                    <div>
-                        <label class="intro">
-                            <p class="calfont">FARMIS is the easy way to manage the activities of Farmers in a Farm Group, allowing you to quickly manage and evaluate their income, expenses <a href="<?php echo $this->baseUrl('howitworks'); ?>">...read more</a></p>
-                        </label>
-                    </div>
-                </div>
-                <?php } ?>
-                <?php if(isFarmGroupAdmin()){ ?>
-                <div class="widgetsection" style="min-height:130px; position:relative;">
-                	<a href="javascript: doNothing();" style="position:absolute; top:2px; right:5px;" title="<?php echo $this->translate("global_button_remove"); ?>" id="welcome_farmgrp" class="removeline close button btn" rel="input">Dismiss</a>
-                    <h3 style="color:#282727;"><?php echo $farmgroup->getName(); ?></h3>
-                    <div>
-                        <label class="calfont tasklabel" style="border:none; margin-left:10px; margin-top:5px;">Welcome <?php echo $farmer->getFirstName(); ?></label>
-                        <label class="intro">
-                            <p class="calfont">FARMIS is the easy way to manage the activities of Farmers in a Farm Group, allowing you to quickly manage and evaluate their income, expenses <a href="<?php echo $this->baseUrl('howitworks'); ?>">...read more</a></p>
-                        </label>
-                    </div>
-                </div>
-                <?php } ?>
-                <?php if(isAdmin()){ ?>
-                    <div class="widgetsection" style="min-height:130px;">
-                        <h3 style="color:#282727;">Admin Dashboard</h3>
-                        <div>
-                            <label class="calfont tasklabel" style="border:none; margin-left:10px; margin-top:5px;">Welcome <?php echo $farmer->getFirstName(); ?></label>
-                            <label class="intro">
-                                <p class="calfont">FARMIS is the easy way to manage the activities of Farmers in a Farm Group, allowing you to quickly manage and evaluate their income, expenses <a href="<?php echo $this->baseUrl('howitworks'); ?>">...read more</a></p>
-                            </label>
-                        </div>
-                    </div>
-                <?php } ?>  
-                
-                    
-				<?php if(isFarmer()){ ?>
-                    <div class="widgetsection height300" style="height:auto;">
-                        <h3 style="color:#282727;">So What Next? </h3>                     
-                        <span class="calfont" id="getmost">To get the most from FARMIS, we recommend that you configure your Account by executing the following tasks in the order suggested below;</span>
-                        <div style="margin-top:20px; margin-left:5px;">
-                            <span class="taskcontainer">
-                                <label class="calfont tasklabel">1. Primary Profiling</label>
-                                <label class="calfont taskoutput">Output</label>
-                                <ul id="nexttasks" class="nav">      
-                                    <li class="well"><a href="<?php echo $this->baseUrl('farmer/index/id/'.encode($id)); ?>" title="Update Profile Summary">Update Profile Summary</a><img src="<?php echo  $step1_1_counter >= 60 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
-                                        <span class="percent"><?php echo $step1_1_counter.'%'; ?></span>
-                                    </li>
-                                    <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
-                                    <li class="well"><a href="<?php echo $this->baseUrl('farmer/picture/id/'.encode($farmer->getID()).'/type/photo'); ?>" title="Upload Profile Picture">Upload Profile Picture</a><img src="<?php echo $farmer->hasProfileImage() ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
-                                        <span class="percent"><?php echo $farmer->hasProfileImage() ? '100%' : ''; ?></span>
-                                    </li>
-                                    <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
-                                    <li class="well"><a href="<?php echo $this->baseUrl('farmer/index/id/'.encode($id).'/tab/contacts'); ?>" title="Record and Validate Contacts">Record and Validate Contacts</a><img src="<?php echo $step1_3_counter >= 60 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
-                                        <span class="percent"><?php echo $step1_3_counter.'%'; ?></span>
-                                    </li>
-                                    <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
-                                    <li class="well"><a href="<?php echo $this->baseUrl('farmer/index/id/'.encode($id).'/tab/personal'); ?>" title="Personal details and Biography">Personal details and Biography</a><img src="<?php echo $step1_4_counter >= 60 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
-                                        <span class="percent"><?php echo $step1_4_counter.'%'; ?></span>
-                                    </li>
-                                    <li><img src="<?php echo $this->baseUrl('images/nextstep_last.png'); ?>" /></li>
-                                    <li class="output">
-                                        <a class="reportlink" title="Farmis Baseline Summary Report" target="_blank" href="<?php echo $this->baseUrl('report/primarybaseline/id/'.$id); ?>">
-                                            <img src="<?php echo $this->baseUrl('images/pdfreport.png'); ?>" />
-                                            <span class="reportname">Farmis Baseline Summary Report</span>
-                                        </a>
-                                    </li>
-                                </ul>
-                            </span>
-                            <span class="taskcontainer">
-                                <label class="calfont tasklabel">2. Secondary Profiling</label>
-                                <label class="calfont taskoutput">Output</label>
-                                <ul id="nexttasks" class="nav">     
-                                    <li class="well">
-                                        <?php if($hasfarm){ ?>
-                                            <a href="<?php echo $this->baseUrl('farm/view/id/'.encode($farmid)); ?>" title="Setup Farm Business">Setup Farm Business</a>
-                                        <?php } else { ?>
-                                            <a href="<?php echo $this->baseUrl('farm/index/farmerid/'.encode($session->getVar('farmerid'))); ?>" title="Setup Farm Business">Setup Farm Business</a>
-                                        <?php } ?>
-                                        <img src="<?php echo  $hasfarm ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
-                                        <span class="percent"><?php echo $step2_1_counter.'%'; ?></span>
-                                    </li>
-                                    <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
-                                    <li class="well">
-                                        <a href="<?php echo $this->baseUrl('farm/index/id/'.encode($farmid).'/tab/land'); ?>" title="Land Usage Profiling">Land Usage Profiling</a>
-                                        <img src="<?php echo  $step1_3_counter >= 60 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
-                                        <span class="percent"><?php echo $step1_3_counter.'%'; ?></span>
-                                    </li>
-                                    <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
-                                    <li class="well">
-                                        <a href="<?php echo $this->baseUrl('farm/view/id/'.encode($farmid).'/tab/commodities'); ?>" title="Crop Profiling">Crop Profiling</a>
-                                        <img src="<?php echo  $countcrops > 0 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
-                                        <?php if($countcrops > 0){ ?>
-                                        <span class="percent"><?php echo $countcrops == 1 ? '1 Crop' : $countcrops.' Crops'; ?></span>
-                                        <?php } ?>
-                                    </li>
-                                    <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
-                                    <li class="well">
-                                        <a href="<?php echo $this->baseUrl('farm/index/id/'.encode($farmid).'/tab/preseason'); ?>" title="Previous Season Profiling">Previous Season Profiling</a>
-                                        <img src="<?php echo  $step2_4_counter >= 50 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
-                                        <span class="percent"><?php echo $step2_4_counter.'%'; ?></span>
-                                    </li>
-                                    <li><img src="<?php echo $this->baseUrl('images/nextstep_last.png'); ?>" /></li>
-                                    <li class="output">
-                                        <a class="reportlink" title="Farmis Baseline Detailed Report" href="<?php echo $this->baseUrl('report/baselinedetail/id/'.$id); ?>">
-                                            <img src="<?php echo $this->baseUrl('images/pdfreport.png'); ?>" />
-                                            <span class="reportname">Farmis Baseline Detailed Report</span>
-                                        </a>
-                                    </li>
-                                </ul>    
-                            </span>
-                            <span class="taskcontainer">
-                                <label class="calfont tasklabel">3. Current Season Profiling</label>
-                                <label class="calfont taskoutput">Output</label>
-                                <ul id="nexttasks" class="nav">     
-                                    <li class="well">
-                                        <a href="<?php echo $seasonurl; ?>" title="">Setup New Season</a>
-                                        <img src="<?php echo $step3_1_counter > 0 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
-                                        <?php if($step3_1_counter > 0){ ?>
-                                        <span class="percent"><?php echo $step3_1_counter == 1 ? '1 Season' : $step3_1_counter.' Seasons'; ?></span>
-                                        <?php } ?>
-                                    </li>
-                                    <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
-                                    <li class="well">
-                                        <a href="<?php echo $seasonurl; ?>" title="Record Activities">Record Activities</a>
-                                        <img src="<?php echo $step3_2_counter == 0 ? $this->baseUrl('images/tick_undone.png') : $this->baseUrl('images/tick_done.png'); ?>" />
-                                    </li>
-                                    <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
-                                    <li class="well"><a href="<?php echo $seasonurl; ?>" title="Record Expenses">Record Expenses</a><img src="<?php echo $step3_3_counter == 0 ? $this->baseUrl('images/tick_undone.png') : $this->baseUrl('images/tick_done.png'); ?>" /></li>
-                                    <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
-                                    <li class="well"><a href="<?php echo $this->baseUrl('farm/view/id/'.encode($farmid).'/tab/inventory'); ?>" title="Season Inventory">Season Inventory</a><img src="<?php echo $step3_4_counter == 0 ? $this->baseUrl('images/tick_undone.png') : $this->baseUrl('images/tick_done.png'); ?>" /></li>
-                                    <li><img src="<?php echo $this->baseUrl('images/nextstep_last.png'); ?>" /></li>
-                                    <li class="output">
-                                        <a class="reportlink" title="Profit and Loss Statement" href="<?php echo $this->baseUrl("finance/statement/farmid/".$farm->getID()); ?>">
-                                            <img src="<?php echo $this->baseUrl('images/pdfreport.png'); ?>" />
-                                            <span class="reportname">Profit and Loss Statement</span>
-                                        </a>
-                                    </li>
-                                </ul>
-                            </span>
-                        </div>
-                    </div>
-                <?php } ?>
-				<?php if(isFarmGroupAdmin()){ ?>
-                    <div class="widgetsection" style="height:auto; min-height: 700px;">
-                        <h3 style="color:#282727;">So What Next? </h3>                     
-                        <span class="calfont" id="getmost">To get the most from FARMIS, we recommend that you configure your Administration Account for <b><?php echo $farmgroup->getName(); ?> </b>by executing the following tasks in the order suggested below;</span>
-                        <div style="margin-top:20px; margin-left:5px;">
-                            <span class="taskcontainer">
-                                <label class="calfont tasklabel">1. Complete Personal Profile</label>
-                                <ul id="nexttasks" class="nav">      
-                                    <li class="well"><a href="<?php echo $this->baseUrl('farmer/index/id/'.encode($id)); ?>" title="Update Profile Summary">Update Profile Summary</a><img src="<?php echo  $step1_1_counter >= 60 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
-                                        <span class="percent"><?php echo $step1_1_counter.'%'; ?></span>
-                                    </li>
-                                    <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
-                                    <li class="well"><a href="<?php echo $this->baseUrl('farmer/picture/id/'.encode($farmer->getID()).'/type/photo'); ?>" title="Upload Profile Picture">Upload Profile Picture</a><img src="<?php echo $farmer->hasProfileImage() ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
-                                    </li>
-                                    <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
-                                    <li class="well"><a href="<?php echo $this->baseUrl('farmer/index/id/'.encode($id).'/tab/contacts'); ?>" title="Record and Validate Contacts">Record and Validate Contacts</a><img src="<?php echo $step1_3_counter >= 60 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
-                                        <span class="percent"><?php echo $step1_3_counter.'%'; ?></span>
-                                    </li>
-                                    <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
-                                    <li class="well"><a href="<?php echo $this->baseUrl('farmer/index/id/'.encode($id).'/tab/personal'); ?>" title="Personal details and Biography">Personal details and Biography</a><img src="<?php echo $step1_4_counter >= 60 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
-                                        <span class="percent"><?php echo $step1_4_counter.'%'; ?></span>
-                                    </li>
-                                </ul>
-                                
-                            </span>
-                            <span class="taskcontainer">
-                                <label class="calfont tasklabel">2. Complete Farm Group Profile</label>
-                                <ul id="nexttasks" class="nav">
-                                    <?php
-                                        $step2_1_counter = $farmgroup->getGroupStatus();
-                                        $count_farmers = $farmgroup->getListOfFarmers()->count();
-                                        $count_farmers_invited = $farmgroup->getInvitedFarmers()->count();
-                                    ?>      
-                                    <li class="well"><a href="<?php echo $this->baseUrl('farmgroup/index/id/'.encode($farmgroup->getID())); ?>" title="Update Group Profile">Update Group Profile</a><img src="<?php echo  $step2_1_counter >= 60 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
-                                        <span class="percent"><?php echo $step2_1_counter.'%'; ?></span>
-                                    </li>
-                                    <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
-                                    <li class="well"><a href="<?php echo $this->baseUrl('farmgroup/picture/id/'.encode($farmgroup->getID())); ?>" title="Upload Group Logo or Picture">Upload Profile Picture</a><img src="<?php echo $farmgroup->hasLogo() ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
-                                        <span class="percent"><?php echo $farmgroup->hasLogo() ? '100%' : ''; ?></span>
-                                    </li>
-                                    <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
-                                    <li class="well"><a href="<?php echo $this->baseUrl('farmgroup/view/id/'.encode($farmgroup->getID()).'/tab/farmers'); ?>" title="Add Farmers">Add Farmers</a><img src="<?php echo $count_farmers > 0 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
-                                        <span class="percent"><?php echo  $count_farmers; ?> <?php echo ($count_farmers == 0) ? 'Farmer' : 'Farmers'; ?></span>
-                                    </li>
-                                    <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
-                                    <li class="well"><a href="<?php echo $this->baseUrl('farmgroup/view/id/'.encode($farmgroup->getID()).'/tab/farmers'); ?>" title="Invite Farmers">Invite Farmers</a><img src="<?php echo $count_farmers_invited > 0 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
-                                        
-                                    </li>
-                                </ul>
-                             </span>
-                             <span class="taskcontainer">
-                                <label class="calfont tasklabel">3. Generate Reports</label>
-                                <ul id="nexttasks" class="nav">
-                                    <li class="output">
-                                        <a class="reportlink" title="Farmers Summary Reports" target="_blank" href="<?php echo $this->baseUrl('report/primarybaseline'); ?>">
-                                            <img src="<?php echo $this->baseUrl('images/pdfreport.png'); ?>" />
-                                            <span class="reportname">Farmers Summary Reports</span>
-                                        </a>
-                                    </li>
-                                    <li><img src="<?php echo $this->baseUrl('images/nextstep_last.png'); ?>" /></li>
-                                    <li class="output">
-                                        <a class="reportlink" title="Farmers Baseline Reports" href="<?php echo $this->baseUrl('report/baselinedetail'); ?>">
-                                            <img src="<?php echo $this->baseUrl('images/pdfreport.png'); ?>" />
-                                            <span class="reportname">Farmers Baseline Reports</span>
-                                        </a>
-                                    </li>
-                                    <li><img src="<?php echo $this->baseUrl('images/nextstep_last.png'); ?>" /></li>
-                                    <li class="output">
-                                        <a class="reportlink" title="All Farmers Bio Data Report" target="_blank" href="<?php echo $this->baseUrl('report/allfarmers/id/'.$id); ?>">
-                                            <img src="<?php echo $this->baseUrl('images/pdfreport.png'); ?>" />
-                                            <span class="reportname">All Farmers Bio Data Report</span>
-                                        </a>
-                                    </li>
-                                </ul>
-                            </span>
-                        </div>
-                    </div>
-                <?php } ?>
-                <?php if(isAdmin()){ ?>
-                	<div class="widgetsection" style="height:auto; min-height: 350px;">
-                        <h3 style="color:#282727;">Statistics</h3>                     
-                        <span class="calfont" id="getmost"></span>
-                        <div style="margin-top:20px; margin-left:5px;">
-                        
-                        </div>
-                    </div>
-                <?php } ?>
-            </div>
-            <div id="dashright" class="row widget">
-            	<?php if(!isAdmin()){ ?>
-                <div class="widgetsection height200">
-                    <h3>Subscription Summary</h3>
-                    <div>
-                    	<?php
-							$lastsubscription =  $farmer->getUser()->getLatestSubscription();
-							$startdate = changeMySQLDateToPageFormat($lastsubscription->getStartDate());
-							$enddate = changeMySQLDateToPageFormat($lastsubscription->getEndDate());
-							$trialstring = '';
-							if($farmer->getUser()->getPlan()->getID() == 1){
-								$trialstring = ' (Trial)';
-							}
-						?>
-                        <table class="table table-striped table-bordered table-condensed" id="stats">
-                            <tr>		                    
-                                <td class="profilerightlabel">Account Type:</td>
-                                <td class="profilerightvalue leftalign"><?php echo $farmer->getUser()->getPlan()->getName().$trialstring; ?></td>
-                            </tr>
-                            <tr>		                    
-                                <td class="profilerightlabel">Date Joined:</td>
-                                <td class="profilerightvalue leftalign"><?php echo isEmptyString($farmer->getUser()->getActivationDate()) ? '--' : changeMySQLDateToPageFormat($farmer->getUser()->getActivationDate()); ?></td>
-                            </tr>
-                            <tr>		                    
-                                <td class="profilerightlabel">Subscription Start:</td>
-                                <td class="profilerightvalue leftalign"><?php echo $startdate; ?></td>
-                            </tr>
-                            <tr>		                    
-                                <td class="profilerightlabel">Expiry Date:</td>
-                                <td class="profilerightvalue leftalign"><?php echo $enddate; ?></td>
-                            </tr>
-                            <tr>		                    
-                                <td class="profilerightlabel">Days to Expiry</td>
-                                <td class="profilerightvalue leftalign"><?php echo dateDiff($startdate, $enddate); ?></td>
-                            </tr>
-                        </table>
-                        <?php if(isFarmer()){ ?>
-                        	<label class="blocked maxwidth centeralign" style="margin-top:10px;"><a class="btn btn-primary btn-mini centeralign" href="<?php echo $this->baseUrl('farmer/view/id/'.encode($farmer->getID()).'/tab/subscription'); ?>" title="Subscription Details">View History</a></label>
+    	<?php if(isFarmer() || isFarmGroupAdmin()){ ?>
+    		<div class="blocked maxwidth">
+                <div class="pull-left" id="dashleft">
+					<?php if($user->showWelcome()){ ?>
+						<?php if(isFarmer()){ ?>
+                            <div class="widgetsection makerelative" style="min-height:130px;">
+                                <h3 style="color:#282727;">Welcome <?php echo $farmer->getFirstName(); ?></h3>
+                                <a href="javascript: doNothing();" style="position:absolute; top:2px; right:5px;" title="<?php echo $this->translate("global_button_remove"); ?>" id="" class="welcome_farmer removeline close button btn" rel="input">Dismiss</a>
+                                <div>
+                                    <label class="intro">
+                                        <p class="calfont">FARMIS is the easy way to manage the activities of Farmers in a Farm Group, allowing you to quickly manage and evaluate their income, expenses <a href="<?php echo $this->baseUrl('howitworks'); ?>">...read more</a></p>
+                                    </label>
+                                </div>
+                            </div>
                         <?php } ?>
                         <?php if(isFarmGroupAdmin()){ ?>
-                        	<label class="blocked maxwidth centeralign" style="margin-top:10px;"><a class="btn btn-primary btn-mini centeralign" href="<?php echo $this->baseUrl('farmgroup/view/id/'.encode($farmer->getFarmGroupID()).'/tab/subscription'); ?>" title="Subscription Details">View History</a></label>
+                            <div class="widgetsection makerelative" style="min-height:130px;">
+                                <a href="javascript: doNothing();" style="position:absolute; top:2px; right:5px;" title="<?php echo $this->translate("global_button_remove"); ?>" id="" class="welcome_farmgrp removeline close button btn" rel="input">Dismiss</a>
+                                <h3 style="color:#282727;"><?php echo $farmgroup->getName(); ?></h3>
+                                <div>
+                                    <label class="calfont tasklabel" style="border:none; margin-left:10px; margin-top:5px;">Welcome <?php echo $farmer->getFirstName(); ?></label>
+                                    <label class="intro">
+                                        <p class="calfont">FARMIS is the easy way to manage the activities of Farmers in a Farm Group, allowing you to quickly manage and evaluate their income, expenses <a href="<?php echo $this->baseUrl('howitworks'); ?>">...read more</a></p>
+                                    </label>
+                                </div>
+                            </div>
                         <?php } ?>
+                        <?php if(isFarmer()){ ?>
+                            <div class="widgetsection height300 makerelative" style="height:auto;">
+                            <h3 style="color:#282727;">So What Next? </h3>
+                            <a href="javascript: doNothing();" style="position:absolute; top:2px; right:5px;" title="<?php echo $this->translate("global_button_remove"); ?>" id="" class="welcome_farmer removeline close button btn" rel="input">Dismiss</a>
+                            <span class="calfont" id="getmost">To get the most from FARMIS, we recommend that you configure your Account by executing the following tasks in the order suggested below;</span>
+                            <div style="margin-top:20px; margin-left:5px;">
+                                <span class="taskcontainer">
+                                    <label class="calfont tasklabel">1. Primary Profiling</label>
+                                    <label class="calfont taskoutput">Output</label>
+                                    <ul id="nexttasks" class="nav">      
+                                        <li class="well"><a href="<?php echo $this->baseUrl('farmer/index/id/'.encode($id)); ?>" title="Update Profile Summary">Update Profile Summary</a><img src="<?php echo  $step1_1_counter >= 60 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
+                                            <span class="percent"><?php echo $step1_1_counter.'%'; ?></span>
+                                        </li>
+                                        <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
+                                        <li class="well"><a href="<?php echo $this->baseUrl('farmer/picture/id/'.encode($farmer->getID()).'/type/photo'); ?>" title="Upload Profile Picture">Upload Profile Picture</a><img src="<?php echo $farmer->hasProfileImage() ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
+                                            <span class="percent"><?php echo $farmer->hasProfileImage() ? '100%' : ''; ?></span>
+                                        </li>
+                                        <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
+                                        <li class="well"><a href="<?php echo $this->baseUrl('farmer/index/id/'.encode($id).'/tab/contacts'); ?>" title="Record and Validate Contacts">Record and Validate Contacts</a><img src="<?php echo $step1_3_counter >= 60 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
+                                            <span class="percent"><?php echo $step1_3_counter.'%'; ?></span>
+                                        </li>
+                                        <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
+                                        <li class="well"><a href="<?php echo $this->baseUrl('farmer/index/id/'.encode($id).'/tab/personal'); ?>" title="Personal details and Biography">Personal details and Biography</a><img src="<?php echo $step1_4_counter >= 60 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
+                                            <span class="percent"><?php echo $step1_4_counter.'%'; ?></span>
+                                        </li>
+                                        <li><img src="<?php echo $this->baseUrl('images/nextstep_last.png'); ?>" /></li>
+                                        <li class="output">
+                                            <a class="reportlink" title="Farmis Baseline Summary Report" target="_blank" href="<?php echo $this->baseUrl('report/primarybaseline/id/'.$id); ?>">
+                                                <img src="<?php echo $this->baseUrl('images/pdfreport.png'); ?>" />
+                                                <span class="reportname">Farmis Baseline Summary Report</span>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </span>
+                                <span class="taskcontainer">
+                                    <label class="calfont tasklabel">2. Secondary Profiling</label>
+                                    <label class="calfont taskoutput">Output</label>
+                                    <ul id="nexttasks" class="nav">     
+                                        <li class="well">
+                                            <?php if($hasfarm){ ?>
+                                                <a href="<?php echo $this->baseUrl('farm/view/id/'.encode($farmid)); ?>" title="Setup Farm Business">Setup Farm Business</a>
+                                            <?php } else { ?>
+                                                <a href="<?php echo $this->baseUrl('farm/index/farmerid/'.encode($session->getVar('farmerid'))); ?>" title="Setup Farm Business">Setup Farm Business</a>
+                                            <?php } ?>
+                                            <img src="<?php echo  $hasfarm ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
+                                            <span class="percent"><?php echo $step2_1_counter.'%'; ?></span>
+                                        </li>
+                                        <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
+                                        <li class="well">
+                                            <a href="<?php echo $this->baseUrl('farm/index/id/'.encode($farmid).'/tab/land'); ?>" title="Land Usage Profiling">Land Usage Profiling</a>
+                                            <img src="<?php echo  $step1_3_counter >= 60 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
+                                            <span class="percent"><?php echo $step1_3_counter.'%'; ?></span>
+                                        </li>
+                                        <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
+                                        <li class="well">
+                                            <a href="<?php echo $this->baseUrl('farm/view/id/'.encode($farmid).'/tab/commodities'); ?>" title="Crop Profiling">Crop Profiling</a>
+                                            <img src="<?php echo  $countcrops > 0 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
+                                            <?php if($countcrops > 0){ ?>
+                                            <span class="percent"><?php echo $countcrops == 1 ? '1 Crop' : $countcrops.' Crops'; ?></span>
+                                            <?php } ?>
+                                        </li>
+                                        <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
+                                        <li class="well">
+                                            <a href="<?php echo $this->baseUrl('farm/index/id/'.encode($farmid).'/tab/preseason'); ?>" title="Previous Season Profiling">Previous Season Profiling</a>
+                                            <img src="<?php echo  $step2_4_counter >= 50 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
+                                            <span class="percent"><?php echo $step2_4_counter.'%'; ?></span>
+                                        </li>
+                                        <li><img src="<?php echo $this->baseUrl('images/nextstep_last.png'); ?>" /></li>
+                                        <li class="output">
+                                            <a class="reportlink" title="Farmis Baseline Detailed Report" href="<?php echo $this->baseUrl('report/baselinedetail/id/'.$id); ?>">
+                                                <img src="<?php echo $this->baseUrl('images/pdfreport.png'); ?>" />
+                                                <span class="reportname">Farmis Baseline Detailed Report</span>
+                                            </a>
+                                        </li>
+                                    </ul>    
+                                </span>
+                                <span class="taskcontainer">
+                                    <label class="calfont tasklabel">3. Current Season Profiling</label>
+                                    <label class="calfont taskoutput">Output</label>
+                                    <ul id="nexttasks" class="nav">     
+                                        <li class="well">
+                                            <a href="<?php echo $seasonurl; ?>" title="">Setup New Season</a>
+                                            <img src="<?php echo $step3_1_counter > 0 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
+                                            <?php if($step3_1_counter > 0){ ?>
+                                            <span class="percent"><?php echo $step3_1_counter == 1 ? '1 Season' : $step3_1_counter.' Seasons'; ?></span>
+                                            <?php } ?>
+                                        </li>
+                                        <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
+                                        <li class="well">
+                                            <a href="<?php echo $seasonurl; ?>" title="Record Activities">Record Activities</a>
+                                            <img src="<?php echo $step3_2_counter == 0 ? $this->baseUrl('images/tick_undone.png') : $this->baseUrl('images/tick_done.png'); ?>" />
+                                        </li>
+                                        <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
+                                        <li class="well"><a href="<?php echo $seasonurl; ?>" title="Record Expenses">Record Expenses</a><img src="<?php echo $step3_3_counter == 0 ? $this->baseUrl('images/tick_undone.png') : $this->baseUrl('images/tick_done.png'); ?>" /></li>
+                                        <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
+                                        <li class="well"><a href="<?php echo $this->baseUrl('farm/view/id/'.encode($farmid).'/tab/inventory'); ?>" title="Season Inventory">Season Inventory</a><img src="<?php echo $step3_4_counter == 0 ? $this->baseUrl('images/tick_undone.png') : $this->baseUrl('images/tick_done.png'); ?>" /></li>
+                                        <li><img src="<?php echo $this->baseUrl('images/nextstep_last.png'); ?>" /></li>
+                                        <li class="output">
+                                            <a class="reportlink" title="Profit and Loss Statement" href="<?php echo $this->baseUrl("finance/statement/farmid/".$farm->getID()); ?>">
+                                                <img src="<?php echo $this->baseUrl('images/pdfreport.png'); ?>" />
+                                                <span class="reportname">Profit and Loss Statement</span>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </span>
+                            </div>
+                        </div>
+                        <?php } ?>
+                        <?php if(isFarmGroupAdmin()){ ?>
+                            <div class="widgetsection makerelative" style="height:auto; min-height: 700px;">
+                                <h3 style="color:#282727;">So What Next? </h3>
+                                <a href="javascript: doNothing();" style="position:absolute; top:2px; right:5px;" title="<?php echo $this->translate("global_button_remove"); ?>" id="" class="welcome_farmgrp removeline close button btn" rel="input">Dismiss</a>                          
+                                <span class="calfont" id="getmost">To get the most from FARMIS, we recommend that you configure your Administration Account for <b><?php echo $farmgroup->getName(); ?> </b>by executing the following tasks in the order suggested below;</span>
+                                <div style="margin-top:20px; margin-left:5px;">
+                                    <span class="taskcontainer">
+                                        <label class="calfont tasklabel">1. Complete Personal Profile</label>
+                                        <ul id="nexttasks" class="nav">      
+                                            <li class="well"><a href="<?php echo $this->baseUrl('farmer/index/id/'.encode($id)); ?>" title="Update Profile Summary">Update Profile Summary</a><img src="<?php echo  $step1_1_counter >= 60 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
+                                                <span class="percent"><?php echo $step1_1_counter.'%'; ?></span>
+                                            </li>
+                                            <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
+                                            <li class="well"><a href="<?php echo $this->baseUrl('farmer/picture/id/'.encode($farmer->getID()).'/type/photo'); ?>" title="Upload Profile Picture">Upload Profile Picture</a><img src="<?php echo $farmer->hasProfileImage() ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
+                                            </li>
+                                            <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
+                                            <li class="well"><a href="<?php echo $this->baseUrl('farmer/index/id/'.encode($id).'/tab/contacts'); ?>" title="Record and Validate Contacts">Record and Validate Contacts</a><img src="<?php echo $step1_3_counter >= 60 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
+                                                <span class="percent"><?php echo $step1_3_counter.'%'; ?></span>
+                                            </li>
+                                            <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
+                                            <li class="well"><a href="<?php echo $this->baseUrl('farmer/index/id/'.encode($id).'/tab/personal'); ?>" title="Personal details and Biography">Personal details and Biography</a><img src="<?php echo $step1_4_counter >= 60 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
+                                                <span class="percent"><?php echo $step1_4_counter.'%'; ?></span>
+                                            </li>
+                                        </ul>
+                                        
+                                    </span>
+                                    <span class="taskcontainer">
+                                        <label class="calfont tasklabel">2. Complete Farm Group Profile</label>
+                                        <ul id="nexttasks" class="nav">
+                                            <?php
+                                                $step2_1_counter = $farmgroup->getGroupStatus();
+                                                $count_farmers = $farmgroup->getListOfFarmers()->count();
+                                                $count_farmers_invited = $farmgroup->getInvitedFarmers()->count();
+                                            ?>      
+                                            <li class="well"><a href="<?php echo $this->baseUrl('farmgroup/index/id/'.encode($farmgroup->getID())); ?>" title="Update Group Profile">Update Group Profile</a><img src="<?php echo  $step2_1_counter >= 60 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
+                                                <span class="percent"><?php echo $step2_1_counter.'%'; ?></span>
+                                            </li>
+                                            <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
+                                            <li class="well"><a href="<?php echo $this->baseUrl('farmgroup/picture/id/'.encode($farmgroup->getID())); ?>" title="Upload Group Logo or Picture">Upload Profile Picture</a><img src="<?php echo $farmgroup->hasLogo() ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
+                                                <span class="percent"><?php echo $farmgroup->hasLogo() ? '100%' : ''; ?></span>
+                                            </li>
+                                            <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
+                                            <li class="well"><a href="<?php echo $this->baseUrl('farmgroup/view/id/'.encode($farmgroup->getID()).'/tab/farmers'); ?>" title="Add Farmers">Add Farmers</a><img src="<?php echo $count_farmers > 0 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
+                                                <span class="percent"><?php echo  $count_farmers; ?> <?php echo ($count_farmers == 0) ? 'Farmer' : 'Farmers'; ?></span>
+                                            </li>
+                                            <li><img src="<?php echo $this->baseUrl('images/nextstep.png'); ?>" /></li>
+                                            <li class="well"><a href="<?php echo $this->baseUrl('farmgroup/view/id/'.encode($farmgroup->getID()).'/tab/farmers'); ?>" title="Invite Farmers">Invite Farmers</a><img src="<?php echo $count_farmers_invited > 0 ? $this->baseUrl('images/tick_done.png') : $this->baseUrl('images/tick_undone.png'); ?>" />
+                                                
+                                            </li>
+                                        </ul>
+                                     </span>
+                                     <span class="taskcontainer">
+                                        <label class="calfont tasklabel">3. Generate Reports</label>
+                                        <ul id="nexttasks" class="nav">
+                                            <li class="output">
+                                                <a class="reportlink" title="Farmers Summary Reports" target="_blank" href="<?php echo $this->baseUrl('report/primarybaseline'); ?>">
+                                                    <img src="<?php echo $this->baseUrl('images/pdfreport.png'); ?>" />
+                                                    <span class="reportname">Farmers Summary Reports</span>
+                                                </a>
+                                            </li>
+                                            <li><img src="<?php echo $this->baseUrl('images/nextstep_last.png'); ?>" /></li>
+                                            <li class="output">
+                                                <a class="reportlink" title="Farmers Baseline Reports" href="<?php echo $this->baseUrl('report/baselinedetail'); ?>">
+                                                    <img src="<?php echo $this->baseUrl('images/pdfreport.png'); ?>" />
+                                                    <span class="reportname">Farmers Baseline Reports</span>
+                                                </a>
+                                            </li>
+                                            <li><img src="<?php echo $this->baseUrl('images/nextstep_last.png'); ?>" /></li>
+                                            <li class="output">
+                                                <a class="reportlink" title="All Farmers Bio Data Report" target="_blank" href="<?php echo $this->baseUrl('report/allfarmers/id/'.$id); ?>">
+                                                    <img src="<?php echo $this->baseUrl('images/pdfreport.png'); ?>" />
+                                                    <span class="reportname">All Farmers Bio Data Report</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </span>
+                                </div>
+                            </div>
+                        <?php } ?>  
+                    <?php } else { ?>
+                        <div class="widgetsection" style="height:800px;">
+                            <h3 style="color:#282727;"><?php echo isFarmer() ? $farmer->getName() : $farmgroup->getName(); ?> - FARMIS Today 
+                                <div id="today" style=" width:auto; margin:0 auto; padding:0; float:right;">
+                                    <label id="Date" style="display:inline-block; text-align:center; margin-left:6px; margin-right:3px; font-size:12px; color:#000000; font-weight:bold;"></label>​&nbsp;
+                                    <label id="clockContainer" style="display:inline-block; font-size:12px; color:#000000; font-weight:bold;"><span id="spHrs"></span>:<span id="spMins"></span>:<span id="spSecs"></span></label>
+                                </div>
+                            ​</h3>
+                            <div>
+                                <label class="calfont tasklabel centeralign" style="border:none; margin-left:10px; margin-top:5px;"><?php echo isFarmer() ? 'Farm' : 'Farm Group'; ?> Activity Calendar</label>
+                                <div id='calendarcontainer' class=" padding0 margin0" style="margin-top:10px;"></div>
+                                <?php
+									$seasons = $farm->getOrderedSeasons();
+									foreach ($seasons as $season){
+										$timeline = sort_multi_array($season->getTimeLineDetails(), 'order');
+										foreach($timeline as $activity){
+								?>
+											<ul id="<?php echo $activity['uniqueid']; ?>" class="nav nav-stacked datalist hide" style="width:360px;">
+												<li>
+													<table class="table noborder margin0">
+														<tr>                                
+															<td class="padding0">
+																<div style="position:relative;">
+																	<div style="position:absolute; top:5px; right:15px;">
+																		<a class="btn btn-primary btn-mini wrap"  href="<?php echo $activity['url']; ?>" title="View all details">View</a>
+																		<a class="btn btn-primary btn-mini wrap"  href="<?php echo $activity['editurl']; ?>" title="Update Activity">Update</a>
+																	</div>
+																	<table class="itemlist table noborder margin0">
+																		<tr>
+																			<td style="width:65px;"><label class="control-label pull-left">Ref#:</label></td>
+																			<td><span><?php echo $activity['ref']; ?></span></td>    
+																		</tr>      
+																		<tr>
+																			<td><label class="control-label pull-left">Details:</label></td>
+																			<td><span><?php echo snippet($activity['description'], 300, '...'); ?></span></td>    
+																		</tr>
+																		<tr>
+																			<td><label class="control-label pull-left">Status:</label></td>
+																			<td><span><?php echo $activity['status']; ?></span></td>    
+																		</tr>
+																		<?php if(in_array($activity['type'], array("1","2","3","4","5","6")) && $activity['expenses'] > 0){ ?>
+																			<tr>
+																				<td><label class="control-label pull-left">Expenses:</label></td>
+																				<td><span><?php echo formatNumber($activity['expenses']); ?></span></td>    
+																			</tr>  
+																		<?php } ?> 
+																		<?php if($activity['type'] == "7" && $activity['sale'] > 0){ ?>
+																			<tr>
+																				<td><label class="control-label pull-left">Revenue:</label></td>
+																				<td><span><?php echo formatNumber($activity['sale']); ?></span></td>    
+																			</tr>  
+																		<?php } ?>      
+																	</table>
+																</div>
+															</td>
+														</tr>
+													</table>
+												</li>
+											</ul>       
+								<?php } } ?>
+                            </div>
+                        </div>
+                    <?php } ?>
+            	</div>
+                <div id="dashright" class="row widget">
+                    <?php if(!isAdmin()){ ?>
+                    <div class="widgetsection height200">
+                        <h3>Subscription Summary</h3>
+                        <div>
+                            <?php
+                                $lastsubscription =  $farmer->getUser()->getLatestSubscription();
+                                $today = changeMySQLDateToPageFormat(date('Y-m-d'));
+                                $startdate = changeMySQLDateToPageFormat($lastsubscription->getStartDate());
+                                $enddate = changeMySQLDateToPageFormat($lastsubscription->getEndDate());
+                                $trialstring = '';
+                                if($farmer->getUser()->getPlan()->getID() == 1){
+                                    $trialstring = ' (Trial)';
+                                }
+                            ?>
+                            <table class="table table-striped table-bordered table-condensed" id="stats">
+                                <tr>		                    
+                                    <td class="profilerightlabel">Account Type:</td>
+                                    <td class="profilerightvalue leftalign"><?php echo $farmer->getUser()->getPlan()->getName().$trialstring; ?></td>
+                                </tr>
+                                <tr>		                    
+                                    <td class="profilerightlabel">Date Joined:</td>
+                                    <td class="profilerightvalue leftalign"><?php echo isEmptyString($farmer->getUser()->getActivationDate()) ? '--' : changeMySQLDateToPageFormat($farmer->getUser()->getActivationDate()); ?></td>
+                                </tr>
+                                <tr>		                    
+                                    <td class="profilerightlabel">Subscription Start:</td>
+                                    <td class="profilerightvalue leftalign"><?php echo $startdate; ?></td>
+                                </tr>
+                                <tr>		                    
+                                    <td class="profilerightlabel">Expiry Date:</td>
+                                    <td class="profilerightvalue leftalign"><?php echo $enddate; ?></td>
+                                </tr>
+                                <tr>		                    
+                                    <td class="profilerightlabel">Days to Expiry</td>
+                                    <td class="profilerightvalue leftalign"><?php echo dateDiff($today, $enddate); ?></td>
+                                </tr>
+                            </table>
+                            <?php if(isFarmer()){ ?>
+                                <label class="blocked maxwidth centeralign" style="margin-top:10px;"><a class="btn btn-primary btn-mini centeralign" href="<?php echo $this->baseUrl('farmer/view/id/'.encode($farmer->getID()).'/tab/subscription'); ?>" title="Subscription Details">View History</a></label>
+                            <?php } ?>
+                            <?php if(isFarmGroupAdmin()){ ?>
+                                <label class="blocked maxwidth centeralign" style="margin-top:10px;"><a class="btn btn-primary btn-mini centeralign" href="<?php echo $this->baseUrl('farmgroup/view/id/'.encode($farmer->getFarmGroupID()).'/tab/subscription'); ?>" title="Subscription Details">View History</a></label>
+                            <?php } ?>
+                        </div>
                     </div>
-                </div>
-                <div class="widgetsection height200">
-                    <h3>Validate Phone Contact(s)</h3>
-                    <div>
-                        <table class="table noborder margin0">
-                            <tr>
-                                <td>
-                                    <label class="control-label pull-left" style="display:block; text-align:left; margin-bottom:5px; width:100%;">Primary Phone:</label>
-                                    <?php
-                                        $phone = $farmer->getUser()->getPhone();
-										$primaryphone = $farmer->getUser()->getPrimaryPhone();
-                                        $userphoneid = $primaryphone->getID();
-                                        
-                                        $validated = false;
-                                        if(!isEmptyString($phone)){
-                                            $valid_text = '&nbsp; <div class="alert alert-error margin5" style="padding:5px 0 8px 25px;">(Unconfirmed Number). </div>';
-                                        }
-                                        $allowrevalidate = false;
-                                        if($primaryphone->isValidated()){
-                                            $validated = true;
-                                            $valid_text = '&nbsp; <span class="pagedescription lineblocked" style="color:#55A411;">(Validated)</span';
-                                        }
-                                        if($primaryphone->hasPendingActivation()){
-                                            $allowrevalidate = true;
-                                        }
-                                    ?>
-                                    <?php echo isEmptyString($phone) ? '--' : " <br />".$phone; ?>
-                                    <?php echo $valid_text; ?>
-                                    <?php if($validated){ ?>
-                                    	<br /><b>Provider:</b> <br /><?php echo $primaryphone->getProvider(); ?>
-                                    <?php } ?>
-                                    <?php if($validated){ ?>
-                                        <br /><div class="alert alert-success" style="margin-top:15px;">Your Phone Number passed validation</div>
-                                    <?php } ?>
-                                    <?php if(!$validated && $allowrevalidate){ ?>
-                                        <label class="pagedescription">We need to verify that the phone number on your account belongs to you. <br /><b>To verify, enter the 6 digit code sent to you and click Verify</b></label>
-                                    <?php } ?>
-                                    <?php if(!$validated && !$allowrevalidate){ ?>
-                                        <label class="pagedescription">We need to verify that the phone number on your account belongs to you. <br /><b>To verify click the Validate button below</b></label>
-                                        <label class="blocked maxwidth centeralign" style="margin-top:10px;"><a style="display:block; margin-top:10px;" href="<?php echo $this->baseUrl('farmer/validatephone/userphoneid/'.encode($userphoneid).'/pgc/true'); ?>" class="btn btn-primary btn-mini addpopup width100" rel="Validate Phone" title="Validate Mobile Phone" id="validate" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmer/view/id/'.encode($farmer->getID()).'/tab/contacts'); ?>" action="<?php echo $this->baseUrl("farmer/processvalidatephone"); ?>" submittext="Request Code">Validate Phone</a></label>
-                                        
-                                    <?php } ?>
-                                    <?php if(!$validated && $allowrevalidate){ ?>
-                                        <span class="phone_before" id="phone_before_<?php echo $userphoneid; ?>">
-                                            <input type="text" name="phone_<?php echo $userphoneid; ?>" id="phone_<?php echo $userphoneid; ?>" placeholder="enter 6 digit code" title="Confirm Phone" value="" maxlength="6" class="validate validate_<?php echo $userphoneid; ?>" />
-                                            <a href="javascript:doNothing();" class="btn btn-primary btn-mini validatetrigger" id="validate_<?php echo $userphoneid; ?>" title="Confirm Phone" successurl="<?php echo encode($this->baseUrl('farmer/view/id/'.encode($farmer->getID()).'/tab/contacts')); ?>"><i class="icon-envelope icon-white"></i> Confirm</a>
-                                            <label class="hide validate_<?php echo $userphoneid; ?>" title="<?php echo $userphoneid; ?>"><?php echo $userphoneid; ?></label>                            
-                                            <div id="validate_<?php echo $userphoneid; ?>_error" style="margin-top:4px;"></div>
-                                        </span>
-                                        <span class="phone_after" id="phone_after_<?php echo $userphoneid; ?>">
-                                            <a id="loading_<?php echo $userphoneid; ?>" class="hidden"><img style="margin-left:0" src="<?php echo $this->baseUrl('images/loader.gif'); ?>" /></a>
-                                        </span>
-                                        <?php if($sessionhaserror) { ?>
-                                            <div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+                    <div class="widgetsection height200">
+                        <h3>Validate Phone Contact(s)</h3>
+                        <div>
+                            <table class="table noborder margin0">
+                                <tr>
+                                    <td>
+                                        <label class="control-label pull-left" style="display:block; text-align:left; margin-bottom:5px; width:100%;">Primary Phone:</label>
+                                        <?php
+                                            $phone = $farmer->getUser()->getPhone();
+                                            $primaryphone = $farmer->getUser()->getPrimaryPhone();
+                                            $userphoneid = $primaryphone->getID();
+                                            
+                                            $validated = false;
+                                            if(!isEmptyString($phone)){
+                                                $valid_text = '&nbsp; <div class="alert alert-error margin5" style="padding:5px 0 8px 25px;">(Unconfirmed Number). </div>';
+                                            }
+                                            $allowrevalidate = false;
+                                            if($primaryphone->isValidated()){
+                                                $validated = true;
+                                                $valid_text = '&nbsp; <span class="pagedescription lineblocked" style="color:#55A411;">(Validated)</span';
+                                            }
+                                            if($primaryphone->hasPendingActivation()){
+                                                $allowrevalidate = true;
+                                            }
+                                        ?>
+                                        <?php echo isEmptyString($phone) ? '--' : " <br />".$phone; ?>
+                                        <?php echo $valid_text; ?>
+                                        <?php if($validated){ ?>
+                                            <br /><b>Provider:</b> <br /><?php echo $primaryphone->getProvider(); ?>
                                         <?php } ?>
-                                    <?php } ?>
+                                        <?php if($validated){ ?>
+                                            <br /><div class="alert alert-success" style="margin-top:15px;">Your Phone Number passed validation</div>
+                                        <?php } ?>
+                                        <?php if(!$validated && $allowrevalidate){ ?>
+                                            <label class="pagedescription">We need to verify that the phone number on your account belongs to you. <br /><b>To verify, enter the 6 digit code sent to you and click Verify</b></label>
+                                        <?php } ?>
+                                        <?php if(!$validated && !$allowrevalidate){ ?>
+                                            <label class="pagedescription">We need to verify that the phone number on your account belongs to you. <br /><b>To verify click the Validate button below</b></label>
+                                            <label class="blocked maxwidth centeralign" style="margin-top:10px;"><a style="display:block; margin-top:10px;" href="<?php echo $this->baseUrl('farmer/validatephone/userphoneid/'.encode($userphoneid).'/pgc/true'); ?>" class="btn btn-primary btn-mini addpopup width100" rel="Validate Phone" title="Validate Mobile Phone" id="validate" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmer/view/id/'.encode($farmer->getID()).'/tab/contacts'); ?>" action="<?php echo $this->baseUrl("farmer/processvalidatephone"); ?>" submittext="Request Code">Validate Phone</a></label>
+                                            
+                                        <?php } ?>
+                                        <?php if(!$validated && $allowrevalidate){ ?>
+                                            <span class="phone_before" id="phone_before_<?php echo $userphoneid; ?>">
+                                                <input type="text" name="phone_<?php echo $userphoneid; ?>" id="phone_<?php echo $userphoneid; ?>" placeholder="enter 6 digit code" title="Confirm Phone" value="" maxlength="6" class="validate validate_<?php echo $userphoneid; ?>" />
+                                                <a href="javascript:doNothing();" class="btn btn-primary btn-mini validatetrigger" id="validate_<?php echo $userphoneid; ?>" title="Confirm Phone" successurl="<?php echo encode($this->baseUrl('farmer/view/id/'.encode($farmer->getID()).'/tab/contacts')); ?>"><i class="icon-envelope icon-white"></i> Confirm</a>
+                                                <label class="hide validate_<?php echo $userphoneid; ?>" title="<?php echo $userphoneid; ?>"><?php echo $userphoneid; ?></label>                            
+                                                <div id="validate_<?php echo $userphoneid; ?>_error" style="margin-top:4px;"></div>
+                                            </span>
+                                            <span class="phone_after" id="phone_after_<?php echo $userphoneid; ?>">
+                                                <a id="loading_<?php echo $userphoneid; ?>" class="hidden"><img style="margin-left:0" src="<?php echo $this->baseUrl('images/loader.gif'); ?>" /></a>
+                                            </span>
+                                            <?php if($sessionhaserror) { ?>
+                                                <div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+                                            <?php } ?>
+                                        <?php } ?>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="widgetsection height300">
+                        <h3><?php echo isAdmin() ? 'Admin ' : ''; ?>Notifications <a href="<?php echo $this->baseUrl('message/list'); ?>" title="View all" style="text-decoration:none;"><span class="pagedescription" style="color:red; font-size:14px;">(<?php echo $unread_messages; ?> Unread)</span></a></h3>
+                        <div>
+                        <?php 
+                            // query for user's lattest 3 messages
+                            $q = new Doctrine_RawSql();
+                            $q->select('{m.*}, {mr.*}');
+                            $q->from('message m INNER JOIN messagerecipient mr ON (m.id = mr.messageid)');
+                            $q->where("(mr.recipientid = '".$userid."') ORDER BY m.datecreated DESC LIMIT 2");
+                            $q->addComponent('m', 'Message m');
+                            $q->addComponent('mr', 'm.recipients mr');
+                            $latestmsg = $q->execute();
+                            // debugMessage($latestmsg->toArray());
+                            
+                            $c = new Doctrine_RawSql();
+                            $c->select('{m.*}, {mr.*}');
+                            $c->from('message m INNER JOIN messagerecipient mr ON (m.id = mr.messageid)');
+                            $c->where("(mr.recipientid = '".$userid."' AND mr.isread = 0) ORDER BY m.datecreated");
+                            $c->addComponent('m', 'Message m');
+                            $c->addComponent('mr', 'm.recipients mr');
+                                
+                            $unread_messages = $c->execute()->count();
+                        ?>
+                        <?php if($latestmsg->count() == 0){ ?>
+                            <div style="padding:5px 5px; margin:15px 0;" class="alert alert-info centeralign">No notifications available</div>
+                        <?php } else { ?>
+                            <ul class="datalist nav nav-stacked" style="border-top:1px solid #DDDDDD; margin-top:2px;">
+                                <?php
+                                    foreach($latestmsg as $message){ 
+                                        switch ($message->getComment()->getType()){		
+                                                case '1':
+                                                    // path to communityforum comment thread
+                                                    $reply_path = $this->baseUrl("communityforum/view/id/".encode($message->getComment()->getCommunityForumID())."/messageid/".encode($message->getID()));
+                                                    break;
+                                                default:
+                                                    $reply_path = $this->baseUrl("message/reply/id/".encode($message->getID()));
+                                        }
+                                        // debugMessage($reply_path);
+                                    
+                                ?>
+                                    <li style="position:relative;">
+                                        <div class="latest_message"> 
+                                            <?php if(!isEmptyString($message->getCommentID()) || $message->getSenderID() == 1){ ?>
+                                                <img src="<?php echo $this->baseUrl('images/flag.png'); ?>" />
+                                            <?php } else { ?> 
+                                                <img src="<?php echo $message->getSender()->getThumbnailPicturePath(); ?>" alt="<?php echo $message->getSender()->getName(); ?>" /> 
+                                            <?php } ?> 
+                                            <a href="<?php echo $reply_path; ?>" title="View detail" style="font-size:12px;">
+                                            <?php if($message->getSenderID() == 1){ ?>
+                                                <label><?php echo $this->translate("company_signoff"); ?></label> - <?php echo isEmptyString($message->getSubject()) ? snippet($message->getContents(), 45, '...' ) : $message->getSubject(); ?></a>
+                                            <?php } else { ?> 
+                                               <label><?php echo $message->getSender()->getName(); ?></label> - <?php echo snippet($message->getContents(), 45, '...' ); ?>
+                                            <?php } ?>
+                                            </a> 
+                                        </div>
+                                        <label class="message_date pagedescription"><?php echo date('M j, Y - g:i A', strtotime($message->getDateCreated())); ?></label>
+                                    </li>
+                                <?php } ?>
+                            </ul>
+                        <?php } ?>  
+                        <label class="centeralign blocked"><a class="btn btn-primary btn-mini" href="<?php echo $this->baseUrl('message/list'); ?>" title="View all Notifications">See All Notifications</a></label>
+                        </div>
+                    </div>
+                    <?php } ?>
+                </div>
+        	</div>
+    	<?php } ?>          
+		<?php if(isAdmin()){ ?>
+            <div class="blocked maxwidth">
+                <div class="pull-left" id="admindash">
+                    <div class="widgetsection blocked clear" style="height:auto; margin-left:0;">
+                    	<h3 style="color:#282727;">Admin Dashboard</h3>
+                        <table class="table nohover border0 margin0 padding0">
+                        	<tr>
+                            	<td style="width:48%;">
+                                	 <label class="calfont tasklabel" style="margin-left:10px; margin-top:5px; border-bottom:solid 2px #A6A4A4; ">Latest Subscriptions</label>
+                                     <table class="table nohover margin0 padding0">
+                                     	<tr>
+                                        	<td style="width:60%;">
+                                                <fieldset class="fieldsetcontainer">
+                                                    <legend>Groups Profiles (5)</legend>
+                                                    <div style="padding-top:10px;">
+                                                    	<?php 
+															$latestgrps = getLatestGroups(5);
+															
+															
+															foreach($latestgrps as $grp){
+																// debugMessage($grp['id']);
+																$fmgroup = new FarmGroup();																
+																$fmgroup->populate($grp['id']);
+																// debugMessage($grp->toArray());
+														?>
+                                                        	<label class="lineblocked" style="margin-bottom:10px; padding-left:10px; width:93%;"><a href="<?php echo $this->baseUrl('farmgroup/view/id/'.$fmgroup->getID()); ?>"><?php echo $fmgroup->getName(); ?></a><span class="pull-right"><?php echo changeMySQLDateToPageFormat($fmgroup->getRegDate()); ?></span></label>
+                                                        <?php } ?>
+                                                    </div>
+                                                </fieldset>
+                                            </td>
+                                            <td>
+                                            	<fieldset class="fieldsetcontainer">
+                                                    <legend>Users (5)</legend>
+                                                    <div style="padding-top:10px;">
+                                                    	<?php 
+															$latestusers = getLatestUsers(5);
+															// debugMessage($latestusers);
+															
+															foreach($latestusers as $user){
+																$useracc = new UserAccount();
+																$useracc->populate($user['id']);
+														?>
+                                                        	<label class="lineblocked" style="margin-bottom:15px; padding-left:10px; width:93%;"><a href="<?php echo $this->baseUrl('farmer/view/id/'.$useracc->getID()); ?>" title="<?php echo $useracc->isFarmer() ? 'Farmer' : 'DNA Group Clerk'; ?>: <?php echo $useracc->getName(); ?>"><?php echo $useracc->getName(); ?></a><span class="pull-right" title="<?php echo $useracc->isFarmer() ? 'Farmer User' : 'DNA User'; ?>"><?php echo $useracc->isFarmer() ? 'F' : 'G'; ?></span></label>
+                                                        <?php } ?>
+                                                    </div>
+                                                </fieldset>
+                                            </td>
+                                        </tr>
+                                     </table>
+                                </td>
+                                <td>
+                                	<label class="calfont tasklabel" style="margin-left:10px; margin-top:5px; border-bottom:solid 2px #A6A4A4;">At a Glance</label>
+                                     <table class="table nohover margin0 padding0" style="height:100%;">
+                                     	<tr>
+                                        	<td style="width:50%;">
+                                                <fieldset class="fieldsetcontainer">
+                                                    <legend>Groups Profiles</legend>
+                                                    <p>
+                                                    
+                                                    </p>
+                                                </fieldset>
+                                            </td>
+                                            <td>
+                                            	<fieldset class="fieldsetcontainer">
+                                                    <legend>Farmers</legend>
+                                                    <p>
+                                                    
+                                                    </p>
+                                                </fieldset>
+                                            </td>
+                                        </tr>
+                                     </table>
+                                </td>
+                            </tr>
+                            <tr>
+                            	<td style="width:48%;">
+                                	 <label class="calfont tasklabel" style="margin-left:10px; margin-top:5px; border-bottom:solid 2px #A6A4A4;">Latest Payments</label>
+                                     <table class="table nohover margin0 padding0" style="border:solid 1px #A6A4A4; width:97%; margin-left:10px;">
+                                     	<tr>
+                                        	<td style="height:250px;"></td>
+                                        </tr>
+                                     </table>
+                                </td>
+                                <td>
+                                	 <label class="calfont tasklabel" style="margin-left:10px; margin-top:5px; border-bottom:solid 2px #A6A4A4;">Report Highlights</label>
+                                     <table class="table nohover margin0 padding0" style="border:solid 1px #A6A4A4; width:97%; margin-left:10px;">
+                                     	<tr>
+                                        	<td style="height:250px;"></td>
+                                        </tr>
+                                     </table>
                                 </td>
                             </tr>
                         </table>
                     </div>
                 </div>
-                <?php } ?>
-                <div class="widgetsection height300">
-                    <h3>Notifications <a href="<?php echo $this->baseUrl('message/list'); ?>" title="View all" style="text-decoration:none;"><span class="pagedescription" style="color:red; font-size:14px;">(<?php echo $unread_messages; ?> Unread)</span></a></h3>
-                    <div>
-                    <?php 
-						// query for user's lattest 3 messages
-						$q = new Doctrine_RawSql();
-						$q->select('{m.*}, {mr.*}');
-						$q->from('message m INNER JOIN messagerecipient mr ON (m.id = mr.messageid)');
-						$q->where("(mr.recipientid = '".$userid."') ORDER BY m.datecreated DESC LIMIT 2");
-						$q->addComponent('m', 'Message m');
-						$q->addComponent('mr', 'm.recipients mr');
-						$latestmsg = $q->execute();
-						// debugMessage($latestmsg->toArray());
-						
-						$c = new Doctrine_RawSql();
-						$c->select('{m.*}, {mr.*}');
-						$c->from('message m INNER JOIN messagerecipient mr ON (m.id = mr.messageid)');
-						$c->where("(mr.recipientid = '".$userid."' AND mr.isread = 0) ORDER BY m.datecreated");
-						$c->addComponent('m', 'Message m');
-						$c->addComponent('mr', 'm.recipients mr');
-							
-						$unread_messages = $c->execute()->count();
-					?>
-                    <?php if($latestmsg->count() == 0){ ?>
-                        <div style="padding:5px 5px; margin:15px 0;" class="alert alert-info centeralign">No notifications available</div>
-                    <?php } else { ?>
-                        <ul class="datalist nav nav-stacked" style="border-top:1px solid #DDDDDD; margin-top:2px;">
-                            <?php
-                                foreach($latestmsg as $message){ 
-                                    switch ($message->getComment()->getType()){		
-                                            case '1':
-                                                // path to communityforum comment thread
-                                                $reply_path = $this->baseUrl("communityforum/view/id/".encode($message->getComment()->getCommunityForumID())."/messageid/".encode($message->getID()));
-                                                break;
-                                            default:
-                                                $reply_path = $this->baseUrl("message/reply/id/".encode($message->getID()));
-                                    }
-                                    // debugMessage($reply_path);
-                                
-                            ?>
-                                <li style="position:relative;">
-                                    <div class="latest_message"> 
-                                        <?php if(!isEmptyString($message->getCommentID()) || $message->getSenderID() == 1){ ?>
-                                            <img src="<?php echo $this->baseUrl('images/flag.png'); ?>" />
-                                        <?php } else { ?> 
-                                            <img src="<?php echo $message->getSender()->getThumbnailPicturePath(); ?>" alt="<?php echo $message->getSender()->getName(); ?>" /> 
-                                        <?php } ?> 
-                                        <a href="<?php echo $reply_path; ?>" title="View detail" style="font-size:12px;">
-                                        <?php if($message->getSenderID() == 1){ ?>
-                                            <label><?php echo $this->translate("company_signoff"); ?></label> - <?php echo isEmptyString($message->getSubject()) ? snippet($message->getContents(), 45, '...' ) : $message->getSubject(); ?></a>
-                                        <?php } else { ?> 
-                                           <label><?php echo $message->getSender()->getName(); ?></label> - <?php echo snippet($message->getContents(), 45, '...' ); ?>
-                                        <?php } ?>
-                                        </a> 
-                                    </div>
-                                    <label class="message_date pagedescription"><?php echo date('M j, Y - g:i A', strtotime($message->getDateCreated())); ?></label>
-                                </li>
-                            <?php } ?>
-                        </ul>
-                    <?php } ?>  
-                    <label class="centeralign blocked"><a class="btn btn-primary btn-mini" href="<?php echo $this->baseUrl('message/list'); ?>" title="View all Notifications">See All Notifications</a></label>
-                    </div>
+            </div>
+        <?php } ?>
+        <?php if(!isAdmin()){ ?>
+            <div class="widgetsection blocked clear" style="height:auto; min-height:460px; margin-left:0;">
+                <h3 style="color:#282727;">Market Prices and Trends</h3>
+                <div style="padding:10px">
+                    <div id="marketprices" style="float:left; margin-right:10px; min-height:280px; height:auto; width:60%;"></div>
+                    <div id="fuelprices" style="float:right; min-height:280px; height:auto; width:36%;"></div>
                 </div>
             </div>
-        </div>
-        <?php if(!isAdmin()){ ?>
-        <div class="widgetsection" style="height:auto; min-height:460px; margin-left:0; display:block; clear:both;">
-            <h3 style="color:#282727;">Market Prices and Trends</h3>
-            <div style="padding:10px">
-                <div id="marketprices" style="float:left; margin-right:10px; min-height:280px; height:auto; width:60%;"></div>
-                <div id="fuelprices" style="float:right; min-height:280px; height:auto; width:36%;"></div>
-            </div>
-        </div>
         <?php } ?>
     </div>
-    
 </div>
 <?php
 	require_once APPLICATION_PATH.'/includes/footer.php';

@@ -42,24 +42,20 @@
 		$hasmultiplefarms = true;
 	}
 	
-	$seasons = $farm->getSeasons();
+	$seasons = $farm->getOrderedSeasons();
 	$scount = $seasons->count();
 	
 	$inventories = $farm->getInventoryDetails();
 	$tcount = $inventories->count();
 											
-	if($request->tab == 'calendar'){
-		$season = $farm->getSeasons()->get(0);
-		$timeline = sort_multi_array($season->getTimeLineDetails(), 'order');
-	}
-	
 	$isme = false;
 	if($farmerid == $farm->getFarmerID()){
 		$isme = true;
 	}
 		
-	$title = $this->translate('farm_title');
-	$this->headTitle($title);
+	// $title = $this->translate('farm_title');
+	$title = isFarmer() ? "Manage Farm" : "Manage Farm: ".$farm->getName();
+	$this->headTitle($this->translate('farm_title'));
 	
 ?>
 <script>
@@ -73,14 +69,14 @@ $(document).ready(function() {
 			},
 			defaultView: 'month',
 			editable: false,
-			events: "<?php echo $this->baseUrl('season/events/id/'.$season->getID()); ?>",
+			events: "<?php echo $this->baseUrl('farm/events/id/'.$farm->getID()); ?>",
 			eventRender: function(event, element) {
 				var type = $("#targetposition").html();
 				var tippos = $("#tipposition").html();
-				var tooltip_title = event.formatedstart+': '+event.title;
+				var tooltip_title = event.formatedstart+': '+event.title+' - ['+event.seasonref+']';
 				var idclass = event.className;
 				if(!isEmptyString(event.end)){
-					tooltip_title = event.formatedstart+' - '+event.formatedend+': '+event.title;
+					tooltip_title = event.formatedstart+' - '+event.formatedend+'<br> '+event.title+' - ['+event.seasonref+']';
 				}
 				element.qtip({
 					content: {
@@ -118,10 +114,12 @@ $(document).ready(function() {
 		<?php } ?>
 	<?php } ?>
 	
-	<?php if($request->tab == 'calendar'){ ?>
-		$('#calendarcontainer').fullCalendar('today').css({'display':'block'});
-	<?php } ?>
-    
+}); 
+</script>
+<script>
+$(window).load(function() {
+	// trigger a click on today calendar
+	$(".fc-button-today").click();	
 }); 
 </script>
 <style>
@@ -129,7 +127,7 @@ table.table .profilerightlabel {
 	font-weight:bold;
 }
 </style>
-<h1><?php echo $this->translate('farm_title'); ?></h1>
+<h1><?php echo $title; ?></h1>
 <div id="tabs">
     <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
     <div class="span9 tab-content" id="center"> 
@@ -245,6 +243,7 @@ table.table .profilerightlabel {
                     </tr>
                 </table>
             </div>
+            
             <?php } ?>
             </form>    
         </div>
@@ -338,17 +337,7 @@ table.table .profilerightlabel {
         	<h2>Preseason Estimates</h2>
             <form id="profileform-preseason" class="form-horizontal preseason">
             <?php if($request->tab == 'preseason'){ 
-				$farmpreseason = new FarmPreseason(); 
-				
-				$estimateid = $farm->getPreseasons()->get(0)->getID();
-				// debugMessage();
-				if(!isEmptyString($estimateid)){
-					$farmpreseason->populate($estimateid);
-				} else { 
-					$farmpreseason->setFarmID($farm->getID());
-					$farmpreseason->setFarmerID($farm->getFarmerID());
-					$farmpreseason->setUserID($farm->getFarmer()->getUserID());
-				}
+				$farmpreseason = $farm->getPreseasons()->get(0);
 			?>
         		<?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
                     <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
@@ -364,7 +353,7 @@ table.table .profilerightlabel {
                      </div>
                      <span class="pull-left well lighter margin0" style="width:96%; height:150px; position:relative;">
                 		<table class="table margin0" style="margin-top:15px;">
-                            <tr>
+                     		<tr>
                             	<td colspan="3">
                                 	<label class="control-label">Are production estimates available?</label>
                                    	<?php echo $farm->getHistoryStatusText(); ?>
@@ -374,17 +363,17 @@ table.table .profilerightlabel {
                                 <td style="width:30%;">
                                 	<?php if($farm->hasPreviousSeason()){ ?>
                                     <label class="control-label">Season Started:</label>
-                                    <div class="blocked"><?php echo $farm->getPreseason()->getFullStartDate(); ?></div>
+                                    <div class="blocked"><?php echo $farmpreseason->getFullStartDate(); ?></div>
                                     <?php } ?>
                                 </td>
                                 <td style="width:30%;">
                                 	<?php if($farm->hasPreviousSeason()){ ?>
                                 	<label class="control-label">Season Ended:</label>		
-                                    <div class="blocked"><?php echo $farm->getPreseason()->getFullEndDate(); ?></div>
+                                    <div class="blocked"><?php echo $farmpreseason->getFullEndDate(); ?></div>
                                     <?php } ?>
                                 </td>
                                 <td></td>
-                            </tr>
+                            </tr>   
                         </table>
                      </span>
                 </div>
@@ -394,6 +383,7 @@ table.table .profilerightlabel {
                         $preseasondetails = $farm->getpreseasons()->get(0)->getDetails();
                         $nooflines = $preseasondetails->count();
                         foreach($preseasondetails as $detail){
+							$loan = $detail->getLoans()->get(0);
                     ?>
                     <span class="pull-left well lighter margin0" style="width:97%; min-height:180px; height:auto; margin-bottom:10px;">
                         <h3 class="well-legend"><?php echo $detail->getCrop()->getName(); ?>:</h3>
@@ -424,21 +414,21 @@ table.table .profilerightlabel {
                             <?php if($detail->hasLoan()){ ?>
                                 <tr>
                                     <td><label class="control-label"><?php echo $this->translate("season_credit_principal_label"); ?>:</label>
-										<?php echo formatMoney($detail->getLoan()->getPrincipal()); ?>
+										<?php echo formatMoney($loan->getPrincipal()); ?>
                                     </td> 
                                     <td><label class="control-label"><?php echo $this->translate("season_credit_interestrate_label"); ?>:</label>
-										<?php echo clean_num($detail->getLoan()->getInterestRate()).'&nbsp;<span class="pagedescription">(%)</span>'; ?>&nbsp;
+										<?php echo clean_num($loan->getInterestRate()).'&nbsp;<span class="pagedescription">(%)</span>'; ?>&nbsp;
 									</td> 
                                     <td><label class="control-label"><?php echo $this->translate("season_credit_repayment_label"); ?>:</label>
-                                    	<?php echo formatMoney($detail->getLoan()->getPayBackAmount()); ?>
+                                    	<?php echo formatMoney($loan->getPayBackAmount()); ?>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td><label class="control-label"><?php echo $this->translate("season_credit_payperiod_label"); ?>:</label>
-										<?php echo isEmptyString($detail->getLoan()->getPayBackPeriodText()) ? '--' : $detail->getLoan()->getPayBackPeriodText(); ?>
+										<?php echo isEmptyString($loan->getPayBackPeriodText()) ? '--' : $loan->getPayBackPeriodText(); ?>
                                     </td> 
                                     <td><label class="control-label"><?php echo $this->translate("season_credit_source_label"); ?>:</label>
-										<?php echo isEmptyString($detail->getLoan()->getFinanceSourceText()) ? '--' : $detail->getLoan()->getFinanceSourceText(); ?>
+										<?php echo isEmptyString($loan->getFinanceSourceText()) ? '--' : $loan->getFinanceSourceText(); ?>
 									</td> 
                                     <td></td>
                                 </tr>
@@ -447,7 +437,7 @@ table.table .profilerightlabel {
                     </span>
                     <?php } ?>
                 </div>
-                 <?php } ?>
+                <?php } ?>    
             <?php } ?>
             </form>    
         </div>
@@ -472,16 +462,13 @@ table.table .profilerightlabel {
                         <ul id="datalist" class="nav nav-stacked">
 							<?php 
                                 foreach($seasons as $season){
-									$croplines = $season->getSeasonDetails();
-									$noofcrops = $croplines->count();
-									$randcrop = rand(0, $noofcrops-1);		  		
                             ?>
                             <li style="min-height:150px;">
                                 <table class="table noborder margin0">
                                     <tr>                                
                                         <td width="30%" style="padding-top:20px;">
                                             <div class="imagecontainer" style="width:90%; min-height:90px; padding:2px;">
-                                                <img style="width:100%;" src="<?php echo $season->getSeasonDetails()->get($randcrop)->getCrop()->getImagePath(); ?>" />
+                                                <img style="width:100%;" src="<?php echo $season->getCrop()->getImagePath(); ?>" />
                                             </div>
 										</td>
                                         <td class="padding0">
@@ -514,7 +501,7 @@ table.table .profilerightlabel {
                                                     </tr>
                                                     <tr>
                                                         <td><label class="control-label">Crop: </label></td>
-                                                        <td class="nowrapping"><span><?php echo $season->displayCrops(); ?></span></td>
+                                                        <td class="nowrapping"><span><?php echo $season->getCrop()->getName(); ?></span></td>
                                                         <td></td>
                                                         <td class="nowrapping"><span></span></td>
                                                     </tr>
@@ -537,58 +524,61 @@ table.table .profilerightlabel {
         	<h2>Activity Calendar</h2>
             <form id="profileform-calendar" class="form-horizontal calendar">
             <?php if($request->tab == 'calendar'){ ?>
-        	<div class="row" style="margin-left:0px;">
+        	<div class="row" style="margin-left:0px; width:98%;">
             	<?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
                     <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
                 <?php } ?>  
-                <span class="span6 marginleft0" style="width:96%;">
+                <span class="marginleft0">
                 	<div id='calendarcontainer' class=" padding0 margin0" style="margin-top:10px;"></div>
-                    <?php
-						foreach($timeline as $activity){
+					<?php
+						$seasons = $farm->getOrderedSeasons();
+						foreach ($seasons as $season){
+							$timeline = sort_multi_array($season->getTimeLineDetails(), 'order');
+							foreach($timeline as $activity){
 					?>
-					<ul id="<?php echo $activity['uniqueid']; ?>" class="nav nav-stacked datalist hide" style="width:360px;">
-						<li>
-							<table class="table noborder margin0">
-								<tr>                                
-									<td class="padding0">
-										<div style="position:relative;">
-											<div style="position:absolute; top:5px; right:15px;">
-												<a class="btn btn-primary btn-mini wrap"  href="<?php echo $activity['url']; ?>" title="View all details">View</a>
-												<a class="btn btn-primary btn-mini wrap"  href="<?php echo $activity['editurl']; ?>" title="Update Activity">Update</a>
-											</div>
-											<table class="itemlist table noborder margin0">
-												<tr>
-													<td style="width:65px;"><label class="control-label pull-left">Ref#:</label></td>
-													<td><span><?php echo $activity['ref']; ?></span></td>    
-												</tr>      
-												<tr>
-													<td><label class="control-label pull-left">Details:</label></td>
-													<td><span><?php echo snippet($activity['description'], 300, '...'); ?></span></td>    
-												</tr>
-												<tr>
-													<td><label class="control-label pull-left">Status:</label></td>
-													<td><span><?php echo $activity['status']; ?></span></td>    
-												</tr>
-												<?php if(in_array($activity['type'], array("1","2","3","4","5","6")) && $activity['expenses'] > 0){ ?>
-													<tr>
-														<td><label class="control-label pull-left">Expenses:</label></td>
-														<td><span><?php echo formatNumber($activity['expenses']); ?></span></td>    
-													</tr>  
-												<?php } ?> 
-												<?php if($activity['type'] == "7" && $activity['sale'] > 0){ ?>
-													<tr>
-														<td><label class="control-label pull-left">Revenue:</label></td>
-														<td><span><?php echo formatNumber($activity['sale']); ?></span></td>    
-													</tr>  
-												<?php } ?>      
-											</table>
-										</div>
-									</td>
-								</tr>
-							</table>
-						</li>
-					</ul>
-					<?php } ?>
+                                <ul id="<?php echo $activity['uniqueid']; ?>" class="nav nav-stacked datalist hide" style="width:360px;">
+                                    <li>
+                                        <table class="table noborder margin0">
+                                            <tr>                                
+                                                <td class="padding0">
+                                                    <div style="position:relative;">
+                                                        <div style="position:absolute; top:5px; right:15px;">
+                                                            <a class="btn btn-primary btn-mini wrap"  href="<?php echo $activity['url']; ?>" title="View all details">View</a>
+                                                            <a class="btn btn-primary btn-mini wrap"  href="<?php echo $activity['editurl']; ?>" title="Update Activity">Update</a>
+                                                        </div>
+                                                        <table class="itemlist table noborder margin0">
+                                                            <tr>
+                                                                <td style="width:65px;"><label class="control-label pull-left">Ref#:</label></td>
+                                                                <td><span><?php echo $activity['ref']; ?></span></td>    
+                                                            </tr>      
+                                                            <tr>
+                                                                <td><label class="control-label pull-left">Details:</label></td>
+                                                                <td><span><?php echo snippet($activity['description'], 300, '...'); ?></span></td>    
+                                                            </tr>
+                                                            <tr>
+                                                                <td><label class="control-label pull-left">Status:</label></td>
+                                                                <td><span><?php echo $activity['status']; ?></span></td>    
+                                                            </tr>
+                                                            <?php if(in_array($activity['type'], array("1","2","3","4","5","6")) && $activity['expenses'] > 0){ ?>
+                                                                <tr>
+                                                                    <td><label class="control-label pull-left">Expenses:</label></td>
+                                                                    <td><span><?php echo formatNumber($activity['expenses']); ?></span></td>    
+                                                                </tr>  
+                                                            <?php } ?> 
+                                                            <?php if($activity['type'] == "7" && $activity['sale'] > 0){ ?>
+                                                                <tr>
+                                                                    <td><label class="control-label pull-left">Revenue:</label></td>
+                                                                    <td><span><?php echo formatNumber($activity['sale']); ?></span></td>    
+                                                                </tr>  
+                                                            <?php } ?>      
+                                                        </table>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </li>
+                                </ul>       
+					<?php } } ?>	
                 </span>
             </div>
             <?php } ?>

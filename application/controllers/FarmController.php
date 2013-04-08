@@ -9,7 +9,7 @@ class FarmController extends SecureController   {
 			return ACTION_CREATE; 
 		}
     	if($action == "picture" || $action == "processpicture" || $action == "croppicture" || $action == "delete" ||  
-    		$action == "addsuccess" || $action == "addcropsuccess"
+    		$action == "addsuccess" || $action == "addcropsuccess" || $action == "events"
     	) {
 			return ACTION_VIEW; 
 		}
@@ -328,11 +328,45 @@ class FarmController extends SecureController   {
     	return false;
     }
     
-	function testAction(){
-    	$this->_helper->layout->disableLayout();
+	function eventsAction(){
+		$this->_helper->layout->disableLayout();
 		$this->_helper->viewRenderer->setNoRender(TRUE);
-		
 		$formvalues = $this->_getAllParams();
-		// debugMessage($formvalues);
-    }
+		
+		$farm = new Farm();
+		$farm->populate($formvalues['id']);
+		$seasons = $farm->getOrderedSeasons();
+		$jsondata = array();
+		$i = 0;
+			
+		foreach ($seasons as $season){
+			$timeline = sort_multi_array($season->getTimeLineDetails(), 'order');
+			$acount = count($timeline);
+			
+			// debugMessage($timeline);
+			foreach($timeline as $key => $activity){
+				$jsondata[$i]['id'] = $i;
+				$jsondata[$i]['seasonref'] = $season->getRef();
+				$jsondata[$i]['title'] = $activity['title'];
+				$jsondata[$i]['start'] = $activity['startdate'];
+				$jsondata[$i]['formatedstart'] = changeMySQLDateToPageFormat($activity['startdate']);
+				if(!isEmptyString($activity['enddate'])){
+					$jsondata[$i]['end'] = $activity['enddate'];
+					$jsondata[$i]['formatedend'] = changeMySQLDateToPageFormat($activity['enddate']);	
+				}
+				$jsondata[$i]['url'] = $activity['url'];
+				$jsondata[$i]['className'] = $activity['uniqueid'];
+				$jsondata[$i]['description'] = $activity['description'];
+				$jsondata[$i]['type'] = $activity['type'];
+				$jsondata[$i]['url'] = $activity['url'];
+				$jsondata[$i]['editurl'] = $activity['editurl'];
+				$jsondata[$i]['status'] = $activity['status'];
+				$jsondata[$i]['expenses'] = $activity['expenses'];
+				$i++;
+			}
+		}
+		
+		// debugMessage($jsondata);
+		echo json_encode($jsondata); 
+	}
 }

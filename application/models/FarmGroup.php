@@ -348,7 +348,7 @@ class FarmGroup extends BaseEntity {
 	# determine path to thumbnail profile picture
 	function getThumbnailLogoPath() {
 		$baseUrl = Zend_Controller_Front::getInstance()->getBaseUrl();
-		$path = $baseUrl.'/uploads/farmgroups/default/thumbnail_logo.jpg';
+		$path = $baseUrl.'/uploads/farmgroups/default/thumbnail_group.jpg';
 		if($this->hasLogo()){
 			$path = $baseUrl.'/uploads/farmgroups/group_'.$this->getID().'/thumbnail_'.$this->getLogo();
 		}
@@ -357,7 +357,7 @@ class FarmGroup extends BaseEntity {
 	# determine path to medium profile picture
 	function getMediumLogoPath() {
 		$baseUrl = Zend_Controller_Front::getInstance()->getBaseUrl();
-		$path = $baseUrl.'/uploads/farmgroups/default/medium_logo.jpg';
+		$path = $baseUrl.'/uploads/farmgroups/default/medium_group.jpg';
 		if($this->hasLogo()){
 			$path = $baseUrl.'/uploads/farmgroups/group_'.$this->getID().'/medium_'.$this->getLogo();
 		}

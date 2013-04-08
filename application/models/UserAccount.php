@@ -221,7 +221,7 @@ class UserAccount extends BaseEntity {
 			$phone = $this->getPhones()->get(0)->getPhone();
 		}
 		# unique phone
-		$phone_query = "SELECT ua.*, up.* from useraccount as ua inner join userphone as up where ua.id = up.userid AND up.phone = '".$phone."' ".$id_check."";
+		$phone_query = "SELECT ua.*, up.* from useraccount as ua inner join userphone as up where ua.id = up.userid AND up.phone = '".$phone."' AND up.isactivated = 1 ".$id_check."";
 		$phone_result = $conn->fetchRow($phone_query);
 		// debugMessage($phone_query);
 		// debugMessage($phone_result);
@@ -1339,6 +1339,14 @@ class UserAccount extends BaseEntity {
 		// debugMessage($query);
 		$result = $conn->fetchAll($query);*/
 		return $result;
+	}
+	# determine wether to show the welcome for user's dashboard
+	function showWelcome() {
+		return $this->getDashWelcome() == 1 ? true : false;
+	}
+	# determine wether to show the wizard for user's dashboard
+	function showWizard() {
+		return $this->getDashWizard() == 1 ? true : false;
 	}
 }
 ?>

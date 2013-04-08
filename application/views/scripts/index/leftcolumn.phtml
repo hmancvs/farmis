@@ -25,19 +25,19 @@
 ?>
 <div class="well" id="leftcolumn">
 	<div id="button">
-    	<h2 class="" style="border:solid 1px #666666; margin-left:0; background-color:#686968; color:#fff; padding-left:16px; width:90%; font-family:'calibri','Telex',sans-serif; font-size:18px; border-right:10px solid #A6A7A6;">Quick Links</h2>
-        <ul class="nav nav-tabs nav-stacked" style="width:205px; margin-top:-1px;">
+    	<h2 id="quicklink">Quick Links</h2>
+        <ul class="nav nav-tabs nav-stacked leftnav" id="leftnav">
             <li><a href="<?php echo $this->baseUrl('dashboard'); ?>" class="" id=""><i class="icon-list icon-white"></i> Dashboard</a></li>
             <li><a href="<?php echo $this->baseUrl('farmer/view/id/'.encode($farmer->getID())); ?>" class="" id=""><i class="icon-list icon-white"></i> My Profile</a></li>
             <?php if(isAdmin()){ ?>
                 <li><a href="<?php echo $this->baseUrl('farmer/list'); ?>" class="" id=""><i class="icon-list icon-white"></i> Manage Farmers</a></li>
-                <li><a href="<?php echo $this->baseUrl('farmgroup/list'); ?>" class="" id=""><i class="icon-list icon-white"></i> Manage Farm Groups</a></li>
+                <li><a href="<?php echo $this->baseUrl('farmgroup/list'); ?>" class="" id=""><i class="icon-list icon-white"></i> Manage DNA Profiles</a></li>
             <?php } ?>  
             <?php if(isFarmGroupAdmin()){ 
 				$farmgroup = new FarmGroup();
 				$farmgroup->populate($farmer->getFarmGroupID());
 			?>
-                <li><a href="<?php echo $this->baseUrl('farmgroup/view/id/'.encode($farmer->getFarmGroupID())); ?>" class="" id=""><i class="icon-list icon-white"></i> Group Profile</a></li>
+                <li><a href="<?php echo $this->baseUrl('farmgroup/view/id/'.encode($farmer->getFarmGroupID())); ?>" class="" id=""><i class="icon-list icon-white"></i> DNA Profile</a></li>
                 <li><a href="<?php echo $this->baseUrl('farmer/list/farmgroupid/'.$farmer->getFarmGroupID()); ?>" class="" id=""><i class="icon-list icon-white"></i> Farmers</a></li>
             <?php } ?>  
             <?php if(isFarmer()){ ?>
@@ -63,11 +63,11 @@
     <div id="leftquick" class="widget" style="margin:8px 0 0 0; width:104%; padding-left:0;">
     	<div class="widgetsection" style="min-height:100px; max-height:200px; padding-bottom:20px; height:auto;">
             <h3>Quick Add</h3>
-            <div style="margin-left:-8px; margin-top:2px; width:108%;">
+            <div style="margin-left:-8px; margin-top:2px;">
                 
-                <ul class="nav nav-tabs nav-stacked" style="width:205px; margin-top:-1px;">
+                <ul class="nav nav-tabs nav-stacked leftnav bottom">
                     <?php if(isAdmin()){ ?>
-                        <li><a href="<?php echo $this->baseUrl('farmgroup/add/pgc/true'); ?>" class="addpopup addgroup" title="New Farm Group" rel="New Farm Group" id="newfarmgroup" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmgroup/list'); ?>" action="<?php echo $this->baseUrl("farmgroup/create"); ?>"><i class="icon-plus "></i> <span>New Farm Group</span></a></li>
+                        <li><a href="<?php echo $this->baseUrl('farmgroup/add/pgc/true'); ?>" class="addpopup addgroup" title="New DNA Profile" rel="New DNA Profile" id="newfarmgroup" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmgroup/list'); ?>" action="<?php echo $this->baseUrl("farmgroup/create"); ?>"><i class="icon-plus "></i> <span>New Farm Group</span></a></li>
                         <li><a href="<?php echo $this->baseUrl('farmer/add/pgc/true'); ?>" class="addpopup addfarmer" title="New Farmer" rel="New Farmer" id="newfarmer" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmer/list'); ?>" action="<?php echo $this->baseUrl("farmer/create"); ?>"><i class="icon-plus"></i> <span>New Farmer</span></a></li>
                     <?php } ?>  
                     <?php if(isFarmer()){ 

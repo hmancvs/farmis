@@ -1,0 +1,106 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$controller = $request->getControllerName();
+	$action = $request->getActionName();
+	
+	switch($action){
+		case 'tillageview':
+			$object = $tillage;
+			$actionstring = 'tillage';
+			$viewurl = 'tillageview';
+			$class = 'SeasonTillage';
+			break;
+		case 'plantview':
+			$object = $plant;
+			$actionstring = 'plant';
+			$viewurl = 'plantview';
+			$class = 'SeasonPlanting';
+			break;
+		case 'treatview':
+			$object = $treat;
+			$actionstring = 'treat';
+			$viewurl = 'treatview';
+			$class = 'SeasonTracking';
+			break;
+		case 'harvestview':
+			$object = $harvest;
+			$actionstring = 'harvest';
+			$viewurl = 'harvestview';
+			$class = 'SeasonHarvest';
+			break;
+		case 'activityview':
+			$object = $activity;
+			$actionstring = 'activity';
+			$viewurl = 'activityview';
+			$class = 'SeasonActivity';
+			break;
+		case 'saleview':
+			$object = $sale;
+			$actionstring = 'sale';
+			$viewurl = 'saleview';
+			$class = 'Sales';
+			break;
+		default:
+			break;
+	}
+	
+?>
+<div class="row margin0" style="padding:2px; margin-bottom:10px;">
+    <span class="pull-left" style="width:100%; margin-right:5px;">
+        <div id="location_left" class="well lighter margin0" style="min-height:100px; position:relative;"> 
+            <?php
+                $expenselines = $object->getExpensesDetails();
+                // debugMessage($expenselines->toArray());
+                $count = $expenselines->count();
+                $exp_label = '';
+                if($count > 0){
+                    $exp_label = '<span class="pagedescription">('.$count.')</span>';
+                }
+            ?>
+            <h3 class="well-legend">Expenses <?php echo $exp_label; ?></h3>
+            <div class="margin0" style="position:absolute; right:10px; top:5px;">
+                <a href="<?php echo $this->baseUrl('season/expense/type/'.$class.'/pgc/true/refid/'.encode($object->getID())); ?>" class="btn btn-mini addpopup" title="Add Expense" rel="Add Expense" id="newexpense" formtitle="indexform" successurl="<?php echo $this->baseUrl('season/'.$viewurl.'/id/'.encode($object->getID())); ?>" action="<?php echo $this->baseUrl('season/expensecreate/successurl/'.encode($this->baseUrl('season/addexpsuccess/successmessage/global_save_success/'))); ?>"><i class="icon-plus"></i> Add </a>                                       
+            </div>
+            <?php if($count == 0){ ?>
+                <br /><span class="pagedescription">None currently available.</span>
+            <?php } else { ?>
+                <ul id="datalist" class="nav nav-stacked">
+                <?php 
+                    $x = 1;
+                    foreach($expenselines as $expense){
+                ?>
+                    <li>
+                        <table class="table noborder margin0">
+                            <tr>                                
+                                <td width="15%"><?php echo changeMySQLDateToPageFormat($expense->getInputDate()); ?></a></td>
+                                <td class="padding0">
+                                    <div style="position:relative;">
+                                        <div class="threadicons" style="position:absolute; right:5px; top:5px;">
+                                            <a href="<?php echo $this->baseUrl('season/expense/pgc/true/type/'.$class.'/refid/'.encode($object->getID()).'/id/'.encode($expense->getID())); ?>" class="addpopup btn btn-mini" title="Edit Expense" rel="Edit Expense" id="editexpense_<?php echo $expense->getID(); ?>" formtitle="indexform" successurl="<?php echo $this->baseUrl('season/'.$viewurl.'/id/'.encode($object->getID())); ?>" action="<?php echo $this->baseUrl('season/expensecreate/successurl/'.encode($this->baseUrl('season/addexpsuccess/successmessage/global_save_success/'))); ?>"><i class="icon-pencil"></i></a></a>
+                                            <a href="javascript: void(0)" id="deleteline_multiple" title="Delete Entry" class="btn btn-mini deleteline noimgbutton" action="<?php echo $this->baseUrl('season/delete/id/'.$expense->getID()."/entityname/SeasonInputDetail/successurl/".encode($this->baseUrl('season/'.$viewurl.'/id/'.encode($object->getID())))); ?>"><i class="icon-trash"></i></a>
+                                        </div>
+                                        <table class="itemlist table noborder margin0">
+                                            <tr>
+                                                <td style="width:150px;"><label class="control-label">Type:</label>
+                                                    <span><?php echo $expense->getTypeText(); ?></span></td>
+                                                <td style="width:180px;"><label class="control-label">Description </label>
+                                                    <span><?php echo snippet($expense->getName(), 100, '...'); ?></span></td>
+                                                <td style="width:100px;"><label class="control-label">Quantity</label>
+                                                    <span><?php echo $expense->getQuantity(); ?></span></td>
+                                                <td><label class="control-label">Amount</label>
+                                                    <span><?php echo formatNumber($expense->getAmount()); ?></span></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                       
+                                </td>
+                             </tr>
+                        </table>
+                     </li>
+                <?php } ?>
+                </ul>
+            <?php } ?>
+        </div>
+    </span>
+</div>
