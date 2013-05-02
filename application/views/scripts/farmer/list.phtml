@@ -19,7 +19,7 @@
 	$paginate = new Pagination();	
 	$paginate->setView($this);
 	# set the search columns to be used on this list
-	$paginate->setSearchColumns(array("f.firstname","f.lastname","f.othernames","u.username","u.email","up.phone","fg.orgname"));
+	$paginate->setSearchColumns(array("f.firstname","f.lastname","f.othernames","u.username","u.email","up.phone"));
 	$paginate->setFilterColumns(array("u.gender","u.locationid","f.farmgroupid"));
 	// $paginate->setDefaultSortBy("f.datecreated");	
 	// $paginate->setDefaultSortOrder("DESC");
@@ -72,7 +72,7 @@
 	}
 	
 	$paginate->processPost($request->getParams());
-	$all_results_query = "SELECT f.*, u.*, fg.*, l.*, f.id as id, u.id as userid, fg.id as fmgroupid, l.id as districtid, u.email as uemail, f.email as femail, l.name as district, f.regno as fregno, fg.regno as fgregno, up.phone as phone FROM farmer f INNER JOIN useraccount u on (f.userid = u.id) LEFT JOIN userphone as up on (u.id = up.userid AND up.isprimary = 1) LEFT JOIN farmgroup as fg on (f.farmgroupid = fg.id) LEFT JOIN location l on (u.locationid = l.id AND l.locationtype = 2) ".$where_query." AND u.type = 2 ".$paginate->getSearchAndFilterSQL()." GROUP BY f.id ".$order_query;
+	$all_results_query = "SELECT f.*, u.*, fg.*, l.*, f.id as id, u.id as userid, fg.id as fmgroupid, l.id as districtid, u.email as uemail, f.email as femail, l.name as district, f.regno as fregno, fg.regno as fgregno, up.phone as phone FROM farmer f INNER JOIN useraccount u on (f.userid = u.id) LEFT JOIN userphone as up on (u.id = up.userid ) LEFT JOIN farmgroup as fg on (f.farmgroupid = fg.id) LEFT JOIN location l on (u.locationid = l.id AND l.locationtype = 2) ".$where_query." AND u.type = 2 ".$paginate->getSearchAndFilterSQL()." GROUP BY f.id ".$order_query;
 	
 	// debugMessage($all_results_query);
 	$paginate->setItemCountFromSQLQuery($all_results_query);

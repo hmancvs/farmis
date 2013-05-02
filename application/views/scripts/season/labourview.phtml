@@ -47,7 +47,7 @@
 										case 'harvestview':
 											$labourdetails = $harvest->getFamilyLabourDetails();
 											break;
-										case 'activity':
+										case 'activityview':
 											$labourdetails = $activity->getFamilyLabourDetails();
 											break;
 										case 'saleview':
@@ -66,25 +66,33 @@
                                     </tr>
                                 <?php } else { ?>
 									<?php 
+										$sumhours_men_total = 0; $sumhours_women_total = 0; $sumhours_kids_total = 0;
                                         foreach($labourdetails as $labour){
                                             $totalno = 0;
                                             $totalhours = 0;
+											$sumhours_men = 0; $sumhours_women = 0; $sumhours_kids = 0;
                                             if(!isEmptyString($labour->getmcount())){
                                                 $totalno += $labour->getmcount();
                                                 if(!isEmptyString($labour->getmhoursperday()) && !isEmptyString($labour->getmtotaldays())){
-                                                    $totalhours += $totalno * ($labour->getmhoursperday() * $labour->getmtotaldays());
+													$sumhours_men = $labour->getmcount() * ($labour->getmhoursperday() * $labour->getmtotaldays());
+													$sumhours_men_total += $sumhours_men;
+                                                    $totalhours += $sumhours_men;
                                                 }
                                             }
                                             if(!isEmptyString($labour->getwcount())){
                                                 $totalno += $labour->getwcount();
                                                 if(!isEmptyString($labour->getwhoursperday()) && !isEmptyString($labour->getwtotaldays())){
-                                                    $totalhours += $totalno * ($labour->getwhoursperday() * $labour->getwtotaldays());
+													$sumhours_women = $labour->getwcount() * ($labour->getwhoursperday() * $labour->getwtotaldays());
+													$sumhours_women_total += $sumhours_women;
+                                                    $totalhours += $sumhours_women;
                                                 }
                                             }
                                             if(!isEmptyString($labour->getkcount())){
                                                 $totalno += $labour->getkcount();
                                                 if(!isEmptyString($labour->getkhoursperday()) && !isEmptyString($labour->getktotaldays())){
-                                                    $totalhours += $totalno * ($labour->getkhoursperday() * $labour->getktotaldays());
+													$sumhours_kids = $labour->getkcount() * ($labour->getkhoursperday() * $labour->getktotaldays());
+													$sumhours_kids_total += $sumhours_kids;
+                                                    $totalhours += $sumhours_kids;
                                                 }
                                             }
                                             $sumhours += $totalhours;
@@ -107,10 +115,10 @@
                                     <tbody>
                                         <tr>
                                             <td class="bolded">Total</td>
-                                            <td colspan="3"></td>
-                                            <td colspan="3"></td>
-                                            <td colspan="3"></td>
-                                            <td colspan="2" class="bolded rightalign" style="padding-right:6px;"><?php echo formatNumber($sumhours); ?></td>
+                                            <td colspan="3" class="centeralign"><?php echo $sumhours_men_total == 0 ? '--' : formatNumber($sumhours_men_total)." Hours"; ?></td>
+                                            <td colspan="3" class="centeralign"><?php echo $sumhours_women_total == 0 ? '--' : formatNumber($sumhours_women_total)." Hours"; ?></td>
+                                            <td colspan="3" class="centeralign"><?php echo $sumhours_kids_total == 0 ? '--' : formatNumber($sumhours_kids_total)." Hours"; ?></td>
+                                            <td colspan="2" class="bolded centeralign" style=""><?php echo formatNumber($sumhours); ?></td>
                                         </tr>
                                     </tbody>
                                 <?php } ?>
@@ -149,7 +157,7 @@
 										case 'harvestview':
 											$labourdetails = $harvest->getHiredLabourDetails();
 											break;
-										case 'activity':
+										case 'activityview':
 											$labourdetails = $activity->getHiredLabourDetails();
 											break;
 										case 'saleview':

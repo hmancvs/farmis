@@ -453,6 +453,12 @@ class FarmGroup extends BaseEntity {
 		$result = $q->execute();
 		return $result;
 	}
+	# determine the activated invited farmers
+	function getActiveFarmers(){
+		$q = Doctrine_Query::create()->from('Farmer f')->innerjoin("f.user as u")->where("f.farmgroupid = '".$this->getID()."' AND f.id <> '".$this->getManagerID()."' AND u.isactive = '1' ");
+		$result = $q->execute();
+		return $result;
+	}
 	# count the number of farmers in the group that are registered
 	function getCountRegisteredFarmers() {
 		$farmers = $this->getInvitedFarmers();

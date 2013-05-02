@@ -1,6 +1,6 @@
 <?php
 	require_once APPLICATION_PATH.'/includes/header.php';
-	require_once(APPLICATION_PATH.'/../'.PUBLICFOLDER.'/dompdf/dompdf_config.inc.php');
+	require_once APPLICATION_PATH.'/../'.PUBLICFOLDER.'/mpdf/mpdf.php';
 		
 	$title = "Farmis Baseline Detailed Report";
 	// meta data
@@ -18,6 +18,12 @@
 		$farm = $farmer->getFarm();
 	}
 	
+	$isexport = false;
+	$maxwidth = "width: 100%;";
+	if($request->pdf == 1 || $request->download == 1){
+		$isexport = true;
+		$maxwidth = "width: 940px;";
+	}
 ?>
 <script>
 $(document).ready(function() {
@@ -36,130 +42,6 @@ $(document).ready(function() {
 
 });
 </script>
-<style>
-#contentcolumn {
-	min-height:600px;
-}
-#centercolumn {
-	padding: 5px 0;
-	width: 94%;
-	margin-left:30px;
-	float:left;
-}
-#centercolumn h1, #centercolumn h2 {
-	font-family:calibri, Telex, sans-serif;
-}
-#pageleft {
-	margin:0 5px 0 0;
-	width:100%;
-	float:left;
-	position:relative;
-}
-#pageleft .widgetsection {
-	width:100%;
-}
-.widgetsection {
-	margin-bottom:10px;
-}
-.widgetsection h3 {
-	font-size:15px;
-}
-.contenttable {
-	border:solid 1px #b3b3b3;
-	border-collapse: separate;
-	*border-collapse: collapsed;
-	-webkit-border-radius: 4px;
-	-moz-border-radius: 4px;
-	border-radius: 4px;
-}
-.contenttable .control-label {
-	width:auto;
-	white-space:normal;
-	text-align:left;
-	display:block;
-}
-.contenttable h2 {
-	margin: 0;
-	padding: 8px 0 8px 0;
-	line-height:auto;
-	text-align: left;
-	border-bottom:1px solid #c4c2c2;
-	color:#498D0F;
-	font-size:18px;
-	width:100%;
-	font-weight:bold;
-	line-height:16px;
-}
-.contenttable#estimates thead tr td {
-	font-weight:bold;
-	font-size:11px;
-	color:#000;
-}
-.contenttable#estimates thead tr td span {
-	font-size:10px;
-}
-#outlength {
-	width:72%;
-}
-.reportcontainer {
-	height:auto; 
-	min-height:800px; 
-	display:block; 
-	margin-top:10px;
-	position:relative;
-}
-.reportlabel {
-	display:inline-block;
-	font-weight:bold;
-	font-size:16px;
-	padding-right:5px;
-}
-.reportfilter {
-	margin-top:0; 
-	float:right;
-	margin-right:-10px;
-}
-.reportactions {
-	position:absolute; 
-	right:20px; 
-	top:8px;
-}
-.printpage {
-	display:none;
-}
-pdfquicklinks {
-	position:absolute; 
-	left:10px; 
-	top:8px;
-}
-.widgetsection h3.reportpagetitle {
-	color:#282727;
-}
-
-<?php if($request->print == 1) { ?> 
-#contentwrapper {
- margin: 10px 0 5px;
-}
-#centercolumn {
- float:left;
- width:90%;
-}
-#maincontainer.container {
- margin-left:20px;
- margin-top:10px;
-}
-#printer_page_action_buttons {
-	margin:10px;
-}
-.hideonprint {
-	display:none;
-}
-.printpage {
-	margin:10px;
- display:block;
-}
-<?php } ?>
-</style>
 <div>
   <div id="centercolumn" class="reportpage">
   	<div class="printpage"></div>
@@ -167,10 +49,9 @@ pdfquicklinks {
         <?php if((isAdmin() || isFarmGroupAdmin())){ ?>
         	<table class="table table-condensed noborder margin0" style="width:100%;">
             	<tr>
-                    <td style="width:70%;"></td>
                     <td>
                     	<?php if(isAdmin() || isFarmGroupAdmin()){ ?>
-                            <span class="reportfilter pull-left">
+                            <span class="reportfilter pull-right 80width">
                                 <label class="reportlabel cal-font">Farmer: </label>
                                 <?php
                                     $farmerarray = getFarmers($farmgroupid);
@@ -196,32 +77,23 @@ pdfquicklinks {
     
     <?php if(isEmptyString($id)){  ?>
     	<div class="widgetsection reportcontainer">
-        	<h3 class="reportpagetitle"><?php echo $title; ?></h3>
+            <h3 class="reportpagetitle"><?php echo $title; ?></h3>
+            <span class="pull-left margin0" style="width:99%; margin-top:10px; min-height:120px; position:relative;"><div class="alert alert-info" style="margin-top:10px;">Filter Farmer and Click Generate to view Report</div></span>
         </div>
     <?php } ?>
     <div class="pull-left" id="pageleft">
-    	<?php if($request->pdf == 1){ ?>
-        	<div style="height:auto; position:relative;">
-            	<span class="pdfquicklinks">>
-                	<a href="<?php echo $this->baseUrl('report/baselinedetail/id/'.$farmer->getID().'/print/1'); ?>" target="_blank" class="btn btn-primary btn-mini" title="Print Report"><i class="icon-print icon-white"></i> Print</a>&nbsp
-                    <a href="<?php echo $this->baseUrl('report/baselinedetail/id/'.$farmer->getID()); ?>" class="btn btn-primary btn-mini" title="Return to Web Report"><i class="icon-list-alt icon-white"></i> View Web Format</a>&nbsp;
-                    <a href="<?php echo $this->baseUrl('report/baselinedetail/id/'.$farmer->getID().'/download/1'); ?>" class="btn btn-primary btn-mini" title="Print Report"><i class="icon-download icon-white"></i> Download</a>
+       <?php if(!isEmptyString($id)){ 
+				ob_start();
+		  ?>
+            <div class="widgetsection reportcontainer">
+                <h3 class="reportpagetitle"><?php echo $title; ?></h3>
+				<?php if($request->print != 1){ ?>
+                <span class="reportactions hideonprint">
+                    <a href="<?php echo $this->baseUrl('report/baselinedetail/id/'.$farmer->getID().'/print/1'); ?>" target="_blank" class="btn btn-primary btn-mini" title="Print Report"><i class="icon-print icon-white"></i> Print</a>&nbsp;
+                    <a href="<?php echo $this->baseUrl('report/baselinedetail/id/'.$farmer->getID().'/pdf/1'); ?>" target="_blank" class="btn btn-primary btn-mini" title="View PDF Report"><i class="icon-list-alt icon-white"></i> PDF</a>&nbsp;
+                   
                 </span>
-            </div>
-        <?php } ?>
-      <?php 
-	  	if(!isEmptyString($id)){
-			$html = 
-            '<div class="widgetsection reportcontainer">
-                <h3 class="reportpagetitle">'.$title.'</h3>';
-			?>
-            <?php if($request->print != 1){ ?>
-                <?php $html .= '<span class="reportactions">
-                    <a href="'.$this->baseUrl('report/baselinedetail/id/'.$farmer->getID().'/print/1').'" target="_blank" class="btn btn-primary btn-mini" title="Print Report"><i class="icon-print icon-white"></i> Print</a>&nbsp;
-                    <a href="'.$this->baseUrl('report/baselinedetail/id/'.$farmer->getID().'/pdf/1').'" class="btn btn-primary btn-mini" title="View PDF Report"><i class="icon-list-alt icon-white"></i> PDF</a>&nbsp;
-                    <a href="'.$this->baseUrl('report/baselinedetail/id/'.$farmer->getID().'/download/1').'" class="btn btn-primary btn-mini" title="Print Report"><i class="icon-download icon-white"></i> Download</a>&nbsp;</span>';
-				?>
-            <?php } ?>
+                <?php } ?>
             <?php 
 				$farmingdate = isEmptyString($farm->getFullStartDate()) ? "--" : $farm->getFullStartDate();
 				$regdate =  isEmptyString($farm->getRegDateFormatted()) ? "--" : $farm->getRegDateFormatted();
@@ -259,21 +131,15 @@ pdfquicklinks {
 				$farmis_logo = $this->serverUrl($this->baseUrl('images/logo_gray.png'));
 				$infotrade_logo = $this->serverUrl($this->baseUrl('images/logo_infotrade.png'));
 				$profile_image = $this->serverUrl($farmer->getUser()->getMediumPicturePath());
-				
-				if($request->download == 1 || $request->pdf == 1){
-					$farmis_logo = APPLICATION_PATH.DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR."public".DIRECTORY_SEPARATOR."images".DIRECTORY_SEPARATOR.'logo_gray.png';
-					$infotrade_logo = APPLICATION_PATH.DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR."public".DIRECTORY_SEPARATOR."images".DIRECTORY_SEPARATOR.'logo_infotrade.png';
-				}
-				// $infotrade_logo = ''; $farmis_logo ='';
-				$html .= '
+			?>	
 				<div>
                   	<table style="margin-top:10px; height:auto; width:100%;">
                         <tr>
                             <td id="outlength" style="width:72%; vertical-align:top;">
 								<table style="width:100%; height:190px; border-bottom:1px solid #e9e9e9;">
                                     <tr>
-                                        <td style="vertical-align:top; padding-left:10px; padding-top:10px;"><span><img src="'.$farmis_logo.'" /></span></td>
-                                        <td style="vertical-align:top; padding-left:10px; padding-top:10px;"><span><img src="'.$infotrade_logo.'" /></span></td>
+                                        <td style="vertical-align:top; padding-left:10px; padding-top:10px;"><span><img src="<?php echo $farmis_logo; ?>" /></span></td>
+                                        <td style="vertical-align:top; padding-left:10px; padding-top:10px;"><span><img src="<?php echo $infotrade_logo; ?>" /></span></td>
                                     </tr>
                                 </table>
 								<table id="summary" class="table table-condensed contenttable noborder" style="margin:10px 0 0 0; width:99%;">
@@ -284,20 +150,20 @@ pdfquicklinks {
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td style="width:50%;"><label class="control-label">Farmer\'s Name:</label>'.$farmer->getName().'</td>
-                                            <td><label class="control-label">Business Name:</label>'.$farmname.'</td>
+                                            <td style="width:50%;"><label class="control-label">Farmer's Name:</label><?php echo $farmer->getName(); ?> </td>
+                                            <td><label class="control-label">Business Name:</label><?php echo $farmname; ?></td>
                                         </tr>
                                         <tr>
-                                            <td><label class="control-label">Farm Group:</label>'.$farmgroup.'</td>
-                                            <td><label class="control-label nowrapping">Description / Services:</label>'.$description.'</td>
+                                            <td><label class="control-label">Farm Group:</label><?php echo $farmgroup; ?></td>
+                                            <td><label class="control-label nowrapping">Description / Services:</label><?php echo $description; ?></td>
                                         </tr>
                                         <tr>
-                                            <td><label class="control-label">Date Registered on Farmis:</label>'.$regdate.'</td> 
-                                            <td><label class="control-label">Farming Since:</label>'.$farmingdate.'</td> 
+                                            <td><label class="control-label">Date Registered on Farmis:</label><?php echo $regdate; ?></td> 
+                                            <td><label class="control-label">Farming Since:</label><?php echo $farmingdate; ?></td> 
                                         </tr>
 										<tr>
-                                            <td><label class="control-label">Number of Labourers:</label>'.$laborers.'</td> 
-                                            <td><label class="control-label">Farming Tools Used:</label>'.$farm->getFarmingToolsLabel().'</td> 
+                                            <td><label class="control-label">Number of Labourers:</label><?php echo $laborers; ?></td> 
+                                            <td><label class="control-label">Farming Tools Used:</label><?php echo $farm->getFarmingToolsLabel(); ?></td> 
                                         </tr>
                                     </tbody>
                                 </table>
@@ -312,20 +178,20 @@ pdfquicklinks {
 												</thead>
 												<tbody>
 													<tr>
-														<td style="width:60%;"><label class="control-label">'.$this->translate("farm_landsize_label").':</label></td>
-														<td>'.$landsize.'</td>
+														<td style="width:60%;"><label class="control-label"><?php echo $this->translate("farm_landsize_label"); ?>:</label></td>
+														<td><?php echo $landsize; ?></td>
 													</tr>
 													<tr>
-														<td><label class="control-label">'.$this->translate("farm_landsizeactive_label").':</label></td>
-														<td>'.$activeland.'</td>
+														<td><label class="control-label"><?php echo $this->translate("farm_landsizeactive_label"); ?>:</label></td>
+														<td><?php echo $activeland; ?></td>
 													</tr>
 													<tr>
-														<td><label class="control-label">'.$this->translate("farm_landacquiremethod_label").':</label></td>
-														<td>'.$acquiremethod.'</td>
+														<td><label class="control-label"><?php echo $this->translate("farm_landacquiremethod_label"); ?>:</label></td>
+														<td><?php echo $acquiremethod; ?></td>
 													</tr>
 													<tr>
 														<td><label class="control-label">No of Farm Lands:</label></td>
-														<td>'.$nooffarms.'</td>
+														<td><?php echo $nooffarms; ?></td>
 													</tr>
 												</tbody>
 											</table>
@@ -337,17 +203,16 @@ pdfquicklinks {
 														<td><h2>Crops Profiled</h2></td>
 													</tr>
 												</thead>
-												<tbody><tr><td style="vertical-align:top; padding-top:10px; height:140px;"><ul id="croplist">'; ?>
+												<tbody><tr><td style="vertical-align:top; padding-top:10px; height:140px;">
+												<ul id="croplist">
                                                 <?php if($countcrops == 0) { ?>
-                                                	<?php $html .= '
-                            							<li><label class="control-label">--</label></li>'; ?>
+                            							<li><label class="control-label">--</label></li>
                                                 <?php } else { ?>
                                                 	<?php foreach($crops as $crop){ ?>
-														<?php $html .= '    
-                                                            <li><label class="control-label">'.$crop->getCrop()->getName().'</label> </li>'; ?>
+                                                            <li><label class="control-label"><?php echo $crop->getCrop()->getName(); ?></label> </li>
                                                     <?php } ?>
                                                 <?php } ?> 
-                                                <?php $html .= '</ul>      
+                                               </ul>      
 												</td></tr></tbody>
 											</table>
 										</td>
@@ -359,7 +224,7 @@ pdfquicklinks {
                                     <tr>
                                         <td style="height:180px;">
                                             <div id="profileinfo" style="padding:4px;"> 
-                                                <img id="profileimage" src="'.$profile_image.'" />
+                                                <img id="profileimage" src="<?php echo $profile_image; ?>" />
                                             </div>
                                         </td>
                                     </tr>
@@ -373,12 +238,12 @@ pdfquicklinks {
                                                 </thead>
                                                 <tbody>
                                                     <tr>
-                                                        <td style="width:45%;"><label class="control-label">Phone:</label>'.$phone.'</td>
-                                                        <td><label class="control-label">Alt Phone:</label>'.$phone2.'</td>
+                                                        <td style="width:45%;"><label class="control-label">Phone:</label><?php echo $phone; ?></td>
+                                                        <td><label class="control-label">Alt Phone:</label><?php echo $phone2; ?></td>
                                                     </tr>
                                                     <tr>
                                                         <td colspan="2"><label class="control-label">Email:</label>
-                                                        '.$email.'</td>
+                                                        <?php echo $email; ?></td>
                                                     </tr>
                                                 </tbody>
                                             </table>
@@ -389,20 +254,20 @@ pdfquicklinks {
                                                     </tr>
                                                 </thead>
                                                 <tr>
-													<td style="width:50%;"><label class="control-label">Country:</label>'.$country.'
-													<td><label class="control-label">District:</label>'.$district.'</td>
+													<td style="width:50%;"><label class="control-label">Country:</label><?php echo $country; ?>
+													<td><label class="control-label">District:</label><?php echo $district; ?></td>
 												</tr>
 												<tr>
-													<td><label class="control-label">County:</label>'.$county.'</td>
-													<td><label class="control-label">Sub-county:</label>'.$subcounty.'</td>
+													<td><label class="control-label">County:</label><?php echo $county; ?></td>
+													<td><label class="control-label">Sub-county:</label><?php echo $subcounty; ?></td>
 												</tr>
 												<tr>
-													<td><label class="control-label">Parish:</label>'.$parish.'</td>
-													<td><label class="control-label">Village:</label>'.$village.'</td>
+													<td><label class="control-label">Parish:</label><?php echo $parish; ?></td>
+													<td><label class="control-label">Village:</label><?php echo $village; ?></td>
 												</tr>
 												 <tr>
-													<td><label class="control-label" style="font-size:12px;">GPS(Latitude):</label>'.$gpslat.'</td>
-													<td><label class="control-label" style="font-size:12px;">GPS(Longitude):</label>'.$gpslng.'</td>
+													<td><label class="control-label" style="font-size:12px;">GPS(Latitude):</label><?php echo $gpslat; ?></td>
+													<td><label class="control-label" style="font-size:12px;">GPS(Longitude):</label><?php echo $gpslng; ?></td>
 												</tr>
                                             </table>
 										</td>
@@ -431,15 +296,14 @@ pdfquicklinks {
 															<td style="width:8%;">Quantity Harvested</td>
 															<td style="width:8%;">Quantity Sold</td>
 															<td style="width:11%;">Sales <br />Type / Mode</td>
-															<td style="width:10%;">Unit Price &nbsp;<span class="pagedescription">('.$config->currency->default.')</span></td>
-															<td style="width:10%;">Revenue &nbsp;<span class="pagedescription">('.$config->currency->default.')</span></td>
-															<td style="width:10%;">Cost of Inputs &nbsp;<span class="pagedescription">('.$config->currency->default.')</span></td>
+															<td style="width:10%;">Unit Price &nbsp;<span class="pagedescription blocked">(<?php echo $config->currency->default; ?>)</span></td>
+															<td style="width:10%;">Revenue &nbsp;<span class="pagedescription blocked">(<?php echo $config->currency->default; ?>)</span></td>
+															<td style="width:10%;">Cost of Inputs<span class="pagedescription blocked">(<?php echo $config->currency->default; ?>)</span></td>
 														</tr>
 													</thead>
-													<tbody>'; ?>
+													<tbody>
 													<?php if($nooflines == 0) { ?>
-                                                        <?php $html .= '
-                                                            <tr><td colspan="10"><label class="control-label">--</label></td></tr>'; ?>
+                                                            <tr><td colspan="10"><label class="control-label">--</label></td></tr>
                                                     <?php } else { ?>
                                                         <?php foreach($preseasondetails as $detail){ 
 																$acrage = $detail->getfieldsizetext();
@@ -453,25 +317,21 @@ pdfquicklinks {
 																$revenue = formatNumber( $detail->gettotalsalesamount());
 																$inputcost = formatNumber( $detail->gettotalexpenseamount());
 														?>
-                                                            <?php $html .= '    
-                                                                <tr>
-																	<td><label style="height:60px; font-weight:bold; font-size:12px; display:inline-block;">'.$detail->getCrop()->getName().'</label></td>
-																	<td>'.$inputsource.'</td>
-																	<td>'.$acrage.'</td>
-																	<td>'.$qty_planted.'</td>
-																	<td>'.$qty_harvested.'</td>
-																	<td>'.$qty_sold.'</td>
-																	<td>'.$saletype.'</td>
-																	<td class="rightalign">'.$unitprice.'</td>
-																	<td class="rightalign">'.$revenue.'</td>
-																	<td class="rightalign">'.$inputcost.'</td>
-																</tr>'; 
-															?>
-                                                        <?php } ?>
-                                                    <?php } ?> 
-                                                    <?php $html .= '</ul>      
-                                                    </td></tr></tbody>
-													
+                                                            <tr>
+                                                                <td><label style="height:60px; font-weight:bold; font-size:12px; display:inline-block;"><?php echo $detail->getCrop()->getName(); ?></label></td>
+                                                                <td><?php echo $inputsource; ?></td>
+                                                                <td><?php echo $acrage; ?></td>
+                                                                <td><?php echo $qty_planted; ?></td>
+                                                                <td><?php echo $qty_harvested; ?></td>
+                                                                <td><?php echo $qty_sold; ?></td>
+                                                                <td><?php echo $saletype; ?></td>
+                                                                <td class="rightalign"><?php echo $unitprice; ?></td>
+                                                                <td class="rightalign"><?php echo $revenue; ?></td>
+                                                                <td class="rightalign"><?php echo $inputcost; ?></td>
+                                                            </tr> 
+                                                        <?php } } ?>
+                                                   
+                                                    </tbody>
 												</table>
 											</td>
 										</tr>
@@ -481,253 +341,23 @@ pdfquicklinks {
 						</tr>
 					</table>
                 </div>
-            </div>';
-			
-			// echo page html
-			if($request->pdf != 1){
-				echo $html;
-			}
-			
-			$pdf_html = '
-				<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-				<html lang="en">
-				<head>
-					<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-					
-				</head>
-				<style>
-					body {
-						color: #555555;
-						font-family: calibri, Telex, sans-serif;
-						font-size: 13px;
-						line-height: 18px;
-					}
-					.table-bordered {
-					  border: 1px solid #dddddd;
-					  border-left: 0;
-					  border-collapse: separate;
-					  *border-collapse: collapsed;
-					   background-color: transparent;
-						border-spacing: 0;
-						max-width: 100%;
-					}
-					.table-bordered th,
-					.table-bordered td {
-					  border-left: 1px solid #dddddd;
-					  border-top: 1px solid #dddddd;
-					  padding: 2px 3px;
-					  vertical-align: top;
-					}
-					.widgetsection {
-						-moz-border-radius: 4px;	
-						-webkit-border-radius:4px;
-						-khtml-border-radius:4px;	
-						border-radius:4px;	
-						border-left: 4px solid #DDDDDD;
-						border-right: 4px solid #DDDDDD;
-						border-top: 2px solid #DDDDDD;
-						border-bottom: 2px solid #DDDDDD;
-						margin: 0 0 15px;
-						padding: 0 5px 10px 5px;
-						min-height:50px;
-						height:auto;
-						/*width:100%;*/
-					}
-					.widgetsection h3 {
-						margin: 0;
-						padding: 5px 5px 5px 5px;
-						text-align: left;
-						border-bottom:2px solid #E0E0E0;
-						color:#498D0F;
-						font-size:16px;
-					}
-					.widgetsection.height100 {
-						min-height:100px;
-					}
-					.widgetsection.height150 {
-						min-height:150px;
-					}
-					.widgetsection.height200 {
-						min-height:200px;
-					}
-					.widgetsection.height300 {
-						min-height:300px;
-					}
-					.widgetsection.height400 {
-						min-height:400px;
-					}
-					.widgetsection.height500 {
-						min-height:500px;
-					}
-					.widgetsection.height600 {
-						min-height:600px;
-					}
-					
-					#profileinfo, .profileinfo, #thumbinfo, .thumbinfo {
-						position:relative;
-						max-height: 195px;
-						height:auto;
-						width:165px;
-						padding: 0;
-						margin: 0 auto;
-						border: 1px solid #C2C2C2;
-						border: 1px solid rgba(0, 0, 0, 0.05);
-						border-style: ridge;
-						background-color:#f1f1f1;
-						-webkit-border-radius: 3px;
-						-moz-border-radius: 3px;
-						border-radius: 3px;
-					}
-					#profileinfo.new_pic, .profileinfo.new_pic {
-						box-shadow: 0 0 0 1px #F5F5F5, 0 0 0 2px #EBEBEB, 0 0 0 3px #E0E0E0, 0 0 0 4px #D6D6D6;
-						-moz-box-shadow: 0 0 0 1px #F5F5F5, 0 0 0 2px #EBEBEB, 0 0 0 3px #E0E0E0, 0 0 0 4px #D6D6D6;
-						-webkit-shadow: 0 0 0 1px #F5F5F5, 0 0 0 2px #EBEBEB, 0 0 0 3px #E0E0E0, 0 0 0 4px #D6D6D6;
-					}
-					#profileinfo #profileimage, .profileinfo .profileimage {
-						margin-top:2px;
-					}
-
-					#centercolumn {
-						padding: 5px 0;
-						width: 78%;
-					}
-					#centercolumn h1, #centercolumn h2 {
-						font-family: calibri, Telex, sans-serif;
-					}
-					#pageleft {
-						margin:0 5px 0 0;
-						width:98%;
-						float:left;
-					}
-					#pageleft .widgetsection {
-						width:100%;
-					}
-					.widgetsection {
-						margin-bottom:10px;
-					}
-					.widgetsection h3 {
-						font-size:15px;
-					}
-					.contenttable {
-						border:solid 1px #b3b3b3;
-						border-collapse: separate;
-						*border-collapse: collapsed;
-						-webkit-border-radius: 4px;
-						-moz-border-radius: 4px;
-						border-radius: 4px;
-						width:100%;
-					}
-					.contenttable .control-label {
-						width:auto;
-						white-space:normal;
-						text-align:left;
-						display:block;
-						color: #333333;
-						margin-bottom: 5px;
-						font-size: 13px;
-						line-height: 18px;
-						font-weight: bold;
-					}
-					.contenttable h2 {
-						margin: 0;
-						padding: 8px 0 8px 0;
-						line-height:auto;
-						text-align: left;
-						border-bottom:1px solid #c4c2c2;
-						color:#498D0F;
-						font-size:18px;
-						width:100%;
-						font-weight:bold;
-						line-height:16px;
-						calibri,Telex,sans-serif;
-					}
-					.contenttable#estimates thead tr td {
-						font-weight:bold;
-						font-size:10px;
-						color:#000;
-					}
-					.contenttable#estimates thead tr td span {
-						font-size:10px;
-					}
-					#printer_page_action_buttons {
-						display:block;
-						margin:10px;
-					}
-					table#crops {
-						height:180px;
-					}
-					table#crops ul#croplist {
-						margin:0;
-						margin-left: -15px;
-						height:130px;
-					}
-					.reportcontainer {
-						height:auto; 
-						min-height:800px; 
-						display:block; 
-						margin-top:10px;
-						position:relative;
-					}
-					.reportlabel {
-						display:inline-block;
-						font-weight:bold;
-						font-size:16px;
-						padding-right:5px;
-					}
-					.reportfilter {
-						margin-top:0; 
-						float:right;
-						margin-right:-10px;
-					}
-					#generate, .printpage, .pdfquicklinks, .reportactions{
-						display:none;
-					}
-					.widgetsection h3.reportpagetitle {
-						color:#282727;
-					}
-				</style>
-				<body>
-					<div style="width:100%;">
-						'.$html.'
-					</div>
-				</body>
-				</html>
-			';
-			
-			$temp_file_name = '';
-			if($request->download == 1 || $request->pdf == 1){
-				$timestamp = time().rand(100, 5000);
-				$temp_file_name = ($timestamp).".pdf";
-				$temp_file_text = ($timestamp).".txt";
-	
-				$dompdf = new DOMPDF();
-				$dompdf->load_html($pdf_html);
-				
-				$dompdf->render();
-				$output = $dompdf->output();
-				// debugMessage($output);
-				$path = APPLICATION_PATH.DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR."public".DIRECTORY_SEPARATOR."dompdf".DIRECTORY_SEPARATOR."temp".DIRECTORY_SEPARATOR.$temp_file_name;
-				$path_txt = APPLICATION_PATH.DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR."public".DIRECTORY_SEPARATOR."dompdf".DIRECTORY_SEPARATOR."temp".DIRECTORY_SEPARATOR.$temp_file_text;
-				$relativepathtodocument = $this->serverUrl($this->baseUrl('dompdf/temp/'.$temp_file_name));
-				file_put_contents($path, $output);
-				// file_put_contents($path_txt, $pdf_html);
-			}
-		
-	  ?>
-      <?php if($request->pdf == 1){ ?>
-      	<iframe style ="margin: 0; width: 100%; height: 840px;" src="http://docs.google.com/gview?url=<?php echo $relativepathtodocument; ?>&embedded=true" frameborder="0"></iframe>
-      <?php } } ?>
+            </div>
+      <?php } ?>
+      `	<?php require_once APPLICATION_PATH."/views/scripts/report/pdf.phtml"; ?> 
+		<?php if($request->download == 1 || $request->pdf == 1){  ?>
+            <script type="text/javascript">
+                $(document).ready(function() {
+                    var pdfurl = '<?php echo $relativepathtodocument; ?>';
+                    window.location.href = pdfurl;
+                });
+            </script>
+            <div class="widgetsection reportcontainer"><h3 class="reportpagetitle">PDF Viewer</h3>
+                <div id="embeddiv"></div>
+            </div>
+        <?php } ?>
     </div>
   </div>
 </div>
-<script>
-$(document).ready(function() {
-<?php if($request->download == 1){ ?>
-	var url = '<?php echo $this->baseUrl('download/index/type/baselinedetail/filename/'.encode($temp_file_name)); ?>';
-	window.location.href = url;
-<?php } ?>
-});
-</script>
 <?php
 	require_once APPLICATION_PATH.'/includes/footer.php';
 ?>

@@ -767,9 +767,9 @@ class Farmer extends BaseEntity {
 	# fetch next id
 	function getNextInsertID(){
 		$conn = Doctrine_Manager::connection();
-		$query = "SELECT max(id) FROM farmer ";
-		$query2 = "SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='farmer'";
-		$result = $conn->fetchOne($query2);
+		$query = "SELECT max(refno) FROM farmer ";
+		// $query2 = "SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='farmer'";
+		$result = $conn->fetchOne($query);
 		return $result+1;
 	}
 	function getNextRefNo(){
@@ -1043,7 +1043,7 @@ class Farmer extends BaseEntity {
 	function sendMobilePhoneInvitation() {
 		$message = $this->getSignupInviteContent();
 		// debugMessage($message);
-		// $sendresult = sendSMSMessage($this->getUser()->getPhone(), $message);
+		$sendresult = sendSMSMessage($this->getUser()->getPhones()->get(0)->getPhone(), $message);
 		// debugMessage($sendresult);
 		# saving of message to application inbox is not valid here
 		return true;

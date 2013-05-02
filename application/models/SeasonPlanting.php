@@ -77,7 +77,7 @@ class SeasonPlanting extends BaseEntity  {
 		$this->hasMany('SeasonLabour as labourdetails',
 					 		array(
 								'local' => 'id',
-								'foreign' => 'tillageid'
+								'foreign' => 'plantingid'
 							)
 						);
 	}
@@ -300,6 +300,15 @@ class SeasonPlanting extends BaseEntity  {
     	$q = Doctrine_Query::create()->from('SeasonLabour l')->where("l.plantingid = '".$this->getID()."' AND l.type = 2 ");
 		$result = $q->execute();
 		return $result;
+	}
+	# determine the total labor cost
+	function getTotalLaborCost() {
+		$labourdetails = $this->getHiredLabourDetails();
+		$sumamount = 0;
+		foreach($labourdetails as $labour){
+			$sumamount += $labour->getamount();
+		}
+		return $sumamount;
 	}
 }
 

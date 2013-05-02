@@ -286,6 +286,12 @@ class Season extends BaseEntity  {
 	    		$total = $total + $harvest->getTotalExpenses();
 	    	}
     	}
+    	$postharvestlines = $this->getAllOtherActivityDetails();
+    	if($postharvestlines->count() > 0){
+	    	foreach ($postharvestlines as $activity) {
+	    		$total = $total + $activity->getTotalExpenses();
+	    	}
+    	}
     	$saleslines = $this->getAllSalesDetails();
     	if($saleslines->count() > 0){
     		foreach ($saleslines as $sale){
@@ -328,6 +334,7 @@ class Season extends BaseEntity  {
 					foreach ($expenselines as $expense){
 						if($expense->getAmount() > 0 && !isEmptyString($expense->getAmount())){
 							$expense_data[$i]['id'] = $i;
+							$expense_data[$i]['type'] = $expense->getType();
 							$expense_data[$i]['name'] = $expense->getTypeText();
 							$expense_data[$i]['amount'] = $expense->getAmount();
 							$i++;
@@ -345,6 +352,7 @@ class Season extends BaseEntity  {
 					foreach ($expenselines as $expense){
 						if($expense->getAmount() > 0 && !isEmptyString($expense->getAmount())){
 							$expense_data[$i]['id'] = $i;
+							$expense_data[$i]['type'] = $expense->getType();
 							$expense_data[$i]['name'] = $expense->getTypeText();
 							$expense_data[$i]['amount'] = $expense->getAmount();
 							$i++;
@@ -361,6 +369,7 @@ class Season extends BaseEntity  {
 					foreach ($expenselines as $expense){
 						if($expense->getAmount() > 0 && !isEmptyString($expense->getAmount())){
 							$expense_data[$i]['id'] = $i;
+							$expense_data[$i]['type'] = $expense->getType();
 							$expense_data[$i]['name'] = $expense->getTypeText();
 							$expense_data[$i]['amount'] = $expense->getAmount();
 							$i++;
@@ -377,6 +386,7 @@ class Season extends BaseEntity  {
 					foreach ($expenselines as $expense){
 						if($expense->getAmount() > 0 && !isEmptyString($expense->getAmount())){
 							$expense_data[$i]['id'] = $i;
+							$expense_data[$i]['type'] = $expense->getType();
 							$expense_data[$i]['name'] = $expense->getTypeText();
 							$expense_data[$i]['amount'] = $expense->getAmount();
 							$i++;
@@ -393,12 +403,31 @@ class Season extends BaseEntity  {
 					foreach ($expenselines as $expense){
 						if($expense->getAmount() > 0 && !isEmptyString($expense->getAmount())){
 							$expense_data[$i]['id'] = $i;
+							$expense_data[$i]['type'] = $expense->getType();
 							$expense_data[$i]['name'] = $expense->getTypeText();
 							$expense_data[$i]['amount'] = $expense->getAmount();
 							$i++;
 						}
 					}
 				}
+	    	}
+    	}
+    	$postharvestlines = $this->getAllOtherActivityDetails();
+    	if($postharvestlines->count() > 0){
+	    	foreach ($postharvestlines as $activity) {
+			    $expenselines = $activity->getExpensesDetails();
+				if($expenselines){
+					foreach ($expenselines as $expense){
+						if($expense->getAmount() > 0 && !isEmptyString($expense->getAmount())){
+							$expense_data[$i]['id'] = $i;
+							$expense_data[$i]['type'] = $expense->getType();
+							$expense_data[$i]['name'] = $expense->getTypeText();
+							$expense_data[$i]['amount'] = $expense->getAmount();
+							$i++;
+						}
+					}
+				}
+	    		
 	    	}
     	}
     	return $expense_data;
@@ -607,6 +636,97 @@ class Season extends BaseEntity  {
     	
     	// exit();
     	return true;
+    }
+    # compute total cost for skilled labor
+    function totalSkilledLabourCost() {
+    	$total = 0;
+    	$tillagelines = $this->getAllTillageDetails();
+    	if($tillagelines->count() > 0){
+	    	foreach ($tillagelines as $tillage) {
+	    		$total += $tillage->getTotalLaborCost();
+	    	}
+    	}
+    	$plantlines = $this->getAllPlantingDetails();
+    	if($plantlines->count() > 0){
+	    	foreach ($plantlines as $planting) {
+	    		$total += $planting->getTotalLaborCost();
+	    	}
+    	}
+    	$treatlines = $this->getAllTreatingDetails();
+    	if($treatlines->count() > 0){
+	    	foreach ($treatlines as $treat){
+	    		$total += $treat->getTotalLaborCost();
+	    	}
+    	}
+    	$harvestlines = $this->getAllHarvestDetails();
+    	if($harvestlines->count() > 0){
+	    	foreach ($harvestlines as $harvest){
+	    		$total += $harvest->getTotalLaborCost();
+	    	}
+    	}
+    	$saleslines = $this->getAllSalesDetails();
+    	if($saleslines->count() > 0){
+    		foreach ($saleslines as $sale){
+	    		$total += $sale->getTotalLaborCost();
+	    	}
+    	}
+    	return $total;
+    }
+    # determine total interest on loans
+    function getTotalCreditInterest(){
+    	$total = 0;
+    	$loan = $this->getLoans()->get(0);
+    	if($loan){
+    		$total += ($loan->getPayBackAmount() - $loan->getPrincipal());
+    	}
+    	
+    	$tillagelines = $this->getAllTillageDetails();
+    	if($tillagelines->count() > 0){
+	    	foreach ($tillagelines as $tillage) {
+	    		$loan = $tillage->getCreditDetails();
+			    if($loan){
+		    		$total += ($loan->getPayBackAmount() - $loan->getPrincipal());
+		    	}
+	    	}
+    	}
+    	$plantlines = $this->getAllPlantingDetails();
+    	if($plantlines->count() > 0){
+	    	foreach ($plantlines as $planting) {
+	    		$loan = $planting->getCreditDetails();
+			    if($loan){
+		    		$total += ($loan->getPayBackAmount() - $loan->getPrincipal());
+		    	}
+	    	}
+    	}
+    	$treatlines = $this->getAllTreatingDetails();
+    	if($treatlines->count() > 0){
+	    	foreach ($treatlines as $treat){
+	    		$loan = $treat->getCreditDetails();
+			    if($loan){
+		    		$total += ($loan->getPayBackAmount() - $loan->getPrincipal());
+		    	}
+	    	}
+    	}
+    	$harvestlines = $this->getAllHarvestDetails();
+    	if($harvestlines->count() > 0){
+	    	foreach ($harvestlines as $harvest){
+	    		$loan = $harvest->getCreditDetails();
+			    if($loan){
+		    		$total += ($loan->getPayBackAmount() - $loan->getPrincipal());
+		    	}
+	    	}
+    	}
+    	$saleslines = $this->getAllSalesDetails();
+    	if($saleslines->count() > 0){
+    		foreach ($saleslines as $sale){
+    			$loan = $sale->getCreditDetails();
+			    if($loan){
+		    		$total += ($loan->getPayBackAmount() - $loan->getPrincipal());
+		    	}
+	    	}
+    	}
+    	
+    	return $total;
     }
 }
 

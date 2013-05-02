@@ -33,12 +33,13 @@
 	$phoneobj = new UserPhone();
 	$farmerid = decode($request->profile);
 	// debugMessage('farmer is '.$farmerid);
+	
 	if(!isEmptyString($farmerid)){
 		$farmer->populate($farmerid);
 		$firstname = $farmer->getFirstName();
 		$lastname = $farmer->getLastName();
 		$username = $farmer->getUser()->getUserName(); 
-		
+		// debugMessage($farmer->toArray());
 		$namestring = explode(' ', $firstname);
 		// debugMessage($namestring);
 		if(count($namestring) > 1){
@@ -46,7 +47,7 @@
 			$lastname = $namestring[1];
 		}
 		
-		$email = $farmer->getEmail();
+		$email = $farmer->getUser()->getEmail();
 		$userid = $farmer->getUserID();
 		$phoneobj = $farmer->getUser()->getPhones()->get(0);
 		$phone = $phoneobj->getPhone();

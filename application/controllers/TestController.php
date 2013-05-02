@@ -138,24 +138,26 @@ class TestController extends IndexController  {
 	    $phone = SMS_TEST_NUMBER;
 	    $username = SMS_USERNAME;
 	    $password = SMS_PASSWORD;
-	    $port = SMS_PORT;
-	    $message = 'helloworld';
+	    // $port = SMS_PORT;
+	    $message = 'helloworld. this is a dev test from farmis '.date('Y-m-d H:i:s');
 	    
 	    $client = new Zend_Http_Client(SMS_SERVER);
 	    // the GET Parameters
 		$client->setParameterGet(array(
 			'username'  => $username,
 			'password'  => $password,
-			'port' => $port,
+			'type'	=>	0,
+			'dlr'	=>	0,
+			'source'=>	'FARMIS',
 			'destination' => $phone,
 			'message' => $message
 		));
 		
-		debugMessage($client); // exit();
+		// debugMessage($client); // exit();
     	try {
     	    $response = $client->request();
     	    $body = $response->getBody();
-    	    debugMessage($body);
+    	    // debugMessage($body);
     	    
 	    } catch (Exception $e) {
 	        # error handling

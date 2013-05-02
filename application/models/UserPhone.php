@@ -218,7 +218,7 @@ class UserPhone extends BaseRecord {
 	function sendNewPhoneActivation() {
 		$message = $this->translate->_('appname')." New Phone Activation Code: ".$this->getActivationKey();
 		// debugMessage($message);
-		// $sendresult = sendSMSMessage($this->getPhone(), $message);
+		$sendresult = sendSMSMessage($this->getPhone(), $message);
 		// debugMessage($sendresult);
 		// exit();
 		return true;

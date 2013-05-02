@@ -1,0 +1,808 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	require_once(APPLICATION_PATH.'/../'.PUBLICFOLDER.'/dompdf/dompdf_config.inc.php');
+	// require_once APPLICATION_PATH.'/../'.PUBLICFOLDER.'/html2pdf/html2pdf.class.php';
+	
+	$farm = new Farm(); 
+	$farm->populate($request->farmid);
+	$farmer = $farm->getFarmer();
+	
+	$request->setParam('tab', 'finance'); 
+	
+	$thefarmid = $farm->getID();
+	$seasonid = $request->seasonid;
+	$showresults = false;
+	if(!isEmptyString($seasonid)){
+		$showresults = true;
+		$season = new Season();
+		$season->populate($seasonid);
+		// debugMessage($season->toArray());
+	}
+	
+	if($showresults){
+		$currency_text = "&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>";
+		$sales = $season->getTotalRevenue(); 
+		$inputs = $season->getTotalSeasonInputs();
+		$margin = $sales - $inputs;
+		$perc_margin = $sales == 0 ? 0 : $margin / $sales * 100;
+		$expenselines = $season->getBundledExpenses();
+		$expense_count = count($expenselines);
+		$tot_expense = 0;
+		$labour_total = $season->totalSkilledLabourCost();
+		$total_credit_interest = $season->getTotalCreditInterest();
+		$sales_display = ($sales == 0 || isEmptyString($sales)) ? 0: formatMoneyOnly($sales);
+		$inputs_display = ($inputs == 0 || isEmptyString($inputs)) ? '--': formatMoneyOnly($inputs);
+		 
+		$farmis_logo = $this->serverUrl($this->baseUrl('images/logo_gray.png'));
+		$infotrade_logo = $this->serverUrl($this->baseUrl('images/logo_infotrade.png'));
+		$profile_image = $this->serverUrl($farmer->getUser()->getMediumPicturePath());
+		
+		/*if($request->download == 1 || $request->pdf == 1){
+			$farmis_logo = APPLICATION_PATH.DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR."public".DIRECTORY_SEPARATOR."images".DIRECTORY_SEPARATOR.'logo_gray.png';
+			$infotrade_logo = APPLICATION_PATH.DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR."public".DIRECTORY_SEPARATOR."images".DIRECTORY_SEPARATOR.'logo_infotrade.png';
+		}*/
+	
+	}
+	
+	$title = "Profit and Loss Statement Report"; 
+	$this->headTitle($title);  
+	$html = ''; 
+?>
+<script>
+	$(document).ready(function() {
+		<?php if($request->print == 1){ ?>
+			$("#headercontainer, #leftcolumn, .footer, #blankrow").remove().hide();
+			$(".printpage").html($("#printer_page_action_buttons").html());
+		<?php } ?>
+		
+		// trigger path to farmer report to be generated
+		$("#seasonid").change(function(){
+			var id = $(this).val();
+			var url = '<?php echo $this->baseUrl('finance/statement/farmid/'.$farm->getID().'/seasonid/'); ?>'+id;
+			$("#generate").attr('href', url);
+		});
+	}); 
+</script>
+<style>
+#contentcolumn {
+	min-height:600px;
+}
+#centercolumn {
+	padding: 5px 0;
+	width: 94%;
+	margin-left:30px;
+	float:left;
+}
+#centercolumn h1, #centercolumn h2 {
+	font-family:calibri, Telex, sans-serif;
+}
+#pageleft {
+	margin:0 5px 0 0;
+	width:100%;
+	float:left;
+	position:relative;
+}
+#pageleft .widgetsection {
+	width:98%;
+}
+.widgetsection {
+	margin-bottom:10px;
+}
+.widgetsection h3 {
+	font-size:15px;
+}
+.contenttable {
+	border:solid 1px #b3b3b3;
+	border-collapse: separate;
+	*border-collapse: collapsed;
+	-webkit-border-radius: 4px;
+	-moz-border-radius: 4px;
+	border-radius: 4px;
+}
+.contenttable .control-label {
+	width:auto;
+	white-space:normal;
+	text-align:left;
+	display:block;
+}
+.contenttable h2 {
+	margin: 0;
+	padding: 8px 0 8px 0;
+	line-height:auto;
+	text-align: left;
+	border-bottom:1px solid #c4c2c2;
+	color:#498D0F;
+	font-size:18px;
+	width:100%;
+	font-weight:bold;
+	line-height:16px;
+}
+.contenttable#estimates thead tr td {
+	font-weight:bold;
+	font-size:11px;
+	color:#000;
+}
+.contenttable#estimates thead tr td span {
+	font-size:10px;
+}
+#outlength {
+	width:72%;
+}
+.reportcontainer {
+	height:auto; 
+	min-height:800px; 
+	display:block; 
+	margin-top:10px;
+	position:relative;
+}
+.reportlabel {
+	display:inline-block;
+	font-weight:bold;
+	font-size:16px;
+	padding-right:5px;
+}
+.reportfilter {
+	margin-top:0; 
+	float:right;
+	margin-right:-10px;
+}
+.reportactions {
+	position:absolute; 
+	right:20px; 
+	top:8px;
+}
+pdfquicklinks {
+	position:absolute; 
+	left:10px; 
+	top:8px;
+}
+.widgetsection h3.reportpagetitle {
+	color:#282727;
+}
+<?php if($request->print == 1) { ?> 
+#contentwrapper {
+	margin: 10px 0 5px;
+}
+#maincontainer.container {
+	margin-left:20px;
+	margin-top:10px;
+}
+#printer_page_action_buttons {
+	margin:10px;
+}
+.hideonprint {
+	display:none;
+}
+.printpage {
+	margin:10px;
+	display:block;
+}
+#centercolumn {
+	padding: 5px 0;
+	width: 960px;
+	margin-left:0;
+	float:left;
+}
+#left {
+	display:none;
+}
+#center {
+	float:left;
+	width:100%;
+}
+#tabs {
+	border:none;
+}
+#maincontainer.container {
+	width:960px;
+}
+<?php } ?>
+
+</style>
+<h1 class="hideonprint"><?php echo $this->translate('farm_title'); ?></h1>
+<div class="printpage"></div>
+<div id="tabs">
+    <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
+    <div class="span9 tab-content" id="center">
+    	<?php require APPLICATION_PATH."/views/scripts/farm/tabstop.phtml"; ?>
+		<div id="finance" class="makerelative">
+            <table class="table table-condensed noborder margin0 nohover hideonprint" style="width:100%; position:absolute; right:5px; top:-18px;">
+                <tr>
+                    <td>
+                        <span class="reportfilter pull-right">
+                            <label class="reportlabel cal-font">Season: </label>
+                            <?php
+                                $allseasons = getAllSeasons($farm->getID());
+                                $seasondropdown = new Zend_Form_Element_Select('seasonid',
+                                                    array(
+                                                        'multiOptions' => array_merge_maintain_keys(array('' => 'Select Season'), $allseasons),
+                                                        'view' => new Zend_View(),
+                                                        'decorators' => array('ViewHelper'),
+                                                        'class' => array('width200'),
+                                                        'title' => 'Filter Seasons'		
+                                                    )
+                                );  
+                                $seasondropdown->setValue($request->getParam('seasonid'));
+                                echo $seasondropdown->render(); 
+                              ?>&nbsp;&nbsp;
+                             <a id="generate" style="margin-top:-10px;" href="<?php echo $this->baseUrl('finance/statement/farmid/'.$farm->getID().'/'); ?>" class="btn btn-primary" title="Generate Report"><i class="icon-list-alt icon-white"></i> Generate</a>&nbsp;
+                        </span>
+                    </td>
+                </tr>
+            </table>
+		<?php if(!$showresults){  ?>
+            <div class="widgetsection reportcontainer">
+                <h3 class="reportpagetitle"><?php echo $title; ?></h3>
+                <span class="pull-left margin0" style="width:99%; margin-top:10px; min-height:120px; position:relative;"><div class="alert alert-info" style="margin-top:10px;">Filter Season and Click Generate to view statement</div></span>
+            </div>
+        <?php } ?>
+            <div class="pull-left" id="pageleft">
+				<?php if($showresults){
+                $html .= '<div class="widgetsection reportcontainer">
+                        <h3 class="reportpagetitle">'.$title.'</h3>';
+                    ?>
+                    <?php
+                        $html .= '<div class="margin0 hideonprint" style="position:absolute; right:-5px; top:0; width:90%;"><span class="reportactions hideonprint">
+                            <a href="'.$this->baseUrl('finance/statement/farmid/'.$farm->getID().'/seasonid/'.$season->getID().'/print/1').'" target="_blank" class="btn btn-primary btn-mini" title="Print Report"><i class="icon-print icon-white"></i> Print</a>&nbsp;
+                            <a href="'.$this->baseUrl('finance/statement/farmid/'.$farm->getID().'/seasonid/'.$season->getID().'/pdf/1').'" class="btn btn-primary btn-mini" title="View PDF Report"><i class="icon-list-alt icon-white"></i> PDF</a>&nbsp;
+                            <a href="'.$this->baseUrl('finance/statement/farmid/'.$farm->getID().'/seasonid/'.$season->getID().'/download/1').'" class="btn btn-primary btn-mini" title="Print Report"><i class="icon-download icon-white"></i> Download</a>&nbsp;</span></div>';
+                    ?>
+                    <?php
+                        $html .= '
+						<table style="margin-top:0; width:100%;">
+							<tr style="border-bottom:1px solid #e9e9e9;">
+								<td id="outlength" style="width:80%; vertical-align:top;">
+									<table style="width:100%; height:175px;">
+										<tr>
+											<td style="vertical-align:top; padding-left:15px; padding-top:10px; width:27%"><span><img src="'.$farmis_logo.'" /></span></td>
+											<td style="vertical-align:top; padding-right:30px; padding-top:25px; width:27%"><span><img src="'.$infotrade_logo.'" /></span></td>
+											<td class="padding0">
+												<table class="table table-condensed margin0 border0" style="width:100%;">
+													<tr>
+														<td style="width:32%;"><label class="control-label pull-left leftalign">Farmer: </label></td>
+														<td>'.$season->getFarmer()->getName().'</td>
+													</tr>
+													<tr>
+														<td><label class="control-label pull-left leftalign">Season: </label></td>
+														<td>'.$season->getName()." - ".$season->getRef().'</td>
+													</tr>
+													<tr>
+														<td><label class="control-label pull-left leftalign">Crop: </label></td>
+														<td>'.$season->getCrop()->getName().'</td>
+													</tr>
+													<tr>
+														<td><label class="control-label pull-left leftalign">Duration: </label></td>
+														<td>'.$season->getFullStartDate().' - '.$season->getFullEndDate().'</td>
+													</tr>
+													<tr>
+														<td><label class="control-label pull-left leftalign">Status:</label></td>
+														<td>'.$season->getStatusText().'</td>
+													</tr>
+												</table>
+											</td>
+										</tr>
+									</table>
+								</td>
+								<td>
+									<div id="profileinfo" style="padding:3px; width:140px;"> 
+										<img id="profileimage" style="width:140px;" src="'.$profile_image.'" />
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td colspan="2">
+									<table class="table table-bordered table-condensed table-hover" style="margin-bottom:10px; margin-top:5px; width:100%;">
+										<tr class="info">
+											<td colspan="3" style="padding-left:10px;"><h3 class="well-legend noborder padding0" style="border:none; padding:0;">Operating Revenue</h3></td>
+										</tr>
+										<tr>
+											<td style="padding-left: 20px;">Net Season Sales '.$currency_text.'</td>
+											<td style="width:20%;"></td>
+											<td style="width:20%; text-align:right; padding-right:20px;" class="amountcell">'.$sales_display.'</td>
+										</tr>
+										<tr>
+											<td style="padding-left: 20px;">Service Sales '.$currency_text.'</td>
+											<td></td>
+											<td style="text-align:right; padding-right:20px;" class="amountcell">0</td>
+										</tr>
+										<tr>
+											<td style="padding-left:20px;" class="bolded">Total Sales Revenue '.$currency_text.'</td>
+											<td></td>
+											<td style="text-align:right; padding-right:20px;" class="amountcell bolded">'.$sales_display.'</td>
+										</tr>
+									</table>
+								</td>
+							</tr>
+							<tr>
+								<td colspan="2">
+									<table class="table table-bordered table-condensed table-hover" style="margin-bottom:10px; width:100%;">
+										<tr class="info">
+											<td colspan="3" style="padding-left:10px;"><h3 class="well-legend noborder" style="border:none; padding:0;">Cost of Sales</h3></td>
+										</tr>
+										<tr>
+											<td style="padding-left: 20px;">Cost of Season Inputs '.$currency_text.'</td>
+											<td style="width:20%; text-align:right; padding-right:20px;" class="amountcell">'.$inputs_display.'</td>
+											<td style="width:20%;"></td>
+										</tr>
+										<tr>
+											<td style="padding-left: 20px;">Asset Inventory for Period</td>
+											<td style="text-align:right; padding-right:20px;" class="amountcell">0</td>
+											<td></td>
+										</tr>
+										<tr>
+											<td style="padding-left:20px;" class="bolded">Total Cost of Sales '.$currency_text.'</td>
+											<td style="text-align:right; padding-right:20px;" class="amountcell bolded">'.$inputs_display.'</td>
+											<td></td>
+										</tr>
+									</table>								
+								</td>
+							</tr>	
+							<tr>
+								<td colspan="2">
+									<table class="table table-bordered table-condensed table-hover" style="margin-bottom:10px; width:100%;">
+										<tr>
+											<td style="padding-left:20px;" class="bolded">Gross Margin '.$currency_text.'</td>
+											<td style="width:20%;"></td>
+											<td style="width:20%; text-align:right; padding-right:20px;" class="amountcell bolded">'.formatMoneyOnly($margin).'</td>
+										</tr>
+										<tr>
+											<td style="padding-left:20px;" class="bolded">Gross Margin (%)</td>
+											<td></td>
+											<td style="text-align:right; padding-right:20px;" class="amountcell bolded">'.round(formatMoneyOnly($perc_margin)).' %</td>
+										</tr>
+									</table>
+								</td>
+							</tr>	
+							<tr>
+								<td colspan="2">
+									<table class="table table-bordered table-condensed table-hover" style="margin-bottom:10px; width:100%;">
+										<tr class="info">
+											<td colspan="3" style="padding-left:10px;"><h3 class="well-legend noborder" style="border:none; padding:0;">Overhead, General and Administrative Expenses</h3></td>
+										</tr>';
+									?>
+									<?php if($labour_total > 0){ ?>
+										<?php $html .= '
+											<tr>
+												<td style="padding-left: 20px;">Skilled Labour '.$currency_text.'</td>
+												<td style="width:20%; text-align:right; padding-right:20px;" class="amountcell">'.formatMoneyOnly($labour_total).'</td>
+												<td style="width:20%;"></td>
+											</tr>';
+										?>
+									<?php } ?>
+									<?php if($expense_count > 0 ){ ?>
+										<?php
+											$total_taxes = 0; 
+											$total_damages = 0; 
+											foreach($expenselines as $value){
+												// debugMessage($value);
+												$ignore_array = array(2,10);
+												// compute taxes 
+												if($value['typeid'] == 10){
+													$total_taxes += $value['amount'];
+												}
+												if(!in_array($value['typeid'], $ignore_array)){
+													$tot_expense += $tot_expense + $value['amount'];
+										?>
+											<?php $html .= '
+												<tr>
+													<td style="padding-left: 20px;">'.$value['name'].' '.$currency_text.'</td>
+													<td  style="width:20%; text-align:right; padding-right:20px;" class="amountcell">'.formatMoneyOnly($value['amount']).'</td>
+													<td style="width:20%;"></td>
+												</tr>';
+											?>
+										  
+										<?php } } ?>    
+									<?php } ?>
+									<?php 
+										$tot_expense += $labour_total;
+										$netprofit = formatMoneyOnly($margin - ($tot_expense + $total_taxes + $total_damages));
+										$netprofit_age = $sales == 0 ? 0 : round(($margin - ($tot_expense + $total_taxes + $total_damages)) / $sales * 100);
+										
+									?>
+									<?php if($total_credit_interest > 0){ ?>
+										<?php $html .= '
+											<tr>
+												<td style="padding-left: 20px;">Interest on Loan '.$currency_text.'</td>
+												<td  style="width:20%; text-align:right; padding-right:20px;" class="amountcell">'.formatMoneyOnly($total_credit_interest).'</td>
+												<td style="width:20%;"></td>
+											</tr>';
+										?>
+									<?php } ?>
+									<?php $html .= '
+										<tr>
+											<td style="padding-left:20px;" class="bolded">Total Operating Expenses '.$currency_text.'</td>
+											<td style="width:20%; text-align:right; padding-right:20px;" class="amountcell bolded">'.formatMoneyOnly($tot_expense).'</td>
+											<td style="width:20%;"></td>
+										</tr>
+									</table>
+								</td>
+							</tr>	
+							<tr>
+								<td colspan="2">
+									<table class="table table-bordered table-condensed table-hover" style="margin-bottom:10px; width:100%;">
+										<tr>
+											<td style="padding-left: 20px;" class="bolded">Profit Before Taxes '.$currency_text.'</td>
+											<td style="width:20%;"></td>
+											<td style="width:20%; text-align:right; padding-right:20px;" class="amountcell bolded">'.formatMoneyOnly($margin - $tot_expense).'</td>
+										</tr>
+										<tr>
+											<td style="padding-left:20px;">Total Taxes '.$currency_text.'</td>
+											<td class="amountcell" style="text-align:right; padding-right:20px;" >'.formatMoneyOnly($total_taxes).'</td>
+											<td></td>
+										</tr>
+										<tr>
+											<td style="padding-left:20px;" class="bolded">Net Profit '.$currency_text.'</td>
+											<td></td>
+											<td class="amountcell bolded" style="text-align:right; padding-right:20px;" >'.$netprofit.'</td>
+										</tr>
+										<tr>
+											<td style="padding-left:20px;" class="bolded">Net Profit (%)</td>
+											<td></td>
+											<td class="amountcell bolded" style="text-align:right; padding-right:20px;" >'.$netprofit_age.' %</td>
+										</tr>
+									</table>
+								</td>
+							</tr>	
+						</table>
+						';
+                    ?>	
+                    <?php $html .= '</div>'; ?>
+                    <?php
+                    // echo page html
+                    if($request->pdf != 1){
+                        echo $html;
+                    }
+					
+					$baseurl_bootstrap = APPLICATION_PATH.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'stylesheets'.DIRECTORY_SEPARATOR.'3.bootstrap-cerulean.css';
+					$baseurl_farmis = APPLICATION_PATH.DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR."public".DIRECTORY_SEPARATOR."stylesheets".DIRECTORY_SEPARATOR."9.farmis.css";
+					$baseurl_bootstrap = $this->serverUrl($this->baseUrl('stylesheets/3.bootstrap-cerulean.css'));
+					$baseurl_farmis =  $this->serverUrl($this->baseUrl('stylesheets/9.farmis.css'));
+					
+					$pdf_html = '
+						<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+						<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+						<head>
+							<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+							<link href="'.$baseurl_bootstrap.'" type="text/css" rel="stylesheet" />
+							<link href="'.$baseurl_farmis.'" type="text/css" rel="stylesheet" />
+						</head>
+						<body>
+							<style>
+								body {
+									color: #555555;
+									font-family: calibri, Telex, sans-serif;
+									font-size: 13px;
+									line-height: 18px;
+								}
+								
+								.table td.amountcell, .amountcell {
+									text-align:right;
+									padding-right:20px;
+								}
+								#contentcolumn {
+									min-height:600px;
+								}
+								#centercolumn {
+									padding: 5px 0;
+									width: 94%;
+									margin-left:30px;
+									float:left;
+								}
+								#centercolumn h1, #centercolumn h2 {
+									font-family:calibri, Telex, sans-serif;
+								}
+								#pageleft {
+									margin:0 5px 0 0;
+									width:100%;
+									float:left;
+									position:relative;
+								}
+								#pageleft .widgetsection {
+									width:98%;
+								}
+								.widgetsection {
+									margin-bottom:10px;
+								}
+								.widgetsection h3 {
+									font-size:15px;
+								}
+								.contenttable {
+									border:solid 1px #b3b3b3;
+									border-collapse: separate;
+									*border-collapse: collapsed;
+									-webkit-border-radius: 4px;
+									-moz-border-radius: 4px;
+									border-radius: 4px;
+								}
+								.contenttable .control-label {
+									width:auto;
+									white-space:normal;
+									text-align:left;
+									display:block;
+								}
+								.contenttable h2 {
+									margin: 0;
+									padding: 8px 0 8px 0;
+									line-height:auto;
+									text-align: left;
+									border-bottom:1px solid #c4c2c2;
+									color:#498D0F;
+									font-size:18px;
+									width:100%;
+									font-weight:bold;
+									line-height:16px;
+								}
+								.contenttable#estimates thead tr td {
+									font-weight:bold;
+									font-size:11px;
+									color:#000;
+								}
+								.contenttable#estimates thead tr td span {
+									font-size:10px;
+								}
+								#outlength {
+									width:72%;
+								}
+								.reportcontainer {
+									height:auto; 
+									min-height:800px; 
+									display:block; 
+									margin-top:10px;
+									position:relative;
+								}
+								.reportlabel {
+									display:inline-block;
+									font-weight:bold;
+									font-size:16px;
+									padding-right:5px;
+								}
+								.reportfilter {
+									margin-top:0; 
+									float:right;
+									margin-right:-10px;
+								}
+								.reportactions {
+									position:absolute; 
+									right:20px; 
+									top:8px;
+								}
+								pdfquicklinks {
+									position:absolute; 
+									left:10px; 
+									top:8px;
+								}
+								.widgetsection h3.reportpagetitle {
+									color:#282727;
+								}
+								
+								.table-bordered {
+								  border: 1px solid #dddddd;
+								  border-left: 0;
+								  border-collapse: separate;
+								  *border-collapse: collapsed;
+								   background-color: transparent;
+									border-spacing: 0;
+									max-width: 100%;
+								}
+								.table-bordered th,
+								.table-bordered td {
+								  border-left: 1px solid #dddddd;
+								  border-top: 1px solid #dddddd;
+								  padding: 2px 3px;
+								  vertical-align: top;
+								}
+								.widgetsection {
+									-moz-border-radius: 4px;	
+									-webkit-border-radius:4px;
+									-khtml-border-radius:4px;	
+									border-radius:4px;	
+									border-left: 4px solid #DDDDDD;
+									border-right: 4px solid #DDDDDD;
+									border-top: 2px solid #DDDDDD;
+									border-bottom: 2px solid #DDDDDD;
+									margin: 0 0 15px;
+									padding: 0 5px 10px 5px;
+									min-height:50px;
+									height:auto;
+								}
+								.widgetsection h3 {
+									margin: 0;
+									padding: 5px 5px 5px 5px;
+									text-align: left;
+									border-bottom:2px solid #E0E0E0;
+									color:#498D0F;
+									font-size:16px;
+								}
+								.widgetsection.height100 {
+									min-height:100px;
+								}
+								.widgetsection.height150 {
+									min-height:150px;
+								}
+								.widgetsection.height200 {
+									min-height:200px;
+								}
+								.widgetsection.height300 {
+									min-height:300px;
+								}
+								.widgetsection.height400 {
+									min-height:400px;
+								}
+								.widgetsection.height500 {
+									min-height:500px;
+								}
+								.widgetsection.height600 {
+									min-height:600px;
+								}
+								
+								#profileinfo, .profileinfo, #thumbinfo, .thumbinfo {
+									position:relative;
+									max-height: 195px;
+									height:auto;
+									width:165px;
+									padding: 0;
+									margin: 0 auto;
+									border: 1px solid #C2C2C2;
+									border: 1px solid rgba(0, 0, 0, 0.05);
+									border-style: ridge;
+									background-color:#f1f1f1;
+									-webkit-border-radius: 3px;
+									-moz-border-radius: 3px;
+									border-radius: 3px;
+								}
+								#profileinfo.new_pic, .profileinfo.new_pic {
+									box-shadow: 0 0 0 1px #F5F5F5, 0 0 0 2px #EBEBEB, 0 0 0 3px #E0E0E0, 0 0 0 4px #D6D6D6;
+									-moz-box-shadow: 0 0 0 1px #F5F5F5, 0 0 0 2px #EBEBEB, 0 0 0 3px #E0E0E0, 0 0 0 4px #D6D6D6;
+									-webkit-shadow: 0 0 0 1px #F5F5F5, 0 0 0 2px #EBEBEB, 0 0 0 3px #E0E0E0, 0 0 0 4px #D6D6D6;
+								}
+								#profileinfo #profileimage, .profileinfo .profileimage {
+									margin-top:2px;
+								}
+			
+								#centercolumn {
+									padding: 5px 0;
+									width: 960px;
+								}
+								#centercolumn h1, #centercolumn h2 {
+									font-family: calibri, Telex, sans-serif;
+								}
+								#pageleft {
+									margin:0 5px 0 0;
+									width:98%;
+									float:left;
+								}
+								#pageleft .widgetsection {
+									width:100%;
+								}
+								.widgetsection {
+									margin-bottom:10px;
+								}
+								.widgetsection h3 {
+									font-size:15px;
+								}
+								.contenttable {
+									border:solid 1px #b3b3b3;
+									border-collapse: separate;
+									*border-collapse: collapsed;
+									-webkit-border-radius: 4px;
+									-moz-border-radius: 4px;
+									border-radius: 4px;
+									width:100%;
+								}
+								.contenttable .control-label {
+									width:auto;
+									white-space:normal;
+									text-align:left;
+									display:block;
+									color: #333333;
+									margin-bottom: 5px;
+									font-size: 13px;
+									line-height: 18px;
+									font-weight: bold;
+								}
+								.contenttable h2 {
+									margin: 0;
+									padding: 8px 0 8px 0;
+									line-height:auto;
+									text-align: left;
+									border-bottom:1px solid #c4c2c2;
+									color:#498D0F;
+									font-size:18px;
+									width:100%;
+									font-weight:bold;
+									line-height:16px;
+									calibri,Telex,sans-serif;
+								}
+								.contenttable#estimates thead tr td {
+									font-weight:bold;
+									font-size:10px;
+									color:#000;
+								}
+								.contenttable#estimates thead tr td span {
+									font-size:10px;
+								}
+								#printer_page_action_buttons {
+									display:block;
+									margin:10px;
+								}
+								table#crops {
+									height:180px;
+								}
+								table#crops ul#croplist {
+									margin:0;
+									margin-left: -15px;
+									height:130px;
+								}
+								.reportcontainer {
+									height:auto; 
+									min-height:800px; 
+									display:block; 
+									margin-top:10px;
+									position:relative;
+								}
+								.reportlabel {
+									display:inline-block;
+									font-weight:bold;
+									font-size:16px;
+									padding-right:5px;
+								}
+								.reportfilter {
+									margin-top:0; 
+									float:right;
+									margin-right:-10px;
+								}
+								#generate, .printpage, .pdfquicklinks, .reportactions{
+									display:none;
+								}
+								.widgetsection h3.reportpagetitle {
+									color:#282727;
+								}
+							</style>
+							<div style="width:960px; margin:0; padding:0;">
+								'.$html.'
+							</div>
+						</body>
+						</html>
+					';
+					
+					$temp_file_name = '';
+					if($request->download == 1 || $request->pdf == 1){
+						$timestamp = time().rand(100, 5000);
+						$temp_file_name = ($timestamp).".pdf";
+						$temp_file_text = ($timestamp).".html";
+			
+						$dompdf = new DOMPDF();
+						$dompdf->load_html($pdf_html);
+						
+						$dompdf->render();
+						$output = $dompdf->output();
+						// debugMessage($output);
+						$path = APPLICATION_PATH.DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR."public".DIRECTORY_SEPARATOR."dompdf".DIRECTORY_SEPARATOR."temp".DIRECTORY_SEPARATOR.$temp_file_name;
+						$path_txt = APPLICATION_PATH.DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR."public".DIRECTORY_SEPARATOR."dompdf".DIRECTORY_SEPARATOR."temp".DIRECTORY_SEPARATOR.$temp_file_text;
+						$relativepathtodocument = $this->serverUrl($this->baseUrl('dompdf/temp/'.$temp_file_name));
+						file_put_contents($path, $output);
+						file_put_contents($path_txt, $pdf_html);
+						
+						/*try {
+							$html2pdf = new HTML2PDF('P', 'A4', 'en');
+							$html2pdf->writeHTML($pdf_html);
+							$html2pdf->Output($path);
+						}
+						catch(HTML2PDF_exception $e) {
+							debugMessage($e->getMessage());
+							exit;
+						}*/
+						
+						
+					}
+					?>
+                    
+                 <?php } ?>
+            </div>
+        </div>
+        <?php require APPLICATION_PATH."/views/scripts/farm/tabsbottom.phtml"; ?> 
+    </div>
+</div>    
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

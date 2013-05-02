@@ -24,32 +24,41 @@ $(document).ready(function() {
 	<?php } ?>
 	
 	$("#tabs ul#leftnav li a").click(function(e){
-		curentclass = $(this).attr('class');
-		$(".form-horizontal."+curentclass).html("<a id='loading' class='xhidden' style='text-align:center; display:block; margin-top:75px;'><span style='display:block; margin-bottom:15px; font-weight:bold;'>Loading...</span><img style='margin-left:-10px;' src='<?php echo $this->baseUrl('images/farmisloader.gif'); ?>' /></a>").css({'display':'block'});
-		var url = '';
-		if(curentclass == 'farm'){
-			<?php if($hasfarm){ ?>
-				<?php if($hasmultiplefarms){ ?>
-					var url = "<?php echo $this->baseUrl('farm/list'); ?>";
+		var currentclass = $(this).attr('class');
+		var oldclass = '<?php echo $request->tab; ?>';
+		if(currentclass != oldclass || currentclass == 'subscription'){
+			$(".form-horizontal."+currentclass).html("<a id='loading' class='xhidden' style='text-align:center; display:block; margin-top:75px;'><span style='display:block; margin-bottom:15px; font-weight:bold;'>Loading...</span><img style='margin-left:-10px;' src='<?php echo $this->baseUrl('images/farmisloader.gif'); ?>' /></a>").css({'display':'block'});
+			var url = '';
+			var controller = '<?php echo $controller; ?>';
+			var action = '<?php echo $action; ?>';
+			
+			if(controller == 'farmer' && action == 'index'){
+				var url = "<?php echo $this->baseUrl("farmer/index/id/".encode($farmer->getID())."/tab/"); ?>"+currentclass;
+			}
+			if((controller == 'farmer' && action == 'view') || action == 'picture' || controller == 'payment'){
+				var url = "<?php echo $this->baseUrl("farmer/view/id/".encode($farmer->getID())."/tab/"); ?>"+currentclass;
+			}
+			
+			if(currentclass == 'farm'){
+				<?php if($hasfarm){ ?>
+					<?php if($hasmultiplefarms){ ?>
+						var url = "<?php echo $this->baseUrl('farm/list'); ?>";
+					<?php } else { ?>
+						var url = "<?php echo $this->baseUrl('farm/view/id/'.encode($farmid)); ?>";
+					<?php } ?>
 				<?php } else { ?>
-					var url = "<?php echo $this->baseUrl('farm/view/id/'.encode($farmid)); ?>";
+					var url = "<?php echo $this->baseUrl('farm/index/farmerid/'.encode($farmer->getID())); ?>";
 				<?php } ?>
-			<?php } else { ?>
-				var url = "<?php echo $this->baseUrl('farm/index/farmerid/'.encode($farmer->getID())); ?>";
-			<?php } ?>
-			<?php if($farmer->isFarmGroupManager()){ ?>
-				var url = "<?php echo $this->baseUrl('farmgroup/view/id/'.encode($farmer->getFarmGroupID())); ?>";
-			<?php } ?>
-		} else {
-			<?php if($action == 'view' || $action == 'picture'){ ?>
-				var url = "<?php echo $this->baseUrl("farmer/view/id/".encode($farmer->getID())."/tab/"); ?>"+curentclass;
-			<?php } ?>
-			<?php if($action == 'index'){ ?>
-				var url = "<?php echo $this->baseUrl("farmer/index/id/".encode($farmer->getID())."/tab/"); ?>"+curentclass;
-			<?php } ?>
-		}
-		if(!isEmptyString(url)){
-			location.href = url;  
+				<?php if($farmer->isFarmGroupManager()){ ?>
+					var url = "<?php echo $this->baseUrl('farmgroup/view/id/'.encode($farmer->getFarmGroupID())); ?>";
+				<?php } ?>
+			}
+			if(currentclass == 'subscription'){
+				var url = "<?php echo $this->baseUrl('payment/list/id/'.encode($farmer->getID())); ?>";
+			}
+			if(!isEmptyString(url)){
+				location.href = url;  
+			}
 		}
 	});
 	

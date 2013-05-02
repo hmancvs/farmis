@@ -1,8 +1,10 @@
 <?php
 	require_once APPLICATION_PATH.'/includes/header.php';
+	require_once APPLICATION_PATH.'/../'.PUBLICFOLDER.'/mpdf/mpdf.php';
 	
 	$farm = new Farm(); 
 	$farm->populate($request->farmid);
+	$farmer = $farm->getFarmer();
 	
 	$request->setParam('tab', 'finance'); 
 	
@@ -16,193 +18,309 @@
 		// debugMessage($season->toArray());
 	}
 	
+	if($showresults){
+		$currency_text = "&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>";
+		$sales = $season->getTotalRevenue(); 
+		$inputs = $season->getTotalSeasonInputs();
+		$margin = $sales - $inputs;
+		$perc_margin = $sales == 0 ? 0 : $margin / $sales * 100;
+		$expenselines = $season->getBundledExpenses();
+		$expense_count = count($expenselines);
+		$tot_expense = 0;
+		$labour_total = $season->totalSkilledLabourCost();
+		$total_credit_interest = $season->getTotalCreditInterest();
+		$sales_display = ($sales == 0 || isEmptyString($sales)) ? 0: formatMoneyOnly($sales);
+		$inputs_display = ($inputs == 0 || isEmptyString($inputs)) ? '--': formatMoneyOnly($inputs);
+		 
+		$farmis_logo = $this->serverUrl($this->baseUrl('images/logo_gray_2.png'));
+		$infotrade_logo = $this->serverUrl($this->baseUrl('images/logo_infotrade_2.png'));
+		$profile_image = $this->serverUrl($farmer->getUser()->getMediumPicturePath());
+		
+		if($request->download == 1 || $request->pdf == 1){
+			$farmis_logo = $this->serverUrl($this->baseUrl('images/logo_gray_2.png'));
+			$infotrade_logo = $this->serverUrl($this->baseUrl('images/logo_infotrade_2.png'));
+		}
+	}
+	
+	$isexport = false;
+	$maxwidth = "width: 100%;";
+	if($request->pdf == 1 || $request->download == 1){
+		$isexport = true;
+		$maxwidth = "width: 940px;";
+	}
+						
 	$title = "Profit and Loss Statement Report"; 
 	$this->headTitle($title);  
+	$html = ''; 
 ?>
 <script>
 	$(document).ready(function() {
+		<?php if($request->print == 1){ ?>
+			$("#headercontainer, #leftcolumn, .footer, #blankrow").remove().hide();
+			$(".printpage").html($("#printer_page_action_buttons").html());
+		<?php } ?>
 		
+		// trigger path to farmer report to be generated
+		$("#seasonid").change(function(){
+			var id = $(this).val();
+			var url = '<?php echo $this->baseUrl('finance/statement/farmid/'.$farm->getID().'/seasonid/'); ?>'+id;
+			$("#generate").attr('href', url);
+		});
 	}); 
 </script>
 <style>
-.table td.amountcell {
-	text-align:right;
-	padding-right:20px;
-}
+
 </style>
-<h1><?php echo $this->translate('farm_title'); ?></h1>
+<h1 class="hideonprint"><?php echo $this->translate('farm_title'); ?></h1>
+<div class="printpage"></div>
 <div id="tabs">
     <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
     <div class="span9 tab-content" id="center">
     	<?php require APPLICATION_PATH."/views/scripts/farm/tabstop.phtml"; ?>
-		<div id="finance">
-            <form id="listform" class="form-horizontal form-search"  action="<?php echo $this->baseUrl("finance/statementsearch"); ?>" method="get">
-                <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
-                    <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+		<div id="finance" class="makerelative">
+            <table class="table table-condensed noborder margin0 nohover hideonprint" style="width:100%; position:absolute; right:5px; top:-18px;">
+                <tr>
+                    <td>
+                        <span class="reportfilter pull-right">
+                            <label class="reportlabel cal-font lineblocked">Season: </label>
+                            <?php
+                                $allseasons = getAllSeasons($farm->getID());
+                                $seasondropdown = new Zend_Form_Element_Select('seasonid',
+                                                    array(
+                                                        'multiOptions' => array_merge_maintain_keys(array('' => 'Select Season'), $allseasons),
+                                                        'view' => new Zend_View(),
+                                                        'decorators' => array('ViewHelper'),
+                                                        'class' => array('width200'),
+                                                        'title' => 'Filter Seasons'		
+                                                    )
+                                );  
+                                $seasondropdown->setValue($request->getParam('seasonid'));
+                                echo $seasondropdown->render(); 
+                              ?>&nbsp;&nbsp;
+                             <a id="generate" style="margin-top:-10px;" href="<?php echo $this->baseUrl('finance/statement/farmid/'.$farm->getID().'/'); ?>" class="btn btn-primary" title="Generate Report"><i class="icon-list-alt icon-white"></i> Generate</a>&nbsp;
+                        </span>
+                    </td>
+                </tr>
+            </table>
+		<?php if(!$showresults){  ?>
+            <div class="widgetsection reportcontainer">
+                <h3 class="reportpagetitle"><?php echo $title; ?></h3>
+                <span class="pull-left margin0" style="width:99%; margin-top:10px; min-height:120px; position:relative;"><div class="alert alert-info" style="margin-top:10px;">Filter Season and Click Generate to view statement</div></span>
+            </div>
+        <?php } ?>
+            <div class="pull-left" id="pageleft">
+				<?php if($showresults){ 
+					ob_start();
+				?>
+                <div class="widgetsection reportcontainer">
+					<h3 class="reportpagetitle"><?php echo $title; ?></h3>
+					<div class="margin0 hideonprint" style="position:absolute; right:-5px; top:0; width:90%;"><span class="reportactions hideonprint">
+						<a href="<?php echo $this->baseUrl('finance/statement/farmid/'.$farm->getID().'/seasonid/'.$season->getID().'/print/1'); ?>" target="_blank" class="btn btn-primary btn-mini" title="Print Report" id="printer"><i class="icon-print icon-white"></i> Print</a>&nbsp;
+						<a href="<?php echo $this->baseUrl('finance/statement/farmid/'.$farm->getID().'/seasonid/'.$season->getID().'/pdf/1'); ?>" target="_blank" class="btn btn-primary btn-mini" title="View PDF Report" id="viewpdf"><i class="icon-list-alt icon-white"></i> PDF</a>&nbsp;
+                   
+						<table style="margin-top:0; width:100%;">
+							<tr style="border-bottom:1px solid #e9e9e9;">
+								<td id="outlength" style="width:80%; vertical-align:top;">
+									<table style="width:100%; height:175px;">
+										<tr>
+											<td style="vertical-align:top; padding-left:10px; padding-top:10px; width:25%; text-align:center;"><img style="text-align:center;" src="<?php echo $farmis_logo; ?>" alt="" /></td>
+											<td style="vertical-align:top; padding-right:10px; padding-top:20px; width:35%; text-align:center;"><img style="text-align:center;" src="<?php echo $infotrade_logo; ?>" alt="" /></td>
+											<td class="padding0">
+												<table class="table table-condensed margin0 border0" style="width:285px; margin:0 auto;">
+													<tr>
+														<td style="width:70px;"><label class="control-label pull-left leftalign">Farmer: </label></td>
+														<td><?php echo $season->getFarmer()->getName(); ?></td>
+													</tr>
+													<tr>
+														<td><label class="control-label pull-left leftalign">Season: </label></td>
+														<td><?php echo $season->getName()." - ".$season->getRef(); ?></td>
+													</tr>
+													<tr>
+														<td><label class="control-label pull-left leftalign">Crop: </label></td>
+														<td><?php echo $season->getCrop()->getName(); ?></td>
+													</tr>
+													<tr>
+														<td><label class="control-label pull-left leftalign">Duration: </label></td>
+														<td><?php echo $season->getFullStartDate().' - '.$season->getFullEndDate(); ?></td>
+													</tr>
+													<tr>
+														<td><label class="control-label pull-left leftalign">Status:</label></td>
+														<td><?php echo $season->getStatusText(); ?></td>
+													</tr>
+												</table>
+											</td>
+										</tr>
+									</table>
+								</td>
+								<td>
+									<div id="profileinfo" style="padding:3px; width:140px;"> 
+										<img id="profileimage" style="width:140px;" alt="" src="<?php echo $profile_image; ?>" />
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td colspan="2">
+									<table class="table table-bordered table-condensed table-hover" style="margin-bottom:10px; margin-top:5px; <?php echo $maxwidth; ?>">
+										<tr class="info">
+											<td colspan="3" style="padding-left:10px;"><h3 class="well-legend noborder padding0" style="border:none; padding:0;">Operating Revenue</h3></td>
+										</tr>
+										<tr>
+											<td style="padding-left: 20px;">Net Season Sales <?php echo $currency_text; ?></td>
+											<td style="width:20%;">&nbsp;</td>
+											<td style="width:20%; text-align:right; padding-right:20px;" class="amountcell"><?php echo $sales_display; ?></td>
+										</tr>
+										<tr>
+											<td style="padding-left: 20px;">Service Sales <?php echo $currency_text; ?></td>
+											<td>&nbsp;</td>
+											<td style="text-align:right; padding-right:20px;" class="amountcell">0</td>
+										</tr>
+										<tr>
+											<td style="padding-left:20px;" class="bolded">Total Sales Revenue <?php echo $currency_text; ?></td>
+											<td>&nbsp;</td>
+											<td style="text-align:right; padding-right:20px;" class="amountcell bolded"><?php echo $sales_display; ?></td>
+										</tr>
+									</table>
+								</td>
+							</tr>
+							<tr>
+								<td colspan="2">
+									<table class="table table-bordered table-condensed table-hover" style="margin-bottom:10px; <?php echo $maxwidth; ?>">
+										<tr class="info">
+											<td colspan="3" style="padding-left:10px;"><h3 class="well-legend noborder" style="border:none; padding:0;">Cost of Sales</h3></td>
+										</tr>
+										<tr>
+											<td style="padding-left: 20px;">Cost of Season Inputs <?php echo $currency_text; ?></td>
+											<td style="width:20%; text-align:right; padding-right:20px;" class="amountcell"><?php echo $inputs_display; ?></td>
+											<td style="width:20%;">&nbsp;</td>
+										</tr>
+										<tr>
+											<td style="padding-left: 20px;">Asset Inventory for Period</td>
+											<td style="text-align:right; padding-right:20px;" class="amountcell">0</td>
+											<td>&nbsp;</td>
+										</tr>
+										<tr>
+											<td style="padding-left:20px;" class="bolded">Total Cost of Sales <?php echo $currency_text; ?></td>
+											<td style="text-align:right; padding-right:20px;" class="amountcell bolded"><?php echo $inputs_display; ?></td>
+											<td>&nbsp;</td>
+										</tr>
+									</table>								
+								</td>
+							</tr>	
+							<tr>
+								<td colspan="2">
+									<table class="table table-bordered table-condensed table-hover" style="margin-bottom:10px; <?php echo $maxwidth; ?>">
+										<tr>
+											<td style="padding-left:20px;" class="bolded">Gross Margin <?php echo $currency_text; ?></td>
+											<td style="width:20%;">&nbsp;</td>
+											<td style="width:20%; text-align:right; padding-right:20px;" class="amountcell bolded"><?php echo formatMoneyOnly($margin); ?></td>
+										</tr>
+										<tr>
+											<td style="padding-left:20px;" class="bolded">Gross Margin (%)</td>
+											<td>&nbsp;</td>
+											<td style="text-align:right; padding-right:20px;" class="amountcell bolded"><?php echo round(formatMoneyOnly($perc_margin)); ?> %</td>
+										</tr>
+									</table>
+								</td>
+							</tr>	
+							<tr>
+								<td colspan="2">
+									<table class="table table-bordered table-condensed table-hover" style="margin-bottom:10px; <?php echo $maxwidth; ?>">
+										<tr class="info">
+											<td colspan="3" style="padding-left:10px;"><h3 class="well-legend noborder" style="border:none; padding:0;">Overhead, General and Administrative Expenses</h3></td>
+										</tr>
+									<?php if($labour_total > 0){ ?>
+											<tr>
+												<td style="padding-left: 20px;">Skilled Labour <?php echo $currency_text; ?></td>
+												<td style="width:20%; text-align:right; padding-right:20px;" class="amountcell"><?php echo formatMoneyOnly($labour_total); ?></td>
+												<td style="width:20%;">&nbsp;</td>
+											</tr>
+									<?php } ?>
+									<?php if($expense_count > 0 ){ ?>
+										<?php
+											$total_taxes = 0; 
+											$total_damages = 0; 
+											foreach($expenselines as $value){
+												// debugMessage($value);
+												$ignore_array = array(2,10);
+												// compute taxes 
+												if($value['typeid'] == 10){
+													$total_taxes += $value['amount'];
+												}
+												if(!in_array($value['typeid'], $ignore_array)){
+													$tot_expense += $tot_expense + $value['amount'];
+										?>
+												<tr>
+													<td style="padding-left: 20px;"><?php echo $value['name'].' '.$currency_text; ?></td>
+													<td  style="width:20%; text-align:right; padding-right:20px;" class="amountcell"><?php echo formatMoneyOnly($value['amount']); ?></td>
+													<td style="width:20%;">&nbsp;</td>
+												</tr>
+										  
+										<?php } } ?>    
+									<?php } ?>
+									<?php 
+										$tot_expense += $labour_total;
+										$netprofit = formatMoneyOnly($margin - ($tot_expense + $total_taxes + $total_damages));
+										$netprofit_age = $sales == 0 ? 0 : round(($margin - ($tot_expense + $total_taxes + $total_damages)) / $sales * 100);
+										
+									?>
+									<?php if($total_credit_interest > 0){ ?>
+											<tr>
+												<td style="padding-left: 20px;">Interest on Loan <?php echo $currency_text; ?></td>
+												<td  style="width:20%; text-align:right; padding-right:20px;" class="amountcell"><?php echo formatMoneyOnly($total_credit_interest); ?></td>
+												<td style="width:20%;"></td>
+											</tr>
+									<?php } ?>
+										<tr>
+											<td style="padding-left:20px;" class="bolded">Total Operating Expenses <?php echo $currency_text; ?></td>
+											<td style="width:20%; text-align:right; padding-right:20px;" class="amountcell bolded"><?php echo formatMoneyOnly($tot_expense); ?></td>
+											<td style="width:20%;">&nbsp;</td>
+										</tr>
+									</table>
+								</td>
+							</tr>	
+							<tr>
+								<td colspan="2">
+									<table class="table table-bordered table-condensed table-hover" style="margin-bottom:10px; <?php echo $maxwidth; ?>">
+										<tr>
+											<td style="padding-left: 20px;" class="bolded">Profit Before Taxes <?php echo $currency_text; ?></td>
+											<td style="width:20%;">&nbsp;</td>
+											<td style="width:20%; text-align:right; padding-right:20px;" class="amountcell bolded"><?php echo formatMoneyOnly($margin - $tot_expense); ?></td>
+										</tr>
+										<tr>
+											<td style="padding-left:20px;">Total Taxes <?php echo $currency_text; ?></td>
+											<td class="amountcell" style="text-align:right; padding-right:20px;" ><?php echo formatMoneyOnly($total_taxes); ?></td>
+											<td>&nbsp;</td>
+										</tr>
+										<tr>
+											<td style="padding-left:20px;" class="bolded">Net Profit <?php echo $currency_text; ?></td>
+											<td>&nbsp;</td>
+											<td class="amountcell bolded" style="text-align:right; padding-right:20px;" ><?php echo $netprofit; ?></td>
+										</tr>
+										<tr>
+											<td style="padding-left:20px;" class="bolded">Net Profit (%)</td>
+											<td>&nbsp;</td>
+											<td class="amountcell bolded" style="text-align:right; padding-right:20px;" ><?php echo $netprofit_age; ?> %</td>
+										</tr>
+									</table>
+								</td>
+							</tr>	
+						</table>
+                   </div>
+                 <?php } ?>
+                <?php require_once APPLICATION_PATH."/views/scripts/report/pdf.phtml"; ?> 
+                 	
+				<?php if($request->download == 1 || $request->pdf == 1){  ?>
+                    <script type="text/javascript">
+                        $(document).ready(function() {
+                            var pdfurl = '<?php echo $relativepathtodocument; ?>';
+                            window.location.href = pdfurl;
+                        });
+                    </script>
+                    <div class="widgetsection reportcontainer"><h3 class="reportpagetitle">PDF Viewer</h3>
+                        <div id="embeddiv"></div>
+                    </div>
                 <?php } ?>
-                <div class="row margin0" style="padding:2px; margin-bottom:10px;">
-                    <span class="pull-left well lighter margin0" style="width:96%; min-height:120px; position:relative;">
-                        <h3 class="well-legend"><?php echo $title; ?></h3>
-                        <div class="margin0" style="position:absolute; right:10px; top:10px;">
-                        	<a class="btn btn-mini" href="<?php echo $this->baseUrl('farm/view/id/'.encode($farm->getID()).'/tab/finance'); ?>" title="Finance Dashboard"><i class="icon-list"></i> Finance Dashboard</a>                                       
-                        </div>
-                        <ul id="searchbox" style="margin-top:10px;">
-                            <li>
-                                <a style="padding-left:0; padding-right:0; width:100%;">
-                                    <table id="directorysearchtable" class="table noborder margin0">
-                                        <tr>
-                                            <td style="width:200px;">                                    
-                                                <label class="control-label">Season:</label>
-                                                <?php
-													
-                                                    $allseasons = getAllSeasons($farm->getID());
-                                                    $seasondropdown = new Zend_Form_Element_Select('seasonid',
-                                                                        array(
-                                                                            'multiOptions' => array_merge_maintain_keys(array('' => 'Select Season'), $allseasons),
-                                                                            'view' => new Zend_View(),
-                                                                            'decorators' => array('ViewHelper'),
-                                                                            'class' => array('width200'),
-                                                                            'title' => 'Filter Seasons'		
-                                                                        )
-                                                    );  
-                                                    $seasondropdown->setValue($request->getParam('seasonid')); 
-                                                    echo $seasondropdown->render();
-                                                ?>
-                                            </td>
-                                            <td style="width:125px; padding-left:2px; padding-right:2px;">
-                                                <!--<label class="control-label">Starting From:</label>
-                                                <input type="text" name="startdate" id="startdate" class="datefield width100" value="<?php // echo changeMySQLDateToPageFormat($request->getParam('startdate')); ?>" title="Start Date" />-->
-                                            </td>
-                                            <td style="width:110px; padding-left:2px; padding-right:2px;">
-                                                <!--<label class="control-label">Up to:</label>
-                                                <input type="text" name="enddate" id="enddate" class="datefield width100" value="<?php // echo changeMySQLDateToPageFormat($request->getParam('enddate')); ?>" title="End Date" />-->
-                                            </td>                                  
-                                            <td style="padding-left:2px; padding-right:2px; text-align:right; vertical-align:bottom;">
-                                                <button type="submit" id="searchbutton" class="btn btn-primary pull-right" style="padding:6px 10px"><i class="icon-white icon-search"></i> Generate Report</button>
-                                                <input type="hidden" name="farmid" id="farmid" value="<?php echo $request->getParam('farmid'); ?>" />
-                                            </td>
-                                        </tr>
-                                    </table>
-                                </a>
-                            </li>
-                        </ul>
-                    </span>
-                    <?php if(!$showresults){ ?>
-                    <span class="pull-left margin0" style="width:99%; margin-top:10px; min-height:120px; position:relative;">
-                    	<div class="alert alert-info" style="margin-top:10px;">Filter Season and Click 'Generate Report' to view statement</div>
-                    </span>
-                    <?php } else { ?>
-                    <span class="pull-left margin0" style="width:99%; margin-top:10px; min-height:120px; position:relative;">
-                    	<table class="table table-bordered table-condensed table-hover" style="margin-bottom:10px;">
-                            <?php 
-								$sales = $season->getTotalRevenue(); 
-								$inputs = $season->getTotalSeasonInputs();
-								$margin = $sales - $inputs;
-								$perc_margin = $sales == 0 ? 0 : $margin / $sales * 100;
-								$expenselines = $season->getBundledExpenses();
-								$expense_count = count($expenselines);
-								$tot_expense = 0;
-								
-							?>
-                            <tr class="info">
-                            	<td colspan="2" style="padding-left:10px;"><h3 class="well-legend noborder" style="border:none;">Operating Revenue</h3></td>
-                            </tr>
-                            <tr>
-                            	<td style="padding-left: 20px;">Net Season Sales <?php echo "&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>"; ?></td>
-                                <td style="width:20%;" class="amountcell"></td>
-                                <td style="width:20%;" class="amountcell"><?php echo ($sales == 0 || isEmptyString($sales)) ? 0: formatMoneyOnly($sales); ?></td>
-                            </tr>
-                            <tr>
-                            	<td style="padding-left: 20px;">Net Service Sales <?php echo "&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>"; ?></td>
-                                <td class="amountcell"></td>
-                                <td class="amountcell">0</td>
-                            </tr>
-                            <tr>
-                            	<td style="padding-left:20px;" class="bolded">Total Sales Revenue <?php echo "&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>"; ?></td>
-                                <td class="amountcell"></td>
-                                <td class="amountcell bolded"><?php echo ($sales == 0 || isEmptyString($sales)) ? 0 : formatMoneyOnly($sales); ?></td>
-                            </tr>
-                        </table>
-                        <table class="table table-bordered table-condensed table-hover" style="margin-bottom:10px;">
-                        	<tr class="info">
-                            	<td colspan="3" style="padding-left:10px;"><h3 class="well-legend noborder" style="border:none;">Cost of Sales</h3></td>
-                            </tr>
-                            <tr>
-                            	<td style="padding-left: 20px;">Cost of Season Inputs <?php echo "&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>"; ?></td>
-                                <td style="width:20%;" class="amountcell"><?php echo ($inputs == 0 || isEmptyString($inputs)) ? '--': formatMoneyOnly($inputs); ?></td>
-                                <td style="width:20%;" class="amountcell"></td>
-                            </tr>
-                            <tr>
-                            	<td style="padding-left: 20px;">Inventory Stock for period <?php echo "&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>"; ?></td>
-                                <td class="amountcell">--</td>
-                                <td class="amountcell"></td>
-                            </tr>
-                            <tr>
-                            	<td style="padding-left:20px;" class="bolded">Total Cost of Sales <?php echo "&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>"; ?></td>
-                                <td class="amountcell bolded"><?php echo ($inputs == 0 || isEmptyString($inputs)) ? '--': formatMoneyOnly($inputs); ?></td>
-                                <td class="amountcell"></td>
-                            </tr>
-                        </table>
-                        <table class="table table-bordered table-condensed table-hover" style="margin-bottom:10px;">
-                            <tr>
-                            	<td style="padding-left:20px;" class="bolded">Gross Margin <?php echo "&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>"; ?></td>
-                                <td style="width:20%;" class="amountcell"></td>
-                                <td style="width:20%;" class="amountcell bolded"><?php echo formatMoneyOnly($margin); ?></td>
-                            </tr>
-                            <tr>
-                            	<td style="padding-left:20px;" class="bolded">Gross Margin (%)</td>
-                                <td class="amountcell"></td>
-                                <td class="amountcell bolded"><?php echo round(formatMoneyOnly($perc_margin)); ?> %</td>
-                            </tr>
-                        </table>
-                        <table class="table table-bordered table-condensed table-hover" style="margin-bottom:10px;">
-                        	<tr class="info">
-                            	<td colspan="3" style="padding-left:10px;"><h3 class="well-legend noborder" style="border:none;">Overhead, General and Administrative Expenses</h3></td>
-                            </tr>
-                            <?php if($expense_count > 0 ){ ?>
-                            	<?php 
-									foreach($expenselines as $value){ 
-										$tot_expense = $tot_expense + $value['amount'];
-								?>
-                                    <tr>
-                                        <td style="padding-left: 20px;"><?php echo $value['name']; ?> <?php echo "&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>"; ?></td>
-                                        <td style="width:20%;" class="amountcell"><?php echo formatMoneyOnly($value['amount']); ?></td>
-                                        <td style="width:20%;" class="amountcell"></td>
-                                    </tr>
-                                <?php } ?>    
-                            <?php } ?>
-                            <tr>
-                            	<td style="padding-left:20px;" class="bolded">Total Operating Expenses <?php echo "&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>"; ?></td>
-                                <td style="width:20%;" class="amountcell bolded"><?php echo formatMoneyOnly($tot_expense); ?></td>
-                                <td style="width:20%;" class="amountcell"></td>
-                            </tr>
-                        </table>
-                        <table class="table table-bordered table-condensed table-hover" style="margin-bottom:10px;">
-                            <tr>
-                            	<td style="padding-left: 20px;" class="bolded">Profit Before Taxes <?php echo "&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>"; ?></td>
-                                <td style="width:20%;" class="amountcell"></td>
-                                <td style="width:20%;" class="amountcell bolded"><?php echo formatMoneyOnly($margin - $tot_expense); ?></td>
-                            </tr>
-                            <tr>
-                            	<td style="padding-left:20px;">Total Taxes <?php echo "&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>"; ?></td>
-                                <td class="amountcell">0</td>
-                                <td class="amountcell"></td>
-                            </tr>
-                            <tr>
-                            	<td style="padding-left:20px;" class="bolded">Net Profit <?php echo "&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>"; ?></td>
-                                <td class="amountcell bolded"></td>
-                                <td class="amountcell bolded"><?php echo formatMoneyOnly($margin - $tot_expense); ?></td>
-                            </tr>
-                            <tr>
-                            	<td style="padding-left:20px;" class="bolded">Net Profit (%)</td>
-                                <td class="amountcell bolded"></td>
-                                <td class="amountcell bolded"><?php echo $sales == 0 ? 0 : round(($margin - $tot_expense) / $sales * 100); ?> %</td>
-                            </tr>
-                        </table>
-                    </span>
-                    <?php } ?>
-                </div>
-            </form>
+            </div>
         </div>
         <?php require APPLICATION_PATH."/views/scripts/farm/tabsbottom.phtml"; ?> 
     </div>

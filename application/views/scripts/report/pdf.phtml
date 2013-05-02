@@ -1,0 +1,464 @@
+<style>
+#centercolumn, #contentcolumn #centercolumn {
+	padding: 5px 0;
+	width: 96%;
+	margin-left:30px;
+	float:left;
+}
+#centercolumn h1, #centercolumn h2 {
+	font-family:calibri, Telex, sans-serif;
+}
+#pageleft {
+	margin:0 5px 0 0;
+	width:100%;
+	float:left;
+	position:relative;
+}
+#pageleft .widgetsection {
+	width:98%;
+}
+.widgetsection {
+	margin-bottom:10px;
+}
+.widgetsection h3 {
+	font-size:15px;
+}
+.contenttable {
+	border:solid 1px #b3b3b3;
+	border-collapse: separate;
+	*border-collapse: collapsed;
+	-webkit-border-radius: 4px;
+	-moz-border-radius: 4px;
+	border-radius: 4px;
+}
+.contenttable .control-label {
+	width:auto;
+	white-space:normal;
+	text-align:left;
+	display:block;
+}
+.contenttable h2 {
+	margin: 0;
+	padding: 8px 0 8px 0;
+	line-height:auto;
+	text-align: left;
+	border-bottom:1px solid #c4c2c2;
+	color:#498D0F;
+	font-size:18px;
+	width:100%;
+	font-weight:bold;
+	line-height:16px;
+}
+.contenttable#estimates thead tr td {
+	font-weight:bold;
+	font-size:11px;
+	color:#000;
+}
+.contenttable#estimates thead tr td span {
+	font-size:10px;
+}
+#outlength {
+	width:72%;
+}
+.reportcontainer {
+	height:auto; 
+	min-height:800px; 
+	display:block; 
+	margin-top:10px;
+	position:relative;
+}
+.reportlabel {
+	display:inline-block;
+	font-weight:bold;
+	font-size:16px;
+	padding-right:5px;
+}
+.reportfilter {
+	margin-top:0; 
+	float:right;
+	margin-right:-10px;
+}
+.reportactions {
+	position:absolute; 
+	right:20px; 
+	top:8px;
+}
+pdfquicklinks {
+	position:absolute; 
+	left:10px; 
+	top:8px;
+}
+.widgetsection h3.reportpagetitle {
+	color:#282727;
+}
+.reportpage .chzn-container.chzn-container-single {
+	top:10px;
+}
+<?php if($request->print == 1) { ?> 
+#contentwrapper {
+	margin: 10px 0 5px;
+}
+#maincontainer.container {
+	margin-left:20px;
+	margin-top:10px;
+}
+#printer_page_action_buttons {
+	margin:10px;
+}
+.hideonprint {
+	display:none;
+}
+.printpage {
+	margin:10px;
+	display:block;
+}
+#left {
+	display:none;
+}
+#center {
+	float:left;
+	width:100%;
+}
+#tabs {
+	border:none;
+}
+#maincontainer.container {
+	width:960px;
+}
+<?php } ?>
+</style>
+<?php
+	$controller = $request->getControllerName();
+	$action = $request->getActionName();
+	
+	$html = ob_get_clean(); 
+	if($request->pdf != 1){
+		echo $html;
+	}
+	
+	$baseurl_bootstrap = $this->serverUrl($this->baseUrl('stylesheets/3.bootstrap-cerulean.css'));
+	$baseurl_farmis =  $this->serverUrl($this->baseUrl('stylesheets/9.farmis.css'));
+	
+	ob_start();
+	
+?>					
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html" />
+    <link href="<?php echo $baseurl_bootstrap; ?>" type="text/css" rel="stylesheet" />
+    <link href="<?php echo $baseurl_farmis; ?>" type="text/css" rel="stylesheet" />
+    <title><?php echo $title; ?></title>
+	<style type="text/css">
+        body {
+            color: #555555;
+            font-family: calibri, Telex, sans-serif;
+            font-size: 13px;
+            line-height: 18px;
+        }
+        .table td.amountcell, .amountcell {
+            text-align:right;
+            padding-right:20px;
+        }
+        #contentcolumn {
+            min-height:600px;
+        }
+        #centercolumn h1, #centercolumn h2 {
+            font-family:calibri, Telex, sans-serif;
+        }
+        #pageleft {
+            margin:0 5px 0 0;
+            width:100%;
+            float:left;
+            position:relative;
+        }
+        #pageleft .widgetsection {
+            width:98%;
+        }
+        .widgetsection {
+            margin-bottom:10px;
+        }
+        .widgetsection h3 {
+            font-size:15px;
+        }
+        .contenttable {
+            border:solid 1px #b3b3b3;
+            border-collapse: separate;
+            *border-collapse: collapsed;
+            -webkit-border-radius: 4px;
+            -moz-border-radius: 4px;
+            border-radius: 4px;
+        }
+        .contenttable .control-label {
+            width:auto;
+            white-space:normal;
+            text-align:left;
+            display:block;
+        }
+        .contenttable h2 {
+            margin: 0;
+            padding: 8px 0 8px 0;
+            line-height:auto;
+            text-align: left;
+            border-bottom:1px solid #c4c2c2;
+            color:#498D0F;
+            font-size:18px;
+            width:100%;
+            font-weight:bold;
+            line-height:16px;
+        }
+        .contenttable#estimates thead tr td {
+            font-weight:bold;
+            font-size:11px;
+            color:#000;
+        }
+        .contenttable#estimates thead tr td span {
+            font-size:10px;
+        }
+        #outlength {
+            width:72%;
+        }
+        .reportcontainer {
+            height:auto; 
+            min-height:800px; 
+            display:block; 
+            margin-top:10px;
+            position:relative;
+        }
+        .reportlabel {
+            display:inline-block;
+            font-weight:bold;
+            font-size:16px;
+            padding-right:5px;
+        }
+        .reportfilter {
+            margin-top:0; 
+            float:right;
+            margin-right:-10px;
+        }
+        .reportactions {
+            position:absolute; 
+            right:20px; 
+            top:8px;
+        }
+        pdfquicklinks {
+            position:absolute; 
+            left:10px; 
+            top:8px;
+        }
+        .widgetsection h3.reportpagetitle {
+            color:#282727;
+        }
+        
+        .table-bordered {
+          border: 1px solid #dddddd;
+          border-left: 0;
+          border-collapse: separate;
+          *border-collapse: collapsed;
+           background-color: transparent;
+            border-spacing: 0;
+            max-width: 100%;
+        }
+        .table-bordered th,
+        .table-bordered td {
+          border-left: 1px solid #dddddd;
+          border-top: 1px solid #dddddd;
+          padding: 2px 3px;
+          vertical-align: top;
+        }
+        .widgetsection {
+            -moz-border-radius: 4px;	
+            -webkit-border-radius:4px;
+            -khtml-border-radius:4px;	
+            border-radius:4px;	
+            border-left: 4px solid #DDDDDD;
+            border-right: 4px solid #DDDDDD;
+            border-top: 2px solid #DDDDDD;
+            border-bottom: 2px solid #DDDDDD;
+            margin: 0 0 15px;
+            padding: 0 5px 10px 5px;
+            min-height:50px;
+            height:auto;
+        }
+        .widgetsection h3 {
+            margin: 0;
+            padding: 5px 5px 5px 5px;
+            text-align: left;
+            border-bottom:2px solid #E0E0E0;
+            color:#498D0F;
+            font-size:16px;
+        }
+        .widgetsection.height100 {
+            min-height:100px;
+        }
+        .widgetsection.height150 {
+            min-height:150px;
+        }
+        .widgetsection.height200 {
+            min-height:200px;
+        }
+        .widgetsection.height300 {
+            min-height:300px;
+        }
+        .widgetsection.height400 {
+            min-height:400px;
+        }
+        .widgetsection.height500 {
+            min-height:500px;
+        }
+        .widgetsection.height600 {
+            min-height:600px;
+        }
+        
+        #profileinfo, .profileinfo, #thumbinfo, .thumbinfo {
+            position:relative;
+            max-height: 195px;
+            height:auto;
+            width:165px;
+            padding: 0;
+            margin: 0 auto;
+            border: 1px solid #C2C2C2;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            border-style: ridge;
+            background-color:#f1f1f1;
+            -webkit-border-radius: 3px;
+            -moz-border-radius: 3px;
+            border-radius: 3px;
+        }
+        #profileinfo.new_pic, .profileinfo.new_pic {
+            box-shadow: 0 0 0 1px #F5F5F5, 0 0 0 2px #EBEBEB, 0 0 0 3px #E0E0E0, 0 0 0 4px #D6D6D6;
+            -moz-box-shadow: 0 0 0 1px #F5F5F5, 0 0 0 2px #EBEBEB, 0 0 0 3px #E0E0E0, 0 0 0 4px #D6D6D6;
+            -webkit-shadow: 0 0 0 1px #F5F5F5, 0 0 0 2px #EBEBEB, 0 0 0 3px #E0E0E0, 0 0 0 4px #D6D6D6;
+        }
+        #profileinfo #profileimage, .profileinfo .profileimage {
+            margin-top:2px;
+        }
+
+        #centercolumn {
+            padding: 5px 0;
+            width: 960px;
+        }
+        #centercolumn h1, #centercolumn h2 {
+            font-family: calibri, Telex, sans-serif;
+        }
+        #pageleft {
+            margin:0 5px 0 0;
+            width:98%;
+            float:left;
+        }
+        #pageleft .widgetsection {
+            width:100%;
+        }
+        .widgetsection {
+            margin-bottom:10px;
+        }
+        .widgetsection h3 {
+            font-size:15px;
+        }
+        .contenttable {
+            border:solid 1px #b3b3b3;
+            border-collapse: separate;
+            *border-collapse: collapsed;
+            -webkit-border-radius: 4px;
+            -moz-border-radius: 4px;
+            border-radius: 4px;
+            width:100%;
+        }
+        .contenttable .control-label {
+            width:auto;
+            white-space:normal;
+            text-align:left;
+            display:block;
+            color: #333333;
+            margin-bottom: 5px;
+            font-size: 13px;
+            line-height: 18px;
+            font-weight: bold;
+        }
+        .contenttable h2 {
+            margin: 0;
+            padding: 8px 0 8px 0;
+            line-height:auto;
+            text-align: left;
+            border-bottom:1px solid #c4c2c2;
+            color:#498D0F;
+            font-size:18px;
+            width:100%;
+            font-weight:bold;
+            line-height:16px;
+            calibri,Telex,sans-serif;
+        }
+        .contenttable#estimates thead tr td {
+            font-weight:bold;
+            font-size:10px;
+            color:#000;
+        }
+        .contenttable#estimates thead tr td span {
+            font-size:10px;
+        }
+        #printer_page_action_buttons {
+            display:block;
+            margin:10px;
+        }
+        table#crops {
+            height:180px;
+        }
+        table#crops ul#croplist {
+            margin:0;
+            margin-left: -15px;
+            height:130px;
+        }
+        .reportcontainer {
+            height:auto; 
+            min-height:800px; 
+            display:block; 
+            margin-top:10px;
+            position:relative;
+        }
+        .reportlabel {
+            display:inline-block;
+            font-weight:bold;
+            font-size:16px;
+            padding-right:5px;
+        }
+        .reportfilter {
+            margin-top:0; 
+            float:right;
+            margin-right:-10px;
+        }
+        #generate, .printpage, .pdfquicklinks, .reportactions{
+            display:none;
+        }
+        .widgetsection h3.reportpagetitle {
+            color:#282727;
+        }
+    </style>
+			</head>
+			<body>
+				<div style="width:960px; margin:0; padding:0;">
+					<?php echo $html; ?>
+				</div>
+			</body>
+			</html>
+		
+		<?php
+		// pdf html
+		$pdf_html = ob_get_clean(); 
+		 				
+		$temp_file_name = '';
+		if($request->download == 1 || $request->pdf == 1){
+			$timestamp = time().rand(100, 5000);
+			$temp_file_name = ($timestamp).".pdf";
+			$temp_file_text = ($timestamp).".html";
+			
+			$path = APPLICATION_PATH.DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR."public".DIRECTORY_SEPARATOR."temp".DIRECTORY_SEPARATOR.$temp_file_name;
+			$path_txt = APPLICATION_PATH.DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR."public".DIRECTORY_SEPARATOR."temp".DIRECTORY_SEPARATOR.$temp_file_text;
+			$relativepathtodocument = $this->serverUrl($this->baseUrl('temp/'.$temp_file_name));
+			file_put_contents($path_txt, $pdf_html);
+			
+			$mpdf=new mPDF('win-1252','A4'); 
+			$mpdf->WriteHTML($pdf_html);
+			$mpdf->Output($path, 'F');
+		}
+?>
+

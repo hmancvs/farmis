@@ -512,7 +512,7 @@ $(document).ready(function() {
 			$.post(  
 				"<?php echo $this->baseUrl("farmer/inviteonebyphone"); ?>", {id: farmerid, phone: phone},  
 				function(data){
-					// alert(data); exit();
+					// alert(data); return false;
 					if(data.search("Success") != -1){								
 						// reload parent on close				
 						$("span#pinv_after_"+farmerid).html(data);	
@@ -824,7 +824,6 @@ $(window).load(function() {
 	$('.ui-datepicker-div').css({'z-index':'1500'});
 }); 
 </script>
-
 </head>
 <?php 
 	$thecontroller = $request->getControllerName();

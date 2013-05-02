@@ -72,11 +72,17 @@ define('ACTIVITY_EXPENSE_PREFIX', 'Act/EXP/');
 define('ACTIVITY_SALES_PREFIX', 'Act/SAL/');
 define("COUNTRY_UG_CURRENCY", "(UGX)");
 define("BILLING_SERVER", "http://localhost.com/test.php");
-define("SMS_SERVER", "http://sms1.infotradeuganda.com/remote.php");
-define("SMS_USERNAME", 'agmis');
-define("SMS_PASSWORD", 'aregm1s');
-define("SMS_PORT", "9123");
-define("SMS_TEST_NUMBER", "256712595279");
+// define("SMS_SERVER", "http://sms1.infotradeuganda.com/remote.php");
+// define("SMS_SERVER", "http://121.241.242.114:8080/bulksms/bulksms?type=0&dlr=0&source=FARMIS");
+define("SMS_SERVER", "http://121.241.242.114:8080/bulksms/bulksms");
+// define("SMS_USERNAME", 'agmis');
+define("SMS_USERNAME", 'fti-farmis');
+// define("SMS_PASSWORD", 'aregm1s');
+define("SMS_PASSWORD", 'infotrad');
+
+// define("SMS_PORT", "9123");
+define("SMS_PORT", "8080");
+define("SMS_TEST_NUMBER", "256776595279");
 
 /**
  * Change a date from MySQL database Format (yyyy-mm-dd) to the format displayed on pages(mm/dd/yyyy)
@@ -660,29 +666,32 @@ function sendSMSMessage($to, $txt) {
 	$phone = $to;
     $username = SMS_USERNAME;
     $password = SMS_PASSWORD;
-    $port = SMS_PORT;
+    // $port = SMS_PORT;
     $message = $txt;
 	    
     $client = new Zend_Http_Client(SMS_SERVER);
     // the GET Parameters
+	
 	$client->setParameterGet(array(
 		'username'  => $username,
 		'password'  => $password,
-		'port' => $port,
+		'type'	=>	0,
+		'dlr'	=>	0,
+		'source'=>	'FARMIS',
 		'destination' => $phone,
 		'message' => $message
 	));
-		
+	
 	// debugMessage($client); // exit();
-	/*try {
+	try {
 		$response = $client->request();
 		$body = $response->getBody();
-		debugMessage($body);
+		// debugMessage($body);
     	    
 	} catch (Exception $e) {
 		# error handling
 		debugMessage("Error is ".$e->getMessage());
-	}*/
+	}
 	// return $digitcode;
 	return true;
 }
@@ -889,11 +898,23 @@ function dateDiff($start, $end) {
 function isUgNumber($number){
 	$valid=true;
 	$first3chars = substr($number, 0, 3);
-	$allowed = array("077","078","070","071","075","079");
+	$allowed = array("077","078","070","071","075","079",'256');
 	if(!in_array($first3chars, $allowed)) {
 		$valid = false;
 	}
-	return valid;
+	if(!is_numeric($number)){
+		$valid = false;
+	}
+	if(substr($number, 0, 1) != 0 && substr($number, 0, 3) != 256){
+		$valid = false;
+	}
+	if(substr($number, 0, 1) == 0 && strlen($number) != 10){
+		$valid = false;
+	}
+	if(substr($number, 0, 3) == 256 && strlen($number) != 12){
+		$valid = false;
+	}
+	return $valid;
 }
 function getPhoneProvider($number){
 	$allowed = array("077","078","070","071","075","079");

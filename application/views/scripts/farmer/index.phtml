@@ -111,8 +111,8 @@
 		if($userphone2->hasPendingActivation()){
 			$sallowrevalidate = true;
 		}
-
 	}
+	
 	// debugMessage(toArray());
 	$title = "Update Profile";
 	$this->headTitle($title);
@@ -1037,12 +1037,11 @@ select#salutation {
             </form>
         </div>
         <div id="subscription">
-        	<h2>Subscription</h2>
+        	<h2>Payment History</h2>
             <form id="profileform-subscription" class="form-horizontal subscription">
             	<?php if($request->tab == 'subscription'){ ?>
             		
             	<?php } ?>
-                
             </form>
         </div>
         <?php require APPLICATION_PATH."/views/scripts/farmer/settings.phtml"; ?>

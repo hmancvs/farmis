@@ -28,6 +28,8 @@ class SeasonActivity extends BaseEntity  {
 		$this->hasColumn('itemrateunit', 'string', 255);
 		$this->hasColumn('totalapplied', 'integer', null);
 		$this->hasColumn('totalappliedunit', 'string', 255);
+		$this->hasColumn('damaged', 'decimal', 10, array('default' => NULL));
+		$this->hasColumn('damagedunit', 'integer', null);
 		$this->hasColumn('financetype', 'integer', null, array('default' => '1'));
 		$this->hasColumn('totalexpenses', 'decimal', 11, array('default' => '0'));
 		$this->hasColumn('target','string', 500);
@@ -75,6 +77,12 @@ class SeasonActivity extends BaseEntity  {
 								'foreign' => 'activityid'
 							)
 						);
+		$this->hasMany('SeasonLabour as labourdetails',
+					 		array(
+								'local' => 'id',
+								'foreign' => 'activityid'
+							)
+						);
 	}
 	/*
 	 * Pre process model data
@@ -111,6 +119,12 @@ class SeasonActivity extends BaseEntity  {
 		if(isArrayKeyAnEmptyString('timing', $formvalues)){
 			$formvalues['timing'] = NULL;
 		}
+		if(isArrayKeyAnEmptyString('damaged', $formvalues)){
+			unset($formvalues['damaged']); 
+		}
+		if(isArrayKeyAnEmptyString('damagedunit', $formvalues)){
+			unset($formvalues['damagedunit']); 
+		}
 		
 		if(!isArrayKeyAnEmptyString('financetype', $formvalues)){
 			if($formvalues['financetype'] == 3 || $formvalues['financetype'] == 4 || $formvalues['financetype'] == 5){
@@ -118,7 +132,7 @@ class SeasonActivity extends BaseEntity  {
 				$formvalues['activitycredit'][0]['farmerid'] = $formvalues['farmerid'];
 				$formvalues['activitycredit'][0]['farmid'] = $formvalues['farmid'];
 				$formvalues['activitycredit'][0]['stage'] = $formvalues['stage'];
-				$formvalues['activitycredit'][0]['type'] = $formvalues['type'];
+				// $formvalues['activitycredit'][0]['type'] = $formvalues['type'];
 				isArrayKeyAnEmptyString('principal', $formvalues) ? $formvalues['activitycredit'][0]['principal'] = NULL : $formvalues['activitycredit'][0]['principal'] = $formvalues['principal'];
 				isArrayKeyAnEmptyString('interestrate', $formvalues) ? $formvalues['activitycredit'][0]['interestrate'] = NULL : $formvalues['activitycredit'][0]['interestrate'] = $formvalues['interestrate'];
 				isArrayKeyAnEmptyString('paybackamount', $formvalues) ? $formvalues['activitycredit'][0]['paybackamount'] = NULL : $formvalues['activitycredit'][0]['paybackamount'] = $formvalues['paybackamount'];
@@ -183,12 +197,12 @@ class SeasonActivity extends BaseEntity  {
 		// debugMessage($formvalues); exit();
 		parent::processPost($formvalues);
 	}
-	# determine method display text
-    function getMethodText() {
+	# determine type display text
+    function getTypeText() {
     	$text = '--';
-    	if(!isEmptyString($this->getMethod())){
-    		$values = getTreatmentMethods();
-    		$text = $values[$this->getMethod()];
+    	if(!isEmptyString($this->getItemType())){
+    		$values = getPostHarvestTypes();
+    		$text = $values[$this->getItemType()];
     	}
     	return $text;
     }
@@ -216,6 +230,15 @@ class SeasonActivity extends BaseEntity  {
     	if(!isEmptyString($this->getTotalAppliedUnit())){
     		$values = getTreatmentTotalUnits();
     		$text = $values[$this->getTotalAppliedUnit()];
+    	}
+    	return $text;
+    }
+	# determine damaged quantity units
+    function getTotalDamagedUnitText() {
+    	$text = '--';
+    	if(!isEmptyString($this->getDamagedUnit())){
+    		$values = getHarvestQuantityUnits();
+    		$text = $values[$this->getDamagedUnit()];
     	}
     	return $text;
     }
@@ -248,7 +271,7 @@ class SeasonActivity extends BaseEntity  {
     }
 	# determine timing display text
     function getActivityName() {
-    	$text = '--';
+    	$text = '';
     	if(!isEmptyString($this->getItemName())){
     		$text = $this->getItemName();
     	}
@@ -271,7 +294,7 @@ class SeasonActivity extends BaseEntity  {
 	}
 	# determine all expenses for entry
 	function getExpensesDetails(){
-    	$q = Doctrine_Query::create()->from('SeasonInputDetail s')->where("s.plantingid = '".$this->getID()."' ")->orderby('s.inputdate DESC');
+    	$q = Doctrine_Query::create()->from('SeasonInputDetail s')->where("s.activityid = '".$this->getID()."' ")->orderby('s.inputdate DESC');
 		$result = $q->execute();
 		return $result;
 	}
@@ -295,6 +318,21 @@ class SeasonActivity extends BaseEntity  {
 	# determine the hired labour history
 	function getHiredLabourDetails() {
     	$q = Doctrine_Query::create()->from('SeasonLabour l')->where("l.activityid = '".$this->getID()."' AND l.type = 2 ");
+		$result = $q->execute();
+		return $result;
+	}
+	# determine the total labor cost
+	function getTotalLaborCost() {
+		$labourdetails = $this->getHiredLabourDetails();
+		$sumamount = 0;
+		foreach($labourdetails as $labour){
+			$sumamount += $labour->getamount();
+		}
+		return $sumamount;
+	}
+	# determine all notes for entry
+	function getNotesDetails() {
+    	$q = Doctrine_Query::create()->from('Notes n')->where("n.activityid = '".$this->getID()."'")->orderby('n.datenoted DESC');
 		$result = $q->execute();
 		return $result;
 	}

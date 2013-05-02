@@ -15,7 +15,7 @@
                             <table class="table">                       
                                <tr>		                    
                                     <td width="20%"><label class="control-label leftalign">Email: </label></td>
-                                    <td><?php echo $farmer->getUser()->getEmail(); ?> &nbsp;
+                                    <td><?php echo isEmptyString($farmer->getUser()->getEmail()) ? '--' : $farmer->getUser()->getEmail(); ?> &nbsp;
                                     	<a href="<?php echo $this->baseUrl('profile/changeemail/id/'.encode($farmer->getUserID()).'/pgc/true'); ?>" class="addpopup changeemail pull-right" title="Change Email" rel="Change Email" id="changeemail" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmer/view/id/'.encode($farmer->getID()).'/tab/account'); ?>" action="<?php echo $this->baseUrl("profile/processchangeemail"); ?>">Change Email</a></td>
                                </tr>
                                <?php if(!isEmptyString($farmer->getUser()->getEmail2()) && !isEmptyString($farmer->getUser()->getActivationKey())){ ?>
@@ -36,7 +36,7 @@
                                <?php } ?>
                                <tr>		                    
                                     <td><label class="control-label leftalign">Username: </label></td>
-                                    <td><?php echo $farmer->getUser()->getUserName(); ?> &nbsp;
+                                    <td><?php echo isEmptyString($farmer->getUser()->getUserName()) ? '--' : $farmer->getUser()->getUserName(); ?> &nbsp;
                                     	<a href="<?php echo $this->baseUrl('profile/changeusername/id/'.encode($farmer->getUserID()).'/pgc/true'); ?>" class="addpopup changeusername pull-right" title="Change Username" rel="Change Username" id="changeusername" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmer/view/id/'.encode($farmer->getID()).'/tab/account'); ?>" action="<?php echo $this->baseUrl("profile/processchangeusername"); ?>">Change Username</a>
                                </tr>
                                <tr>		                    
@@ -89,6 +89,10 @@
                                     <td><label class="control-label leftalign"><?php echo $this->translate("useraccount_password_label"); ?>: </label></td>
                                     <td><b style="font-size:16px;">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</b> &nbsp;
                                     <a class="changepassword pull-right" id="changepassword" rel="Change Password" href="<?php echo $this->baseUrl('profile/changepassword/pgc/true/id/'.encode($farmer->getUser()->getID())); ?>">Change Password</a></td>
+                               </tr>
+                               <tr>		                    
+                                    <td><label class="control-label leftalign">Account Status: </label></td>
+                                    <td><?php echo $farmer->getUser()->isUserActive() ? 'Active' : 'In Active'; ?></td>
                                </tr>
                             </table>
                         </div>

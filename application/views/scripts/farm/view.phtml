@@ -673,7 +673,7 @@ table.table .profilerightlabel {
             </form>    
         </div>        
         <div id="account">
-        	<h2>My Account</h2>
+        	<h2><?php echo isFarmer() ? 'My Account' : 'Farmer Profile'; ?></h2>
             <form id="profileform-account" class="form-horizontal account">
             <?php if($request->tab == 'account'){ ?>
         	<div class="row" style="margin-left:0px;">

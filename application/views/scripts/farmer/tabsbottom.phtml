@@ -3,6 +3,8 @@
 	
 	$controller = $request->getControllerName();
 ?>
-<?php 
-	echo $contacts.$farm.$subscription.$accsettings.$privacy;
-?>
+<?php if($controller == 'payment'){ ?>
+	<?php 
+		echo $accsettings;
+    ?>
+<?php } ?>

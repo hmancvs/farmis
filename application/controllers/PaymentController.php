@@ -2,14 +2,7 @@
 class PaymentController extends SecureController   {
 
     public function getActionforACL() {
-        $action = strtolower($this->getRequest()->getActionName()); 
-		if($action == "subscription" || $action == "processsubscription") {
-			return ACTION_CREATE; 
-		}
-    	if($action == "viewsubscription" || $action == "delete" || $action == "paytest") {
-			return ACTION_VIEW; 
-		}
-		return parent::getActionforACL(); 
+		return ACTION_VIEW; 
     }
     
     public function getResourceForACL(){
@@ -96,5 +89,30 @@ class PaymentController extends SecureController   {
 	    
 	    $payment->save();
 	    debugMessage($payment->toArray());
+    }
+    
+    public function paynowAction(){
+		
+    }
+    
+	public function step2authAction(){
+		$session = SessionWrapper::getInstance(); 
+     	$this->_helper->layout->disableLayout();
+		$this->_helper->viewRenderer->setNoRender(TRUE);
+		
+		$formvalues = $this->_getAllParams();
+		debugMessage($formvalues);
+		debugMessage(decode($this->_getParam('successurl')));
+		// exit();
+		$this->_helper->redirector->gotoUrl(decode($this->_getParam('successurl')));
+    }
+    
+    public function processpaynowAction(){
+		$session = SessionWrapper::getInstance(); 
+     	$this->_helper->layout->disableLayout();
+		$this->_helper->viewRenderer->setNoRender(TRUE);
+		
+		$formvalues = $this->_getAllParams();
+		$this->_helper->redirector->gotoUrl(decode($this->_getParam(URL_SUCCESS)));
     }
 }

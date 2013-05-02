@@ -1139,4 +1139,8 @@
 		$all_grps = $conn->fetchAll("SELECT g.id as id, g.orgname as name FROM farmgroup AS g WHERE g.id <> '' order by g.regdate DESC limit ".$limit);
 		return $all_grps;
 	}
+	# subscription subjects
+	function getPostHarvestTypes(){
+		return array(1=>'Cooling', 2=>'Cleaning', 3=>'Drying', 4=>'Sorting', 5=>'Packing', 6=>'Processing', 7=>'Packaging');
+	}
 ?>

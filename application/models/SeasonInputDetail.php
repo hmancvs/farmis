@@ -16,7 +16,7 @@ class SeasonInputDetail extends BaseRecord {
 		$this->hasColumn('source','string', 255);
 		$this->hasColumn('quantity', 'integer', null);
 		$this->hasColumn('unitcost', 'string', 10, array('default' => 0));
-		$this->hasColumn('amount', 'string', 10, array('default' => 0));
+		$this->hasColumn('amount', 'string', 10, array('default' => NULL));
 		$this->hasColumn('notes','string', 1000);
 		$this->hasColumn('inputid', 'integer', null);
 		$this->hasColumn('tillageid', 'integer', null);	

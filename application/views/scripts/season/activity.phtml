@@ -11,6 +11,7 @@
 		$activity->setStartDate(date('Y-m-d'));
 		$activity->setStatus('3');
 		$acounter = $activity->getNextReferencePointer();
+		$activity->setItemName('Post Harvest');
 		$successurl = encode($this->baseUrl("season/activity/sid/".$request->sid));
 	}
 	
@@ -29,6 +30,7 @@
 		$successurl = encode($this->baseUrl("season/activity/id/".$request->id));
 	}
 	$thefarmid = $activity->getSeason()->getFarmID();
+	$loan = $activity->getCreditDetails();
 		
 	#in case of errors in session, populate the fields from session
 	if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
@@ -38,30 +40,48 @@
 	// $activitytypes = getAllTillageTypes();
 		
 	$this->headTitle($title);  
-	
+	$farmtitle = isFarmer() ? "Manage Farm" : "Manage Farm: ".$activity->getFarm()->getName();
 ?>
 <script>
 	$(document).ready(function() {
 		$("#indexform").validate({		
 			// define the validation rules one field at a time
 			rules: {
+				itemname: {
+					required: true,
+					maxlength: 25,
+					minlength: 4
+				},
+				ref: "required",
 				startdate: "required",
-				method: "required",
-				status: "required",
-				totalapplied: {
+				enddate: {
 					required: true
 				},
-				itemname: "required"
+				method: "required",
+				status: "required",
+				itemtype: "required",
+				totalapplied: {
+					required: true
+				}
 			}, 
 			// the messages for each of the fields being validated
 			messages: {		
-				startdate: "<?php echo $this->translate("season_startdate_error"); ?>",
+				itemname: {
+					required: "Please specify activity name",
+					maxlength: "Maximum of 25 character needed",
+					minlength: "Minimum of 4 characters needed"
+				},
+				ref: "Reference not specified",		
+				startdate: "<?php echo $this->translate("season_activity_startdate_error"); ?>",
+				enddate: {
+					required: "<?php echo $this->translate("season_activity_enddate_error"); ?>"
+				},
 				method: "<?php echo $this->translate("season_method_error"); ?>",
 				status: "<?php echo $this->translate("season_status_error"); ?>",
+				itemtype: "Please select Activity Type",
 				totalapplied: {
-					required: "<?php echo $this->translate("season_quantity_error"); ?>"
-				},
-				itemname: "<?php echo $this->translate("global_name_error"); ?>"
+					required: "Please enter Quantity handled"
+				}
 			},
 			// custom error positions
 			errorPlacement: function(error, element) {
@@ -77,9 +97,6 @@
 			}
 		});
 		
-		// datepickerOpts = new Date();   
-		$("#startdate, #enddate").datepicker(datepickerOpts);
-		
 		// compute activity reference
 		$("#startdate").change(function(){
 			var label = '';
@@ -93,11 +110,41 @@
 		});
 		$("#startdate").change();
 		
+		$("#creditdate").datepicker(datepickerOpts);
+		$("#sourcetype").val("");
+		$("#clienttype").val("");
+		$("#financetype-1, #financetype-2").click(function(){
+			multipleDisableContainerByID('hasloan,bankrow,softrow,cropfinancing');
+		});
+		$("#financetype-3").click(function(){
+			multipleEnableContainerByID('hasloan,softrow');
+			multipleDisableContainerByID('bankrow','cropfinancing');
+			$("#sourcetype").val(2);
+		});
+		$("#financetype-4").click(function(){
+			enableContainerByID('hasloan');
+			enableContainerByID('bankrow');
+			multipleDisableContainerByID('cropfinancing,softrow');
+			$("#sourcetype").val(1);
+		});
+		$("#financetype-5").click(function(){
+			enableContainerByID('cropfinancing');
+			multipleDisableContainerByID('hasloan,bankrow,softrow');
+			$("#clienttype").val(1);
+		});
+		<?php if(!isEmptyString($activity->getFinanceType())){ ?>
+			var currentval = '<?php echo $activity->getFinanceType(); ?>';
+			$("#financetype-"+currentval).click();
+		<?php } ?>
+		
+		// datepickerOpts = new Date();   
+		$("#startdate, #enddate").datepicker(datepickerOpts);
+		
 	}); 
 </script>
 <style>
 </style>
-<h1><?php echo $this->translate('farm_title'); ?></h1>
+<h1><?php echo $farmtitle; ?></h1>
 <div id="tabs">
     <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
     <div class="span9 tab-content" id="center">
@@ -111,149 +158,173 @@
                 <?php if($sessionhaserror) { ?>
                     <div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
                 <?php } ?>
-                	<div class="row margin0" style="padding:2px; margin-bottom:10px;">
-                        <span class="pull-left well lighter margin0" style="width:72%; min-height:160px;">
-                            <h3 class="well-legend"><?php echo $title; ?></h3>
-                            <table class="table margin0" style="margin-top:15px;">
-                                <tr>
-                                    <td style="width:25%;"><label class="control-label"><?php echo $this->translate("season_activityref_label"); ?>: </label></td>
-                                    <td style="width:35%;"><span id="reflabel"></span><input type="hidden" id="ref" name="ref" value="<?php echo $activity->getRef(); ?>" /></td>
-                                    <td style="width:22%;"><label class="control-label"><?php echo $this->translate("season_ref_label"); ?>: </label></td>
-                                    <td><a href="<?php $this->baseUrl('season/view/id/'.encode($activity->getSeasonID())); ?>" title="Season details"><?php echo $activity->getSeason()->getRef(); ?></a></td>
-                                </tr>
-                                <tr>
-                                    <td><label class="control-label"><?php echo $this->translate("season_activitystartdate_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
-                                    <td><input type="text" name="startdate" id="startdate" class="datefield width100" value="<?php echo changeMySQLDateToPageFormat($activity->getStartDate()); ?>" /><div id="startdate_error"></div></td>
-                                    <td><label class="control-label"><?php echo $this->translate("season_activityenddate_label"); ?>:</label></td>
-                                    <td><input type="text" name="enddate" id="enddate" class="datefield width100" value="<?php echo changeMySQLDateToPageFormat($activity->getEndDate()); ?>" /><div id="enddate_error"></div></td>
-                                </tr>
-                                <tr>
-                                    <td><label class="control-label"><?php echo $this->translate("season_status_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
-                                    <td colspan="3">
-                                        <?php
-                                            $allstatuses = getStatusValues();
-                                            $statusesdropdown = new Zend_Form_Element_Select('status',
-                                                                array(
-                                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $allstatuses),								
-                                                                    'view' => new Zend_View(),
-                                                                    'decorators' => array('ViewHelper'),
-                                                                    'class' => array('hastooltip', 'span2'),
-                                                                    'title' => $this->translate("season_status_tooltip"),
-                                                                )
-                                                            );
-                                            $statusesdropdown->setValue($activity->getStatus()); 
-                                            echo $statusesdropdown->render(); 
-                                       ?><div id="status_error"></div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td><label class="control-label"><?php echo $this->translate("season_commodity_label"); ?>: </label></td>
-                                    <td>
-                                        <?php
-                                            $availablecrops = getSeasonCommodities($activity->getSeasonID());
-                                            if(isEmptyString($activity->getID())){
-                                                $key1 = array_shift(array_keys($availablecrops));
-                                                $activity->setCropID($key1);
-                                            }
-                                            $cropdropdown = new Zend_Form_Element_Select('cropid',
-                                                                array(
-                                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $availablecrops),								
-                                                                    'view' => new Zend_View(),
-                                                                    'decorators' => array('ViewHelper'),
-                                                                    'class' => array('hastooltip'),
-                                                                    'title' => $this->translate("season_commodity_tooltip"),
-                                                                    'style' => "width:80%;"
-                                                                )
-                                                            );
-                                            $cropdropdown->setValue($activity->getCropID()); 
-                                            echo $cropdropdown->render();
-                                       ?><div id="cropid_error"></div>
-                                    </td>
-                                    <td colspan="2"></td>
-                                </tr>
-                                <tr>
-                                    <td><label class="control-label">Name of Activity: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
-                                    <td colspan="3"><input type="text" name="itemname" id="itemname" class="span3 hastooltip" value="<?php echo $activity->getItemName(); ?>" title="<?php echo $this->translate("season_activity_itemname_tooltip"); ?>" /><div id="itemname_error"></div></td>
-                                </tr>
-                                <tr>
-                                    <td><label class="control-label">Type / Category: </label></td>
-                                    <td colspan="3"><input type="text" name="itemtype" id="itemtype" class="span3 hastooltip" value="<?php echo $activity->getItemType(); ?>" title="<?php echo $this->translate("season_activity_itemtype_tooltip"); ?>" /></td>
-                                </tr>
-                                <tr>
-                                    <td><label class="control-label"><?php echo $this->translate("season_activity_method_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
-                                    <td colspan="3"><input style="width:170px;" type="text" name="method" id="method" class="hastooltip span2" title="<?php echo $this->translate("season_activity_method_tooltip"); ?>" value="<?php echo $activity->getMethod(); ?>" /><div id="method_error"></div></td>
-                                </tr>
-                                <tr>
-                                    <td><label class="control-label"><?php echo $this->translate("season_activity_quantity_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
-                                    <td colspan="3">
-                                        <input style="width:50px;" type="text" name="totalapplied" id="totalapplied" class="centeralign isnumber width80" value="<?php echo $activity->getTotalApplied(); ?>" placeholder="qty" />&nbsp;
-                                        <input type="text" name="totalappliedunit" id="totalappliedunit" class="hastooltip width100" title="<?php echo $this->translate("season_activity_totalapplied_tooltip"); ?>" value="<?php echo $activity->getTotalAppliedUnit(); ?>"placeholder="qty unit" /><div id="totalapplied_error"></div></td>
-                                </tr>
-                                <tr>
-                                    <td><label class="control-label">Usage Rate: </label></td>
-                                    <td colspan="3">
-                                        <input style="width:50px;" type="text" name="itemrate" id="itemrate" class="centeralign isnumber" value="<?php echo $activity->getItemRate(); ?>" placeholder="rate" />&nbsp;
-                                        
-                                        <input type="text" name="itemrateunit" id="itemrateunit" class="hastooltip width100" value="<?php echo $activity->getItemRateUnit(); ?>" title="<?php echo $this->translate("season_activity_itemrate_tooltip"); ?>" placeholder="rate unit" /><div id="itemrate_error"></div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td><label class="control-label"><?php echo $this->translate("season_activity_timing_label"); ?>:</label></td>
-                                    <td colspan="3">
-                                        <?php
-                                            $alltypes = getTimingValues();
-                                            $timedropdown = new Zend_Form_Element_Select('timing',
-                                                                array(
-                                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $alltypes),								
-                                                                    'view' => new Zend_View(),
-                                                                    'decorators' => array('ViewHelper'),
-                                                                    'class' => array('hastooltip', 'span3'),
-                                                                    'title' => $this->translate("season_activity_timing_tooltip")
-                                                                )
-                                                            );
-                                            
-                                            $timedropdown->setValue($activity->getTiming());
-                                            echo $timedropdown->render();
-                                       ?>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td><label class="control-label"><?php echo $this->translate("season_other_expenses_label"); ?>: </label></td>
-                                    <td colspan="3">
-                                    <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="totalexpenses" id="totalexpenses" class="width100 hastooltip isamount" value="<?php echo $activity->getTotalExpenses(); ?>" title="<?php echo $this->translate("season_activity_totalexpenses_tooltip"); ?>" /></div><div id="totalexpenses_error"></div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td><label class="control-label"><?php echo $this->translate("season_activity_target_label"); ?>:</label></td>
-                                    <td colspan="3"><input type="text" name="target" id="target" class="span5 hastooltip" value="<?php echo $activity->getTarget(); ?>" title="<?php echo $this->translate("season_activity_target_tooltip"); ?>" /></td>
-                                </tr>
-                                <tr>
-                                    <td><label class="control-label"><?php echo $this->translate("season_notes_label"); ?>: </label></td>
-                                    <td colspan="3"><textarea name="notes" id="notes" class="span4 hastooltip expanding" style="min-height:60px; width:90%;" title="<?php echo $this->translate("season_notes_tooltip"); ?>"><?php echo $activity->getNotes(); ?></textarea></td>
-                                </tr>
-                            </table>
-                        </span>
-                        <span class="pull-right padding0" style="width:24%; margin-left:5px;">
-                            <div class="well margin0" style="height:160px;">
-                                    <h3 class="well-legend">Quick Links</h3>
-                                    <table class="table noborder" >                       
-                                       <tr>		                    
-                                            <td class="formactions">
-                                                <button type="submit" class="btn btn-primary savethenview"><i class="icon-ok icon-white"></i> <?php echo $button_title; ?></button>
-                                                <a href="<?php echo $this->baseUrl('season/view/id/'.encode($season->getID())); ?>" class="btn"><i class="icon-remove"></i> <?php echo $this->translate('global_button_cancel'); ?></a>
-                                                <input type="hidden" name="entityname" value="SeasonActivity" />
-                                                <input type="hidden" id="id" name="id" value="<?php echo encode($activity->getID()); ?>" />
-                                                <input type="hidden" id="seasonid" name="seasonid" value="<?php echo $activity->getSeasonID(); ?>" />
-                                                <input type="hidden" id="farmid" name="farmid" value="<?php echo $activity->getFarmID(); ?>" />
-                                                <input type="hidden" id="<?php echo SUCCESS_MESSAGE; ?>" name="<?php echo SUCCESS_MESSAGE; ?>" value="<?php echo $this->translate("global_save_success"); ?>" /> 
-                                                <input type="hidden" id="<?php echo URL_SUCCESS; ?>" name="<?php echo URL_SUCCESS; ?>" value="<?php echo encode($this->baseUrl("season/activityview")); ?>" /> 
-                                                <input type="hidden" id="<?php echo URL_FAILURE; ?>" name="<?php echo URL_FAILURE; ?>" value="<?php echo $successurl; ?>" /> 
-                                            </td>
-                                       </tr>
-                                    </table>                           
-                                </div>
-                        </span>
-                    </div>
+                <div class="row margin0" style="padding:2px; margin-bottom:10px;">
+                    <span class="pull-left well lighter margin0" style="width:72%; min-height:160px;">
+                        <h3 class="well-legend"><?php echo $title; ?></h3>
+                        <table class="table margin0" style="margin-top:15px;">
+                            <tr>
+                                <td style="width:20%;"><label class="control-label"><?php echo $this->translate("season_activity_name_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                                <td style="width:35%;"><input type="text" name="itemname" id="itemname" class="hastooltip" style="width:80%;" title="<?php echo $this->translate("season_activityname_tooltip"); ?>" value="<?php echo $activity->getActivityName(); ?>" /><div id="itemname_error"></div></td>
+                                <td style="width:15%;"><label class="control-label"><?php echo $this->translate("season_activity_ref_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                                <td><span id="reflabel"></span><input type="hidden" id="ref" name="ref" value="<?php echo $activity->getRef(); ?>" /><div id="ref_error"></div></td>
+                            </tr>
+                            <tr>
+                                <td><label class="control-label"><?php echo $this->translate("season_activitystartdate_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                                <td><input type="text" name="startdate" id="startdate" class="datefield width100 startdate" value="<?php echo changeMySQLDateToPageFormat($activity->getStartDate()); ?>" /><div id="startdate_error"></div></td>
+                                <td><label class="control-label"><?php echo $this->translate("season_activityenddate_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                                <td><input type="text" name="enddate" id="enddate" class="datefield width100 endafterstart" value="<?php echo changeMySQLDateToPageFormat($activity->getEndDate()); ?>" /><div id="enddate_error"></div></td>
+                            </tr>
+                            <tr>
+                                <td><label class="control-label"><?php echo $this->translate("season_status_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                                <td colspan="3">
+                                    <?php
+                                        $allstatuses = getStatusValues();
+                                        $statusesdropdown = new Zend_Form_Element_Select('status',
+                                                            array(
+                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $allstatuses),								
+                                                                'view' => new Zend_View(),
+                                                                'decorators' => array('ViewHelper'),
+                                                                'class' => array('hastooltip', 'span2'),
+                                                                'title' => $this->translate("season_status_tooltip")
+                                                            )
+                                                        );
+                                        $statusesdropdown->setValue($activity->getStatus()); 
+                                        echo $statusesdropdown->render(); 
+                                   ?><div id="status_error"></div>
+                                </td>
+                            </tr>    
+                        </table>
+                    </span>
+                    <span class="pull-right padding0" style="width:24%; margin-left:5px;">
+                        <div class="well margin0" style="height:160px;">
+                                <h3 class="well-legend">Quick Links</h3>
+                                <table class="table noborder" >                       
+                                   <tr>		                    
+                                        <td class="formactions">
+                                            <button type="submit" class="btn btn-primary savethenview"><i class="icon-ok icon-white"></i> <?php echo $button_title; ?></button>
+                                            <a href="<?php echo $this->baseUrl('season/view/id/'.encode($season->getID())); ?>" class="btn"><i class="icon-remove"></i> <?php echo $this->translate('global_button_cancel'); ?></a>
+                                            <input type="hidden" name="entityname" value="SeasonActivity" />
+                                            <input type="hidden" id="id" name="id" value="<?php echo encode($activity->getID()); ?>" />
+                                            <input type="hidden" id="seasonid" name="seasonid" value="<?php echo $activity->getSeasonID(); ?>" />
+                                            <input type="hidden" id="farmid" name="farmid" value="<?php echo $activity->getFarmID(); ?>" />
+                                            <input type="hidden" id="farmerid" name="farmerid" value="<?php echo $activity->getFarm()->getFarmerID(); ?>" />
+                                            <input type="hidden" id="stage" name="stage" value="9" />
+                                            <input type="hidden" name="sourcetype" id="sourcetype" value="<?php echo $loan->getSourceType(); ?>" />
+                                            <input type="hidden" name="clienttype" id="clienttype" value="<?php echo $loan->getClientType(); ?>" />
+                                            <input type="hidden" id="<?php echo SUCCESS_MESSAGE; ?>" name="<?php echo SUCCESS_MESSAGE; ?>" value="<?php echo $this->translate("global_save_success"); ?>" /> 
+                                            <input type="hidden" id="<?php echo URL_SUCCESS; ?>" name="<?php echo URL_SUCCESS; ?>" value="<?php echo encode($this->baseUrl("season/activityview")); ?>" /> 
+                                            <input type="hidden" id="<?php echo URL_FAILURE; ?>" name="<?php echo URL_FAILURE; ?>" value="<?php echo $successurl; ?>" /> 
+                                        </td>
+                                   </tr>
+                                </table>                           
+                            </div>
+                    </span>
+                </div>
+                <div class="row margin0" style="padding:2px; margin-bottom:10px;">
+                    <span class="pull-left" style="width:100%; margin-right:5px;">
+                        <div id="location_left" class="well lighter margin0" style="min-height:150px;"> 
+                                <h3 class="well-legend">Activity Details</h3>
+                                <table class="table ">
+                                    <tr>
+                                        <td style="width:45%; padding-left:0;">
+                                            <table class="table">
+                                                <tr>
+                                                    <td style="width:35%;"><label class="control-label">Activty Type: <?php //echo $this->translate("season_methodused_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                                                    <td><?php
+                                                            // $alltypes = getPostHarvestTypes();
+															$alltypes = array(1=>'Cooling', 2=>'Cleaning', 3=>'Drying', 4=>'Sorting', 5=>'Packing', 6=>'Processing', 7=>'Packaging');
+															asort($alltypes);
+															// debugMessage($alltypes);
+                                                            $methoddropdown = new Zend_Form_Element_Select('itemtype',
+                                                                                array(
+                                                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $alltypes),								
+                                                                                    'view' => new Zend_View(),
+                                                                                    'decorators' => array('ViewHelper'),
+                                                                                    'class' => array('hastooltip', 'width150'),
+                                                                                    'title' => $this->translate("season_harvest_type_tooltip")
+                                                                                )
+                                                                            );
+                                                            
+                                                            $methoddropdown->setValue($activity->getitemtype());
+                                                            echo $methoddropdown->render();
+                                                       ?><div id="itemtype_error"></div></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><label class="control-label"><?php echo $this->translate("season_commodity_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                                                    <td><?php
+                                                            $availablecrops = array($activity->getSeason()->getCropID() => $activity->getSeason()->getCrop()->getName());
+                                                            $cropdropdown = new Zend_Form_Element_Select('cropid',
+                                                                                array(
+                                                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $availablecrops),								
+                                                                                    'view' => new Zend_View(),
+                                                                                    'decorators' => array('ViewHelper'),
+                                                                                    'class' => array('hastooltip', 'width150', 'selectrequired'),
+                                                                                    'title' => $this->translate("season_commodity_tooltip")
+                                                                                )
+                                                                            );
+                                                            $cropdropdown->setValue($activity->getSeason()->getCropID()); 
+                                                            echo $cropdropdown->render();
+                                                       ?><div id="cropid_error"></div></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><label class="control-label"><?php echo $this->translate("season_harvest_quantity_label").' Handled'; ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                                                    <td><input style="width:50px;" type="text" name="totalapplied" id="totalapplied" class="centeralign isdecimal" value="<?php echo clean_num($activity->gettotalapplied()); ?>" />&nbsp;
+                                                        <?php
+                                                            $univalues = getHarvestQuantityUnits();
+                                                            $unitdropdown = new Zend_Form_Element_Select('totalappliedunit',
+                                                                                array(
+                                                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
+                                                                                    'view' => new Zend_View(),
+                                                                                    'decorators' => array('ViewHelper'),
+                                                                                    'class' => array('hastooltip', 'span2','width100', 'selectrequired'),
+                                                                                    'title' => $this->translate("season_harvest_totalharvest_tooltip")
+                                                                                )
+                                                                            );
+                                                            $unitdropdown->setValue($activity->gettotalappliedUnit()); 
+                                                            echo $unitdropdown->render(); 
+                                                        ?>
+                                                        <div id="totalapplied_error"></div><div id="totalappliedunit_error"></div></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><label class="control-label"><?php echo $this->translate("season_activity_damage_label"); ?>:</label></td>
+                                                    <td><input style="width:50px;" type="text" name="damaged" id="damaged" class="centeralign isdecimal" value="<?php echo clean_num($activity->getDamaged()); ?>" />&nbsp;
+                                                        <?php
+                                                            $damagevalues = getHarvestQuantityUnits();
+                                                            $unitdropdown = new Zend_Form_Element_Select('damagedunit',
+                                                                                array(
+                                                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $damagevalues),								
+                                                                                    'view' => new Zend_View(),
+                                                                                    'decorators' => array('ViewHelper'),
+                                                                                    'class' => array('hastooltip', 'span2','width100'),
+                                                                                    'title' => $this->translate("season_harvest_damage_tooltip")
+                                                                                )
+                                                                            );
+                                                            $unitdropdown->setValue($activity->getDamagedUnit()); 
+                                                            echo $unitdropdown->render(); 
+                                                       ?><div id="damagedunit_error"></div><div id="damaged_error"></div></td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                        <td>
+                                            <table class="table">
+                                                <tr>
+                                                    <td style="width:25%;"><label class="control-label">Methods Used<?php // echo $this->translate("season_treat_target_label"); ?>: </label></td>
+                                                    <td><input type="text" name="method" id="method" class="span2 hastooltip" style="width:85%;" value="<?php echo $activity->getMethod(); ?>" title="<?php echo $this->translate("season_postharvest_method_tooltip"); ?>" />
+													</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><label class="control-label">Aims of Activity<?php // echo $this->translate("season_treat_target_label"); ?>: </label></td>
+                                                    <td><input type="text" name="target" id="target" class="span2 hastooltip" style="width:85%;" value="<?php echo $activity->getTarget(); ?>" title="<?php echo $this->translate("season_postharvest_target_tooltip"); ?>" /></td>
+                                                </tr>                                               
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                    </span>
+                </div>
+                <?php require APPLICATION_PATH."/views/scripts/season/finance.phtml"; ?>  
+                <?php require APPLICATION_PATH."/views/scripts/season/labour.phtml"; ?>
             <?php } ?>    
             </form>
 		</div>

@@ -207,29 +207,33 @@ $(document).ready(function() {
                                         <div style="position:relative;">
                                         <table class="itemlist table noborder margin0">
                                             <tr>
-                                            	<td colspan="4"><h2><a href="<?php echo $this->baseUrl("farmgroup/view/id/".encode($line['id'])); ?>"><?php echo $farmgroup->getName(); ?></a></h2>
+                                            	<td colspan="5"><h2><a href="<?php echo $this->baseUrl("farmgroup/view/id/".encode($line['id'])); ?>"><?php echo $farmgroup->getName(); ?></a></h2>
                                                 </td>
-                                                <td class="actionbuttons" rowspan="4" style="padding-top:5px;">
+                                                <td class="actionbuttons" style="padding-top:5px;">
                                                 	<a class="btn btn-primary btn-mini" style="position:absolute; top:5px; right:20px;" href="<?php echo $this->baseUrl("farmgroup/view/id/".encode($farmgroup->getID())); ?>">View Profile</a>
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <td width="100"><label class="control-label">District:</label></td>
                                                 <td width="120" class="nowrapping"><span><?php echo isEmptyString($farmgroup->getAddress()->getDistrictID()) ? '--' : $farmgroup->getAddress()->getDistrict()->getName(); ?></span></td>
-                                                <td width="70"><label class="control-label">Reg No#:</label></td>
-                                                <td class="nowrapping"><span><?php echo isEmptyString($farmgroup->getRegNo()) ? '--' : $farmgroup->getRegNo(); ?></span></td>
+                                                <td width="80"><label class="control-label">Reg No#:</label></td>
+                                                <td class="nowrapping" width="25%"><span><?php echo isEmptyString($farmgroup->getRegNo()) ? '--' : $farmgroup->getRegNo(); ?></span></td>
+                                                <td width="100"><label class="control-label">Total Farmers:</label></td>
+                                                <td><span><?php echo $farmgroup->getCountFarmers(); ?></span></td>
                                             </tr>
                                             <tr>
                                             	<td><label class="control-label">Date Registered: </label></td>
                                                 <td class="nowrapping"><span><?php echo $farmgroup->getRegDateFormatted(); ?></span></td>
                                                 <td><label class="control-label">Group Type:</label></td>
                                                 <td class="nowrapping"><span><?php echo $farmgroup->getTypeLabel(); ?></span></td>
+                                                <td><label class="control-label">Active Farmers:</label></td>
+                                                <td><span><?php echo $farmgroup->getCountFarmers(); ?></span></td>
                                             </tr>
                                             <tr>
                                                 <td><label class="control-label">Contact Phone:</label></td>
                                                 <td class="nowrapping"><span><?php echo isEmptyString($farmgroup->getPhone()) ? '--' : $farmgroup->getPhone(); ?></span></td>
                                                 <td><label class="control-label">Email:</label></td>
-                                                <td class="nowrapping"><span><?php echo isEmptyString($farmgroup->getEmail()) ? '--' : $farmgroup->getEmail(); ?></span></td>
+                                                <td class="nowrapping" colspan="3"><span><?php echo isEmptyString($farmgroup->getEmail()) ? '--' : $farmgroup->getEmail(); ?></span></td>
                                             </tr>
                                         </table>
                                         </div>

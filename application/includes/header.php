@@ -48,13 +48,13 @@ $inventory = '<div id="inventory"><form class="form-horizontal inventory"></form
 $setup = '<div id="setup"><form class="form-horizontal setup"></form></div>';
 $account = '<div id="account"><form class="form-horizontal account"></form></div>';
 
-$basics = '<div id="basics"><form id="profileform-basics" class="form-horizontal basics"></div>';
-$personal = '<div id="personal"><form id="profileform-personal" class="form-horizontal personal"></div>';
-$contacts = '<div id="contacts"><form id="profileform-contacts" class="form-horizontal contacts"></div>';
-$farm = '<div id="farm"><form id="profileform-farm" class="form-horizontal farm"></div>';
-$subscription = '<div id="subscription"><form id="profileform-subscription" class="form-horizontal subscription"></div>';
-$accsettings = '<div id="account"><form id="profileform-account" class="form-horizontal account"></div>';
-$privacy = '<div id="privacy"><form id="profileform-privacy" class="form-horizontal privacy"></div>';
+$basics = '<div id="basics"><form id="profileform-basics" class="form-horizontal basics"></form></div>';
+$personal = '<div id="personal"><form id="profileform-personal" class="form-horizontal personal"></form></div>';
+$contacts = '<div id="contacts"><form id="profileform-contacts" class="form-horizontal contacts"></form></div>';
+$farm = '<div id="farm"><form id="profileform-farm" class="form-horizontal farm"></form></div>';
+$subscription = '<div id="subscription"><form id="profileform-subscription" class="form-horizontal subscription"></form></div>';
+$accsettings = '<div id="account"><form id="profileform-account" class="form-horizontal account"></form></div>';
+$privacy = '<div id="privacy"><form id="profileform-privacy" class="form-horizontal privacy"></form></div>';
 
 $c = new Doctrine_RawSql();
 $c->select('{m.*}, {mr.*}');

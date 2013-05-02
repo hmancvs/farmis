@@ -8,6 +8,7 @@
 	$title = "Activity: ".$activity->getItemName(); 
 		
 	$this->headTitle($title);  
+	$farmtitle = isFarmer() ? "Manage Farm" : "Manage Farm: ".$activity->getFarm()->getName();
 	
 ?>
 <script>
@@ -34,56 +35,20 @@
                         <h3 class="well-legend"><?php echo $title; ?></h3>
                         <table class="table noborder margin0" style="margin-top:15px;">
                             <tr>
-                                <td style="width:20%;"><label class="control-label"><?php echo $this->translate("season_activityref_label"); ?>: </label></td>
-                                <td style="width:30%;"><?php echo $activity->getRef(); ?></td>
-                                <td style="width:20%;"><label class="control-label"><?php echo $this->translate("season_ref_label"); ?>: </label></td>
-                                <td><a href="<?php $this->baseUrl('season/view/id/'.encode($activity->getSeasonID())); ?>" title="Season details"><?php echo $activity->getSeason()->getRef(); ?></a></td>
+                                <td style="width:20%;"><label class="control-label"><?php echo $this->translate("season_activitystartdate_label"); ?>:</label></td>
+                                <td style="width:30%;"><?php echo changeMySQLDateToPageFormat($activity->getStartDate()); ?></td>
+                                <td style="width:20%;"><label class="control-label"><?php echo $this->translate("season_activityenddate_label"); ?>:</label></td>
+                                <td><?php echo changeMySQLDateToPageFormat($activity->getEndDate()); ?></td>
                             </tr>
                             <tr>
-                                <td><label class="control-label"><?php echo $this->translate("season_activitystartdate_label"); ?>:</label></td>
-                                <td><?php echo changeMySQLDateToPageFormat($activity->getStartDate()); ?></td>
-                                <td><label class="control-label"><?php echo $this->translate("season_activityenddate_label"); ?>:</label></td>
-                                <td><?php echo changeMySQLDateToPageFormat($activity->getEndDate()); ?></td>
+                                <td><label class="control-label"><?php echo $this->translate("season_activity_ref_label"); ?>:</label></td>
+                                <td><?php echo $activity->getRef(); ?></td>
+                                <td><label class="control-label"><?php echo $this->translate("season_status_label"); ?>:</label></td>
+                                <td><?php echo getStatusText($activity->getStatus()); ?></td>
                             </tr>
                             <tr>
                                 <td><label class="control-label"><?php echo $this->translate("season_status_label"); ?>:</label></td>
                                 <td colspan="3"><?php echo getStatusText($activity->getStatus()); ?></td>
-                            </tr>
-                            <tr>
-                                <td><label class="control-label"><?php echo $this->translate("season_commodity_label"); ?>:</label></td>
-                                <td colspan="3"><?php echo $activity->getCrop()->getName(); ?></td>
-                            </tr>
-                            <tr>
-                                <td><label class="control-label"><?php echo $this->translate("season_activity_itemtype_label"); ?>:</label></td>
-                                <td colspan="3"><?php echo $activity->getItemType(); ?></td>
-                            </tr>
-                            <tr>
-                                <td><label class="control-label"><?php echo $this->translate("season_activity_method_label"); ?>:</label></td>
-                                <td colspan="3"><?php echo $activity->getMethod(); ?></td>
-                            </tr>
-                            <tr>
-                                <td><label class="control-label"><?php echo $this->translate("season_activity_itemrate_label"); ?>:</label></td>
-                                <td colspan="3"><?php echo $activity->getItemRate()."&nbsp;<span class='pagedescription'>(".$activity->getItemRateUnit().")</span>"; ?></td>
-                            </tr>
-                            <tr>
-                                <td><label class="control-label"><?php echo $this->translate("season_activity_quantity_label"); ?>:</label></td>
-                                <td colspan="3"><?php echo $activity->getTotalApplied()."&nbsp;<span class='pagedescription'>(".$activity->getTotalAppliedUnit().")</span>"; ?></td>
-                            </tr>
-                            <tr>
-                                <td><label class="control-label"><?php echo $this->translate("season_activity_timing_label"); ?>:</label></td>
-                                <td colspan="3"><?php echo $activity->getTimingText(); ?></td>
-                            </tr>
-                            <tr>
-                                <td><label class="control-label"><?php echo $this->translate("season_other_expenses_label"); ?>: </label></td>
-                                <td colspan="3"><?php echo formatNumber($activity->getTotalExpenses())."&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>"; ?></td>
-                            </tr>
-                            <tr>
-                                <td><label class="control-label"><?php echo $this->translate("season_activity_target_label"); ?>:</label></td>
-                                <td colspan="3"><?php echo $activity->getTarget(); ?></td>
-                            </tr>
-                            <tr>
-                                <td><label class="control-label"><?php echo $this->translate("season_notes_label"); ?>: </label></td>
-                                <td colspan="3"><?php echo $activity->getNotes(); ?></td>
                             </tr>
                         </table>
                     </span>
@@ -93,9 +58,8 @@
                             <table class="table noborder" >                       
                                <tr>		                    
                                     <td class="formactions">
-                                        <?php if($activity->getSeason()->getFarmerID() == $farmerid){ ?>
-                                            <a class="btn btn-primary" href="<?php echo $this->baseUrl('season/activity/id/'.encode($activity->getID())); ?>" id="update"><i class="icon-pencil icon-white"></i> Update</a>   
-                                        <?php } ?>
+                                        <a class="btn btn-primary" href="<?php echo $this->baseUrl('season/activity/id/'.encode($activity->getID())); ?>" id="update"><i class="icon-pencil icon-white"></i> Update</a>
+                                        <a href="javascript: void(0)" id="deleteline" title="Delete Entry" class="btn deleteline noimgbutton" action="<?php echo $this->baseUrl('season/delete/id/'.$activity->getID()."/entityname/SeasonActivity/successurl/".encode($this->baseUrl('season/view/id/'.encode($activity->getSeasonID())))); ?>"><i class="icon-trash"></i></a>   
                                         <a class="btn" href="<?php echo $this->baseUrl('season/view/id/'.encode($activity->getSeasonID())); ?>" title="Return to Timeline"><i class="icon-list"></i> View Timeline</a>           
                                     </td>
                                </tr>
@@ -103,6 +67,53 @@
                         </div>
                     </span>
                 </div>
+                <div class="row margin0" style="padding:2px; margin-bottom:10px;">
+                    <span class="pull-left" style="width:100%; margin-right:5px;">
+                        <div id="location_left" class="well lighter margin0" style="min-height:150px;"> 
+                                <h3 class="well-legend">Activity Details</h3>
+                                <table class="table ">
+                                    <tr>
+                                        <td style="width:45%; padding-left:0;">
+                                            <table class="table">
+                                                <tr>
+                                                    <td style="width:35%;"><label class="control-label">Activty Type:</label></td>
+                                                    <td><?php echo $activity->getTypeText(); ?></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><label class="control-label"><?php echo $this->translate("season_commodity_label"); ?>:</label></td>
+                                                    <td><?php echo $activity->getSeason()->getCrop()->getName(); ?></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><label class="control-label"><?php echo $this->translate("season_harvest_quantity_label").' Handled'; ?>:</label></td>
+                                                    <td><?php echo clean_num($activity->getTotalApplied())."&nbsp;<span class='pagedescription'>(".$activity->getTotalAppliedUnitText().")</span>"; ?></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><label class="control-label"><?php echo $this->translate("season_activity_damage_label"); ?>:</label></td>
+                                                    <td><?php echo clean_num($activity->getDamaged())."&nbsp;<span class='pagedescription'>(".$activity->getTotalDamagedUnitText().")</span>"; ?></td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                        <td>
+                                            <table class="table">
+                                                <tr>
+                                                    <td style="width:25%;"><label class="control-label">Methods Used<?php // echo $this->translate("season_treat_target_label"); ?>: </label></td>
+                                                    <td><?php echo $activity->getMethod(); ?></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><label class="control-label">Aims of Activity<?php // echo $this->translate("season_treat_target_label"); ?>: </label></td>
+                                                    <td><?php echo $activity->getTarget(); ?></td>
+                                                </tr>                                               
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                    </span>
+                </div>
+                <?php require APPLICATION_PATH."/views/scripts/season/financeview.phtml"; ?>
+                <?php require APPLICATION_PATH."/views/scripts/season/labourview.phtml"; ?>
+                <?php require APPLICATION_PATH."/views/scripts/season/expenseview.phtml"; ?>
+                <?php require APPLICATION_PATH."/views/scripts/season/notesview.phtml"; ?>
             <?php } ?>    
             </form>
 		</div>

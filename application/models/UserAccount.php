@@ -392,7 +392,7 @@ class UserAccount extends BaseEntity {
 				$this->setActivationKey($this->generateActivationKey());
 				
 				# generate registration number for farmer
-				$this->getFarmer()->setRefNo($this->getFarmer()->getCurrentRefNo());
+				$this->getFarmer()->setRefNo($this->getFarmer()->getNextRefNo());
 				$this->getFarmer()->setRegNo($this->getFarmer()->getCurrentRegNo());
 				$this->getPhones()->get(0)->setActivationKey($this->getActivationKey());
 			}
@@ -953,18 +953,27 @@ class UserAccount extends BaseEntity {
 		return $result; 
 	}
 	# find user by phone
-	function populateByPhone($phone) {
-		# query active user details using email
+	function populateByPhone($phone, $key) {
+		/*# query active user details using email
 		$c = new Doctrine_RawSql();
 		$c->select('{u.*}, {p.*}');
 		$c->from('useraccount u INNER JOIN userphone p ON (p.userid = u.id)');
-		$c->where("(p.phone = '".$phone."')");
+		$c->where("(p.phone = '".$phone."') AND u.activationkey = '.$key.' ");
 		$c->addComponent('u', 'UserAccount u');
 		$c->addComponent('p', 'u.phones p');
 		
 		$user_phone = $c->execute();
 		// debugMessage($user_phone->get(0)->toArray());
-		return $user_phone->get(0);
+		return $user_phone->get(0);*/
+		
+		$query = Doctrine_Query::create()->from('UserAccount u')
+		->innerJoin('u.phones p')
+		->where("p.phone = '".$phone."'")
+		->andWhere("u.activationkey = '".$key."'");
+		//debugMessage($query->getSQLQuery());
+		$result = $query->execute();
+		return $result->get(0);
+		
 	}
 	function findByUsername($username) {
 		# query active user details using email

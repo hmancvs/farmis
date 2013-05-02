@@ -28,6 +28,8 @@ class SeasonHarvest extends BaseEntity  {
 		$this->hasColumn('fieldsizeunit', 'integer', null);
 		$this->hasColumn('totalharvest', 'decimal', 10, array('default' => NULL));
 		$this->hasColumn('totalharvestunit', 'integer', null);
+		$this->hasColumn('damaged', 'decimal', 10, array('default' => NULL));
+		$this->hasColumn('damagedunit', 'integer', null);
 		$this->hasColumn('financetype', 'integer', null, array('default' => '1'));
 		$this->hasColumn('totalexpenses', 'decimal', 11, array('default' => '0'));
 		$this->hasColumn('notes','string', 1000);
@@ -111,6 +113,12 @@ class SeasonHarvest extends BaseEntity  {
 		}
 		if(isArrayKeyAnEmptyString('fieldsizeunit', $formvalues)){
 			unset($formvalues['fieldsizeunit']); 
+		}
+		if(isArrayKeyAnEmptyString('damaged', $formvalues)){
+			unset($formvalues['damaged']); 
+		}
+		if(isArrayKeyAnEmptyString('damagedunit', $formvalues)){
+			unset($formvalues['damagedunit']); 
 		}
 		if(isArrayKeyAnEmptyString('totalexpenses', $formvalues)){
 			unset($formvalues['totalexpenses']); 
@@ -249,6 +257,15 @@ class SeasonHarvest extends BaseEntity  {
     	}
     	return $text;
     }
+	# determine damaged quantity units
+    function getTotalDamagedUnitText() {
+    	$text = '--';
+    	if(!isEmptyString($this->getDamagedUnit())){
+    		$values = getHarvestQuantityUnits();
+    		$text = $values[$this->getDamagedUnit()];
+    	}
+    	return $text;
+    }
 	# generate next activity reference counter
     function getNextReferencePointer() {
     	$conn = Doctrine_Manager::connection();
@@ -298,6 +315,15 @@ class SeasonHarvest extends BaseEntity  {
     	$q = Doctrine_Query::create()->from('SeasonLabour l')->where("l.harvestid = '".$this->getID()."' AND l.type = 2 ");
 		$result = $q->execute();
 		return $result;
+	}
+	# determine the total labor cost
+	function getTotalLaborCost() {
+		$labourdetails = $this->getHiredLabourDetails();
+		$sumamount = 0;
+		foreach($labourdetails as $labour){
+			$sumamount += $labour->getamount();
+		}
+		return $sumamount;
 	}
 }
 

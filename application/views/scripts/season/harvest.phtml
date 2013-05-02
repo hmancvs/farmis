@@ -214,7 +214,6 @@
                                    ?><div id="status_error"></div>
                                 </td>
                             </tr>
-                            
                         </table>
                     </span>
                     <span class="pull-right padding0" style="width:24%; margin-left:5px;">
@@ -285,6 +284,24 @@
 														echo $methoddropdown->render();
 												   ?><div id="method_error"></div></td>
                                             </tr>
+                                            <tr>
+                                            	<td><label class="control-label"><?php echo $this->translate("season_activity_damage_label"); ?>:</label></td>
+                                                <td><input style="width:50px;" type="text" name="damaged" id="damaged" class="centeralign isdecimal" value="<?php echo clean_num($harvest->getDamaged()); ?>" />&nbsp;
+													<?php
+                                                        $damagevalues = getHarvestQuantityUnits();
+                                                        $unitdropdown = new Zend_Form_Element_Select('damagedunit',
+                                                                            array(
+                                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $damagevalues),								
+                                                                                'view' => new Zend_View(),
+                                                                                'decorators' => array('ViewHelper'),
+                                                                                'class' => array('hastooltip', 'span2','width100'),
+                                                                                'title' => $this->translate("season_harvest_damage_tooltip")
+                                                                            )
+                                                                        );
+                                                        $unitdropdown->setValue($harvest->getDamagedUnit()); 
+                                                        echo $unitdropdown->render(); 
+                                                   ?><div id="damageunit_error"></div><div id="damage_error"></div></td>
+                                            </tr>
                                         </table>
                                     </td>
                                     <td style="padding-left:0;">
@@ -292,20 +309,20 @@
                                             <tr>
                                                 <td style="width:32%;"><label class="control-label"><?php echo $this->translate("season_harvest_area_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
                                                 <td><input style="width:50px;" type="text" name="fieldsize" id="fieldsize" class="centeralign isdecimal" value="<?php echo clean_num($harvest->getFieldSize()); ?>" />&nbsp;
-													<?php
-                                                        $areavalues = getAreaUnits();
-                                                        $unitdropdown = new Zend_Form_Element_Select('fieldsizeunit',
-                                                                            array(
-                                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $areavalues),								
-                                                                                'view' => new Zend_View(),
-                                                                                'decorators' => array('ViewHelper'),
-                                                                                'class' => array('hastooltip', 'span2','width100'),
-                                                                                'title' => $this->translate("season_harvest_fieldsize_tooltip")
-                                                                            )
-                                                                        );
-                                                        $unitdropdown->setValue($harvest->getFieldSizeUnit()); 
-                                                        echo $unitdropdown->render(); 
-                                                   ?><div id="fieldsize_error"></div></td>
+												<?php
+                                                    $areavalues = getAreaUnits();
+                                                    $unitdropdown = new Zend_Form_Element_Select('fieldsizeunit',
+                                                                        array(
+                                                                            'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $areavalues),								
+                                                                            'view' => new Zend_View(),
+                                                                            'decorators' => array('ViewHelper'),
+                                                                            'class' => array('hastooltip', 'span2','width100', 'selectrequired'),
+                                                                            'title' => $this->translate("season_harvest_fieldsize_tooltip")
+                                                                        )
+                                                                    );
+                                                    $unitdropdown->setValue($harvest->getFieldSizeUnit()); 
+                                                    echo $unitdropdown->render(); 
+                                               ?><div id="fieldsize_error"></div><div id="fieldsizeunit_error"></div></td>
                                             </tr>
                                             <tr>
                                                 <td><label class="control-label"><?php echo $this->translate("season_harvest_quantity_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
@@ -317,14 +334,14 @@
                                                                                 'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
                                                                                 'view' => new Zend_View(),
                                                                                 'decorators' => array('ViewHelper'),
-                                                                                'class' => array('hastooltip', 'span2','width100'),
+                                                                                'class' => array('hastooltip', 'span2','width100', 'selectrequired'),
                                                                                 'title' => $this->translate("season_harvest_totalharvest_tooltip")
                                                                             )
                                                                         );
                                                         $unitdropdown->setValue($harvest->getTotalHarvestUnit()); 
                                                         echo $unitdropdown->render(); 
                                                     ?>
-                                                    <div id="totalharvest_error"></div></td>
+                                                    <div id="totalharvest_error"></div><div id="totalharvestunit_error"></div></td>
                                             </tr>
                                             <tr>
                                                 <td><label class="control-label"><?php echo $this->translate("season_harvest_yield_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
@@ -336,13 +353,13 @@
                                                                                 'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $yieldvalues),								
                                                                                 'view' => new Zend_View(),
                                                                                 'decorators' => array('ViewHelper'),
-                                                                                'class' => array('hastooltip', 'span2','width100'),
+                                                                                'class' => array('hastooltip', 'span2','width100', 'selectrequired'),
                                                                                 'title' => $this->translate("season_harvest_yield_tooltip")
                                                                             )
                                                                         );
                                                         $unitdropdown->setValue($harvest->getYieldUnit()); 
                                                         echo $unitdropdown->render(); 
-                                                   ?><div id="yield_error"></div></td>
+                                                   ?><div id="yield_error"></div><div id="yieldunit_error"></div></td>
                                             </tr>
                                             <tr>
                                             	<td></td><td></td>

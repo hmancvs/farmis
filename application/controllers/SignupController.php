@@ -239,19 +239,17 @@ class SignupController extends IndexController   {
 		$formvalues = $this->_getAllParams();
 		// $formvalues['phone'] = '0756412300';
 		$session = SessionWrapper::getInstance();
-		# debugMessage($formvalues);
-		
+		// debugMessage($formvalues);
+		$key = trim($formvalues['actkey']);
 		$user = new UserAccount();
-		$activatinguser = $user->populateByPhone(getFullPhone($formvalues['phone']));
-		# debugMessage($activatinguser->get(0)->toArray());
-		$useraccount = $activatinguser->get(0);
+		
+		$useraccount = $user->populateByPhone(getFullPhone($formvalues['phone']), $key);
+		// debugMessage($useraccount->toArray());
 		
 		# check if user with specified phone exists
 		if(!isEmptyString($useraccount->getID())){
-			/* debugMessage($useraccount->getActivationKey());
-			debugMessage($formvalues['actkey']); */
 			# now validate user's activation code specified
-			if($useraccount->getActivationKey() == trim($formvalues['actkey'])){
+			if($useraccount->getActivationKey() == $key){
 				$useraccount->getPhones()->get(0)->setIsPrimary(1);
 				$useraccount->getPhones()->get(0)->activate();
 				$this->_helper->redirector->gotoUrl($this->view->baseUrl("signup/index/profile/".encode($useraccount->getFarmerID()).'/actkey/valid'));

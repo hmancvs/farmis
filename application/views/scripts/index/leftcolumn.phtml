@@ -143,7 +143,7 @@
                      </div>
                  </div>
 				<?php } ?>
-        <?php if(!isAdmin()){ ?>
+        <?php if(isFarmer()){ ?>
         <style>
         	ul.nav.nav-tabs#disabledcontent li a {
 				color:#98BED6;
@@ -156,14 +156,41 @@
             <div class="widgetsection height200" style="min-height:0; height:340px; padding-bottom:20px;">
                 <h3>Recent Activities</h3>
                 <div style="margin-top:5px;">
-                    <div style="padding:5px 5px; margin:15px 0;" class="alert alert-info centeralign">Currently no season activities </div>
-                    <ul class="nav nav-tabs nav-stacked" id="disabledcontent">                
-                        <li><a>Maize Planting<br /><span class="pagedescription" style="font-style:normal;">Date: 15/02/2013</span></a></li>
-                        <li><a>Tillage <br /><span class="pagedescription" style="font-style:normal;">Date: 05/02/2013</span></a></li>
-                        <li><a>Season Inputs <br /><span class="pagedescription" style="font-style:normal;">Date: 28/01/2013</span></a></li>	
-                        <li><a>Season Start <br /><span class="pagedescription" style="font-style:normal;">Date: 26/01/2013</span></a></li>	
-                        <li><a class="bolded">View season Timeline</a></li>	
-                    </ul>
+                 	<?php
+						$seasonactivities = array();
+						$allseasons = $farmer->getFarm()->getSeasons();
+						$allactivities = array();
+						$x=0;
+						foreach($allseasons as $season){
+							$seasonactivities = sort_multi_array($season->getTimeLineDetails(), 'order');
+							foreach($seasonactivities as $key => $value){
+								$allactivities[$x] = $value;
+								$x++;
+							}
+						}
+						$allactivities = sort_multi_array($allactivities, 'order');
+						$allactivities = array_slice($allactivities,0,5);
+						
+						$timeline = $allactivities;
+						$acount = count($timeline);
+						if($acount == 0) { ?>
+                            <div style="padding:5px 5px; margin:15px 0;" class="alert alert-info centeralign">Currently no season activities </div>
+                            <ul class="nav nav-tabs nav-stacked" id="disabledcontent">                
+                                <li><a>Maize Planting<br /><span class="pagedescription" style="font-style:normal;">Date: 15/02/2013</span></a></li>
+                                <li><a>Tillage <br /><span class="pagedescription" style="font-style:normal;">Date: 05/02/2013</span></a></li>
+                                <li><a>Season Inputs <br /><span class="pagedescription" style="font-style:normal;">Date: 28/01/2013</span></a></li>	
+                                <li><a>Season Start <br /><span class="pagedescription" style="font-style:normal;">Date: 26/01/2013</span></a></li>	
+                                <li><a class="bolded">View season Timeline</a></li>	
+                            </ul>
+					<?php } else { ?>
+                        <ul class="nav nav-tabs nav-stacked">        
+                        	<?php 				  		
+                                foreach($timeline as $activity){
+                            ?>        
+                                <li><a style="display:inline-block; line-height:16px; width:90%;" href="<?php echo $activity['url']; ?>"><?php echo $activity['activityname']; ?><span class="pagedescription blocked" style="font-style:normal;"><?php echo $activity['date']; ?></span></a></li>
+                            <?php } ?>    
+                        </ul>
+                    <?php } ?>
                 </div>
             </div>
             <?php } ?>

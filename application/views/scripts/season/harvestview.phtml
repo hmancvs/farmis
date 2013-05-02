@@ -82,6 +82,10 @@
                                                 <td><label class="control-label"><?php echo $this->translate("season_methodused_label"); ?>:</label></td>
                                                 <td><?php echo $harvest->getMethodText(); ?></td>
                                             </tr>
+                                            <tr>
+                                                <td><label class="control-label"><?php echo $this->translate("season_activity_damage_label"); ?>:</label></td>
+                                                <td><?php echo clean_num($harvest->getDamaged())."&nbsp;<span class='pagedescription'>(".$harvest->getTotalDamagedUnitText().")</span>"; ?></td>
+                                            </tr>
                                         </table>
                                     </td>
                                     <td>

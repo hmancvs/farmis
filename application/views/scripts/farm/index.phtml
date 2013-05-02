@@ -12,16 +12,15 @@
 	
 	$farm = new Farm();
 	$farm->populate($id);
-	if(!isEmptyString($farm->getID())){
-		// $farm->cleanUpAddress();
-	}
-	
 	$thefarmid = $farm->getID();
 	$theaddress = $farm->getAddresses()->get(0);
 		
 	if(!isEmptyString($request->farmerid)){
+		$farm = new Farm();
 		$farmer = new Farmer();
-		$farmer->populate(decode($request->farmerid));
+		$thefarmid = "";
+		$newfarmerid = decode($request->farmerid);
+		$farmer->populate($newfarmerid);
 		
 		$farm->setFarmerID($farmer->getID());
 		$hasfarm = false;
@@ -53,13 +52,12 @@
 	}
 	$currentfarmer = $farm->getFarmerID();
 	
-	// debugMessage($farm->toArray());
 	$button_title = $this->translate("farm_button_save");
 	$posturl = $this->baseUrl("farm/edit"); 
 		
-	$title = isFarmer() ? "Update Farm" : "Update: ".$farm->getName();
+	$title = isFarmer() ? "Update Farm" : $farm->getFarmer()->getName().": Update ".$farm->getName();
 	if(isEmptyString($farm->getID())){
-		$title = "Setup Farm Business";
+		$title = isFarmer() ? "Setup Farm Business" : $farmer->getName().": Setup Farm Business";
 	}
 	
 	$isme = false;
@@ -68,7 +66,6 @@
 	}
 	
 	$this->headTitle($title);
-	
 ?>
 <script>
 $(document).ready(function() {

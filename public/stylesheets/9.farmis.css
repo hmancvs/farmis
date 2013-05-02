@@ -290,6 +290,10 @@ input.error, textarea.error, select.error {
 .bolded {
 	font-weight:bold;
 }
+.table td.amountcell, td.amountcell {
+	text-align:right;
+	padding-right:20px;
+}
 div.zendradio {
 	margin-left:-18px;
 }
@@ -502,6 +506,7 @@ select.birth {
 #tabs.ui-tabs .ui-widget-content {
 	/*min-height:400px;*/
 	padding-top:25px;
+	padding-left:10px;
 }
 #tabs.discussion.ui-tabs .ui-widget-content {
 	padding-top:10px;
@@ -998,7 +1003,7 @@ body.publicbody #headertop.navbar-inner {
 	margin: 2px;
 }
 
-.ui-tabs-vertical { width: 100%; }
+.ui-tabs-vertical { width: 99%; }
 .ui-tabs-vertical .ui-tabs-nav:not(.horizontal) { padding: .2em .1em .2em .2em; float: left; width: 12em; }
 .ui-tabs-vertical .ui-tabs-nav:not(.horizontal) li { clear: left; width: 100%; border-bottom-width: 1px !important; border-right-width: 0 !important; margin: 0 -1px .2em 0; }
 .ui-tabs-vertical .ui-tabs-nav:not(.horizontal) li a { display:block; }

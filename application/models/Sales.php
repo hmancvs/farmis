@@ -36,6 +36,8 @@ class Sales extends BaseEntity  {
 		$this->hasColumn('addtodir', 'integer', null);
 		$this->hasColumn('notes','string', 1000);
 		$this->hasColumn('financetype', 'integer', null, array('default' => '1'));
+		$this->hasColumn('damaged', 'decimal', 10, array('default' => NULL));
+		$this->hasColumn('damagedunit', 'integer', null);
 	}
 	
 	/**
@@ -121,6 +123,12 @@ class Sales extends BaseEntity  {
 		}
 		if(isArrayKeyAnEmptyString('clienttype', $formvalues)){
 			unset($formvalues['clienttype']); 
+		}
+		if(isArrayKeyAnEmptyString('damaged', $formvalues)){
+			unset($formvalues['damaged']); 
+		}
+		if(isArrayKeyAnEmptyString('damagedunit', $formvalues)){
+			unset($formvalues['damagedunit']); 
 		}
 		
 		if(!isArrayKeyAnEmptyString('financetype', $formvalues)){
@@ -269,6 +277,15 @@ class Sales extends BaseEntity  {
     	$q = Doctrine_Query::create()->from('SeasonLabour l')->where("l.saleid = '".$this->getID()."' AND l.type = 2 ");
 		$result = $q->execute();
 		return $result;
+	}
+	# determine the total labor cost
+	function getTotalLaborCost() {
+		$labourdetails = $this->getHiredLabourDetails();
+		$sumamount = 0;
+		foreach($labourdetails as $labour){
+			$sumamount += $labour->getamount();
+		}
+		return $sumamount;
 	}
 }
 

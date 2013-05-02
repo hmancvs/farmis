@@ -58,7 +58,7 @@
 	$expense->setQuantity(1);
 	if(!isEmptyString($request->id)){
 		$expense->populate(decode($request->id));
-	}
+	} 
 	
 	#in case of errors in session, populate the fields from session
 	if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
@@ -78,7 +78,7 @@
 				type:  "required",
 				name:  "required",
 				quantity: {
-					required: true,
+					required: false,
 					validate_number: true
 				},
 				amount: {
@@ -88,11 +88,14 @@
 			}, 
 			// the messages for each of the fields being validated
 			messages: {		
-				inputdate: "Please select a Date<?php //echo $this->translate("inventory_servicedate_error"); ?>",
-				type:  "Please select a Type<?php //echo $this->translate("inventory_servicetype_error"); ?>",
-				name:  "Please enter description<?php //echo $this->translate("inventory_servicedescription_error"); ?>",
+				inputdate: "Please select a Date<?php //echo $this->translate("expense_inputdate_error"); ?>",
+				type:  "Please select a Type<?php //echo $this->translate("expense_type_error"); ?>",
+				name:  "Please enter description<?php //echo $this->translate("expense_name_error"); ?>",
+				quantity: {
+					required: "Please enter Quantity<?php //echo $this->translate("expense_quantity_error"); ?>"
+				},
 				amount: {
-					required: "Please enter description<?php //echo $this->translate("inventory_servicedescription_error"); ?>"
+					required: "Please enter Amount<?php //echo $this->translate("expense_amount_error"); ?>"
 				}
 			},
 			// custom error positions
@@ -179,6 +182,7 @@
             <td><label class="control-label">Expense Type: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
             <td><?php
                     $inputtypes = getAllExpenseTypes();
+					unset($inputtypes[2]);
                     $typesdropdown = new Zend_Form_Element_Select('type',
                                         array(
                                             'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $inputtypes),								
@@ -194,17 +198,17 @@
             </td>
         </tr>
         <tr>
-            <td><label class="control-label">Item Description: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><label class="control-label">Item Description: </label></td>
             <td><input type="text" name="name" id="name" class="span3 hastooltip" value="<?php echo $expense->getName(); ?>" title="<?php echo $this->translate("season_expensename_tooltip"); ?>" /><div id="name_error"></div>
             </td>
         </tr>
         <tr>
-            <td><label class="control-label">Source / Supplier: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><label class="control-label">Source / Supplier: </label></td>
             <td><input type="text" name="source" id="source" class="span3 hastooltip" value="<?php echo $expense->getSource(); ?>" title="<?php echo $this->translate("season_expensesource_tooltip"); ?>" /><div id="source_error"></div>
             </td>
         </tr>
         <tr>
-            <td><label class="control-label">Quantity: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><label class="control-label">Quantity: </label></td>
             <td colspan="3"><input type="text" name="quantity" id="quantity" class="centeralign isnumber hastooltip width80" value="<?php echo $expense->getQuantity(); ?>" title="<?php echo $this->translate("season_expensequantity_tooltip"); ?>" /><div id="quantity_error"></div>
             </td>
         </tr>

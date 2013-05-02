@@ -361,6 +361,15 @@ class SeasonTillage extends BaseEntity  {
 		$result = $q->execute();
 		return $result;
 	}
+	# determine the total labor cost
+	function getTotalLaborCost() {
+		$labourdetails = $this->getHiredLabourDetails();
+		$sumamount = 0;
+		foreach($labourdetails as $labour){
+			$sumamount += $labour->getamount();
+		}
+		return $sumamount;
+	}
 }
 
 ?>
