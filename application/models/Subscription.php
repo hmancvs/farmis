@@ -179,6 +179,12 @@ class Subscription extends BaseRecord  {
 		
 		return $days;
 	}
+	# find the payment effected for this subscription
+	function getPayment(){
+		$q = Doctrine_Query::create()->from('Payment p')->where("p.subscriptionid = '".$this->getID()."' ");
+		$result = $q->execute();
+		return $result;
+	}
 }
 
 ?>

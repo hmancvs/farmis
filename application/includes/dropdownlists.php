@@ -1034,6 +1034,7 @@
 		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'SALES_PRICING_TYPES' ";
 		return getOptionValuesFromDatabaseQuery($query);
 	}
+	
 	function getFarmers($farmgroupid = '', $hasemail = false, $ignorelist = ''){
 		$custom_query = '';
 		if(!isEmptyString($farmgroupid)){
@@ -1048,9 +1049,82 @@
 		if(!isEmptyString($ignorelist)){
 			$custom_query .= " AND u.id <> '".$ignorelist."' ";
 		}
-		$valuesquery = "SELECT f.id AS optionvalue, concat(f.firstname, ' ', f.lastname) as optiontext FROM farmer as f inner join useraccount as u on (f.userid = u.id) WHERE f.id <> '' ".$custom_query." ORDER BY optiontext";
+		$valuesquery = "SELECT f.id AS optionvalue, concat(f.firstname, ' ', f.lastname) as optiontext FROM farmer as f inner join useraccount as u on (f.userid = u.id) WHERE f.id <> '' AND u.type = 2 ".$custom_query." ORDER BY optiontext";
 		// debugMessage($valuesquery);
 		return getOptionValuesFromDatabaseQuery($valuesquery);
+	}
+	// count all farmers available
+	function countAllFarmers() {
+		$conn = Doctrine_Manager::connection(); 
+		$valuesquery = "SELECT count(f.id) AS total FROM farmer as f inner join useraccount as u on (f.userid = u.id) WHERE u.type = 2 ";
+		$result = $conn->fetchOne($valuesquery);
+		// debugMessage($result);
+		return $result;
+	}
+	// count all farmers under farm groups
+	function countAllFarmersInGroups() {
+		$conn = Doctrine_Manager::connection(); 
+		$valuesquery = "SELECT count(f.id) AS total FROM farmer as f inner join useraccount as u on (f.userid = u.id) WHERE u.type = 2 AND f.farmgroupid <> '' ";
+		$result = $conn->fetchOne($valuesquery);
+		// debugMessage($result);
+		return $result;
+	}
+	// count all individual farmers
+	function countAllIndividualFarmers() {
+		$conn = Doctrine_Manager::connection(); 
+		$valuesquery = "SELECT count(f.id) AS total FROM farmer as f inner join useraccount as u on (f.userid = u.id) WHERE u.type = 2 AND f.farmgroupid IS NULL ";
+		$result = $conn->fetchOne($valuesquery);
+		// debugMessage($result);
+		return $result;
+	}
+	// count all male farmers
+	function countMaleFarmers() {
+		$conn = Doctrine_Manager::connection(); 
+		$valuesquery = "SELECT count(f.id) AS total FROM farmer as f inner join useraccount as u on (f.userid = u.id) WHERE u.type = 2 AND u.gender = '1' ";
+		$result = $conn->fetchOne($valuesquery);
+		// debugMessage($result);
+		return $result;
+	}
+	// count all female farmers
+	function countFemaleFarmers() {
+		$conn = Doctrine_Manager::connection(); 
+		$valuesquery = "SELECT count(f.id) AS total FROM farmer as f inner join useraccount as u on (f.userid = u.id) WHERE u.type = 2 AND u.gender = '2' ";
+		$result = $conn->fetchOne($valuesquery);
+		// debugMessage($result);
+		return $result;
+	}
+	// count farmers registered in period
+	function countFarmersInRange($start, $end, $type = ''){
+		$conn = Doctrine_Manager::connection(); 
+		$custom_query = " ";
+		if(!isEmptyString($type)){
+			if($type == 'G'){
+				$custom_query = " AND f.farmgroupid <> '' ";
+			}
+			if($type == 'I'){
+				$custom_query = " AND f.farmgroupid IS NULL ";
+			}
+		}
+		$valuesquery = "SELECT count(f.id) AS total FROM farmer as f inner join useraccount as u on (f.userid = u.id) WHERE u.type = 2 AND (f.datecreated >= '".$start."' AND f.datecreated <= '".$end."') ".$custom_query." ";
+		$result = $conn->fetchOne($valuesquery);
+		// debugMessage($valuesquery);
+		return $result;
+	}
+	// count all farm groups available
+	function countAllGroups() {
+		$conn = Doctrine_Manager::connection(); 
+		$valuesquery = "SELECT count(g.id) as total FROM farmgroup AS g WHERE g.id <> '' AND g.parentid IS NULL ";
+		$result = $conn->fetchOne($valuesquery);
+		// debugMessage($result);
+		return $result;
+	}
+	// count farm groups registered in period
+	function countGroupsInRange($start, $end){
+		$conn = Doctrine_Manager::connection(); 
+		$valuesquery = "SELECT count(g.id) as total FROM farmgroup AS g WHERE g.id <> '' AND g.parentid IS NULL AND (g.regdate >= '".$start."' AND g.datecreated <= '".$end."')";
+		$result = $conn->fetchOne($valuesquery);
+		// debugMessage($valuesquery);
+		return $result;
 	}
 	# farming types practised
 	function getFarmingTypes(){
@@ -1130,7 +1204,7 @@
 	# latest system user farmers
 	function getLatestUsers($limit){
 		$conn = Doctrine_Manager::connection();
-		$all_users = $conn->fetchAll("SELECT u.id as id, concat(u.firstname, ' ', u.lastname, ' ', u.othernames) as name FROM useraccount AS u inner join farmer f on (u.farmerid = f.id) WHERE u.isactive = 1 order by u.activationdate DESC limit ".$limit);
+		$all_users = $conn->fetchAll("SELECT u.id as id, concat(u.firstname, ' ', u.lastname, ' ', u.othernames) as name FROM useraccount AS u inner join farmer f on (u.farmerid = f.id) WHERE u.type = '2' order by u.activationdate DESC limit ".$limit);
 		return $all_users;
 	}
 	# latest farm groups activated
@@ -1142,5 +1216,52 @@
 	# subscription subjects
 	function getPostHarvestTypes(){
 		return array(1=>'Cooling', 2=>'Cleaning', 3=>'Drying', 4=>'Sorting', 5=>'Packing', 6=>'Processing', 7=>'Packaging');
+	}
+	# history of farmers
+	function getFarmersHistory(){
+		$conn = Doctrine_Manager::connection();
+		$query = "SELECT
+					month(f.regdate) as monthid,
+					monthname(f.regdate) as name,
+					date_format(f.regdate, '%b') as shortmonthname, 
+					year(f.regdate) as yearid,
+					concat(year(f.regdate),  '', month(f.regdate) ) as yearmonth, 
+					count(f.id) as total,
+					SUM(IF(u.gender = 1, 1, 0)) as total_male,
+					SUM(IF(u.gender = 2, 1, 0)) as total_female,
+					round((SUM(IF(u.gender = 1, 1, 0)) /  count(f.id)) * 100)  as perc_male,
+					round((SUM(IF(u.gender = 2, 1, 0)) /  count(f.id)) * 100)  as perc_female,
+					SUM(IF(f.farmgroupid is null, 1, 0)) as total_indv,
+					SUM(IF(f.farmgroupid is not null, 1, 0)) as total_grps,
+					round((SUM(IF(f.farmgroupid is null, 1, 0)) /  count(f.id)) * 100)  as perc_indv,
+					round((SUM(IF(f.farmgroupid is not null, 1, 0)) /  count(f.id)) * 100)  as perc_grps
+					FROM
+					farmer AS f
+					inner join useraccount u on (f.userid = u.id)
+					where u.type = 2 AND (f.regdate >= date_sub(now(), interval 6 month))
+					group by yearid, monthid
+					order by yearmonth asc";
+		// debugMessage($query);
+		$result = $conn->fetchAll($query);
+		return $result;
+	}
+	# history of farmgroups
+	function getFarmGroupHistory(){
+		$conn = Doctrine_Manager::connection();
+		$query = "SELECT
+					month(f.regdate) as monthid,
+					monthname(f.regdate) as name,
+					date_format(f.regdate, '%b') as shortmonthname, 
+					year(f.regdate) as yearid,
+					concat(year(f.regdate), '', month(f.regdate) ) as yearmonth, 
+					count(f.id) as total
+					FROM
+					farmgroup AS f
+					where f.id <> '' AND (f.regdate >= date_sub(now(), interval 6 month))
+					group by yearid, monthid
+					order by yearmonth asc";
+		// debugMessage($query);
+		$result = $conn->fetchAll($query);
+		return $result;
 	}
 ?>

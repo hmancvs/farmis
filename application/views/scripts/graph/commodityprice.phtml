@@ -38,6 +38,8 @@
 		}
 	}
 ?>
+<script src="<?php echo $this->baseUrl('javascript/chart/highcharts.js'); ?>"></script>
+<script src="<?php echo $this->baseUrl('javascript/chart/exporting.js'); ?>"></script>
 <script type="text/javascript">
 var chart;
 <?php 
@@ -47,9 +49,8 @@ var chart;
 	} 
 ?>
 <?php echo $jquery_prefix; ?>(document).ready(function() {
-	   chart = new Highcharts.Chart({
+	$('#commoditycontainer').highcharts({
 		  chart: {
-			 renderTo: 'commoditycontainer',
 			 defaultSeriesType: 'line' ,
 			 marginTop: 90,
 			 height: 400       

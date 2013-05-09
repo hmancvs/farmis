@@ -1368,11 +1368,11 @@ body.publicbody .footer.well {
 	float:right;
 	text-align:right;
 }
-a.removeline {
+a.removeline, a.hidepane {
 	border: 1px solid #999999;
 	padding:2px 7px;
 }
-a.removeline:hover {
+a.removeline:hover, a.hidepane:hover {
 	border: 1px solid #FF0000;
 	color:#FF0000;
 	font-weight:bold;
@@ -2179,7 +2179,8 @@ body.publicbody .navbar-fixed-top .container, body.publicbody .navbar-fixed-bott
 	display:inline-block; 
 	background:none; 
 	color:#666666; 
-	width:100%; height:200px;
+	width:100%; 
+	height:auto;
 }
 .fieldsetcontainer legend {
 	margin:0;
@@ -2212,3 +2213,10 @@ background-color:#ddd
 #el11 {padding:2em} /* Increase padding */
 #el12 {text-align:right} /* Change text alignment */
 fieldset p {margin:0} /* Remove margins from p elements inside fieldsets */
+.default {
+	margin:0;
+	padding:0;
+	border:none;
+	width:100%;
+	vertical-align:top;	
+}

@@ -398,7 +398,7 @@ a.removeline {
 						<?php if(isFarmer()){ ?>
                             <div class="widgetsection makerelative" style="min-height:130px;">
                                 <h3 style="color:#282727;">Welcome <?php echo $farmer->getFirstName(); ?></h3>
-                                <a href="javascript: doNothing();" style="position:absolute; top:2px; right:5px;" title="<?php echo $this->translate("global_button_remove"); ?>" id="" class="welcome_farmer removeline close button btn" rel="input">Dismiss</a>
+                                <a href="javascript: doNothing();" style="position:absolute; top:2px; right:5px;" title="<?php echo $this->translate("global_button_remove"); ?>" id="" class="welcome_farmer hidepane close button btn" rel="input">Dismiss</a>
                                 <div>
                                     <label class="intro">
                                         <p class="calfont">FARMIS is the easy way to manage the activities of Farmers in a Farm Group, allowing you to quickly manage and evaluate their income, expenses <a href="<?php echo $this->baseUrl('howitworks'); ?>">...read more</a></p>
@@ -408,7 +408,7 @@ a.removeline {
                         <?php } ?>
                         <?php if(isFarmGroupAdmin()){ ?>
                             <div class="widgetsection makerelative" style="min-height:130px;">
-                                <a href="javascript: doNothing();" style="position:absolute; top:2px; right:5px;" title="<?php echo $this->translate("global_button_remove"); ?>" id="" class="welcome_farmgrp removeline close button btn" rel="input">Dismiss</a>
+                                <a href="javascript: doNothing();" style="position:absolute; top:2px; right:5px;" title="<?php echo $this->translate("global_button_remove"); ?>" id="" class="welcome_farmgrp hidepane close button btn" rel="input">Dismiss</a>
                                 <h3 style="color:#282727;"><?php echo $farmgroup->getName(); ?></h3>
                                 <div>
                                     <label class="calfont tasklabel" style="border:none; margin-left:10px; margin-top:5px;">Welcome <?php echo $farmer->getFirstName(); ?></label>
@@ -841,98 +841,551 @@ a.removeline {
                 </div>
         	</div>
     	<?php } ?>          
-		<?php if(isAdmin()){ ?>
+		<?php if(isAdmin()){ 
+				$total_farmers = countAllFarmers();
+				
+				$total_farmers_ingroups = countAllFarmersInGroups();
+				$total_farmers_ind = countAllIndividualFarmers();
+				$percent_ind = round(($total_farmers_ind / $total_farmers) * 100);
+				$percent_ingroups = round(($total_farmers_ingroups / $total_farmers) * 100);
+				/*debugMessage(round($percent_ind));
+				debugMessage(round($percent_ingroups));*/
+				
+				$total_farmers_male = countMaleFarmers();
+				$total_farmers_female = countFemaleFarmers();
+				$percent_male = round(($total_farmers_male / $total_farmers) * 100);
+				$percent_female = round(($total_farmers_female / $total_farmers) * 100);
+				/*debugMessage(round($percent_male));
+				debugMessage(round($percent_female));*/
+				
+				$mondaythisweek = date('Y-m-d', strtotime('monday this week'));
+				$sundaythisweek = date('Y-m-d', strtotime('sunday this week'));
+				$total_farmers_thisweek = countFarmersInRange($mondaythisweek, $sundaythisweek);
+				$total_farmers_thisweek_grp = countFarmersInRange($mondaythisweek, $sundaythisweek, 'G');
+				$total_farmers_thisweek_ind = countFarmersInRange($mondaythisweek, $sundaythisweek, 'I');
+				
+				$today = date('Y-m-d');
+				$firstofmonth = date('Y-m-d', mktime (0,0,0, date("n"),1, date("Y")));
+				$lastofmonth = date("Y-m-t", strtotime($today));
+				$total_farmers_thismonth = countFarmersInRange($firstofmonth, $lastofmonth);
+				$total_farmers_thismonth_grp = countFarmersInRange($firstofmonth, $lastofmonth, 'G');
+				$total_farmers_thismonth_ind = countFarmersInRange($firstofmonth, $lastofmonth, 'I');
+				
+				$lastmonth_ts = strtotime("last month");
+				$firstoflastmonth = date('Y-m-d', mktime (0,0,0, date("n", $lastmonth_ts),1, date("Y", $lastmonth_ts)));
+				$lastoflastmonth = date("Y-m-d", mktime (0,0,0, date("n", $lastmonth_ts),date("t", $lastmonth_ts), date("Y", $lastmonth_ts)));										
+				$total_farmers_lastmonth = countFarmersInRange($firstoflastmonth, $lastoflastmonth);
+				$total_farmers_lastmonth_grp = countFarmersInRange($firstoflastmonth, $lastoflastmonth, 'G');
+				$total_farmers_lastmonth_ind = countFarmersInRange($firstoflastmonth, $lastoflastmonth, 'I');
+				
+				$firstdaythisyear =  date('Y-m-d', strtotime('first day of January '.date('Y')));
+				$lastdaythisyear =  date('Y-m-d', strtotime('last day of December '.date('Y')));
+				$total_farmers_thisyear = countFarmersInRange($firstdaythisyear, $lastdaythisyear);
+				$total_farmers_thisyear_grp = countFarmersInRange($firstdaythisyear, $lastdaythisyear, 'G');
+				$total_farmers_thisyear_ind = countFarmersInRange($firstdaythisyear, $lastdaythisyear, 'I');
+				
+				$total_groups = countAllGroups();
+				$total_groups_thisweek = countGroupsInRange($mondaythisweek, $sundaythisweek);
+				$total_groups_thismonth = countGroupsInRange($firstofmonth, $lastofmonth);
+				$total_groups_lastmonth = countGroupsInRange($firstoflastmonth, $lastoflastmonth);
+				$total_groups_thisyear = countGroupsInRange($firstdaythisyear, $lastdaythisyear);
+				
+				$farmer_history = getFarmersHistory(); 
+				$farmgrp_history = getFarmGroupHistory(); 
+				
+				// debugMessage($farmgrp_history);
+				$months = array(); $males = array(); $females = array(); $indv = array(); $groups = array(); $total = array(); $gmonths = array();  
+				foreach($farmer_history as $key => $value){
+					// debugMessage($value);
+					$months[] = $value['name'];
+					$males[] = $value['total_male'];
+					$females[] = $value['total_female'];
+					$indv[] = $value['total_indv'];
+					$groups[] = $value['total_grps'];
+				}
+				$periodlist = "'".implode("', '",$months)."'";
+				$malelist = implode(", ",$males);
+				$femalelist = implode(", ",$females);
+				$indvlist = implode(", ",$indv);
+				$groupslist = implode(", ",$groups);
+				/*debugMessage($periodlist);
+				debugMessage($malelist);
+				debugMessage($femalelist);*/
+				
+				foreach($farmgrp_history as $key => $value){
+					// debugMessage($value);
+					$gmonths[] = $value['name'];
+					$total[] = $value['total'];
+				}
+				$gperiodlist = "'".implode("', '",$gmonths)."'";
+				$totallist = implode(", ",$total);
+				/*debugMessage($periodlist);
+				debugMessage($totallist);*/
+				
+		?>
+        <style>
+        	#admindash .control-label {
+				font-size:11px;
+			}
+			#container_ghistory .highcharts-container, #container_history .highcharts-container {
+				float:right;
+				margin-right:15px;
+			}
+        </style>
             <div class="blocked maxwidth">
                 <div class="pull-left" id="admindash">
                     <div class="widgetsection blocked clear" style="height:auto; margin-left:0;">
                     	<h3 style="color:#282727;">Admin Dashboard</h3>
-                        <table class="table nohover border0 margin0 padding0">
+                        <table class="default">
                         	<tr>
-                            	<td style="width:48%;">
-                                	 <label class="calfont tasklabel" style="margin-left:10px; margin-top:5px; border-bottom:solid 2px #A6A4A4; ">Latest Subscriptions</label>
-                                     <table class="table nohover margin0 padding0">
+                            	<td colspan="2">
+                                	 <label class="calfont tasklabel" style="margin-left:10px; margin-top:5px; border-bottom:solid 2px #A6A4A4;">At a Glance</label>
+                                     <table class="default">
                                      	<tr>
-                                        	<td style="width:60%;">
+                                        	<td style="padding-left:10px; padding-right:12px;">
                                                 <fieldset class="fieldsetcontainer">
-                                                    <legend>Groups Profiles (5)</legend>
-                                                    <div style="padding-top:10px;">
-                                                    	<?php 
-															$latestgrps = getLatestGroups(5);
-															
-															
-															foreach($latestgrps as $grp){
-																// debugMessage($grp['id']);
-																$fmgroup = new FarmGroup();																
-																$fmgroup->populate($grp['id']);
-																// debugMessage($grp->toArray());
-														?>
-                                                        	<label class="lineblocked" style="margin-bottom:10px; padding-left:10px; width:93%;"><a href="<?php echo $this->baseUrl('farmgroup/view/id/'.$fmgroup->getID()); ?>"><?php echo $fmgroup->getName(); ?></a><span class="pull-right"><?php echo changeMySQLDateToPageFormat($fmgroup->getRegDate()); ?></span></label>
-                                                        <?php } ?>
-                                                    </div>
-                                                </fieldset>
-                                            </td>
-                                            <td>
-                                            	<fieldset class="fieldsetcontainer">
-                                                    <legend>Users (5)</legend>
-                                                    <div style="padding-top:10px;">
-                                                    	<?php 
-															$latestusers = getLatestUsers(5);
-															// debugMessage($latestusers);
-															
-															foreach($latestusers as $user){
-																$useracc = new UserAccount();
-																$useracc->populate($user['id']);
-														?>
-                                                        	<label class="lineblocked" style="margin-bottom:15px; padding-left:10px; width:93%;"><a href="<?php echo $this->baseUrl('farmer/view/id/'.$useracc->getID()); ?>" title="<?php echo $useracc->isFarmer() ? 'Farmer' : 'DNA Group Clerk'; ?>: <?php echo $useracc->getName(); ?>"><?php echo $useracc->getName(); ?></a><span class="pull-right" title="<?php echo $useracc->isFarmer() ? 'Farmer User' : 'DNA User'; ?>"><?php echo $useracc->isFarmer() ? 'F' : 'G'; ?></span></label>
-                                                        <?php } ?>
-                                                    </div>
-                                                </fieldset>
-                                            </td>
-                                        </tr>
-                                     </table>
-                                </td>
-                                <td>
-                                	<label class="calfont tasklabel" style="margin-left:10px; margin-top:5px; border-bottom:solid 2px #A6A4A4;">At a Glance</label>
-                                     <table class="table nohover margin0 padding0" style="height:100%;">
-                                     	<tr>
-                                        	<td style="width:50%;">
-                                                <fieldset class="fieldsetcontainer">
-                                                    <legend>Groups Profiles</legend>
-                                                    <p>
-                                                    
-                                                    </p>
-                                                </fieldset>
-                                            </td>
-                                            <td>
-                                            	<fieldset class="fieldsetcontainer">
                                                     <legend>Farmers</legend>
-                                                    <p>
-                                                    
-                                                    </p>
+                                                    <div class="row margin0">
+                                                        <div class="pull-left" style="width:40%">
+                                                            <table class="table table-condensed table-bordered" style="margin:15px; width:95%;">
+                                                                <tr>
+                                                                    <td style="width:150px;"><label class="control-label pull-left leftalign">Total Farmers: </label></td>
+                                                                    <td class="centeralign"><?php echo $total_farmers; ?></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td><label class="control-label pull-left leftalign">Total (In Groups): </label></td>
+                                                                    <td class="centeralign"><?php echo $total_farmers_ingroups; ?></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td><label class="control-label pull-left leftalign">Total (Individuals): </label></td>
+                                                                    <td class="centeralign"><?php echo $total_farmers_ind; ?></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td><label class="control-label pull-left leftalign">Total Male: </label></td>
+                                                                    <td class="centeralign"><?php echo $total_farmers_male; ?></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td><label class="control-label pull-left leftalign">Total Female: </label></td>
+                                                                    <td class="centeralign"><?php echo $total_farmers_female; ?></td>
+                                                                </tr>
+                                                            </table>
+                                                        </div>
+                                                        <div class="pull-right" style="padding-right:30px; width:55%;">
+                                                        	<table class="table table-condensed table-bordered" style="margin:15px; width:100%;">
+                                                            	<thead>
+                                                                	<tr>
+                                                                    	<td></td>
+                                                                        <td style="width:25%;"><label class="control-label centeralign">In Groups</label></td>
+                                                                        <td style="width:25%;"><label class="control-label centeralign">Individuals</label></td>
+                                                                        <td style="width:15%;"><label class="control-label centeralign">Total</label></td>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                	<tr>
+                                                                    	<td><label class="control-label pull-left leftalign">Added this Week:</label></td>
+                                                                        <td class="centeralign"><?php echo $total_farmers_thisweek_grp; ?></td>
+                                                                        <td class="centeralign"><?php echo $total_farmers_thisweek_ind; ?></td>
+                                                                        <td class="centeralign"><?php echo $total_farmers_thisweek; ?></td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                    	<td><label class="control-label pull-left leftalign">Added this Month:</label></td>
+                                                                        <td class="centeralign"><?php echo $total_farmers_thismonth_grp; ?></td>
+                                                                        <td class="centeralign"><?php echo $total_farmers_thismonth_ind; ?></td>
+                                                                        <td class="centeralign"><?php echo $total_farmers_thismonth; ?></td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                    	<td><label class="control-label pull-left leftalign">Added last Month:</label></td>
+                                                                        <td class="centeralign"><?php echo $total_farmers_lastmonth_grp; ?></td>
+                                                                        <td class="centeralign"><?php echo $total_farmers_lastmonth_ind; ?></td>
+                                                                        <td class="centeralign"><?php echo $total_farmers_lastmonth; ?></td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                    	<td><label class="control-label pull-left leftalign">Added this Year:</label></td>
+                                                                        <td class="centeralign"><?php echo $total_farmers_thisyear_grp; ?></td>
+                                                                        <td class="centeralign"><?php echo $total_farmers_thisyear_ind; ?></td>
+                                                                        <td class="centeralign"><?php echo $total_farmers_thisyear; ?></td>
+                                                                    </tr>
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+													</div>
+                                                    <script src="<?php echo $this->baseUrl('javascript/chart/highcharts.js'); ?>"></script>
+													<script src="<?php echo $this->baseUrl('javascript/chart/exporting.js'); ?>"></script>
+                                                    <script type="text/javascript">
+                                                        // Radialize the colors
+														Highcharts.getOptions().colors = Highcharts.map(Highcharts.getOptions().colors, function(color) {
+															return {
+																radialGradient: { cx: 0.5, cy: 0.3, r: 0.7 },
+																stops: [
+																	[0, color],
+																	[1, Highcharts.Color(color).brighten(-0.3).get('rgb')] // darken
+																]
+															};
+														});
+														$(function () {
+                                                           	var v_ingroups = <?php echo $total_farmers_ingroups; ?>;
+                                                            var v_indv = <?php echo $total_farmers_ind; ?>;
+															var v_male = <?php echo $total_farmers_male; ?>;
+                                                            var v_female = <?php echo $total_farmers_female; ?>;
+														    var ingroups = <?php echo $percent_ingroups; ?>;
+                                                            var indv = <?php echo $percent_ind; ?>;
+															var male = <?php echo $percent_male; ?>;
+                                                            var female = <?php echo $percent_female; ?>;
+															
+                                                            $('#container_type').highcharts({
+                                                                chart: {
+                                                                    width: 170,
+																	height:225,
+																	margin: [25, 0, 60, 0]
+                                                                },
+                                                                title: {
+                                                                    text: 'Farmers by Type'
+                                                                },
+                                                                tooltip: {
+                                                                    pointFormat: '<b>{point.percentage}%</b>',
+                                                                    percentageDecimals: 1
+                                                                },
+                                                                exporting: {
+                                                                    enabled: false
+                                                                },
+                                                                credits: {
+                                                                    enabled: false
+                                                                },
+                                                                plotOptions: {
+                                                                    pie: {
+                                                                        allowPointSelect: true,
+                                                                        cursor: 'pointer',
+                                                                        dataLabels: {
+                                                                            enabled: false
+                                                                        },
+                                                                        showInLegend: true
+                                                                    }
+                                                                },
+                                                                series: [{
+                                                                    type: 'pie',
+                                                                    name: 'Farmer Share',
+                                                                    data: [
+                                                                        ['Farmers In Groups', ingroups],
+                                                                        ['Individual Farmers', indv]
+                                                                    ]
+                                                                }]
+                                                            });
+															
+															 $('#container_sex').highcharts({
+                                                                chart: {
+                                                                    width: 170,
+																	height:225,
+																	margin: [25, 0, 60, 0]
+                                                                },
+                                                                title: {
+                                                                    text: 'Farmers by Gender'
+                                                                },
+                                                                tooltip: {
+                                                                    pointFormat: '<b>{point.percentage}%</b>',
+                                                                    percentageDecimals: 1
+                                                                },
+                                                                exporting: {
+                                                                    enabled: false
+                                                                },
+                                                                credits: {
+                                                                    enabled: false
+                                                                },
+                                                                plotOptions: {
+                                                                    pie: {
+                                                                        allowPointSelect: true,
+                                                                        cursor: 'pointer',
+                                                                        dataLabels: {
+                                                                            enabled: false
+                                                                        },
+                                                                        showInLegend: true
+                                                                    }
+                                                                },
+                                                                series: [{
+                                                                    type: 'pie',
+                                                                    name: 'Farmer Share',
+                                                                    data: [
+                                                                        ['Male Farmers', male],
+                                                                        ['Female Farmers', female]
+                                                                    ]
+                                                                }]
+                                                            });
+                                                        
+															$('#container_history').highcharts({
+																chart: {
+																	type: 'column',
+																	width: 450,
+																	height:300,
+																	margin: [50, 0, 60, 50]
+																},
+																exporting: {
+                                                                    enabled: false
+                                                                },
+                                                                credits: {
+                                                                    enabled: false
+                                                                },
+																title: {
+																	text: 'Registration History'
+																},
+																xAxis: {     
+																	categories: [<?php echo $periodlist; ?>]
+																},
+																yAxis: {
+																	min: 0,
+																	title: {
+																		text: 'No of Farmers'
+																	},
+																	stackLabels: {
+																		style: {
+																			fontWeight: 'bold',
+																			color: (Highcharts.theme && Highcharts.theme.textColor) || 'gray'
+																		}
+																	}
+																},
+																legend: {
+																	align: 'right',
+																	x: 0,
+																	verticalAlign: 'top',
+																	y: 20,
+																	floating: true,
+																	backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColorSolid) || 'white',
+																	borderColor: '#CCC',
+																	borderWidth: 1,
+																	shadow: false
+																},
+																tooltip: {
+																	headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+																	pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+																		'<td style="padding:0"><b>{point.y} </b></td></tr>',
+																	footerFormat: '</table>',
+																	shared: true,
+																	useHTML: true
+																},
+																plotOptions: {
+																	column: {
+																		pointPadding: 0.2,
+																		borderWidth: 0
+																	}
+																},
+																series: [{
+																	name: 'In Groups',
+																	data: [<?php echo $groupslist; ?>]
+																}, {
+																	name: 'Individuals',
+																	data: [<?php echo $indvlist; ?>]
+																}, {
+																	name: 'Male',
+																	data: [<?php echo $malelist; ?>]
+																}, {
+																	name: 'Female',
+																	data: [<?php echo $femalelist; ?>]
+																}]
+															});
+															
+															$('#container_ghistory').highcharts({
+																chart: {
+																	type: 'column',
+																	width: 450,
+																	height:260,
+																	margin: [50, 0, 60, 50]
+																},
+																exporting: {
+                                                                    enabled: false
+                                                                },
+                                                                credits: {
+                                                                    enabled: false
+                                                                },
+																title: {
+																	text: 'Registration History'
+																},
+																xAxis: {     
+																	categories: [<?php echo $gperiodlist; ?>]
+																},
+																yAxis: {
+																	min: 0,
+																	title: {
+																		text: 'No of Groups'
+																	},
+																	stackLabels: {
+																		style: {
+																			fontWeight: 'bold',
+																			color: (Highcharts.theme && Highcharts.theme.textColor) || 'gray'
+																		}
+																	}
+																},
+																legend: {
+																	align: 'right',
+																	x: 0,
+																	verticalAlign: 'top',
+																	y: 20,
+																	floating: true,
+																	backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColorSolid) || 'white',
+																	borderColor: '#CCC',
+																	borderWidth: 1,
+																	shadow: false
+																},
+																tooltip: {
+																	headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+																	pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+																		'<td style="padding:0"><b>{point.y} </b></td></tr>',
+																	footerFormat: '</table>',
+																	shared: true,
+																	useHTML: true
+																},
+																plotOptions: {
+																	column: {
+																		pointPadding: 0.2,
+																		borderWidth: 0
+																	}
+																},
+																series: [{
+																	name: 'Farm Groups',
+																	data: [<?php echo $totallist; ?>]
+																}]
+															});
+														});
+                                                    </script>
+                                                    <div class="row margin0" style="min-height:250px; height:auto;">
+                                                        <table class="table border0 margin0 nohover">
+                                                            <tr>
+                                                                <td style="padding:0;" id="type_column">
+                                                                    <div id="container_type" style="margin: 0 auto; width:175px; float:left;"></div>
+                                                                    <div id="container_sex" style="margin: 0 auto; width:175px; float:left;"></div>
+                                                                </td>
+                                                                <td colspan="2" style="padding:0;" id="history_column">
+                                                                	<div id="container_history" style="margin: 0 auto; padding:0; width:100%; float:right;"></div>
+                                                                </td>
+                                                            </tr>
+                                                        </table>
+                                                    </div>
+                                                </fieldset>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                        	<td style="padding-left:10px; padding-right:12px; padding-top:15px;">
+                                            	<fieldset class="fieldsetcontainer">
+                                                	<legend>Farm Groups</legend>
+                                                    <table class="default">
+                                                        <tr>
+                                                            <td style="width:40%; vertical-align:top;">
+                                                                <table class="table table-condensed table-bordered" style="margin:5px 0 15px 10px; width:97%;">
+                                                                    <tbody>
+                                                                    	<tr>
+                                                                            <td style="width:150px;"><label class="control-label pull-left leftalign">Total Number: </label></td>
+                                                                            <td class="centeralign"><?php echo $total_groups; ?></td>
+                                                                        </tr>
+                                                                        <tr>
+                                                                            <td><label class="control-label pull-left leftalign">Added this Week: </label></td>
+                                                                            <td class="centeralign"><?php echo $total_groups_thisweek; ?></td>
+                                                                        </tr>
+                                                                        <tr>
+                                                                            <td><label class="control-label pull-left leftalign">Added this Month: </label></td>
+                                                                            <td class="centeralign"><?php echo $total_groups_thismonth; ?></td>
+                                                                        </tr>
+                                                                        <tr>
+                                                                            <td><label class="control-label pull-left leftalign">Added last Month: </label></td>
+                                                                            <td class="centeralign"><?php echo $total_groups_lastmonth; ?></td>
+                                                                        </tr>
+                                                                        <tr>
+                                                                            <td><label class="control-label pull-left leftalign">Added this Year: </label></td>
+                                                                            <td class="centeralign"><?php echo $total_groups_thisyear; ?></td>
+                                                                        </tr>
+                                                                        <tr>
+                                                                            <td><label class="control-label pull-left leftalign">Added last Year: </label></td>
+                                                                            <td class="centeralign"><?php echo $total_groups - $total_groups_thisyear; ?></td>
+                                                                        </tr>
+                                                                    </tbody>
+                                                                </table>
+                                                            </td>
+                                                            <td style="padding-left:30px; vertical-align:top;">
+                                                                <div id="container_ghistory" style="margin: 0 auto; padding:0; width:100%; float:right;"></div>
+                                                            </td>
+                                                        </tr>
+                                                     </table>
+                                                </fieldset>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                        	<td style="padding-left:10px; padding-right:12px; padding-top:15px;">
+                                            	<fieldset class="fieldsetcontainer">
+                                                	<legend>Latest Subscriptions</legend>
+                                                    <table class="default">
+                                                        <tr>
+                                                            <td style="width:45%; vertical-align:top;">
+                                                                <table class="table table-condensed table-bordered" style="margin:5px 0 15px 10px; width:97%; ">
+                                                                    <thead>
+                                                                        <tr>
+                                                                            <td class="centeralign" style="width:20px;">#</td>
+                                                                            <td style="padding-left:15px;"><label class="control-label leftalign lineblocked">Lastest 5 Farmers</label><span class="pull-right inlineblocked"><a href="<?php echo $this->baseUrl('farmer/list'); ?>">View all</a></span></td>
+                                                                            <td style="width:35%;"><label class="control-label centeralign">Date</label></td>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                    <?php 
+                                                                        $latestusers = getLatestUsers(5);
+                                                                        $i = 1;
+                                                                        foreach($latestusers as $user){
+                                                                            $useracc = new UserAccount();
+                                                                            $useracc->populate($user['id']);
+                                                                    ?>
+                                                                        <tr>
+                                                                            <td class="centeralign"><?php echo $i; ?></td>
+                                                                            <td><label class="lineblocked" style="margin-bottom:15px; padding-left:10px; width:93%;"><a href="<?php echo $this->baseUrl('farmer/view/id/'.encode($useracc->getFarmerID())); ?>" title="<?php echo $useracc->isFarmer() ? 'Farmer' : 'DNA Group Clerk'; ?>: <?php echo $useracc->getName(); ?>"><?php echo $useracc->getName(); ?></a></label></td>
+                                                                            <td><?php echo changeMySQLDateToPageFormat($useracc->getDateCreated()).' '.date("g:i A", strtotime($useracc->getDateCreated())); ?></td>
+                                                                        </tr>
+                                                                    <?php $i++; } ?>
+                                                                    </tbody>
+                                                                </table>
+                                                                
+                                                            </td>
+                                                            <td style="padding-left:0; vertical-align:top;">
+                                                                <table class="table table-condensed table-bordered" style="margin:5px 0 15px 10px; width:96%;">
+                                                                    <thead>
+                                                                        <tr>
+                                                                            <td class="centeralign" style="width:20px;">#</td>
+                                                                            <td style="padding-left:15px;"><label class="control-label leftalign lineblocked">Lastest 5 Farm Groups</label><span class="pull-right inlineblocked"><a href="<?php echo $this->baseUrl('farmgroup/list'); ?>">View all</a></span></td>
+                                                                            <td style="width:30%;"><label class="control-label centeralign">Date</label></td>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                    <?php 
+                                                                        $latestgrps = getLatestGroups(5);
+                                                                        $i = 1;
+                                                                        foreach($latestgrps as $grp){
+                                                                            $fmgroup = new FarmGroup();																
+                                                                            $fmgroup->populate($grp['id']);
+                                                                    ?>
+                                                                        <tr>
+                                                                            <td class="centeralign"><?php echo $i; ?></td>
+                                                                            <td><label class="lineblocked" style="margin-bottom:10px; padding-left:10px; width:93%;"><a href="<?php echo $this->baseUrl('farmgroup/view/id/'.encode($fmgroup->getID())); ?>"><?php echo $fmgroup->getName(); ?></a></label></td>
+                                                                            <td><?php echo $fmgroup->getDateCreated(); ?></td>
+                                                                        </tr>
+                                                                    <?php $i++; } ?>
+                                                                    </tbody>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                     </table>
+                                                </fieldset>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                        	<td style="padding-left:10px; padding-right:12px; padding-top:15px; padding-bottom:15px;">
+                                            	<fieldset class="fieldsetcontainer">
+                                                	<legend>Payments Summary</legend>
+                                                    <div class="row margin0">
+                                                        <div class="pull-left" style="width:40%">
+                                                            <table class="table table-condensed table-bordered" style="margin:15px; width:95%;">
+                                                            
+                                                            </table>
+                                                        </div>
+                                                    </div>
                                                 </fieldset>
                                             </td>
                                         </tr>
                                      </table>
                                 </td>
                             </tr>
-                            <tr>
-                            	<td style="width:48%;">
-                                	 <label class="calfont tasklabel" style="margin-left:10px; margin-top:5px; border-bottom:solid 2px #A6A4A4;">Latest Payments</label>
-                                     <table class="table nohover margin0 padding0" style="border:solid 1px #A6A4A4; width:97%; margin-left:10px;">
-                                     	<tr>
-                                        	<td style="height:250px;"></td>
-                                        </tr>
-                                     </table>
-                                </td>
-                                <td>
-                                	 <label class="calfont tasklabel" style="margin-left:10px; margin-top:5px; border-bottom:solid 2px #A6A4A4;">Report Highlights</label>
-                                     <table class="table nohover margin0 padding0" style="border:solid 1px #A6A4A4; width:97%; margin-left:10px;">
-                                     	<tr>
-                                        	<td style="height:250px;"></td>
-                                        </tr>
-                                     </table>
-                                </td>
-                            </tr>
+                          
                         </table>
                     </div>
                 </div>

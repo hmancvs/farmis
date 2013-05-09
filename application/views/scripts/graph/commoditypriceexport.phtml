@@ -26,6 +26,8 @@
 		}
 	}
 ?>
+<script src="<?php echo $this->baseUrl('javascript/chart/highcharts.js'); ?>"></script>
+<script src="<?php echo $this->baseUrl('javascript/chart/exporting.js'); ?>"></script>
 <script type="text/javascript">
 var chart;
 <?php 
@@ -35,47 +37,45 @@ var chart;
 	} 
 ?>
 <?php echo $jquery_prefix; ?>(document).ready(function() {
-	   chart = new Highcharts.Chart({
-		  chart: {
-			 renderTo: 'commoditycontainer',
-			 defaultSeriesType: 'line' ,
-			 marginTop: 90,
-			 height: 400       
-		  },
-		  credits: {
-				enabled: false
-			},
-		  title: {
-			 text: " "
-		  }, 
-		  exporting: {
-			  enabled: false
-		  }, 
-		  xAxis: {     
-			 categories: [<?php echo $periodlist; ?>]
-		  },
-		  yAxis: {   
-			 title: {
-				text: 'Retail Price (UGX)'
-			 }
-		  },
-		  tooltip: {
-			  formatter: function() {
-				return this.series.name + ' in '+ this.x + ': UGX ' + Highcharts.numberFormat(this.y, 0);
-			 }
-		  },	
-		  legend: {
-			 layout: 'horizontal',         
-			 align: 'center',
-			 verticalAlign: 'top',
-			 x: -10,
-			 y: -10,
-			 floating: true,
-			 shadow: true,
-			 width: 350
-		  },   
-		  series: [<?php echo implode(",", $series_data); ?>]
-	   });
+   $('#commoditycontainer').highcharts({
+	  chart: {
+		 marginTop: 90,
+		 height: 400       
+	  },
+	  credits: {
+			enabled: false
+	  },
+	  title: {
+		 text: " "
+	  }, 
+	  exporting: {
+		  enabled: false
+	  }, 
+	  xAxis: {     
+		 categories: [<?php echo $periodlist; ?>]
+	  },
+	  yAxis: {   
+		 title: {
+			text: 'Retail Price (UGX)'
+		 }
+	  },
+	  tooltip: {
+		  formatter: function() {
+			return this.series.name + ' in '+ this.x + ': UGX ' + Highcharts.numberFormat(this.y, 0);
+		 }
+	  },	
+	  legend: {
+		 layout: 'horizontal',         
+		 align: 'center',
+		 verticalAlign: 'top',
+		 x: -10,
+		 y: -10,
+		 floating: true,
+		 shadow: true,
+		 width: 350
+	  },   
+	  series: [<?php echo implode(",", $series_data); ?>]
+   });
 });
 </script>
 <div id="commoditycontainer"></div>
