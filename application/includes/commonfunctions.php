@@ -683,7 +683,7 @@ function sendSMSMessage($to, $txt) {
 	));
 	
 	// debugMessage($client); // exit();
-	try {
+	/*try {
 		$response = $client->request();
 		$body = $response->getBody();
 		// debugMessage($body);
@@ -691,7 +691,7 @@ function sendSMSMessage($to, $txt) {
 	} catch (Exception $e) {
 		# error handling
 		debugMessage("Error is ".$e->getMessage());
-	}
+	}*/
 	// return $digitcode;
 	return true;
 }

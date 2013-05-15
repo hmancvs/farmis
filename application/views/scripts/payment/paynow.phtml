@@ -86,19 +86,21 @@ $(document).ready(function() {
 		titleClick:	true,
 		validate:	true,
 		back: function(index) {
-			$("#paynowform-next-1").hide();
+			$("#paynowform-next-1, #paynowform-next-2, #step2auth, #step3pay").hide();
 			if(index == 2){
 				$("#step2auth").show();
-			} else {
-				$("#step2auth").hide();
+			}
+			if(index == 3){
+				$("#step3pay").show();
 			}
 		},
 		next: function(index) {
-			$("#paynowform-next-1").hide();
+			$("#paynowform-next-1, #paynowform-next-2, #step2auth, #step3pay").hide();
 			if(index == 2){
 				$("#step2auth").show();
-			} else {
-				$("#step2auth").hide();
+			}
+			if(index == 3){
+				$("#step3pay").show();
 			}
 			$("#step2auth").click(function(e){
 				// e.preventDefault();
@@ -112,18 +114,14 @@ $(document).ready(function() {
 					$(location).attr('href', step2authaction);
 				} 
 			});
-			switch (index){
-				case '2':
-
-					break; 
-			}
+			
 		}
 	});
 	
 	$(".button-back").html('').prepend('<i class="icon-arrow-left icon-white"></i> Back').addClass('btn btn-primary btn-large');
 	$(".button-next").html('').prepend('<i class="icon-arrow-right icon-white"></i> Continue').addClass('btn btn-primary btn-large'); 
 	$(".finish").html('').prepend('<i class="icon-ok icon-white"></i> Continue').addClass('btn btn-primary btn-large pull-left');
-	$(".step legend, .paynowform-next-1, #step2auth").hide();
+	$(".step legend, #paynowform-next-1, #paynowform-next-2, #step2auth, #step3pay").hide();
 	$(".step").attr('title','');
 	
 	var step = '<?php echo $step; ?>';
@@ -131,11 +129,22 @@ $(document).ready(function() {
 	
 	<?php if($step == 3){ ?>
 		// change name of step 3 button
-		$("#paynowform-next-2").html('').prepend('<i class="icon-arrow-right icon-white"></i> Pay Now').addClass('btn btn-primary btn-large');
+		$("#step3pay").show();
 		// compute amout 
 		computeRenewAmount();
 		$("#period").change(function(e){
 			computeRenewAmount();
+		});
+		
+		$("#step3pay").click(function(e){
+			// e.preventDefault();
+			bootbox.confirm('<label class="blockcontainer">Confirm transaction by specifying your FARMIS password? <br /><br />Click <b>OK</b> to proceed, and <b>Cancel</b> to ignore</label>', function(confirmed) {
+				if(confirmed){
+					alert('confirmed');
+				} else {
+					return false;
+				}
+			});
 		});
 		
 		// 
@@ -308,8 +317,9 @@ $(document).ready(function() {
                     </table>  
                 </fieldset>
                 <button type="button" class="btn btn-primary btn-large step2auth hidden" id="step2auth" style="position:absolute; left:160px; bottom:55px;"><i class="icon-arrow-right icon-white"></i> Validate</button>
-                <button type="button" class="btn btn-primary btn-large step2auth hidden" id="step3pay" style="position:absolute; left:160px; bottom:55px;"><i class="icon-arrow-right icon-white"></i> Pay Now</button>
+                <button type="button" class="btn btn-primary btn-large step3pay hidden" id="step3pay" style="position:absolute; left:160px; bottom:55px;"><i class="icon-arrow-right icon-white"></i> Pay Now</button>
                 <input type="hidden" id="step2_successurl" name="step2_successurl" value="<?php echo encode($this->baseUrl('payment/paynow/id/'.encode($payment->getFarmerID()).'/step/3')); ?>" />
+                <input type="hidden" id="step3_successurl" name="step3_successurl" value="<?php echo encode($this->baseUrl('payment/paynow/id/'.encode($payment->getFarmerID()).'/step/4')); ?>" />
                 <button type="submit" class="btn btn-primary btn-large finish" id="complete"><i class="icon-arrow-right icon-white"></i> Complete</button>
                 <input type="hidden" id="id" name="id" value="<?php echo encode($payment->getID()); ?>" />
                 <input type="hidden" id="stem" name="stem" value="<?php echo $payment->getStem(); ?>" />
