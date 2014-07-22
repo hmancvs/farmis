@@ -36,7 +36,6 @@ class InventoryController extends SecureController   {
 		// debugMessage($formvalues);
 		$inventory = new Inventory();
 		$inventory->populate(decode($this->_getParam('id')));
-		$farmid = $inventory->getFarmID();
 		
 		// only upload a file if the attachment field is specified		
 		$upload = new Zend_File_Transfer();
@@ -48,7 +47,7 @@ class InventoryController extends SecureController   {
 	 	$upload->addValidator('Size', false, $config->profilephoto->maximumfilesize);
 		
 		// base path for profile pictures
-	 	$destination_path = APPLICATION_PATH."/../public/uploads/farms/farm_".$farmid;
+	 	$destination_path = APPLICATION_PATH."/../public/uploads/user_".$inventory->getUserID()."/inventory";
 		// determine if folder exists
 		if(!is_dir($destination_path)){
 			// no folder exits. Create the folder
@@ -173,7 +172,7 @@ class InventoryController extends SecureController   {
 		//debugMessage($inventory->toArray());
 		
 		$oldfile = "large_".$inventory->getPhoto();
-		$base = APPLICATION_PATH.DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR."public".DIRECTORY_SEPARATOR."uploads".DIRECTORY_SEPARATOR."farms".DIRECTORY_SEPARATOR."farm_".$inventory->getFarmID().DIRECTORY_SEPARATOR."inventory_".$inventory->getID().DIRECTORY_SEPARATOR; 
+		$base = APPLICATION_PATH.DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR."public".DIRECTORY_SEPARATOR."uploads".DIRECTORY_SEPARATOR."user_".$inventory->getUserID().DIRECTORY_SEPARATOR."inventory".DIRECTORY_SEPARATOR."inventory_".$inventory->getID().DIRECTORY_SEPARATOR; 
 		$src = $base.$oldfile;
 		// debugMessage($src);
 		

@@ -3,12 +3,14 @@
 	
 	$plant = new SeasonPlanting();
 	$plant->populate(decode($request->id));	
-	$thefarmid = $plant->getSeason()->getFarmID();
 	
 	$title = "Activity: ".$plant->getActivityName(); 
+	$request->setParam('tab', 'seasons');
+	$user = $plant->getUser();
 		
-	$this->headTitle($title);  
-	$farmtitle = isFarmer() ? "Manage Farm" : "Manage Farm: ".$plant->getFarm()->getName();
+	$title = "Activity: ".$plant->getActivityName();	
+	$farmtitle = $plant->getUser()->getName();
+	$this->headTitle($title.$browserappend);  
 ?>
 <script>
 	$(document).ready(function() {
@@ -17,9 +19,9 @@
 </script>
 <h1><?php echo $farmtitle; ?></h1>
 <div id="tabs">
-    <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
+    <?php require APPLICATION_PATH."/views/scripts/profile/profileleftcolumn.phtml"; ?>
     <div class="span9 tab-content" id="center">
-    	<?php require APPLICATION_PATH."/views/scripts/farm/tabstop.phtml"; ?>
+    	<?php require APPLICATION_PATH."/views/scripts/profile/tabstop.phtml"; ?>
 		<div id="seasons">
             <form id="viewform" class="form-horizontal seasons">
             <?php if($request->tab == 'seasons'){ ?>
@@ -52,7 +54,10 @@
                                     <td class="formactions">
                                         <a class="btn btn-primary" href="<?php echo $this->baseUrl('season/plant/id/'.encode($plant->getID())); ?>" id="update"><i class="icon-pencil icon-white"></i> Update</a>
                                         <a href="javascript: void(0)" id="deleteline" title="Delete Entry" class="btn deleteline noimgbutton" action="<?php echo $this->baseUrl('season/delete/id/'.$plant->getID()."/entityname/SeasonPlanting/successurl/".encode($this->baseUrl('season/view/id/'.encode($plant->getSeasonID())))); ?>"><i class="icon-trash"></i></a>   
-                                        <a class="btn" href="<?php echo $this->baseUrl('season/view/id/'.encode($plant->getSeasonID())); ?>" title="Return to Timeline"><i class="icon-list"></i> View Timeline</a>           
+                                        <a class="btn" href="<?php echo $this->baseUrl('season/view/id/'.encode($plant->getSeasonID())); ?>" title="Return to Timeline"><i class="icon-list"></i> View Season</a>           
+                                        <?php if($plant->getUser()->getSeasons()->count() > 1){ ?>           
+                                        	<a class="btn" href="<?php echo $this->baseUrl('profile/view/id/'.encode($plant->getUserID()).'/tab/seasons'); ?>"><i class="icon-list"></i> All Seasons</a>
+                                        <?php } ?> 
                                     </td>
                                </tr>
                             </table>                           
@@ -101,7 +106,7 @@
             <?php } ?>    
             </form>
 		</div>
-		<?php require APPLICATION_PATH."/views/scripts/farm/tabsbottom.phtml"; ?> 
+		<?php require APPLICATION_PATH."/views/scripts/profile/tabsbottom.phtml"; ?>  
     </div>
 </div>    
 <?php

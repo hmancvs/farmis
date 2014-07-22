@@ -13,13 +13,13 @@ class SeasonActivity extends BaseEntity  {
 		
 		// set the table
 		$this->setTableName('seasonactivity');
-		$this->hasColumn('seasonid', 'integer', null, array('notnull' => true, 'notblank' => true));	
-		$this->hasColumn('farmid', 'integer', null, array( 'notnull' => true, 'notblank' => true));
+		$this->hasColumn('seasonid', 'integer', null, array('notblank' => true));	
+		$this->hasColumn('userid', 'integer', null, array('notblank' => true));
 		$this->hasColumn('cropid', 'integer', null);
 		$this->hasColumn('ref', 'string', 50);
 		$this->hasColumn('itemname', 'string', 255);
 		$this->hasColumn('itemtype', 'string', 255);
-		$this->hasColumn('startdate','date', null, array( 'notnull' => true, 'notblank' => true));
+		$this->hasColumn('startdate','date', null, array('notblank' => true));
 		$this->hasColumn('enddate','date', null);
 		$this->hasColumn('method', 'string', 255);
 		$this->hasColumn('timing', 'integer', null);
@@ -46,7 +46,7 @@ class SeasonActivity extends BaseEntity  {
 		
 		// set the custom error messages
        	$this->addCustomErrorMessages(array(
-       									"farmid.notblank" => $this->translate->_("season_farmid_error"),
+       									"userid.notblank" => $this->translate->_("season_userid_error"),
        									"seasonid.notblank" => $this->translate->_("season_seasonid_error"),
        									"type.notblank" => $this->translate->_("season_trackingtype_error"),
        									"startdate.notblank" => $this->translate->_("season_activitydate_error"),
@@ -61,8 +61,8 @@ class SeasonActivity extends BaseEntity  {
 									'foreign' => 'id'
 							)
 						);
-		$this->hasOne('Farm as farm',
-							array('local' => 'farmid',
+		$this->hasOne('UserAccount as user',
+							array('local' => 'userid',
 									'foreign' => 'id'
 							)
 						);
@@ -129,8 +129,7 @@ class SeasonActivity extends BaseEntity  {
 		if(!isArrayKeyAnEmptyString('financetype', $formvalues)){
 			if($formvalues['financetype'] == 3 || $formvalues['financetype'] == 4 || $formvalues['financetype'] == 5){
 				$formvalues['activitycredit'][0]['financetype'] = $formvalues['financetype'];
-				$formvalues['activitycredit'][0]['farmerid'] = $formvalues['farmerid'];
-				$formvalues['activitycredit'][0]['farmid'] = $formvalues['farmid'];
+				$formvalues['activitycredit'][0]['userid'] = $formvalues['userid'];
 				$formvalues['activitycredit'][0]['stage'] = $formvalues['stage'];
 				// $formvalues['activitycredit'][0]['type'] = $formvalues['type'];
 				isArrayKeyAnEmptyString('principal', $formvalues) ? $formvalues['activitycredit'][0]['principal'] = NULL : $formvalues['activitycredit'][0]['principal'] = $formvalues['principal'];
@@ -176,8 +175,7 @@ class SeasonActivity extends BaseEntity  {
 					if(!isArrayKeyAnEmptyString('id', $value)){
 						$detailsarray[$key]['id'] = $value['id'];
 					}
-					$detailsarray[$key]['farmerid'] = $formvalues['farmerid'];
-					$detailsarray[$key]['farmid'] = $formvalues['farmid'];
+					$detailsarray[$key]['userid'] = $formvalues['userid'];
 					$detailsarray[$key]['seasonid'] = $formvalues['seasonid'];
 					if(!isArrayKeyAnEmptyString('labourdetails_fieldsizeunit_'.$key, $formvalues)){
 						$detailsarray[$key]['fieldsizeunit'] = $formvalues['labourdetails_fieldsizeunit_'.$key];
@@ -281,14 +279,14 @@ class SeasonActivity extends BaseEntity  {
     function getNextReferencePointer() {
     	$conn = Doctrine_Manager::connection();
     	$session = SessionWrapper::getInstance();
-    	$farmerid = $session->getVar('farmerid');
+    	$userid = $session->getVar('userid');
 		$sql = "SELECT COUNT(id) FROM seasonactivity WHERE seasonid = ".$this->getSeasonID()." "; 
 		$result = $conn->fetchOne($sql);
 		return str_pad(($result+1), 3, "0", STR_PAD_LEFT);
     }
 	# determine credit history for activity
 	function getCreditDetails() {
-    	$q = Doctrine_Query::create()->from('loan l')->where("l.activityid = '".$this->getID()."'");
+    	$q = Doctrine_Query::create()->from('Loan l')->where("l.activityid = '".$this->getID()."'");
 		$result = $q->execute();
 		return $result->get(0);
 	}

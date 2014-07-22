@@ -13,8 +13,7 @@ class Loan extends BaseEntity  {
 		
 		// set the table
 		$this->setTableName('loan');
-		$this->hasColumn('farmid', 'integer', null, array( 'notnull' => true, 'notblank' => true));
-		$this->hasColumn('farmerid', 'integer', null, array( 'notnull' => true, 'notblank' => true));
+		$this->hasColumn('userid', 'integer', null, array('notblank' => true));
 		$this->hasColumn('seasonid', 'integer', null);
 		$this->hasColumn('type', 'integer', null, array('default' => 1)); // 1 Season, 2 Non Season/Other sales
 		
@@ -60,21 +59,15 @@ class Loan extends BaseEntity  {
 		
 		// set the custom error messages
        	$this->addCustomErrorMessages(array(
-       									"farmerid.notblank" => $this->translate->_("season_farmerid_error"),
-       									"farmid.notblank" => $this->translate->_("season_farmid_error")
+       									"userid.notblank" => $this->translate->_("season_userid_error")
        	       						));
 	}
 	public function setUp() {
 		parent::setUp();
 		
-		$this->hasOne('Farm as farm',
-							array('local' => 'farmid',
-									'foreign' => 'id'
-							)
-						);
-		$this->hasOne('Farmer as farmer', 
+		$this->hasOne('UserAccount as user', 
 							array(
-								'local' => 'farmerid',
+								'local' => 'userid',
 								'foreign' => 'id'
 							)
 						);
@@ -132,11 +125,8 @@ class Loan extends BaseEntity  {
 		if(isArrayKeyAnEmptyString('type', $formvalues)){
 			unset($formvalues['type']); 
 		}
-		if(isArrayKeyAnEmptyString('farmerid', $formvalues)){
-			unset($formvalues['farmerid']); 
-		}
-		if(isArrayKeyAnEmptyString('farmid', $formvalues)){
-			unset($formvalues['farmid']); 
+		if(isArrayKeyAnEmptyString('userid', $formvalues)){
+			unset($formvalues['userid']); 
 		}
 		if(isArrayKeyAnEmptyString('seasonid', $formvalues)){
 			unset($formvalues['seasonid']); 
@@ -216,7 +206,6 @@ class Loan extends BaseEntity  {
 	}
 	# determine the loan payment histry
     function getPaymentDetails(){
-    	// l.farmid = '".$this->getID()."'
     	$q = Doctrine_Query::create()->from('LoanPayment lp')->where("lp.loanid = '".$this->getID()."'")->orderby('lp.paymentdate DESC');
 		$result = $q->execute();
 		return $result;

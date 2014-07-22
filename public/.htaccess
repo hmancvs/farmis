@@ -45,3 +45,6 @@ RewriteCond %{REQUEST_FILENAME} -l [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^.*$ - [NC,L]
 RewriteRule ^.*$ index.php [NC,L]
+
+RewriteCond %{HTTP_HOST} ^www\.farmis.ug\.com$ [NC]
+RewriteRule ^(.*)$ http://farmis.ug/$1 [L,R=301]

@@ -13,6 +13,23 @@
 	$contacttype->setName("ALL_CONTACT_TYPES");
 	$all_contact_types = $contacttype->getOptionValuesAndDescription();
 	
+	$country = 'UG';
+	$location_label = 'District';
+	$locations_label = 'Districts';
+	$countrycode = COUNTRY_CODE_UG;
+	$county_label = $this->translate("global_county_label");
+	$subcounty_label = $this->translate("global_subcounty_label");
+	
+	if(isKenya() || $contact->isKenyan()){
+		$country = 'KE';
+		$session->setVar('country', 'ke');
+		$location_label = 'County';
+		$locations_label = 'Counties';
+		$countrycode = COUNTRY_CODE_KE;
+		$county_label = $this->translate("global_subcounty_label");
+		$subcounty_label = $this->translate("global_ward_label");
+	}
+	// debugMessage($contact->toArray()); 
 	$this->headTitle($title);
 ?>
 <script>
@@ -112,7 +129,7 @@
                         <table class="table">                       
                            <tr>		                    
                                 <td class="formactions">
-                                <?php if($contact->getFarmerID() == $farmerid  || $contact->getCreatedBy() == $userid || isAdmin()){ ?>
+                                <?php if($contact->getUserID() == $userid  || $contact->getCreatedBy() == $userid || isAdmin()){ ?>
                                     <a class="btn btn-primary" href="<?php echo $this->baseUrl('contact/index/id/'.encode($contact->getID())); ?>" id="update"><i class="icon-pencil icon-white"></i> Update</a>                                       
                                 <?php } ?>
                                 <a class="btn btn-primary" href="<?php echo $this->baseUrl('contact/list/id/'.encode($contact->getID())); ?>" id="list"><i class="icon-list icon-white"></i> All Contacts</a>     
@@ -151,15 +168,15 @@
                         <h3 class="well-legend">Location</h3>
                         <table class="table noborder">                       
                             <tr>
-                                <td style="width:45%;"><label class="control-label"><?php echo $this->translate("contact_district_label"); ?>:</label></td>
+                                <td style="width:45%;"><label class="control-label"><?php echo $location_label; ?>:</label></td>
                                 <td><?php echo isEmptyString($contact->getLocationID()) ? '--' : $contact->getLocation()->getName(); ?></td>
                             </tr>
                             <tr>
-                                <td><label class="control-label"><?php echo $this->translate("global_county_label"); ?>:</label></td>
+                                <td><label class="control-label"><?php echo $county_label; ?>:</label></td>
                                 <td><?php echo isEmptyString($contact->getCountyID()) ? '--' : $contact->getCounty()->getName(); ?></td>
                             </tr>
                             <tr>
-                                <td><label class="control-label"><?php echo $this->translate("global_subcounty_label"); ?>:</label></td>
+                                <td><label class="control-label"><?php echo $subcounty_label; ?>:</label></td>
                                 <td><?php echo isEmptyString($contact->getSubcountyID()) ? '--' : $contact->getSubcounty()->getName(); ?></td>
                             </tr>
                             <tr>

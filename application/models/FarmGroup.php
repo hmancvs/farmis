@@ -15,7 +15,6 @@ class FarmGroup extends BaseEntity {
 		$this->hasColumn('type', 'integer', null, array( 'notnull' => true, 'notblank' => true));	
 		$this->hasColumn('subtype', 'integer', null);	
 		$this->hasColumn('parentid', 'integer', null);
-		$this->hasColumn('addressid', 'integer', null);
 		$this->hasColumn('managerid', 'integer', null);
 		$this->hasColumn('contactname', 'string', 255);
 		$this->hasColumn('email', 'string', 50);
@@ -33,6 +32,17 @@ class FarmGroup extends BaseEntity {
 		$this->hasColumn('contactname3', 'string', 255);
 		$this->hasColumn('contactemail3', 'string', 50);
 		$this->hasColumn('contactphone3', 'string', 15);
+		
+		$this->hasColumn('country', 'string', 2, array('default' => 'UG'));
+		$this->hasColumn('districtid', 'integer', null);
+		$this->hasColumn('countyid', 'integer', null);
+		$this->hasColumn('subcountyid', 'integer', null);
+		$this->hasColumn('parishid', 'integer', null);
+		$this->hasColumn('villageid', 'integer', null);
+		$this->hasColumn('streetaddress', 'string', 255);
+		$this->hasColumn('city', 'string', 50);
+		$this->hasColumn('state', 'string', 50);
+		$this->hasColumn('zipcode', 'string', 15);	
 	}
 	/**
 	 * Contructor method for custom initialization
@@ -54,7 +64,7 @@ class FarmGroup extends BaseEntity {
 	public function setUp() {
 		parent::setUp(); 
 		
-		$this->hasOne('Farmer as manager', 
+		$this->hasOne('UserAccount as manager', 
 								array(
 									'local' => 'managerid',
 									'foreign' => 'id'
@@ -72,24 +82,42 @@ class FarmGroup extends BaseEntity {
 								'foreign' => 'id'
 							)
 					); 
-		$this->hasOne('Address as address',
+		$this->hasMany('UserAccount as users',
 						 array(
-								'local' => 'addressid',
+								'local' => 'id',
+								'foreign' => 'farmgroupid'
+							)
+					);
+		$this->hasOne('Location as district',
+						 array(
+								'local' => 'districtid',
 								'foreign' => 'id'
 							)
 					); 
-		$this->hasMany('Address as addresses',
+		$this->hasOne('Location as county',
 						 array(
-								'local' => 'id',
-								'foreign' => 'farmgroupid'
+								'local' => 'countyid',
+								'foreign' => 'id'
 							)
-					);
-		$this->hasMany('Farmer as farmers',
+					); 
+		$this->hasOne('Location as subcounty',
 						 array(
-								'local' => 'id',
-								'foreign' => 'farmgroupid'
+								'local' => 'subcountyid',
+								'foreign' => 'id'
 							)
-					);
+					); 
+		$this->hasOne('Location as parish',
+						 array(
+								'local' => 'parishid',
+								'foreign' => 'id'
+							)
+					); 
+		$this->hasOne('Location as village',
+						 array(
+								'local' => 'villageid',
+								'foreign' => 'id'
+							)
+					); 
 	}
 	/**
 	 * Custom model validation
@@ -151,7 +179,6 @@ class FarmGroup extends BaseEntity {
 	function processPost($formvalues){
 		// debugMessage($formvalues);
 		$session = SessionWrapper::getInstance();
-    	$farmerid = $session->getVar('farmerid');
     	$userid = $session->getVar('userid');
     	
 		// set default values for integers, dates, decimals
@@ -167,9 +194,6 @@ class FarmGroup extends BaseEntity {
 		if(isArrayKeyAnEmptyString('parentid', $formvalues)){
 			$formvalues['parentid'] = NUll; 
 		}
-		if(isArrayKeyAnEmptyString('addressid', $formvalues)){
-			unset($formvalues['addressid']); 
-		}
 		if(isArrayKeyAnEmptyString('regdate', $formvalues)){
 			$formvalues['regdate'] = NULL; 
 		}
@@ -177,39 +201,26 @@ class FarmGroup extends BaseEntity {
 		# set new regno from refno
 		if(!isArrayKeyAnEmptyString('refno', $formvalues)){
 			$prefix = FARMGROUP_REG_PREFIX;
-			$regno = $prefix.'/'.$formvalues['refno'];
+			$regno = $prefix.$formvalues['refno'];
 			$formvalues['regno'] = $regno;
 		}
-		# process address information
-		$address = array(); 
-		$theaddress = $this->getAddress();
-		$address[0]['id'] = $theaddress->getID();
-		$address[0]['type'] = 2;
-		if(!isArrayKeyAnEmptyString('id', $formvalues)){
-			$address[0]['farmgroupid'] = $formvalues['id'];
+		if(isArrayKeyAnEmptyString('country', $formvalues)){
+			$formvalues['country'] = NULL; 
 		}
-		$address[0]['country'] = !isArrayKeyAnEmptyString('country', $formvalues) ? $formvalues['country'] : NULL;
-		if(!isArrayKeyAnEmptyString('districtid', $formvalues)){
-			$address[0]['districtid'] = $formvalues['districtid'];
+		if(isArrayKeyAnEmptyString('districtid', $formvalues)){
+			$formvalues['districtid'] = NULL; 
 		}
-		if(!isArrayKeyAnEmptyString('countyid', $formvalues)){
-			$address[0]['countyid'] = $formvalues['countyid'];
+		if(isArrayKeyAnEmptyString('countyid', $formvalues)){
+			unset($formvalues['countyid']);
 		}
-		if(!isArrayKeyAnEmptyString('subcountyid', $formvalues)){
-			$address[0]['subcountyid'] = $formvalues['subcountyid'];
+		if(isArrayKeyAnEmptyString('subcountyid', $formvalues)){
+			unset($formvalues['subcountyid']);
 		}
-		if(!isArrayKeyAnEmptyString('parishid', $formvalues)){
-			$address[0]['parishid'] = $formvalues['parishid'];
+		if(isArrayKeyAnEmptyString('parishid', $formvalues)){
+			unset($formvalues['parishid']);
 		}
-		if(!isArrayKeyAnEmptyString('villageid', $formvalues)){
-			$address[0]['villageid'] = $formvalues['villageid'];
-		}
-		if(!isArrayKeyAnEmptyString('streetaddress', $formvalues)){
-			$address[0]['streetaddress'] = $formvalues['streetaddress'];
-		}
-		
-		if(count($address) > 0){
-			$formvalues['addresses'] = $address;
+		if(isArrayKeyAnEmptyString('villageid', $formvalues)){
+			unset($formvalues['villageid']);
 		}
 		
 		if(!isArrayKeyAnEmptyString('phone', $formvalues)){
@@ -227,18 +238,16 @@ class FarmGroup extends BaseEntity {
 			if(!isArrayKeyAnEmptyString('id', $formvalues)){
 				$formvalues['manager']['farmgroupid'] = $formvalues['id'];
 			}
-			$formvalues['manager']['type'] = 4;
 			$formvalues['manager']['firstname'] = $formvalues['contactname'];
 			$formvalues['manager']['lastname'] = "-";
 			$formvalues['manager']['email'] = $formvalues['email'];
-			$formvalues['manager']['createdby'] = $farmerid;
-			// $formvalues['manager']['isinvited'] = $formvalues['isinvited'];
+			$formvalues['manager']['createdby'] = $userid;
 		} else {
 			unset($formvalues['manager']);
 		}
 		
-        // debugMessage($formvalues); 
-        // exit();
+        /*debugMessage($formvalues); 
+        exit();*/
 		parent::processPost($formvalues);
 	}
 	/**
@@ -267,22 +276,19 @@ class FarmGroup extends BaseEntity {
      */
     function afterSave(){
     	$session = SessionWrapper::getInstance();
-    	$farmerid = $session->getVar('farmerid');
     	$userid = $session->getVar('userid');
     	$conn = Doctrine_Manager::connection();
     	$update = false;
     	
-    	if(!isEmptyString($this->getAddress()->getID())){
-    		$this->setAddressID($this->getAddress()->getID());
-    		$update = true;
-    	}
     	if(isEmptyString($this->getRegDate())){
     		$this->setRegDate(date("Y-m-d"));
     		$update = true;
     	}
     	# generate registration number for farmer
-    	if(isEmptyString($this->getRegNo())){
-			$this->setRegNo($this->getNextRegNo());
+    	if(isEmptyString($this->getRefNo())){
+    		$this->setRefNo($this->generateRefNo());
+			$this->setRegNo($this->getCurrentRegNo());
+			$session->setVar('custommessage', 'Registration ID# '.$this->getRegNo().' generated.');
 			$update = true;
     	}
     	
@@ -305,7 +311,6 @@ class FarmGroup extends BaseEntity {
      */
     function afterUpdate(){
     	$session = SessionWrapper::getInstance();
-    	$farmerid = $session->getVar('farmerid');
     	$userid = $session->getVar('userid');
     	$conn = Doctrine_Manager::connection();
     	$update = false;
@@ -315,8 +320,10 @@ class FarmGroup extends BaseEntity {
     		$update = true;
     	}
     	# generate registration number for farmer
-    	if(isEmptyString($this->getRegNo())){
-			$this->setRegNo($this->getNextRegNo());
+    	if(isEmptyString($this->getRefNo())){
+    		$this->setRefNo($this->generateRefNo());
+			$this->setRegNo($this->getCurrentRegNo());
+			$session->setVar('custommessage', 'Registration ID# '.$this->getRegNo().' generated.');
 			$update = true;
     	}
     	
@@ -327,6 +334,40 @@ class FarmGroup extends BaseEntity {
     	
     	return true;
     }
+	# generate refno, determine next alphabet concat string 
+	function generateRefNo(){
+		$ref = '';
+		$id = $this->getID();
+		$nid = number_pad($id, 4);
+		
+		$str = '';
+		$ref = $str.$nid;
+		// exit();
+		return $ref;
+	}
+	# generate next registration number
+	function getCurrentRegNo(){
+		$regno  = '';
+		$session = SessionWrapper::getInstance();
+		$prefix = FARMGROUP_REG_PREFIX;
+		if(isKenya()){
+			$prefix = FARMGROUP_REG_PREFIX_KE;
+		}
+		$regno = $prefix.$this->generateRefNo();
+		//debugMessage($prefix);
+		return $regno;
+	}
+	# fetch next id
+	function getNextInsertID(){
+		$conn = Doctrine_Manager::connection();
+		$query = "SELECT max(id) FROM farmgroup ";
+		$query2 = "SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='farmgroup'";
+		$result = $conn->fetchOne($query2);
+		return $result+1;
+	}
+	function getNextRefNo(){
+		return number_pad($this->getNextInsertID(),4);
+	}
 	# determine if person has profile image
 	function hasLogo(){
 		$real_path = APPLICATION_PATH."/../public/uploads/farmgroups/group_";
@@ -374,25 +415,6 @@ class FarmGroup extends BaseEntity {
 		return $path;
 	}
 	
-	# generate next registration number
-	function getNextRegNo(){
-		$regno  = '';
-		$prefix = FARMGROUP_REG_PREFIX;
-		$regno = $prefix.'/'.$this->getNextRefNo();
-		//debugMessage($prefix);
-		return $regno;
-	}
-	# fetch next id
-	function getNextInsertID(){
-		$conn = Doctrine_Manager::connection();
-		$query = "SELECT max(id) FROM farmgroup ";
-		$query2 = "SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='farmgroup'";
-		$result = $conn->fetchOne($query2);
-		return $result+1;
-	}
-	function getNextRefNo(){
-		return number_pad($this->getNextInsertID(),4);
-	}
 	/**
 	 * Return the date of birth 
 	 * @return string dateofbirth 
@@ -404,90 +426,53 @@ class FarmGroup extends BaseEntity {
 		} 
 		return $date;
 	}
-	# determine the address for farmer
-	function getAddress() {
-		$address_object = new Address();
-		$add = $this->getAddresses();
-		// debugMessage($add->toArray());
-		if (!isEmptyString($add->get(0)->getID())) {
-			$address_object = $add->get(0);
-		}
-		return $address_object; 
-	}
-	# cleanup by creating address entry if does not exit
-	function cleanUpAddress() {
-		if(isEmptyString($this->getAddress()->getID())){
-			$address = $this->getAddress();
-			$address->setFarmGroupID($this->getID());
-			$address->setCreatedBy(1);
-			
-			$address->save();
-			if(!isEmptyString($address->getID())){
-				$this->setAddressID($address->getID());
-				$this->clearRelated(); 
-				$this->save();
-			}
-		}
-		return true;
-	}
 	# custom logic to determine the farmers in the Farm Group
 	function getListOfFarmers() {
-		$q = Doctrine_Query::create()->from('Farmer f')->where("f.farmgroupid = '".$this->getID()."' AND f.id <> '".$this->getManagerID()."' ")->orderby("f.firstname ASC");
+		$q = Doctrine_Query::create()->from('UserAccount u')->where("u.farmgroupid = '".$this->getID()."'")->andwhere("u.type = '2'")->orderby("u.firstname ASC");
 		$result = $q->execute();
 		return $result;
 	}
 	# count the number of farmers in the group
 	function getCountFarmers() {
-		$farmers = $this->getListOfFarmers();
-		return $farmers->count();
+		$users = $this->getListOfFarmers();
+		return $users->count();
 	}
 	# custom logic to determine the farmers in the Farm Group
 	function getFeaturedFarmers($limit) {
-		$q = Doctrine_Query::create()->from('Farmer f')->where("f.farmgroupid = '".$this->getID()."' AND f.id <> '".$this->getManagerID()."' ")->orderby("f.datecreated DESC")->limit($limit);
+		$q = Doctrine_Query::create()->from('UserAccount u')->where("u.farmgroupid = '".$this->getID()."'")->andwhere("u.type = '2'")->orderby("u.datecreated DESC")->limit($limit);
 		$result = $q->execute();
 		return $result;
 	}
 	# determine the invited farmers
 	function getInvitedFarmers(){
-		$q = Doctrine_Query::create()->from('Farmer f')->where("f.farmgroupid = '".$this->getID()."' AND f.id <> '".$this->getManagerID()."' AND f.invitedbyid = '".$this->getManagerID()."' ");
+		$q = Doctrine_Query::create()->from('UserAccount u')->where("u.farmgroupid = '".$this->getID()."'")->andwhere("u.type = '2'");
 		$result = $q->execute();
 		return $result;
 	}
 	# determine the activated invited farmers
 	function getActiveFarmers(){
-		$q = Doctrine_Query::create()->from('Farmer f')->innerjoin("f.user as u")->where("f.farmgroupid = '".$this->getID()."' AND f.id <> '".$this->getManagerID()."' AND u.isactive = '1' ");
+		$q = Doctrine_Query::create()->from('UserAccount u')->where("u.farmgroupid = '".$this->getID()."'")->andwhere("u.isactive = '1'")->andwhere("u.type = '2'");
 		$result = $q->execute();
 		return $result;
 	}
 	# count the number of farmers in the group that are registered
 	function getCountRegisteredFarmers() {
-		$farmers = $this->getInvitedFarmers();
-		return $farmers->count();
-		/*$conn = Doctrine_Manager::connection();
-		$query = "SELECT count(f.id) FROM farmer f inner join useraccount u on (f.userid = u.id) WHERE (u.farmgroupid = '".$this->getID()."' AND f.userid IS NOT NULL AND u.isactive = 1 AND f.id <> '".$this->getManager()->getUserID()."') ";
-		debugMessage($query);
-		$result = $conn->fetchOne($query);
-		return $result;*/
+		$users = $this->getActiveFarmers();
+		return $users->count();
 	}
 	# male farmers
 	function getMaleFarmers(){
 		$conn = Doctrine_Manager::connection();
-		$query = "SELECT count(f.id) FROM farmer f inner join useraccount u on (f.userid = u.id) WHERE (f.farmgroupid = '".$this->getID()."' AND u.gender = 1 AND f.id <> '".$this->getManagerID()."') ";
+		$query = "SELECT count(f.id) FROM useraccount u WHERE (u.farmgroupid = '".$this->getID()."' AND u.gender = 1 AND u.type = 2) ";
 		$result = $conn->fetchOne($query);
 		return $result;
-		/*$q = Doctrine_Query::create()->from('Farmer f')->innerJoin('f.user u')->where("f.farmgroupid = '".$this->getID()."' AND u.gender = 1 AND f.id <> '".$this->getManager()->getUserID()."' ");
-		$result = $q->execute();
-		return $result->count();*/
 	}
 	# female farmers
 	function getFeMaleFarmers() {
 		$conn = Doctrine_Manager::connection();
-		$query = "SELECT count(f.id) FROM farmer f inner join useraccount u on (f.userid = u.id) WHERE (f.farmgroupid = '".$this->getID()."' AND u.gender = 2 AND f.id <> '".$this->getManagerID()."') ";
+		$query = "SELECT count(f.id) FROM useraccount u WHERE (u.farmgroupid = '".$this->getID()."' AND u.gender = 2 AND u.type = 2) ";
 		$result = $conn->fetchOne($query);
 		return $result;
-		/*$q = Doctrine_Query::create()->from('Farmer f')->innerJoin('f.user u')->where("f.farmgroupid = '".$this->getID()."' AND u.gender = 2 AND f.id <> '".$this->getManager()->getUserID()."' ");
-		$result = $q->execute();
-		return $result->count();*/
 	}
 	# find duplicate farmgroups after save
 	function getDuplicates(){
@@ -525,35 +510,35 @@ class FarmGroup extends BaseEntity {
 			$total += 10;
 		} 
 		$count += 10;
-		if(!isEmptyString($this->getAddress()->getCountry())){
+		if(!isEmptyString($this->getCountry())){
 			$total += 10;
 		} 
 		$count += 10;
-		if(!isEmptyString($this->getAddress()->getDistrictID())){
+		if(!isEmptyString($this->getDistrictID())){
 			$total += 10;
 		} 
 		$count += 10;
-		if(!isEmptyString($this->getAddress()->getDistrictID())){
+		if(!isEmptyString($this->getDistrictID())){
 			$total += 10;
 		} 
 		$count += 10;
-		if(!isEmptyString($this->getAddress()->getCountyID())){
+		if(!isEmptyString($this->getCountyID())){
 			$total += 10;
 		} 
 		$count += 10;
-		if(!isEmptyString($this->getAddress()->getSubCountyID())){
+		if(!isEmptyString($this->getSubCountyID())){
 			$total += 10;
 		} 
 		$count += 10;
-		if(!isEmptyString($this->getAddress()->getParishID())){
+		if(!isEmptyString($this->getParishID())){
 			$total += 10;
 		} 
 		$count += 10;
-		if(!isEmptyString($this->getAddress()->getVillageID())){
+		if(!isEmptyString($this->getVillageID())){
 			$total += 10;
 		} 
 		$count += 10;
-		if(!isEmptyString($this->getAddress()->getStreetAddress())){
+		if(!isEmptyString($this->getStreetAddress())){
 			$total += 10;
 		} 
 		$count += 10;
@@ -603,6 +588,18 @@ class FarmGroup extends BaseEntity {
 			$result = $subscrip = new Subscription();
 		}
 		return $result;
+	}
+	/**
+	 * Get the full name of the country from the two digit code
+	 * 
+	 * @return String The full name of the state 
+	 */
+	function getCountryName() {
+		if(isEmptyString($this->getCountry())){
+			return "--";
+		}
+		$countries = getCountries(); 
+		return $countries[$this->getCountry()];
 	}
 }
 ?>

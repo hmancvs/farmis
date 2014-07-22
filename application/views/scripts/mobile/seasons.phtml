@@ -1,0 +1,232 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$title = "My Seasons";	
+	$this->headTitle($title);
+	$listurl = $this->baseUrl('mobile/seasons');
+	$addurl = $this->baseUrl('mobile/addseason');
+	
+	$loggedinuser = new UserAccount();
+	$loggedinuser->populate($userid);
+	
+	$country = 'UG';
+	$location_label = 'District';
+	$locations_label = 'Districts';
+	if(isKenya()){
+		$country = 'KE';
+		$location_label = 'County';
+		$locations_label = 'Counties';
+	}
+	$countryreq = strtolower($request->country);
+	
+	$isgrouplist = false; $isdna = false; $isme = true;
+	if(!isFarmer()){
+		$title = "Manage Seasons";	
+		$isme = false;
+		if(isFarmGroupAdmin()){
+			$isdna = true; 
+			$dnaid = $loggedinuser->getFarmGroupID();
+		}
+	}
+	
+	$paginate = new Pagination();	
+	$paginate->setView($this);
+	# set the search columns to be used on this list
+	$paginate->setSearchColumns(array("s.activityname","s.ref"));
+	$paginate->setFilterColumns(array());
+	$paginate->setDefaultSortBy("s.datecreated");	
+	$paginate->setDefaultSortOrder("DESC");
+	$paginate->setItemCountPerPage("10");
+	
+	# define the letter to be clicked to ease navigation 
+	$where_query = " WHERE s.id <> '' ";
+	if($isme){
+		$availablecrops = getCommoditiesForFarmer($loggedinuser->getID());
+		$where_query .= " AND s.userid = '".$session->getVar('userid')."' ";
+	} else {
+		$availablecrops = getFarmisCommodities();
+		$where_query .= " AND u.type = 2 AND u.country = UPPER('".$session->getVar('country')."') ";
+		if($isdna){
+			$where_query .= " AND f.farmgroupid = '".$dnaid."' ";
+		}
+	}
+	
+	$theuserid = $request->userid;
+	if(!isEmptyString($theuserid)){
+		$where_query .= " AND s.userid = '".$theuserid."' ";
+	}
+	
+	$cropid = $request->cropid;
+	if(!isEmptyString($cropid)){
+		$where_query .= " AND (s.`cropid` = '".$cropid."') ";
+	}
+	
+	$locationstring = '';
+	$locationid = $request->locationid;
+	if(!isEmptyString($locationid)){
+		$where_query .= " AND (u.`locationid` = '".$locationid."') ";
+		$district = new District();
+		$district->populate($locationid);
+		$locationstring = ' [from '.$district->getName().']';
+	}
+	
+	$order = trim($request->order);
+	$order_query = " ";
+	if(isEmptyString($order)){
+		$order = 1;
+	}
+	if($order == 1){
+		$order_query = " ORDER BY s.datecreated DESC ";
+	}
+	if($order == 4){
+		$order_query = " ORDER BY s.datecreated ASC ";
+	}
+	
+	$paginate->processPost($request->getParams());
+	$all_results_query = "SELECT s.id FROM season s INNER JOIN useraccount u on (s.userid = u.id)  ".$where_query." ".$paginate->getSearchAndFilterSQL()." GROUP BY s.id ".$order_query;
+	
+	// debugMessage($all_results_query);
+	$paginate->setItemCountFromSQLQuery($all_results_query);
+	$current_results_query = $all_results_query." ".$paginate->getSQLLimit();
+	
+	$conn = Doctrine_Manager::connection(); 
+	$result = $conn->fetchAll($current_results_query);
+	$has_no_data = (count($result) == 0) ? true : false; 
+	
+?>
+<?php require APPLICATION_PATH."/views/scripts/mobile/mobileincludes.phtml"; ?>
+<body>
+<div class="container-fluid viewpage" id="list_farmer">
+  <h4><?php echo $title; ?></h4>
+  <form action="<?php echo $this->baseUrl("mobile/seasonssearch"); ?>" method="get" id="listform" class="form-search">
+	  <?php if($sessionhaserror) { ?>
+      <div class="row-fluid">
+        <div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+      </div>
+      <?php } ?>
+      <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+      <div class="row-fluid">
+        <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+      </div>
+      <?php } ?>
+      <?php if(!isEmptyString($session->getVar("custommessage")) ){ ?>
+      <div class="row-fluid">
+        <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar("custommessage"); ?></div>
+      </div>
+      <?php } ?>
+      <ul class="peoplegroup">
+            <li><a class="btn" href="<?php echo $this->baseUrl('mobile/home'); ?>" style="padding:6px 10px;"><i class="icon-home"></i></a></li>
+            <?php if(isFarmer()){ ?>
+           		<li><a href="<?php echo $addurl; ?>" class="btn btn-primary"><i class="icon-plus icon-white"></i> Start New Season</a></li>
+            <?php } ?>
+            <?php if($loggedinuser->isUgandan() && isUganda() && (isAdmin() || isManagement())){ ?>
+				<?php if(isEmptyString($request->country) || $countryreq == 'ug'){ ?>
+                    <li><a class="btn" href="<?php echo $this->baseUrl('mobile/seasons/country/ke'); ?>" title="Browse Kenya"><i class="icon-list"></i> Browse Kenya</a></li>
+                <?php } ?>
+            <?php } ?>
+            <?php if($loggedinuser->isUgandan() && isKenya() && (isAdmin() || isManagement())){ ?>
+                <?php if(!isEmptyString($request->country) && strtolower($countryreq) == 'ke'){ ?>
+                    <li><a class="btn" href="<?php echo $this->baseUrl('mobile/seasons/country/ug'); ?>" title="Browse Uganda"><i class="icon-list"></i> Browse Uganda</a></li>
+                <?php } ?>
+            <?php } ?>
+            <?php if(!$isme){ ?>
+            	<li>
+					<?php
+                        $districts = getDistricts($session->getVar('country'));
+                        $districtdropdown = new Zend_Form_Element_Select('locationid',
+                                            array(
+                                                'multiOptions' => array_merge_maintain_keys(array('' => 'All '.$locations_label), $districts),								
+                                                'view' => new Zend_View(),
+                                                'decorators' => array('ViewHelper'),
+                                                'class' => array('span2','autofilter')
+                                            )
+                                        );
+                        $districtdropdown->setValue($request->getParam('locationid')); 
+                        echo $districtdropdown->render(); 
+                      ?>
+                </li>
+            <?php } ?>
+            <?php if(isAdmin() || isManagement() || isDataClerk()){ ?>
+            <li>
+                <?php
+                    $groupdropdown = new Zend_Form_Element_Select('farmgroupid',
+										array(
+											'multiOptions' => array_merge_maintain_keys(array('' => 'All DNAs'.$locationstring, '0'=> 'All Individual Farmers'), getAllFarmGroups($request->getParam('locationid'), $session->getVar('country'))),								
+											'view' => new Zend_View(),
+											'decorators' => array('ViewHelper'),
+											'class' => array('span3','autofilter')
+										)
+									);
+					$groupdropdown->setValue($request->getParam('farmgroupid')); 
+					echo $groupdropdown->render(); 
+               ?>
+            </li>
+            <?php } ?>
+            <li><span class="visible-phone lineblocked">Search: &nbsp;</span><input name="searchterm" id="searchterm" value="<?php echo $request->searchterm; ?>" type="text" class="span2 minwidth100" style="margin-bottom:5px; height:20px;" placeholder="Search...">
+                <button type="submit" id="searchbutton" class="btn" style="padding:6px 10px; vertical-align:top; margin-left:-2px;"><i class="icon-search"></i></button>
+                <input type="hidden" name="userid" id="userid" value="<?php echo $theuserid; ?>" />
+                <a href="<?php echo $listurl; ?>"> &nbsp;Reset list</a>
+            </li>
+        </ul>
+        <?php if (!$has_no_data) { ?>
+            	<div class="paginatecustom"><?php echo sprintf($this->translate("global_list_counter"), $paginate->getItemCounterText()); ?></div>
+            <?php } ?>
+        <?php if($has_no_data) { ?>
+            <div style="clear:both;" class="alert alert-info margin5"><?php echo $this->translate("global_list_norecords_error"); ?></div>
+        <?php } else { ?>
+              <div class="peoplelist">
+                <?php
+                    $counter = 1;		
+                    foreach($result as $line){
+                        $season = new Season();
+                        $season->populate($line['id']);
+                        $crop = $season->getCrop();
+                ?>
+                    <?php if($counter % 2 == 1){ ?>
+                    <div class="row-fluid">
+                    <?php } ?>
+                      <div class="span6">
+                        <div class="peoplewrapper well">
+                          <div class="thumbwrapper" style="width:120px;">
+                              <div class="thumb">
+                                <div id="thumbinfo" style="width:100%;"> 
+                                    <a href="<?php echo $this->baseUrl("mobile/viewseason/id/".encode($line['id'])); ?>"><img class="profileimage" src="<?php echo $crop->getImagePath(); ?>" style="width:100px;" /></a>
+                                </div>
+                                <div class="blocked bolded" style="font-size:9px; width:98%;"></div>
+                              </div>
+                          </div>
+                          <div class="peopleinfo">
+                            <h4><a href="<?php echo $this->baseUrl("mobile/viewseason/id/".encode($line['id'])); ?>"><?php echo $season->getName(); ?></a></h4>
+                            <ul>
+                                <li style="color:#55A411; font-size:14px; margin-top:5px;"><span>Crop:</span> <?php echo $crop->getName(); ?></li>
+                                <?php if(isAdmin() || isManagement() || isDataClerk() || isFarmGroupAdmin()){ ?>
+                                  <li><span>Farmer:</span> <a href="<?php echo $this->baseUrl('mobile/view/id/'.encode($season->getUserID())); ?>"><?php echo $season->getUser()->getName(); ?></a></li>
+                                  <?php if($season->getUser()->hasFarmGroup()){ ?>
+                                  	<li><span>DNA:</span> <?php echo $season->getUser()->getFarmGroup()->getName(); ?></li>
+                                  <?php } ?>
+                                <?php } ?>
+                                <li><span>Season Ref#:</span> <?php echo $season->getRef(); ?></li>
+                                <li><span><?php echo $this->translate("season_startdate_label"); ?>:</span> <?php echo $season->getFullStartDate(); ?></li>
+                                <li><span><?php echo $this->translate("season_enddate_label"); ?>:</span> <?php echo $season->getFullEndDate(); ?></li>
+                                <li><span>Current Status:</span> <?php echo $season->getStatusText(); ?></li>
+                              
+                            </ul>
+                          </div>
+                          <!--peopleinfo--> 
+                        </div>
+                        <!--peoplewrapper--> 
+                      <?php if($counter % 2 == 0){ ?>
+                      </div>
+                      <?php } ?>
+                    </div>
+                <?php $counter++; } ?>
+              </div>
+              <!--peoplelist-->
+              <?php echo $paginate->getPaginationLinks(); ?>  
+		<?php } ?>              
+  </form>
+</div>
+</body>
+</html><?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

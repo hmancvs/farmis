@@ -10,8 +10,7 @@
 		$type = $request->type;
 		$input->setType($type);
 		$input->setSeasonID($season->getID());
-		$input->setFarmID($season->getFarmID());
-		$input->setFarmerID($season->getFarmerID());
+		$input->setUserID($season->getUserID());
 		$input->setStartDate(date('Y-m-d'));
 		$input->setActivityName('Season Inputs');
 		$acounter = $input->getNextReferencePointer();
@@ -38,10 +37,10 @@
 		$successurl = encode($this->baseUrl("season/input/id/".$request->id));
 		if($type == 2){
 			$title = $this->translate("season_expense_pagetitle_edit"); 
-			
 		}
 	}
-	
+	$request->setParam('tab', 'seasons');
+	$user = $input->getUser();
 	$loan = $input->getCreditDetails();
 	 
 	$prefix = ACTIVITY_INPUT_PREFIX; 
@@ -59,7 +58,6 @@
 		$activitydate = $this->translate("season_expensestart_label");
 		
 	}
-	$thefarmid = $input->getSeason()->getFarmID();
 	
 	#in case of errors in session, populate the fields from session
 	if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
@@ -67,10 +65,10 @@
 	}
 	
 	$inputtypes = getAllInputTypes();
-		
-	$this->headTitle($title);  
-	$farmtitle = isFarmer() ? "Manage Farm" : "Manage Farm: ".$input->getFarm()->getName();
-	
+	 
+	$title = 'Manage Season: '.$input->getActivityName();
+	$farmtitle = $input->getUser()->getName();
+	$this->headTitle($title.$browserappend);  
 ?>
 <script>
 	$(document).ready(function() {
@@ -285,9 +283,9 @@
 </script>
 <h1><?php echo $farmtitle; ?></h1>
 <div id="tabs">
-    <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
+    <?php require APPLICATION_PATH."/views/scripts/profile/profileleftcolumn.phtml"; ?>
     <div class="span9 tab-content" id="center">
-    	<?php require APPLICATION_PATH."/views/scripts/farm/tabstop.phtml"; ?>
+    	<?php require APPLICATION_PATH."/views/scripts/profile/tabstop.phtml"; ?>
 		<div id="seasons">
             <form id="indexform" class="form-horizontal seasons" action="<?php echo $posturl; ?>" method="post">
             <?php if($request->tab == 'seasons'){ ?>
@@ -326,8 +324,7 @@
                                             <input type="hidden" name="entityname" value="SeasonInput" />
                                             <input type="hidden" id="id" name="id" value="<?php echo encode($input->getID()); ?>" />
                                             <input type="hidden" id="seasonid" name="seasonid" value="<?php echo $input->getSeasonID(); ?>" />
-                                            <input type="hidden" id="farmid" name="farmid" value="<?php echo $input->getFarmID(); ?>" />
-                                            <input type="hidden" id="farmerid" name="farmerid" value="<?php echo $input->getFarmerID(); ?>" />
+                                            <input type="hidden" id="userid" name="userid" value="<?php echo $input->getSeason()->getUserID(); ?>" />
                                             <input type="hidden" id="stage" name="stage" value="5" />
                                             <input type="hidden" id="type" name="type" value="<?php echo $input->getType(); ?>" />
                                             <input type="hidden" name="sourcetype" id="sourcetype" value="<?php echo $loan->getSourceType(); ?>" />
@@ -358,8 +355,8 @@
                                         <td style="width:20%;"><?php echo $this->translate("season_input_source_label"); ?></td>
                                     <?php } ?>
                                     <td style="width:8%;"><?php echo $this->translate("season_input_quantity_label"); ?></td>
-                                    <td style="width:12%;"><?php echo $this->translate("season_input_unitcost_label"); ?> (<?php echo $config->currency->default; ?>)</td>
-                                    <td style="width:12%;"><?php echo $this->translate("season_input_amount_label"); ?> (<?php echo $config->currency->default; ?>)</td>
+                                    <td style="width:12%;"><?php echo $this->translate("season_input_unitcost_label"); ?> (<?php echo getCurrencySymbol(); ?>)</td>
+                                    <td style="width:12%;"><?php echo $this->translate("season_input_amount_label"); ?> (<?php echo getCurrencySymbol(); ?>)</td>
                                     <td style="width:5%;"><span title="Delete row"><a>Del</a></span></td>
                                 </tr>
                             </thead>
@@ -483,7 +480,7 @@
             <?php } ?>    
             </form>
 		</div>
-		<?php require APPLICATION_PATH."/views/scripts/farm/tabsbottom.phtml"; ?> 
+		<?php require APPLICATION_PATH."/views/scripts/profile/tabsbottom.phtml"; ?> 
     </div>
 </div>    
 <?php

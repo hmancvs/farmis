@@ -75,7 +75,7 @@
         </tr>
         <tr>
             <td><label class="control-label">Amount Paid: <?php echo $this->translate("global_required_field_marker"); ?> </label></td>
-            <td><div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="amount" id="amount" class="width100 hastooltip isamount rightalign" value="<?php echo $loanpayment->getAmount(); ?>" title="<?php echo $this->translate("season_credit_paidamount_tooltip"); ?>" /></div><div id="amount_error"></div>
+            <td><div class="input-prepend"><span class="add-on"><?php echo getCurrencySymbol(); ?></span><input type="text" name="amount" id="amount" class="width100 hastooltip isamount rightalign" value="<?php echo $loanpayment->getAmount(); ?>" title="<?php echo $this->translate("season_credit_paidamount_tooltip"); ?>" /></div><div id="amount_error"></div>
             </td>
         </tr>
         <tr>

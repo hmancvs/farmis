@@ -10,7 +10,6 @@
 	
 	$farmgroup = new FarmGroup();
 	$farmgroup->populate($id);
-	// $thefarmid = $farmgroup->getID();
 	
 	if(isEmptyString($request->tab)){
 		$request->setParam('tab', 'basics'); 

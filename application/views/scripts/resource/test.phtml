@@ -8,11 +8,6 @@
 	$user = new UserAccount();
 	$user->populate($userid);
 		
-	$farmer = new Farmer();
-	$farmer->populate($farmerid);
-	
-	$farmid = $farmer->getFarms()->get(0)->getID();
-	
 	$title = "Test Search";
 	$this->headTitle($title); 
 ?>

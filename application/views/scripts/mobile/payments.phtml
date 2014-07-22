@@ -1,0 +1,312 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$title = "Farmer Payments";	
+	$this->headTitle($title);
+	
+	$loggedinuser = new UserAccount();
+	$loggedinuser->populate($userid);
+	
+	$country = 'UG';
+	$location_label = 'District';
+	$locations_label = 'Districts';
+	$countrycode = COUNTRY_CODE_UG;
+	$county_label = $this->translate("global_county_label");
+	$subcounty_label = $this->translate("global_subcounty_label");
+	
+	if(isKenya()){
+		$country = 'KE';
+		$session->setVar('country', 'ke');
+		$location_label = 'County';
+		$locations_label = 'Counties';
+		$countrycode = COUNTRY_CODE_KE;
+		$county_label = $this->translate("global_subcounty_label");
+		$subcounty_label = $this->translate("global_ward_label");
+	}
+	$countryreq = strtolower($request->country); 
+	
+	$paginate = new Pagination();	
+	$paginate->setView($this);
+	# set the search columns to be used on this list
+	$paginate->setSearchColumns(array("u.firstname","u.lastname","u.othernames","u.firstname","u.lastname","u.othernames","u.username","u.email","up.phone","u.email","u.refno","u.regno"));
+	$paginate->setFilterColumns(array("u.gender","u.locationid","u.farmgroupid"));
+	// $paginate->setDefaultSortBy("u.datecreated");	
+	// $paginate->setDefaultSortOrder("DESC");
+	$paginate->setItemCountPerPage("10");
+	
+	# define the letter to be clicked to ease navigation 
+	$where_query = " WHERE u.id <> '' ";
+	
+	$listurl = $this->baseUrl('mobile/payments');
+	$addurl = $this->baseUrl('mobile/addpayment/country/'.$country);
+	
+	$farmgroup = new FarmGroup();
+	$groupid = trim($request->farmgroupid);
+	$groupstring = ""; $dnastring = "";
+	if(!isEmptyString($groupid)){
+		$farmgroup->populate($groupid);
+		$groupstring = " (".$farmgroup->getName().")";
+		$dnastring = ' [from '.$farmgroup->getName().']';
+		if($groupid == 0){
+			$where_query .= " AND (u.`farmgroupid` IS NULL) ";
+			$groupstring = " (Individual Farmers)";
+		} else {
+			$where_query .= " AND (u.`farmgroupid` = '".$groupid."') ";
+		}
+		
+		// debugMessage($farmgroup->toArray());
+		$listurl = $this->baseUrl('mobile/payments/farmgroupid/'.$groupid);
+		$addfarmerurl = $this->baseUrl('mobile/payments/farmgroupid/'.$groupid);
+		$title .= $groupstring; 
+	}
+	$locationstring = '';
+	$locationid = $request->locationid;
+	if(!isEmptyString($locationid)){
+		$where_query .= " AND (u.`locationid` = '".$locationid."') ";
+		$listurl = $this->baseUrl('mobile/payments/locationid/'.$locationid);
+		$district = new District();
+		$district->populate($locationid);
+		$locationstring = ' [from '.$district->getName().']';
+	}
+	
+	$subgroup = $request->subgroupid;
+	if(!isEmptyString($subgroup)){
+		$where_query .= " AND (u.`subgroupid` = '".$subgroup."') ";
+	}
+	
+	$order = trim($request->order);
+	$order_query = " ";
+	if(isEmptyString($order)){
+		$order = 1;
+	}
+	if($order == 1){
+		$order_query = " ORDER BY u.datecreated DESC ";
+	}
+	if($order == 2){
+		$order_query = " ORDER BY u.firstname ASC ";
+	}
+	if($order == 3){
+		$order_query = " ORDER BY u.lastname ASC ";
+	}
+	if($order == 4){
+		$order_query = " ORDER BY u.datecreated ASC ";
+	}
+	
+	$paginate->processPost($request->getParams());
+	$all_results_query = "SELECT u.id as id, u.id as userid, p.id as paymentid, u.farmgroupid as fmgroupid, u.firstname, u.lastname, u.othernames, u.subgroupid, u.gender, u.isactive, u.locationid as districtid, u.email as email, u.email as femail, u.refno, u.regno as regno, u.phone as phone, u.regdate as fregdate, u.profilephoto as profilephoto, fg.orgname as orgname, fgs.orgname as sorgname, l.name as district, u.isphoneinvited, u.hasacceptedinvite, u.isinvited, u.selfregistered, concat(ua.firstname, ' ', ua.lastname) as addedby, u.datecreated as dateadded, p.amount, p.trxcode, p.datecreated as pdatecreated, p.verifiedbyid, p.status as pstatus, s.startdate, s.enddate FROM useraccount u LEFT JOIN farmgroup as fg on (u.farmgroupid = fg.id) LEFT JOIN location l on (u.locationid = l.id AND l.locationtype = 2) INNER JOIN useraccount ua on (u.createdby = ua.id) LEFT JOIN farmgroup as fgs on (u.subgroupid = fgs.id) INNER JOIN payment p on (p.userid = u.id) LEFT JOIN subscription s on (p.subscriptionid = s.id) ".$where_query." AND u.type = 2 AND u.country = UPPER('".$session->getVar('country')."') ".$paginate->getSearchAndFilterSQL()." GROUP BY u.id ".$order_query;
+	
+	// debugMessage($all_results_query); // exit();
+	// determine total number of records found
+	$conn = Doctrine_Manager::connection(); 
+	$count_query = "SELECT count(u.id) as total FROM useraccount u LEFT JOIN farmgroup as fg on (u.farmgroupid = fg.id) LEFT JOIN location l on (u.locationid = l.id AND l.locationtype = 2) INNER JOIN useraccount ua on (u.createdby = ua.id) LEFT JOIN farmgroup as fgs on (u.subgroupid = fgs.id) INNER JOIN payment p on (p.userid = u.id) LEFT JOIN subscription s on (p.subscriptionid = s.id) ".$where_query." AND u.type = 2 AND u.country = UPPER('".$session->getVar('country')."') ".$paginate->getSearchAndFilterSQL();
+	$total = $conn->fetchOne($count_query);
+	$paginate->setItemCount($total); // debugMessage('>> '.$total);	
+	$current_results_query = $all_results_query." ".$paginate->getSQLLimit();
+	
+	$conn = Doctrine_Manager::connection(); 
+	$result = $conn->fetchAll($current_results_query);
+	$has_no_data = (count($result) == 0) ? true : false;  
+	
+?>
+<?php require APPLICATION_PATH."/views/scripts/mobile/mobileincludes.phtml"; ?>
+<body>
+<div class="container-fluid viewpage" id="list_farmer">
+  <h4><?php echo $title; ?></h4>
+  <form action="<?php echo $this->baseUrl("mobile/paymentssearch"); ?>" method="get" id="listform" class="form-search">
+	  <?php if($sessionhaserror) { ?>
+      <div class="row-fluid">
+        <div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+      </div>
+      <?php } ?>
+      <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+      <div class="row-fluid">
+        <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+      </div>
+      <?php } ?>
+      <?php if(!isEmptyString($session->getVar("custommessage")) ){ ?>
+      <div class="row-fluid">
+        <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar("custommessage"); ?></div>
+      </div>
+      <?php } ?>
+      <ul class="peoplegroup">
+            <li><a class="btn" href="<?php echo $this->baseUrl('mobile/home'); ?>" style="padding:6px 10px;"><i class="icon-home"></i></a></li>
+            <?php if(isAdmin() || isManagement() || isDataClerk() || isFarmGroupAdmin()){ ?>
+            	<li><a href="<?php echo $addurl; ?>" class="btn btn-primary"><i class="icon-plus icon-white"></i> Add Payment</a></li>
+            <?php } ?>
+            <?php if($loggedinuser->isUgandan() && isUganda() && (isAdmin() || isManagement())){ ?>
+				<?php if(isEmptyString($request->country) || $countryreq == 'ug'){ ?>
+                    <li><a class="btn" href="<?php echo $this->baseUrl('mobile/payments/country/ke'); ?>" title="Browse Kenya Directory"><i class="icon-list"></i> Browse Kenya</a></li>
+                <?php } ?>
+            <?php } ?>
+            <?php if($loggedinuser->isUgandan() && isKenya() && (isAdmin() || isManagement())){ ?>
+                <?php if(!isEmptyString($request->country) && strtolower($countryreq) == 'ke'){ ?>
+                    <li><a class="btn" href="<?php echo $this->baseUrl('mobile/payments/country/ug'); ?>" title="Browse Uganda Directory"><i class="icon-list"></i> Browse Uganda</a></li>
+                <?php } ?>
+            <?php } ?>
+            <li>
+                <?php
+                    $districtlist = new LookupType(); 
+                    $districtlist->setName("ALL_DISTRICTS");
+                    $districtdropdown = new Zend_Form_Element_Select('locationid',
+                                        array(
+                                            'multiOptions' => array_merge_maintain_keys(array('' => 'All Districts'), $districtlist->getOptionValuesFromQuery()),								'view' => new Zend_View(),
+                                            'decorators' => array('ViewHelper'),
+                                            'class' => array('span2')
+                                        )
+                                    );
+                    $districtdropdown->setValue($request->getParam('locationid')); 
+                    echo $districtdropdown->render(); 
+                  ?>
+            </li>
+            <?php if(isAdmin() || isManagement() || isDataClerk()){ ?>
+            <li>
+                <?php
+                    $groupdropdown = new Zend_Form_Element_Select('farmgroupid',
+                                        array(
+                                            'multiOptions' => array_merge_maintain_keys(array('' => 'All DNAs'.$locationstring, '0'=> 'All Individual Farmers'), getAllFarmGroups($request->getParam('locationid'), $session->getVar('country'))),								
+                                            'view' => new Zend_View(),
+                                            'decorators' => array('ViewHelper'),
+                                            'class' => array('span3')
+                                        )
+                                    );
+                    $groupdropdown->setValue($request->getParam('farmgroupid')); 
+                    echo $groupdropdown->render(); 
+               ?>
+            </li>
+            <?php } ?>
+            <?php if($farmgroup->hasSubGroups()){ ?>
+                <li>
+                    <?php
+                        $groupdropdown = new Zend_Form_Element_Select('subgroupid',
+                                            array(
+                                                'multiOptions' => array_merge_maintain_keys(array('' => 'All Groups'.$dnastring), getAllFarmGroupsInDNA($request->getParam('farmgroupid'), $session->getVar('country'))),								
+                                                'view' => new Zend_View(),
+                                                'decorators' => array('ViewHelper'),
+                                                'class' => array('span3')
+                                            )
+                                        );
+                        $groupdropdown->setValue($request->getParam('subgroupid')); 
+                        echo $groupdropdown->render(); 
+                   ?>
+                </li>
+            <?php } else { ?>
+                <input type="hidden" name="subgroupid" id="subgroupid" value="<?php echo $request->getParam('subgroupid'); ?>" />
+            <?php } ?>
+            <li><span class="visible-phone lineblocked">Search: &nbsp;</span><input name="searchterm" id="searchterm" value="<?php echo $request->searchterm; ?>" type="text" class="input-medium span2" style="margin-bottom:5px;" placeholder="Search Farmers">
+                <button type="submit" id="searchbutton" class="btn" style="padding:6px 10px; vertical-align:top; margin-left:-2px;"><i class="icon-search"></i></button>
+                <?php if(!isAdmin() && !isManagement() && !isDataClerk()){ ?>
+                    <input type="hidden" name="farmgroupid" id="farmgroupid" value="<?php echo $request->getParam('farmgroupid'); ?>" />
+                <?php } ?>
+                <a href="<?php echo $listurl; ?>"> &nbsp;Reset list</a>
+            </li>
+        </ul>
+        <?php if (!$has_no_data) { ?>
+            	<div class="paginatecustom"><?php echo sprintf($this->translate("payment_list_counter"), $paginate->getItemCounterText()); ?></div>
+            <?php } ?>
+        <?php if($has_no_data) { ?>
+            <div style="clear:both;" class="alert alert-info margin5"><?php echo $this->translate("global_list_norecords"); ?></div>
+        <?php } else { ?>
+              <div class="peoplelist">
+                <?php 				  
+                    $counter = 1;	
+					$statusvalues = getPaymentStatuses();	
+                    foreach($result as $line){
+                        $id = $line['id'];
+						$userid = $line['userid'];
+                        $name = $line['firstname']." ".$line['lastname']." ".$line['othernames'];
+                        $firstname = $line['firstname'];
+                        $lastname = $line['lastname'];
+                        $groupname = $line['orgname'];
+                        $thefarmgroupid = $line['fmgroupid'];
+                        $thesubgroupid = $line['subgroupid'];
+                        $hasdfa = false;
+                        $hasgroup = false;
+                        if(!isEmptyString($thefarmgroupid)){
+                            $hasdfa = true;
+                        }
+                        if(!isEmptyString($thesubgroupid)){
+                            $hasgroup = true;
+                        }
+                        $subgroupname = '';
+						if(!isEmptyString($line['subgroupid'])){
+							$subgroupname = $line['sorgname'];
+						}
+						
+                        $hasprofileimage = false;
+                        $real_path = APPLICATION_PATH.DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR.PUBLICFOLDER.DIRECTORY_SEPARATOR."uploads".DIRECTORY_SEPARATOR."user_";
+                        $real_path = $real_path.$line['userid'].DIRECTORY_SEPARATOR."avatar".DIRECTORY_SEPARATOR."large_".$line['profilephoto'];
+						
+                        if(file_exists($real_path) && !isEmptyString($line['profilephoto'])){
+                            $hasprofileimage = true;
+                        }
+                        $baseUrl = Zend_Controller_Front::getInstance()->getBaseUrl();
+						
+                        $photo_path = '';
+                        $photo_path = $baseUrl.'/uploads/user_0/avatar/default_thumbnail_male.jpg';
+                        if($line['gender'] == 2){
+                            $photo_path = $baseUrl.'/uploads/user_0/avatar/default_thumbnail_female.jpg'; 
+                        }
+                       	if($hasprofileimage){
+                            $photo_path = $this->serverUrl($this->baseUrl('/uploads/user_'.$line['userid'].'/avatar/medium_'.$line['profilephoto']));
+                        }
+						
+						$paystatus = '--';
+						if(!isEmptyString($line['pstatus']) && $line['pstatus'] != 0){
+							$paystatus = $statusvalues[$line['pstatus']];
+						}
+                        $useraccount = new UserAccount();
+						$useraccount->populate($line['verifiedbyid']);
+                ?>
+                    <?php if($counter % 2 == 1){ ?>
+                    <div class="row-fluid">
+                    <?php } ?>
+                      <div class="span6">
+                        <div class="peoplewrapper well">
+                          <div class="thumbwrapper">
+                              <div class="thumb">
+                                <div id="thumbinfo" class="<?php echo $hasprofileimage ? 'new_pic' : 'default_pic'; ?>"> 
+                                    <a href="<?php echo $this->baseUrl("mobile/viewpayment/id/".encode($line['paymentid'])); ?>"><img class="profileimage" src="<?php echo $photo_path; ?>" /></a>
+                                </div>
+                              </div>
+                              <div class="blocked bolded" style="font-size:10px;"><span>FIN#:</span> <?php echo $line['refno']; ?></div>
+                              <div class="blocked" style="font-size:9px;"><?php echo $line['regno']; ?></div>
+                          </div>
+                          <div class="peopleinfo">
+                            <h4><a href="<?php echo $this->baseUrl("mobile/viewpayment/id/".encode($line['paymentid'])); ?>"><?php echo $name; ?></a></h4>
+                            <ul>
+                                <li><span>District:</span> <?php echo isEmptyString($line['districtid']) ? '--' : $line['district']; ?></li>
+                                <?php if($hasdfa){ ?>
+                                	<li><span>DNA:</span> <?php echo isEmptyString($thefarmgroupid) ? '--' : $groupname; ?></li>
+                                <?php } else { ?>
+                                	<li><span class="off">Individual Farmer</span></li>
+                                <?php } ?>
+                                <?php if($hasgroup){ ?>
+                                	<li><span>Farm Group:</span> <?php echo $subgroupname; ?></li>
+                                <?php } ?>  
+                                <li><span>Amount Paid:</span> <?php echo isEmptyString($line['amount']) ? '--' : formatMoney($line['amount']); ?></li>
+                                <li><span>Ref#:</span> <?php echo isEmptyString($line['trxcode']) ? '--' : $line['trxcode']; ?></li>
+                                <li><span>Status:</span> <?php echo $paystatus; ?></li>
+                                <li><span>Service Start Date:</span> <?php echo formatDateAndTime($line['startdate'], false); ?></li>
+                                <li><span>Service End Date:</span> <?php echo formatDateAndTime($line['enddate'], false); ?></li>
+                                <li><span>Recieved By:</span> <?php echo $useraccount->getName(); ?></li>
+                                <li><span>Log Date:</span> <?php echo formatDateAndTime($line['pdatecreated'], true); ?></li>
+                            </ul>
+                          </div>
+                          <!--peopleinfo--> 
+                        </div>
+                        <!--peoplewrapper--> 
+                      <?php if($counter % 2 == 0){ ?>
+                      </div>
+                      <?php } ?>
+                    </div>
+                <?php $counter++; } ?>
+              </div>
+              <!--peoplelist-->
+              <?php echo $paginate->getPaginationLinks(); ?>  
+		<?php } ?>              
+  </form>
+</div>
+</body>
+</html><?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

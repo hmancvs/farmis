@@ -8,10 +8,7 @@ class FarmCrop extends BaseRecord {
 		
 		$this->setTableName('farmcrop');
 		$this->hasColumn('userid', 'integer', null);
-		$this->hasColumn('farmerid', 'integer', null);
-		$this->hasColumn('farmid', 'integer', null);
 		$this->hasColumn('cropid', 'integer', null, array( 'notnull' => true, 'notblank' => true));
-		
 		$this->hasColumn('receiveprices', 'integer', null, array('default' => 1));
 		$this->hasColumn('receiveupdates', 'integer', null, array('default' => 1));
 	}
@@ -40,18 +37,6 @@ class FarmCrop extends BaseRecord {
 									'foreign' => 'id'
 								)
 						);
-		$this->hasOne('Farmer as farmer', 
-								array(
-									'local' => 'farmerid',
-									'foreign' => 'id'
-								)
-						);
-		$this->hasOne('Farm as farm', 
-								array(
-									'local' => 'farmid',
-									'foreign' => 'id'
-								)
-						);
 		$this->hasOne('Commodity as crop', 
 								array(
 									'local' => 'cropid',
@@ -66,10 +51,11 @@ class FarmCrop extends BaseRecord {
 	function processPost($formvalues){
 		// debugMessage($formvalues);
 		$session = SessionWrapper::getInstance();
-    	$farmerid = $session->getVar('farmerid');
     	$userid = $session->getVar('userid');
     	
-		// set default values for integers, dates, decimals
+		if(isArrayKeyAnEmptyString('userid', $formvalues)){
+			unset($formvalues['userid']); 
+		}
 		if(isArrayKeyAnEmptyString('receiveprices', $formvalues)){
 			unset($formvalues['receiveprices']); 
 		}
@@ -88,7 +74,6 @@ class FarmCrop extends BaseRecord {
      */
     function afterSave(){
     	$session = SessionWrapper::getInstance();
-    	$farmerid = $session->getVar('farmerid');
     	$userid = $session->getVar('userid');
     	$conn = Doctrine_Manager::connection();
    	 	$update = false;
@@ -103,7 +88,7 @@ class FarmCrop extends BaseRecord {
     }
     # find duplicate farmgroups after save
 	function getDuplicates(){
-		$q = Doctrine_Query::create()->from('FarmCrop f')->where("f.farmid = '".$this->getFarmID()."' AND f.cropid = '".$this->getCropID()."' AND f.id <> '".$this->getID()."' ");
+		$q = Doctrine_Query::create()->from('FarmCrop f')->where("f.userid = '".$this->getUserID()."' AND f.cropid = '".$this->getCropID()."' AND f.id <> '".$this->getID()."' ");
 		$result = $q->execute();
 		return $result;
 	} 

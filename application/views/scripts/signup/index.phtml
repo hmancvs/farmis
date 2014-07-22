@@ -4,14 +4,72 @@
 	$title = $this->translate("useraccount_pagetitle_signup"); 
 	$pagetile = $this->translate("appname")." | Farmer Registration"; 
 	
-	$useraccount = new UserAccount(); 	
 	$posturl = $this->baseUrl("signup/processstep1"); 
 	$button_title = $this->translate("useraccount_button_signup"); 
 	
 	// set all fields to empty string as default
-	$firstname = ''; $lastname = ''; $gender = 1; $email = ''; $username = ''; $phone = ''; $dateofbirth = '';  $birthday = ''; $birthmonth = ''; $birthyear = ''; $country = 'UG'; $type = 2; $agreedtoterms = ''; $membershipplanid = 1; $dob = ''; $locationid = ''; 
+	$firstname = ''; $lastname = ''; $gender = 1; $email = ''; $username = ''; $phone = ''; $dateofbirth = '';  $birthday = ''; $birthmonth = ''; $birthyear = ''; $type = 2; $agreedtoterms = ''; $membershipplanid = 1; $dob = ''; $locationid = ''; $refno = '';
 	$id = '';  $farmgroupid = ''; $createdby = 1; $userid = '';
+	$country = 'UG';
+	if(isKenya()){
+		$country = 'KE';
+	}
 	$dobarray = array();
+	
+	$isgroupclerk = false;
+	$isfarmer = true;
+		
+	$user = new UserAccount(); 	
+	$userid = decode($request->profile);
+	// debugMessage('farmer is '.$userid);
+	
+	if(!isEmptyString($userid)){
+		$user->populate($userid);
+		$firstname = $user->getFirstName();
+		$lastname = $user->getLastName();
+		$username = $user->getUserName(); 
+		$type = $user->getType();
+		$refno = $user->getRefNo();
+		$membershipplanid = $user->getMembershipPlanID();
+		// debugMessage($user->toArray());
+		$namestring = explode(' ', $firstname);
+		// debugMessage($namestring);
+		if(count($namestring) > 1){
+			$firstname = $namestring[0];
+			$lastname = $namestring[1];
+		}
+		
+		$email = $user->getEmail();
+		$userid = $user->getID();
+		$phone = $user->getFormattedPhone();
+		if($user->getID() == $user->getFarmGroup()->getManagerID() &&  !isEmptyString($user->getFarmGroup()->getPhone())){
+			$phone = getShortPhone($user->getFarmGroup()->getPhone());
+		}
+		
+		$locationid = $user->getLocationID();
+		if($user->getID() == $user->getFarmGroup()->getManagerID() &&  !isEmptyString($user->getFarmGroup()->getDistrictID())){
+			$locationid = $user->getFarmGroup()->getDistrictID();
+		}
+		if(!isEmptyString($user->getDateOfBirth())){
+			$birthday = date('d', strtotime($user->getDateOfBirth())); 
+			$birthyear = date('Y', strtotime($user->getDateOfBirth())); 
+			$birthmonth = date('m', strtotime($user->getDateOfBirth())); 
+		}
+				
+		$country = $user->getCountry();
+		# check if person is a farm group manager
+		if(!isEmptyString($user->getFarmGroupID())){
+			if($user->getFarmGroup()->getManagerID() == $user->getID()){
+				$isgroupclerk = true;
+				$isfarmer = false;
+			}
+			$farmgroupid = $user->getFarmGroupID();
+		}
+		if(!$user->isFarmer()){
+			$isfarmer = false;
+		}
+		$posturl = $this->baseUrl("signup/processinvite"); 
+	}
 	
 	// any errors occured in processing
 	if ($sessionhaserror) {
@@ -26,58 +84,15 @@
 		}
 	}
 	
-	$isgroupclerk = false;
-	$isfarmer = true;
-		
-	$farmer = new Farmer();
-	$phoneobj = new UserPhone();
-	$farmerid = decode($request->profile);
-	// debugMessage('farmer is '.$farmerid);
-	
-	if(!isEmptyString($farmerid)){
-		$farmer->populate($farmerid);
-		$firstname = $farmer->getFirstName();
-		$lastname = $farmer->getLastName();
-		$username = $farmer->getUser()->getUserName(); 
-		// debugMessage($farmer->toArray());
-		$namestring = explode(' ', $firstname);
-		// debugMessage($namestring);
-		if(count($namestring) > 1){
-			$firstname = $namestring[0];
-			$lastname = $namestring[1];
-		}
-		
-		$email = $farmer->getUser()->getEmail();
-		$userid = $farmer->getUserID();
-		$phoneobj = $farmer->getUser()->getPhones()->get(0);
-		$phone = $phoneobj->getPhone();
-		if($farmer->getID() == $farmer->getFarmGroup()->getManagerID() &&  !isEmptyString($farmer->getFarmGroup()->getPhone())){
-			$phone = getShortPhone($farmer->getFarmGroup()->getPhone());
-		}
-		
-		$locationid = $farmer->getUser()->getAddress()->getDistrictID();
-		if($farmer->getID() == $farmer->getFarmGroup()->getManagerID() &&  !isEmptyString($farmer->getFarmGroup()->getAddress()->getDistrictID())){
-			$locationid = $farmer->getFarmGroup()->getAddress()->getDistrictID();
-		}
-		if(!isEmptyString($farmer->getUser()->getDateOfBirth())){
-			$birthday = date('d', strtotime($farmer->getUser()->getDateOfBirth())); 
-			$birthyear = date('Y', strtotime($farmer->getUser()->getDateOfBirth())); 
-			$birthmonth = date('m', strtotime($farmer->getUser()->getDateOfBirth())); 
-		}
-				
-		$country = $farmer->getUser()->getAddress()->getCountry();
-		# check if person is a farm group manager
-		if(!isEmptyString($farmer->getFarmGroupID())){
-			if($farmer->getFarmGroup()->getManagerID() == $farmer->getID()){
-				$type = 4;
-				$isgroupclerk = true;
-				$isfarmer = false;
-			}
-			$farmgroupid = $farmer->getFarmGroupID();
-		}
-		
-		$posturl = $this->baseUrl("signup/processinvite"); 
+	$districtlabel = $this->translate("farmer_district_label");
+	$countrycode = COUNTRY_CODE_UG;
+	$locationerror = $this->translate("farmer_district_error");
+	if(isKenya()){
+		$districtlabel = 'County';
+		$countrycode = COUNTRY_CODE_KE;
+		$locationerror = $this->translate("farmer_county_error");
 	}
+	
 	$this->headTitle($pagetile); 
 	
 ?>
@@ -96,7 +111,7 @@
 			backLabel:	'Back',
 			block:		true,
 			errorImage:	false,
-			nextLabel:	'Continue',
+			nextLabel:	'Register',
 			titleClick:	true,
 			validate:	true,
 			next: function(index) {
@@ -107,8 +122,8 @@
 		});
 		
 		$(".button-back").html('').prepend('<i class="icon-arrow-left icon-white"></i> Back').addClass('btn btn-primary btn-large');
-		$(".button-next").html('').prepend('<i class="icon-arrow-right icon-white"></i> Continue').addClass('btn btn-primary btn-large'); 
-		$(".finish").html('').prepend('<i class="icon-ok icon-white"></i> Continue').addClass('btn btn-primary btn-large');
+		$(".button-next").html('').prepend('<i class="icon-arrow-right icon-white"></i> Register').addClass('btn btn-primary btn-large'); 
+		$(".finish").html('').prepend('<i class="icon-ok icon-white"></i> Register').addClass('btn btn-primary btn-large');
 		$(".step legend").hide();
 		$(".step").attr('title','');/**/
 		
@@ -132,12 +147,22 @@
 					minlength: 4,
 					maxlength: 15
 				},
+				refno: {
+					required: true, 					
+					minlength: 6,
+					maxlength: 10					
+				},
 				phone: {
 					required: true, 					
 					validnumber: true,
 					maxlength: 10,
 					minlength: 10,
-					validate_ug: true
+					<?php if(isUganda()){ ?>
+						validate_ug: true
+					<?php } ?>
+					<?php if(isKenya()){ ?>
+						validate_ke: true
+					<?php } ?>
 				},
 				password: {
 					required: true,
@@ -179,11 +204,21 @@
 					minlength: "Username must have atleast 4 characters",
 					maxlength: "Username must not exceed 15 characters"
 				},
+				refno: {
+					required: "Please enter ID Number", 					
+					minlength: "ID must have more than 6 Digits",
+					maxlength: "ID must not exceed 10 Digits"
+				},
 				phone: {
 					required: "<?php echo $this->translate("useraccount_phonenumber_error"); ?>", 					
 					maxlength: "Phone Number must have 10 Digits",
 					minlength: "Phone Number must have 10 Digits",
-					validate_ug: "<?php echo $this->translate("globale_phonenumber_format"); ?>"
+					<?php if(isUganda()){ ?>
+						validate_ug: "<?php echo $this->translate("globale_phonenumber_format"); ?>"
+					<?php } ?>
+					<?php if(isKenya()){ ?>
+						validate_ke: "<?php echo $this->translate("globale_phonenumber_format_ke"); ?>"
+					<?php } ?>
 				},
 				password: {
 					required: "<?php echo $this->translate("useraccount_password_error"); ?>",
@@ -196,7 +231,7 @@
 				},
 				agreedtoterms: "<?php echo $this->translate("useraccount_agreetoterms_error"); ?>",
 				locationid: {
-					required: "<?php echo $this->translate("farmer_district_error"); ?>"
+					required: "<?php echo $locationerror; ?>"
 				},
 				code: {
 					required: "Enter the letters you see above"
@@ -214,29 +249,6 @@
 				}			
 			}
 		});
-		
-		// add the validation for wholesale price to be less than retail price
-		$.validator.addMethod("validnumber", function(value, element, params) { 
-			if (IsValidAmount(value)) {
-				return true; 
-			}
-			return false;        
-		}, "Please enter a valid Phone Number");
-		$.validator.addMethod("validate_ug", function(value, element, params) { 
-			if(!isUgNumber(value)) {
-				return false; 
-			}
-			return true;        
-		}, "<?php echo $this->translate("globale_phonenumber_format"); ?>");
-		
-		// validate captcha
-		$.validator.addMethod("validatecode", function(value, element, params) {
-			//alert('code is '+value); //alert('valid is '+$("#validcode").val());
-			if ($("#code").val().toLowerCase() == $("#validcode").val().toLowerCase()) {
-				return true; 
-			}
-			return false;        
-		}, "Captcha Invalid! <br />Re-enter code or refresh for a new one");
 		
 		$.validator.addMethod("validbirth", function(value, element, params) { 
 			var day = $("#birthday").val();
@@ -288,6 +300,14 @@
 			check_phone_availability();  
         });
 		
+		//when button is clicked  
+        $('#check_refno_availability').click(function(){ 
+			check_refno_availability();  
+        });
+		$('#refno').change(function(){ 
+			check_refno_availability();  
+        });
+		
 		//function to check username availability  
 		function check_user_availability(){  
 			//get the username
@@ -296,7 +316,7 @@
 			if(!isEmptyString(username) && username.length >= 4 && username.length <= 15 && isAlpha(username)){
 				// alert('passed');
 				$('#username_availability_result').html(checking_html); 
-				var userid = '<?php echo $farmer->getUserID(); ?>';
+				var userid = '<?php echo $user->getID(); ?>';
 				//use ajax to run the check  
 				$.post("<?php echo $this->baseUrl('signup/checkusername'); ?>", { username: username, userid: userid },  
 					function(result){  
@@ -304,7 +324,7 @@
 						// alert(result); // return false;
 						if(result == 1){  
 							//show that the username is available
-							$('#username_availability_result').html(username + ' is NOT available!').addClass('alert').addClass('alert-error').removeClass('alert-success'); 
+							$('#username_availability_result').html(username + ' is already taken!').addClass('alert').addClass('alert-error').removeClass('alert-success'); 
 						} else {  
 							//show that the username is NOT available  
 							$('#username_availability_result').html(username + ' is available').addClass('alert').addClass('alert-success').removeClass('alert-error');
@@ -328,7 +348,7 @@
 						// alert(result); // return false;
 						if(result == 1){  
 							//show that the email is available
-							$('#email_availability_result').html(email + ' is NOT available!').addClass('alert').addClass('alert-error').removeClass('alert-success'); 
+							$('#email_availability_result').html(email + ' is already taken!').addClass('alert').addClass('alert-error').removeClass('alert-success'); 
 						} else {  
 							//show that the email is NOT available  
 							$('#email_availability_result').html(email + ' is available').addClass('alert').addClass('alert-success').removeClass('alert-error');
@@ -342,24 +362,51 @@
 			//get the username
 			var checking_html = 'Checking availability...';   
 			var phone = $('#phone').val();  
-			if(!isEmptyString(phone) && isUgNumber(phone)){
+			var country = '<?php echo $session->getVar('country'); ?>';
+			if(!isEmptyString(phone) && isValidPhone(phone, country)){
 				$('#phone_availability_result').html(checking_html);  
-				var userid = '<?php echo $farmer->getUserID(); ?>';
+				var userid = '<?php echo $user->getID(); ?>';
 				//use ajax to run the check  
-				$.post("<?php echo $this->baseUrl('signup/checkphone'); ?>", { phone: phone, userid: userid },  
+				$.post("<?php echo $this->baseUrl('signup/checkphone'); ?>", { phone: phone, userid: userid, country: country },  
 					function(result){  
 						//if the result is 1  
 						// alert(result); return false;
 						if(result == 1){  
 							//show that the phone is available
-							$('#phone_availability_result').html(phone + ' is NOT available!').addClass('alert').addClass('alert-error').removeClass('alert-success'); 
+							$('#phone_availability_result').html(phone + ' is already taken!').addClass('alert').addClass('alert-error').removeClass('alert-success'); 
 						} else {  
 							//show that the phone is NOT available  
 							$('#phone_availability_result').html(phone + ' is available').addClass('alert').addClass('alert-success').removeClass('alert-error');
 						}  
 				});  
 			}
-		} 
+		}
+		
+		//function to check username availability  
+		function check_refno_availability(){  
+			//get the refno
+			var checking_html = 'Checking availability...';   
+			var refno = $('#refno').val();  
+			if(!isEmptyString(refno) && refno.length >= 6 && refno.length <= 10){
+				// alert('passed');
+				$('#refno_availability_result').html(checking_html); 
+				var userid = '<?php echo $user->getID(); ?>';
+				var country = '<?php echo $session->getVar('country'); ?>';
+				//use ajax to run the check  
+				$.post("<?php echo $this->baseUrl('signup/checkrefno'); ?>", { refno: refno, userid: userid, country: country},  
+					function(result){  
+						//if the result is 1  
+						// alert(result); // return false;
+						if(result == 1){  
+							//show that the username is available
+							$('#refno_availability_result').html(refno + ' is already taken!').addClass('alert').addClass('alert-error').removeClass('alert-success'); 
+						} else {  
+							//show that the username is NOT available  
+							$('#refno_availability_result').html(refno + ' is available').addClass('alert').addClass('alert-success').removeClass('alert-error');
+						}  
+				});   
+			}
+		}  
 		
 		$("#headeractions #loginheader #headersignup").css({'display':'none'});
 		
@@ -374,6 +421,7 @@
 		var settings = $.data($form[0], 'validator').settings;
 		settings.ignore += ':not(.chzn-done)';*/
 		
+		// equalHeight($("#signupform, #contentright"));
 	}); 
 </script>
 
@@ -384,8 +432,8 @@ body.publicbody #contentcolumn {
 	width:98%;
 }
 .contentright {
-	min-height: 370px;
-	height:560px;
+	min-height:675px;
+	height:auto;
 }
 .radio input[type="radio"], .checkbox input[type="checkbox"] {
 	margin-top:1px;
@@ -441,15 +489,18 @@ ul#plans li {
 }
 </style>
 <div class="row margin0 blocked maxwidth">
-    <h1 class="calfont" style="color:#498D0F; font-size:22px;"><?php echo $title; ?><a style="float:right; margin-right:10px;" href="<?php echo $this->baseUrl('signup/activate'); ?>" class="btn btn-primary" title="Activate Existing Account">Activate Existing Account</a></h1>
-    
-    <span class="span7 marginleft0 pull-left" style="width:560px;">
+    <h1 class="calfont clear clearfix" style="color:#498D0F; font-size:22px; margin-top:-10px;"><?php //echo $title; ?>&nbsp;
+    <?php if(isUganda()){ ?>	
+        <a style="float:right; margin-right:10px;" href="<?php echo $this->baseUrl('signup/activate'); ?>" class="btn btn-primary" title="Activate Using Phone">Activate Existing Account</a>
+    <?php } ?>
+    </h1>
+    <span class="span7 marginleft0 pull-left" style="width:550px;">
         <form class="form-horizontal well" id="signupform" action="<?php echo $posturl; ?>" method="post">
         <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
             <div class="alert alert-success"><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
         <?php } ?>	
-            <fieldset title="Basics" id="account">
-                <legend>Step 1</legend>
+            <fieldset title="<?php echo $title; ?>" id="account">
+                <legend>Signup Today for your 30day Risk Free Trial</legend>
                 <table class="table">
                    <?php if($sessionhaserror) { ?>
                    <tr>
@@ -489,58 +540,7 @@ ul#plans li {
                        <input name="lastname" id="lastname" type="text" class="span2 hastooltip max50content" value="<?php echo $lastname; ?>" title="<?php echo $this->translate("farmer_lastname_tooltip"); ?>" /><div id="lastname_error"></div></td>
                    </tr>
                    <tr>
-                       <td colspan="2"><label class="control-label email"><?php echo $this->translate("farmer_email_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
-                       <?php if(!isEmptyString($email) && !isEmptyString($request->profile)){ ?>
-                            <?php echo $email; ?><input name="email" id="email" type="hidden" value="<?php echo $email; ?>" />
-                       <?php } else { ?>
-                       		<input style="width:335px;" class="hastooltip validate_255_string" name="email" id="email" type="text" value="<?php echo $email; ?>" title="<?php echo $this->translate("farmer_email_tooltip"); ?>" />
-                            <label class='lineblocked'><a href="javascript: void(0);" class="btn btn-primary btn-mini" id='check_user_availability' title="Check Availability">Check</a></label>
-                       <?php } ?>
-                       <div id="email_error"></div><div id="email_availability_result" style="margin-top:5px;"></div></td>
-                   </tr>
-                   <tr>
-                       <td colspan="2"><label class="control-label username"><?php echo $this->translate("farmer_username_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
-                       <div class="input-prepend">
-                          <span class="add-on" style="margin-right:-5px;">@</span>
-                          <input style="" maxlength="20" class="span2 hastooltip strictalpha" name="username" id="username" type="text" value="<?php echo $username; ?>" title="<?php echo $this->translate("farmer_username_tooltip"); ?>" />
-                       </div>
-                       <label class='lineblocked'><a href="javascript: void(0);" class="btn btn-primary btn-mini" id='check_username_availability' title="Check Availability">Check</a></label>
-                       <div id="username_error"></div><div id="username_availability_result" style="margin-top:5px;"></div></td>
-                   </tr>
-                   <tr>
-                       <td><label class="control-label password"><?php echo $this->translate("useraccount_password_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
-                       <input name="password" id="password" type="password" autocomplete="off" class="span2 password hastooltip" onkeyup="passwordStrength(this.value)" value="" title="<?php echo $this->translate("farmer_password_tooltip"); ?>" />
-                       <p style="display:inline-block; float:right;">
-                            <label for="passwordStrength" class="hidden">Password strength</label>
-                            <div id="passwordDescription" style="width:100px;">strength</div>
-                            <div id="passwordStrength" class="strength0"></div>
-                        </p>
-                       <div id="password_error"></div></td>
-                       <td><label class="control-label confirmpassword"><?php echo $this->translate("useraccount_password_confirm_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
-                       <input name="confirmpassword" id="confirmpassword" autocomplete="off" type="password" class="span2 password hastooltip" value="" title="<?php echo $this->translate("farmer_confirmpassword_tooltip"); ?>" />
-                       <div id="confirmpassword_error"></div></td>
-                   </tr>
-                   <tr>
-                        <td style="text-align:right;"><label class="control-label captcha" style="float:right; text-align:right; width:100%;">Captcha: </label>
-                        <span class="pagedescription">(enter the code you see)</span></td>
-                        <td>
-                            <div id="wrap" align="center">
-                                <label id="captcha"></label>
-                                <input name="code" type="text" id="code" style="width:80px;" maxlength="5" value="">
-                                <input name="validcode" type="hidden" id="validcode" value="">
-                            </div>
-                            <img src="<?php echo $this->baseUrl('images/refresh.jpg'); ?>" width="25" alt="" id="refresh" />
-                            <br clear="all" /><br clear="all" />
-                            <div id="code_error"></div>
-                        </td>
-                    </tr>
-                </table>
-            </fieldset>
-            <fieldset title="Contact Info">
-                <legend>Step 2</legend>
-                <table class="table">
-                    <tr>
-                       <td colspan="2"><label class="control-label country"><?php echo $this->translate("farmer_country_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                       <td><label class="control-label country"><?php echo $this->translate("farmer_country_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
                        <?php
                             $countries = getCountries();
                             $countrydropdown = new Zend_Form_Element_Select('country',
@@ -556,39 +556,32 @@ ul#plans li {
                             echo $countrydropdown->render(); 
                         ?><input type="hidden" name="country" id="country" value="<?php echo $country; ?>" />
                         <span id="tooltip_country"></span><div id="country_error"></div></td>
-                    </tr>
-                    <tr>
-                       <td colspan="2"><label class="control-label district"><?php echo $this->translate("farmer_district_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
-                       <?php
-                            $districtlist = new LookupType(); 
-                            $districtlist->setName("ALL_DISTRICTS");
-                            $districts = $districtlist->getOptionValuesFromQuery();
-                            
-                            $districtdropdown = new Zend_Form_Element_Select('locationid',
-                                                array(
-                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $districts),								
-                                                    'view' => new Zend_View(),
-                                                    'decorators' => array('ViewHelper'),
-                                                    'class' => array('filterselect', 'hastooltip_custom', 'xchzn-select'),
-                                                    'title' => $this->translate("farmer_district_signup_tooltip")
-                                                )
-                                            );
-                            $districtdropdown->setValue($locationid); 
-                            echo $districtdropdown->render(); 
-                       ?>
-                       <span id="tooltip_locationid"></span><div id="locationid_error"></div></td>
-                    </tr>
-                    <tr>
-                       <td colspan="2"><label class="control-label phone"><?php echo $this->translate("farmer_phone_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                       <td><label class="control-label district"><?php echo $districtlabel; ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+						   <?php
+                                $districts = getDistricts($session->getVar('country'));
+                                $districtdropdown = new Zend_Form_Element_Select('locationid',
+                                                    array(
+                                                        'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $districts),								
+                                                        'view' => new Zend_View(),
+                                                        'decorators' => array('ViewHelper'),
+                                                        'class' => array('filterselect', 'hastooltip_custom', 'xchzn-select'),
+                                                        'title' => $this->translate("farmer_district_signup_tooltip")
+                                                    )
+                                                );
+                                $districtdropdown->setValue($locationid); 
+                                echo $districtdropdown->render(); 
+                           ?>
+                           <span id="tooltip_locationid"></span><div id="locationid_error"></div></td> 
+                   </tr>
+                   <tr>
+                       <td><label class="control-label phone"><?php echo $this->translate("farmer_phone_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
                        	   <div class="input-prepend">
-                              <span class="add-on"><?php echo '+'.COUNTRY_CODE_UG; ?></span><input name="phone" id="phone" type="text" maxlength="10" class="span2 hastooltip" value="<?php echo getShortPhone($phone); ?>" title="<?php echo $this->translate("farmer_phone_tooltip"); ?>"  />
+                              <span class="add-on"><?php echo '+'.$countrycode; ?></span><input name="phone" id="phone" type="text" maxlength="10" class="span2 hastooltip" value="<?php echo getShortPhone($phone); ?>" style="width:90px;" title="<?php echo $this->translate("farmer_phone_tooltip"); ?>"  />
                            </div>
-                           <label class='lineblocked'><a href="javascript: void(0);" class="btn btn-primary btn-mini" id='check_phone_availability' title="Check Availability">Check</a></label><label class="pagedescription" style="font-size:10px;">e.g &nbsp; <span class="green">0772123456</span></label>
+                           <label class='lineblocked'><a href="javascript: void(0);" class="btn btn-primary btn-mini" id='check_phone_availability' title="Check Availability">Check</a></label><label class="pagedescription" style="font-size:10px;">e.g &nbsp; <span class="green">0712123456</span></label>
                        		<div id="phone_error"></div><div id="phone_availability_result" style="margin-top:5px;"></div>
                        </td>
-                    </tr>                  
-                    <tr>
-                       <td colspan="2">
+                       <td>
                            <label class="control-label dateofbirth"><?php echo $this->translate("farmer_dateofbirth_label"); ?>:</label>
                             <?php
                                 $daydp = new Zend_Form_Element_Select('birthday',
@@ -630,89 +623,82 @@ ul#plans li {
                                 $yeardp->setValue($birthyear); 
                                 echo $yeardp->render(); 
                             ?>
-                            <input name="dateofbirth" id="dateofbirth" type="text" class="span2 datefield hastooltip" value="<?php // echo $dateofbirth; ?>" title="<?php echo $this->translate("farmer_dateofbirth_tooltip"); ?>" /><div id="birthday_error"><div id="birthmonth_error"><div id="birthyear_error"><div id="dateofbirth_error"></div>
+                            <input name="dateofbirth" id="dateofbirth" type="text" class="span2 datefield hastooltip" value="<?php // echo $dateofbirth; ?>" title="<?php echo $this->translate("farmer_dateofbirth_tooltip"); ?>" /><div id="birthday_error"></div><div id="birthmonth_error"></div><div id="birthyear_error"></div><div id="dateofbirth_error"></div>
                         </td>
+                    </tr>    
+                   <tr>
+                       <td colspan="2"><label class="control-label email"><?php echo $this->translate("farmer_email_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                       <?php if(!isEmptyString($email) && !isEmptyString($request->profile)){ ?>
+                            <?php echo $email; ?><input name="email" id="email" type="hidden" value="<?php echo $email; ?>" />
+                       <?php } else { ?>
+                       		<input style="width:360px;" class="hastooltip validate_255_string" name="email" id="email" type="text" value="<?php echo $email; ?>" title="<?php echo $this->translate("farmer_email_tooltip"); ?>" />
+                            <label class='lineblocked'><a href="javascript: void(0);" class="btn btn-primary btn-mini" id='check_user_availability' title="Check Availability">Check</a></label>
+                       <?php } ?>
+                       <div id="email_error"></div><div id="email_availability_result" style="margin-top:5px;"></div></td>
                    </tr>
-                   <?php if($isgroupclerk){ ?>
-                       <tr id="terms">
-                           <td colspan="2" style="padding-bottom:30px;"><input type="checkbox" name="agreedtoterms" id="agreedtoterms" value="1" class="<?php echo $agreedtoterms; ?>" title="<?php echo $this->translate("person_agreedtoterms_tooltip"); ?>" />
-                            <?php echo sprintf($this->translate("useraccount_terms_accept_label"), '#', '#'); ?><?php echo $this->translate("global_required_field_marker"); ?><div id="agreedtoterms_error"></div></td>
-                       </tr>
-                   <?php } ?>
-                </table>
-            </fieldset>
-        	<?php if($isfarmer){ ?>
-            <fieldset title="Subscription Plan">
-                <legend>Step 3</legend>
-                <table class="table">
-                    <tr>
-                        <td colspan="2" style="height:300px;">
-                            <?php 
-                                $plan = new MembershipPlan(); 
-                                $plans = $plan->getAllPlans()->toArray();
-                                // debugMessage($plans->toArray());
-                                unset($plans[2]); unset($plans[3]);
-                            ?>
-                            <ul id="plans">
-                                <?php foreach($plans as $key => $value){ ?>
-                                    <li>
-                                        <input type="radio" style="margin-top:-5px;" name="membershipplanid" id="membershipplanid_<?php echo $value['id']; ?>" value="<?php echo $value['id']; ?>" class="<?php echo $value['id'] == $membershipplanid ? 1 : 0; ?>" />&nbsp; 
-                                        <label style="display:inline-block; margin-top:0; font-size:16px; font-weight:bold;"><?php echo $value['name']." Farmis"; ?></label> <br />
-                                        <div style="width:100%; height:auto; margin-top:10px;">
-                                        	<?php if($isfarmer){ ?>
-												<?php if($value['id'] == 1){ ?>
-                                                    <label class="planbenefits" style="">- 30 Day Risk Free Trial</label>
-                                                    <label class="planbenefits">- 1 User, 10Mb space</label>
-                                                    <label class="planbenefits">- 1 Farm</label>
-                                                    <label class="planbenefits">- 1 Season</label>
-                                                    <label class="planbenefits">- 10 Activities</label>
-                                                    <label class="planbenefits">- Activity Calendar</label>
-                                                    <label class="planbenefits">- Limited Reports</label>
-                                                    <label class="planbenefits">- Email Alerts</label>
-                                                    <label class="planbenefits">- No Crop Card Provided</label>
-                                                <?php } ?>
-                                                <?php if($value['id'] == 2){ ?>
-                                                    <label class="planbenefits">- Ugx 9,200 per month</label>
-                                                    <label class="planbenefits">- Unlimited Users, 100Mb space</label>
-                                                    <label class="planbenefits">- Multiple Farms</label>
-                                                    <label class="planbenefits">- Farm Groups Enabled</label>
-                                                    <label class="planbenefits">- Multiple Seasons</label>
-                                                    <label class="planbenefits">- Infinite Activities</label>
-                                                    <label class="planbenefits">- Activity Calendar</label>
-                                                    <label class="planbenefits">- Detailed Reports</label>
-                                                    <label class="planbenefits">- SMS and Email Alerts</label>
-                                                    <label class="planbenefits">- Season Crop Card is Provided</label>
-                                                    <label class="planbenefits">- FARMIS Membership Certificate</label>
-                                                <?php } ?>
-                                             <?php } ?>
-                                             <?php if($isgroupclerk){ ?>
-                                             
-                                             <?php } ?>
-                                        </div>
-                                    </li>
-                                <?php } ?>
-                            </ul>
-                            <div id="membershipplanid_error"></div>
-                        </td>
+                   <tr>
+                       <td><label class="control-label username"><?php echo $this->translate("farmer_username_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                           <div class="input-prepend">
+                              <span class="add-on" style="margin-right:-5px;">@</span>
+                              <input style="width:100px;" maxlength="15" class="span2 hastooltip strictalpha" name="username" id="username" type="text" value="<?php echo $username; ?>" title="<?php echo $this->translate("farmer_username_tooltip"); ?>" />
+                           </div>
+                           <label class='lineblocked'><a href="javascript: void(0);" class="btn btn-primary btn-mini" id='check_username_availability' title="Check Availability">Check</a></label>
+                           <div id="username_error"></div><div id="username_availability_result" style="margin-top:5px;"></div></td>
+                       <td>
+                       	<?php if(isKenya()){ ?>	
+                            <label class="control-label refno">National ID Number: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                            <input maxlength="10" class="span2 hastooltip isnumber" name="refno" id="refno" type="text" value="<?php echo $refno; ?>" title="<?php echo $this->translate("farmer_nationalid_tooltip"); ?>" />
+                            <label class='lineblocked'><a href="javascript: void(0);" class="btn btn-primary btn-mini" id='check_refno_availability' title="Check Availability">Check</a></label>
+                       		<div id="refno_error"></div><div id="refno_availability_result" style="margin-top:5px;"></div>
+                        <?php } ?>
+                       </td>
+                   </tr>
+                   <tr>
+                       <td><label class="control-label password"><?php echo $this->translate("useraccount_password_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                       <input name="password" id="password" type="password" autocomplete="off" class="span2 password hastooltip" onkeyup="passwordStrength(this.value)" value="" title="<?php echo $this->translate("farmer_password_tooltip"); ?>" />
+                       <p style="display:inline-block; float:right;">
+                            <label for="passwordStrength" class="hidden">Password strength</label>
+                            <div id="passwordDescription" style="width:100px;">strength</div>
+                            <div id="passwordStrength" class="strength0"></div>
+                        </p>
+                       <div id="password_error"></div></td>
+                       <td><label class="control-label confirmpassword"><?php echo $this->translate("useraccount_password_confirm_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                       <input name="confirmpassword" id="confirmpassword" autocomplete="off" type="password" class="span2 password hastooltip" value="" title="<?php echo $this->translate("farmer_confirmpassword_tooltip"); ?>" />
+                       <div id="confirmpassword_error"></div></td>
+                   </tr>
+                   
+                   <tr id="terms">
+                        <td colspan="2" style="padding-bottom:30px;"><input type="checkbox" name="agreedtoterms" id="agreedtoterms" value="1" class="<?php echo $agreedtoterms; ?>" title="<?php echo $this->translate("person_agreedtoterms_tooltip"); ?>" />
+                        <?php echo sprintf($this->translate("useraccount_terms_accept_label"), '#', '#'); ?><?php echo $this->translate("global_required_field_marker"); ?><div id="agreedtoterms_error"></div></td>
                     </tr>
-                    <tr id="terms">
-                       <td colspan="2" style="padding-bottom:30px;"><input type="checkbox" name="agreedtoterms" id="agreedtoterms" value="1" class="<?php echo $agreedtoterms; ?>" title="<?php echo $this->translate("person_agreedtoterms_tooltip"); ?>" />
-                    <?php echo sprintf($this->translate("useraccount_terms_accept_label"), '#', '#'); ?><?php echo $this->translate("global_required_field_marker"); ?><div id="agreedtoterms_error"></div></td>
-                   </tr>
+                   <!--<tr>
+                        <td style="text-align:right;"><label class="control-label captcha" style="float:right; text-align:right; width:100%;">Captcha: </label>
+                        <span class="pagedescription">(enter the code you see)</span></td>
+                        <td>
+                            <div id="wrap" align="center">
+                                <label id="captcha"></label>
+                                <input name="code" type="text" id="code" style="width:80px;" maxlength="5" value="">
+                                <input name="validcode" type="hidden" id="validcode" value="">
+                            </div>
+                            <img src="<?php //echo $this->baseUrl('images/refresh.jpg'); ?>" width="25" alt="" id="refresh" />
+                            <br clear="all" /><br clear="all" />
+                            <div id="code_error"></div>
+                        </td>
+                    </tr>-->
                 </table>
             </fieldset>
-            <?php } ?>
             <button type="submit" class="btn btn-primary btn-large finish" id="complete"><i class="icon-arrow-right icon-white"></i> Complete</button>
             <input type="hidden" name="usecustomsave" id="usecustomsave" value="true" />
-            <input type="hidden" name="farmerid" id="farmerid" value="<?php echo $farmerid; ?>" />
             <input type="hidden" name="userid" id="userid" value="<?php echo $userid; ?>" />
             <input type="hidden" name="createdby" id="createdby" value="<?php echo $createdby; ?>" />
             <input type="hidden" name="type" id="type" value="<?php echo $type; ?>" />
             <input type="hidden" id="farmgroupid" name="farmgroupid" value="<?php echo $farmgroupid; ?>" />
+            <input type="hidden" name="membershipplanid" id="membershipplanid" value="<?php echo $membershipplanid; ?>" />
+            <input name="spamcheck" id="spamcheck" type="hidden" value="" />
         </form>
     </span>
     <span class="span5 pull-right">
-        <div class="well contentright">
+        <div class="well contentright" id="contentright">
             <h3>Automate your Farm Records</h3>
             <div id="mini_tree" style="text-align:center; vertical-align:top;">
                 <img src="<?php echo $this->baseUrl('images/signupimage.png'); ?>" />

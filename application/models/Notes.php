@@ -10,8 +10,7 @@ class Notes extends BaseRecord {
        	$this->hasColumn('description','string', 500);
         $this->hasColumn('datenoted', 'date', null);
         $this->hasColumn('notedbyid', 'integer', null);
-        $this->hasColumn('farmerid', 'integer', null);
-		$this->hasColumn('farmid', 'integer', null);
+        $this->hasColumn('userid', 'integer', null);
 		$this->hasColumn('seasonid', 'integer', null);	
 		$this->hasColumn('inventoryid', 'integer', null);
 		$this->hasColumn('inputid', 'integer', null);	
@@ -44,14 +43,9 @@ class Notes extends BaseRecord {
 									'foreign' => 'id'
 							)
 						);
-		$this->hasOne('Farm as farm',
-							array('local' => 'farmid',
-									'foreign' => 'id'
-							)
-						);
-		$this->hasOne('Farmer as farmer', 
+		$this->hasOne('UserAccount as user', 
 							array(
-								'local' => 'farmerid',
+								'local' => 'userid',
 								'foreign' => 'id'
 							)
 						);
@@ -110,11 +104,8 @@ class Notes extends BaseRecord {
 		if(isArrayKeyAnEmptyString('datenoted', $formvalues)){
 			unset($formvalues['datenoted']); 
 		}
-		if(isArrayKeyAnEmptyString('farmerid', $formvalues)){
-			unset($formvalues['farmerid']); 
-		}
-		if(isArrayKeyAnEmptyString('farmid', $formvalues)){
-			unset($formvalues['farmid']); 
+		if(isArrayKeyAnEmptyString('userid', $formvalues)){
+			unset($formvalues['userid']); 
 		}
 		if(isArrayKeyAnEmptyString('seasonid', $formvalues)){
 			unset($formvalues['seasonid']); 

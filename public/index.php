@@ -35,7 +35,7 @@ if(APPLICATION_ENV == 'production'){
 	define("PROXY_HOST", "");
 	define("PROXY_PORT", "");
 	define("PAYPAL_URL", 'https://www.paypal.com/webscr&cmd=_express-checkout&token=');
-	define("PRICES_SERVER", "http://mis.infotradeuganda.com/");
+	define("PRICES_SERVER", "http://agmis.infotradeuganda.com/");
 	
 } 
 if(APPLICATION_ENV == 'staging'){
@@ -50,7 +50,7 @@ if(APPLICATION_ENV == 'staging'){
 	define("PROXY_HOST", "");
 	define("PROXY_PORT", "");
 	define("PAYPAL_URL", 'https://www.sandbox.paypal.com/webscr&cmd=_express-checkout&token=');
-	define("PRICES_SERVER", "http://mis.infotradeuganda.com/");
+	define("PRICES_SERVER", "http://agmis.infotradeuganda.com/");
 }
 if(APPLICATION_ENV == 'development'){
 	define('PUBLICFOLDER', 'public');

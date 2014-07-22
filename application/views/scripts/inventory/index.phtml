@@ -16,21 +16,23 @@
 		$posturl = $this->baseUrl("inventory/edit");	
 		//$itemno = substr($inventory->getRef(), -3);
 	} else {
-		$farm = new Farm();
-		$farm->populate(decode($request->farmid));
+		$user = new UserAccount();
+		$user->populate(decode($request->userid));
 		
-		$inventory->setFarmID($farm->getID());
+		$inventory->setUserID($user->getID());
 		$inventory->setType(1);
 	}
-	
-	$thefarmid = $inventory->getFarmID();
 	
 	#in case of errors in session, populate the fields from session
 	if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
 		$inventory->processPost($session->getVar(FORM_VALUES));	
 	}
-		
-	$this->headTitle($title);  
+	
+	$request->setParam('tab', 'inventory');
+	$user = $inventory->getUser();	
+	
+	$farmtitle = $inventory->getUser()->getName();
+	$this->headTitle($title.$browserappend);  
 	
 ?>
 <script>
@@ -74,11 +76,11 @@
 		
 	}); 
 </script>
-<h1><?php echo $this->translate('farm_title'); ?></h1>
+<h1><?php echo $farmtitle; ?></h1>
 <div id="tabs">
-    <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
+    <?php require APPLICATION_PATH."/views/scripts/profile/profileleftcolumn.phtml"; ?>
     <div class="span9 tab-content" id="center">  
-		<?php require APPLICATION_PATH."/views/scripts/farm/tabstop.phtml"; ?>
+		<?php require APPLICATION_PATH."/views/scripts/profile/tabstop.phtml"; ?>
         <div id="inventory">
         <form id="indexform" class="form-horizontal" action="<?php echo $posturl; ?>" method="post">
 			<?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
@@ -149,7 +151,7 @@
                                         <a href="javascript: void(0);" class="btn"><i class="icon-remove"></i> <?php echo $this->translate('global_button_cancel'); ?></a>
                                         <input type="hidden" name="entityname" value="Inventory" />
                                         <input type="hidden" id="id" name="id" value="<?php echo encode($inventory->getID()); ?>" />
-                                        <input type="hidden" id="farmid" name="farmid" value="<?php echo $inventory->getFarmID(); ?>" />
+                                        <input type="hidden" id="userid" name="userid" value="<?php echo $inventory->getUserID(); ?>" />
                                         <input type="hidden" id="<?php echo SUCCESS_MESSAGE; ?>" name="<?php echo SUCCESS_MESSAGE; ?>" value="<?php echo $this->translate("global_save_success"); ?>" /> 
                                     </td>
                                </tr>
@@ -175,11 +177,11 @@
                                         </tr>
                                         <tr>
                                             <td><label class="control-label"><?php echo $this->translate("inventory_unitcost_label"); ?>:</label></td>
-                                            <td><div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="unitcost" id="unitcost" class="width100 hastooltip isamount" value="<?php echo $inventory->getUnitCost(); ?>" title="<?php echo $this->translate("inventory_unitcost_tooltip"); ?>" /></div><div id="unitcost_error"></div></td>
+                                            <td><div class="input-prepend"><span class="add-on"><?php echo getCurrencySymbol(); ?></span><input type="text" name="unitcost" id="unitcost" class="width100 hastooltip isamount" value="<?php echo $inventory->getUnitCost(); ?>" title="<?php echo $this->translate("inventory_unitcost_tooltip"); ?>" /></div><div id="unitcost_error"></div></td>
                                         </tr>
                                         <tr>
                                             <td><label class="control-label"><?php echo $this->translate("inventory_totalcost_label"); ?>:</label></td>
-                                            <td><div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="totalcost" id="totalcost" class="width100 hastooltip isamount" value="<?php echo $inventory->getTotalCost(); ?>" title="<?php echo $this->translate("inventory_totalcost_tooltip"); ?>" /></div><div id="totalcost_error"></div></td>
+                                            <td><div class="input-prepend"><span class="add-on"><?php echo getCurrencySymbol(); ?></span><input type="text" name="totalcost" id="totalcost" class="width100 hastooltip isamount" value="<?php echo $inventory->getTotalCost(); ?>" title="<?php echo $this->translate("inventory_totalcost_tooltip"); ?>" /></div><div id="totalcost_error"></div></td>
                                         </tr>
                                     </table>
                                 </td>
@@ -210,7 +212,7 @@
             </div>
         </form>
         </div>
-        <?php require APPLICATION_PATH."/views/scripts/farm/tabsbottom.phtml"; ?>
+        <?php require APPLICATION_PATH."/views/scripts/profile/tabsbottom.phtml"; ?> 
     </div>
 </div>
 <?php

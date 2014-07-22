@@ -1,50 +1,48 @@
 <?php
 	require_once APPLICATION_PATH.'/includes/header.php';
 	
-	$farmer = new Farmer();
+	$user = new UserAccount();
+	
+	// $infotrade_logo = ''; $farmis_logo ='';
+	$country = 'UG';
+	$location_label = 'District';
+	$locations_label = 'Districts';
+	$countrycode = COUNTRY_CODE_UG;
+	$county_label = $this->translate("global_county_label");
+	$subcounty_label = $this->translate("global_subcounty_label");
+	
+	if(isKenya()){
+		$country = 'KE';
+		$session->setVar('country', 'ke');
+		$location_label = 'County';
+		$locations_label = 'Counties';
+		$countrycode = COUNTRY_CODE_KE;
+		$county_label = $this->translate("global_subcounty_label");
+		$subcounty_label = $this->translate("global_ward_label");
+	}
+	$countryreq = strtolower($request->country);
 	
 	$theid = decode($request->id);
 	if(isEmptyString($theid)){
-		$theid = $farmerid;
+		$theid = $userid;
 	}
-	$farmer->populate($theid);
-	$id = $farmer->getID();
+	$user->populate($theid);
+	$id = $user->getID();
 	
-	$id = $farmer->getID();	
-	$name = $farmer->getName();
-	$firstname = $farmer->getFirstName();
+	$id = $user->getID();	
+	$name = $user->getName();
+	$firstname = $user->getFirstName();
 	
 	# profile for one viewing
 	$isme = false;
-	if($farmerid == $farmer->getID()){
+	if($userid == $user->getID()){
 		$isme = true;
 	}
 	
-	$hasfarm = false;
-	$hasmultiplefarms = false;
-	$hasnofarm = false;
-	$countfarms = $farmer->getFarms()->count();
-	if($countfarms == 0){
-		$farmlabel = "Setup Farm";
-		$hasnofarm = true;
-	}
-	if($countfarms == 1){
-		$hasfarm = true;
-		$farmid = $farmer->getFarms()->get(0)->getID();
-		$farmlabel = "Manage Farm";
-	}
-	if(!isEmptyString($farmer->getFarm()->getID())){
-		$hasfarm = true;
-		$farmid = $farmer->getFarm()->getID();
-	}
-	if($countfarms > 1){
-		$hasmultiplefarms = true;
-		$farmlabel = "Manage Farms";
-	}
-	
 	$request->setParam('tab', 'subscription');
+	$successurl = $this->viewurl;
 	
-	$title = $farmer->getName();
+	$title = $user->getName();
 	$this->headTitle($title);
 	
 ?>
@@ -60,9 +58,9 @@
 <h1><?php echo $title; ?></h1>
 <?php } ?>
 <div id="tabs">
-    <?php require APPLICATION_PATH."/views/scripts/farmer/farmerleftcolumn.phtml"; ?>
+    <?php require APPLICATION_PATH."/views/scripts/profile/profileleftcolumn.phtml"; ?>
     <div class="span9 tab-content" id="center">
-    	<?php require APPLICATION_PATH."/views/scripts/farmer/tabstop.phtml"; ?>
+    	<?php require APPLICATION_PATH."/views/scripts/profile/tabstop.phtml"; ?>
 		<div id="subscription">
         	<h2>Payment History</h2>
             <form id="listform" class="form-horizontal">
@@ -76,16 +74,16 @@
                     <div class="well row marginleft0" style="min-height:60px; padding-left:10px; position:relative;">
                         <?php if(isAdmin()){ ?>
                             <div class="margin0" style="position:absolute; right:10px; top:5px;">
-                                <a href="<?php echo $this->baseUrl('payment/index/userid/'.encode($farmer->getUserID()).'/pgc/true'); ?>" class="addpopup btn btn-primary btn-mini" title="New Payment" rel="New Payment" id="newppayment" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmer/view/id/'.encode($farmer->getID()).'/tab/subscription'); ?>" action="<?php echo $this->baseUrl("payment/create"); ?>"><i class="icon-plus icon-white"></i> New</a>
+                                <a href="<?php echo $this->baseUrl('payment/index/userid/'.encode($user->getID()).'/pgc/true/country/'.$country); ?>" class="addpopup btn btn-primary btn-mini" title="New Payment" rel="New Payment" id="newppayment" formtitle="indexform" successurl="<?php echo $successurl; ?>" action="<?php echo $this->baseUrl("payment/create"); ?>"><i class="icon-plus icon-white"></i> New</a>
                             </div>
                         <?php } ?>
                         <?php if(isFarmer()){ ?>
                             <div class="margin0" style="position:absolute; left:10px; top:5px;">
-                                <a href="<?php echo $this->baseUrl('payment/paynow/id/'.encode($farmer->getID())); ?>" class="btn btn-primary" title="Pay Now" rel="FARMIS Payment Wizard" id="newppayment"><i class="icon-plus icon-white"></i> Pay Now</a>
+                                <a href="<?php echo $this->baseUrl('payment/paynow/id/'.encode($user->getID())); ?>" class="btn btn-primary" title="Pay Now" rel="FARMIS Payment Wizard" id="newppayment"><i class="icon-plus icon-white"></i> Pay Now</a>
                             </div>
                         <?php } ?>
                         <?php
-                            $payments = $farmer->getUser()->getAllPayments();
+                            $payments = $user->getAllPayments();
                             $pcount = $payments->count();
                             if($pcount == 0) { ?>
                             <div class="alert alert-info" style="margin-top:35px;">No payments available</div>
@@ -99,7 +97,7 @@
                                 <li>
                                     <table class="table noborder margin0">
                                         <tr>                                
-                                            <td width="18%"><label class="control-label" style="margin-bottom:10px; font-size:14px;"><?php echo changeMySQLDateToPageFormat($payment->getTrxDate()); ?></label>
+                                            <td width="15%"><label class="control-label" style="margin-bottom:10px; font-size:14px;"><?php echo changeMySQLDateToPageFormat($payment->getTrxDate()); ?></label>
                                                 <label class="control-label">Ref#:</label> <span><?php echo $payment->getTrxCode(); ?></span>
                                             </td>
                                             <td class="padding0">
@@ -110,8 +108,8 @@
                                                                 <?php if(isAdmin()){ ?>
                                                                     <div style="position:relative;">
                                                                         <div style="position:absolute; right:0; top:5px;">
-                                                                            <a href="<?php echo $this->baseUrl('payment/index/pgc/true/id/'.encode($payment->getID())); ?>" class="addpopup btn btn-mini" title="Edit Payment" rel="Edit Payment" id="editpay_<?php echo $payment->getID(); ?>" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmer/view/id/'.encode($farmer->getID()).'/tab/subscription'); ?>" action="<?php echo $this->baseUrl('payment/create'); ?>" style="margin-bottom:5px;"><i class="icon-pencil"></i></a><br />
-                                                                            <a href="javascript: void(0)" id="deleteline_multiple" title="Delete Entry" class="btn btn-mini deleteline removeline close" action="<?php echo $this->baseUrl('payment/delete/id/'.$payment->getID()."/entityname/Payment/successurl/".encode($this->baseUrl('farmer/view/id/'.encode($farmer->getID()).'/tab/subscription'))); ?>" message="Are you sure you want to delete this Payment?">&times;</a>
+                                                                            <a href="<?php echo $this->baseUrl('payment/index/pgc/true/id/'.encode($payment->getID()).'/country/'.$country); ?>" class="addpopup btn btn-mini" title="Edit Payment" rel="Edit Payment" id="editpay_<?php echo $payment->getID(); ?>" formtitle="indexform" successurl="<?php echo $successurl; ?>" action="<?php echo $this->baseUrl('payment/create'); ?>" style="margin-bottom:5px;"><i class="icon-pencil"></i></a><br />
+                                                                            <a href="javascript: void(0)" id="deleteline_multiple" title="Delete Entry" class="btn btn-mini deleteline removeline close" action="<?php echo $this->baseUrl('payment/delete/id/'.$payment->getID()."/entityname/Payment/successurl/".encode($successurl)); ?>" message="Are you sure you want to delete this Payment?">&times;</a>
                                                                         </div>
                                                                     </div>
                                                                <?php } ?>
@@ -119,9 +117,9 @@
                                                         </tr>
                                                         <tr>
                                                             <td> <label class="control-label">Subject </label><span><?php echo $payment->getSubject(); ?></span></td>
-                                                            <td style="width:150px;"><label class="control-label">Payment Method</label><span><?php echo $payment->getMethod(); ?></span></td>
-                                                            <td style="width:110px;"><label class="control-label">Phone</label><span><?php echo isEmptyString($payment->getPhone()) ? '--': getShortPhone($payment->getPhone()); ?></span></td>
-                                                            <td style="width:120px;"><label class="control-label">Amount</label><span><?php echo formatNumber($payment->getAmount()); ?></span>
+                                                            <td style="width:20%;"><label class="control-label">Payment Method</label><span><?php echo $payment->getMethod(); ?></span></td>
+                                                            <td style="width:20%;"><label class="control-label">Phone</label><span><?php echo isEmptyString($payment->getPhone()) ? '--': getShortPhone($payment->getPhone()); ?></span></td>
+                                                            <td style="width:20%;"><label class="control-label">Amount</label><span><?php echo formatNumber($payment->getAmount()); ?></span>
                                                             </td>
                                                         </tr>
                                                         <tr>
@@ -147,11 +145,11 @@
                     <div class="well row marginleft0" style="min-height:60px; padding-left:10px; position:relative;">
                         <?php if(isAdmin()){ ?>
                             <div class="margin0" style="position:absolute; right:10px; top:5px;">
-                                <a href="<?php echo $this->baseUrl('payment/subscription/userid/'.encode($farmer->getUserID()).'/pgc/true'); ?>" class="addpopup btn btn-primary btn-mini" title="New Subscription" rel="New Subscription" id="newsubscription" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmer/view/id/'.encode($farmer->getID()).'/tab/subscription'); ?>" action="<?php echo $this->baseUrl("payment/processsubscription"); ?>"><i class="icon-plus icon-white"></i> New</a>
+                                <a href="<?php echo $this->baseUrl('payment/subscription/userid/'.encode($user->getID()).'/pgc/true/country/'.$country); ?>" class="addpopup btn btn-primary btn-mini" title="New Subscription Period" rel="New Subscription Period" id="newsubscription" formtitle="indexform" successurl="<?php echo $successurl; ?>" action="<?php echo $this->baseUrl("payment/processsubscription"); ?>"><i class="icon-plus icon-white"></i> New</a>
                             </div>
                         <?php } ?>
                         <?php
-                            $subscriptions = $farmer->getUser()->getAllSubscription();
+                            $subscriptions = $user->getAllSubscription();
                             $scount = $subscriptions->count();
                             if($scount == 0) { ?>
                             <div class="alert alert-info" style="margin-top:35px;">No subscriptions available</div>
@@ -173,8 +171,8 @@
                                                                 <?php if(isAdmin()){ ?>
                                                                     <div style="position:relative;">
                                                                         <div style="position:absolute; right:3px; top:2px;">
-                                                                            <a href="<?php echo $this->baseUrl('payment/subscription/pgc/true/id/'.encode($subscription->getID())); ?>" class="addpopup btn btn-mini" title="Edit Subscription" rel="Edit Subscription" id="editpay_<?php echo $subscription->getID(); ?>" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmer/view/id/'.encode($farmer->getID()).'/tab/subscription'); ?>" action="<?php echo $this->baseUrl('payment/processsubscription'); ?>" style="margin-bottom:5px;"><i class="icon-pencil"></i></a><br />
-                                                                            <a href="javascript: void(0)" id="deleteline_multiple" title="Delete Entry" class="btn btn-mini deleteline removeline close" action="<?php echo $this->baseUrl('payment/delete/id/'.$subscription->getID()."/entityname/Subscription/successurl/".encode($this->baseUrl('farmer/view/id/'.encode($farmer->getID()).'/tab/subscription'))); ?>" message="Are you sure you want to delete this Subscription?">&times;</a>
+                                                                            <a href="<?php echo $this->baseUrl('payment/subscription/pgc/true/id/'.encode($subscription->getID()).'/country/'.$country); ?>" class="addpopup btn btn-mini" title="Edit Subscription" rel="Edit Subscription" id="editpay_<?php echo $subscription->getID(); ?>" formtitle="indexform" successurl="<?php echo $successurl; ?>" action="<?php echo $this->baseUrl('payment/processsubscription'); ?>" style="margin-bottom:5px;"><i class="icon-pencil"></i></a><br />
+                                                                            <a href="javascript: void(0)" id="deleteline_multiple" title="Delete Entry" class="btn btn-mini deleteline removeline close" action="<?php echo $this->baseUrl('payment/delete/id/'.$subscription->getID()."/entityname/Subscription/successurl/".encode($successurl)); ?>" message="Are you sure you want to delete this Subscription?">&times;</a>
                                                                         </div>
                                                                     </div>
                                                                 <?php } ?>                                                                
@@ -204,7 +202,7 @@
                 
             </form>
         </div>
-        <?php require APPLICATION_PATH."/views/scripts/farmer/tabsbottom.phtml"; ?> 
+        <?php require APPLICATION_PATH."/views/scripts/profile/tabsbottom.phtml"; ?> 
     </div>
 </div>    
 <?php

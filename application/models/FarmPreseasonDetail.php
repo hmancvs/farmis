@@ -8,7 +8,7 @@ class FarmPreseasonDetail extends BaseRecord {
 		
 		$this->setTableName('farmpreseasondetail');
 		$this->hasColumn('preseasonid', 'integer', null);
-		$this->hasColumn('farmid', 'integer', null);
+		$this->hasColumn('userid', 'integer', null);
 		$this->hasColumn('cropid', 'integer', null, array( 'notnull' => true, 'notblank' => true));
 		$this->hasColumn('fieldsize', 'decimal', 10, array('default' => NULL));
 		$this->hasColumn('fieldsizeunit', 'integer', null);
@@ -58,9 +58,9 @@ class FarmPreseasonDetail extends BaseRecord {
 								'foreign' => 'id'
 							)
 					); 
-		$this->hasOne('Farm as farm',
+		$this->hasOne('UserAccount as user',
 						 array(
-								'local' => 'farmid',
+								'local' => 'userid',
 								'foreign' => 'id'
 							)
 					); 
@@ -84,15 +84,14 @@ class FarmPreseasonDetail extends BaseRecord {
 	function processPost($formvalues){
 		// debugMessage($formvalues);
 		$session = SessionWrapper::getInstance();
-    	$farmerid = $session->getVar('farmerid');
     	$userid = $session->getVar('userid');
     	
 		// set default values for integers, dates, decimals
 		if(isArrayKeyAnEmptyString('preseasonid', $formvalues)){
 			unset($formvalues['preseasonid']); 
 		}
-		if(isArrayKeyAnEmptyString('farmid', $formvalues)){
-			unset($formvalues['farmid']); 
+		if(isArrayKeyAnEmptyString('userid', $formvalues)){
+			unset($formvalues['userid']); 
 		}
 		if(isArrayKeyAnEmptyString('fieldsize', $formvalues)){
 			$formvalues['fieldsize'] = NULL; 

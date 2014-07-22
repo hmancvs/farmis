@@ -6,6 +6,15 @@
 	$this->headMeta()->appendName('keywords', '');
 	$this->headMeta()->appendName('description', $title);
 	
+	$districtlabel = $this->translate("farmer_district_label");
+	$countrycode = COUNTRY_CODE_UG;
+	$locationerror = $this->translate("farmer_district_error");
+	if(isKenya()){
+		$districtlabel = 'County';
+		$countrycode = COUNTRY_CODE_KE;
+		$locationerror = $this->translate("farmer_county_error");
+	}
+	
 	$this->headTitle($title);  
 	
 ?>
@@ -97,7 +106,11 @@ body.publicbody #contentcolumn {
 	margin-right:0;
 	height:150px;
 }
-
+<?php if(isKenya()){ ?>
+#benefitlist li {
+	width:29%;
+}
+<?php } ?>
 #benefitlist li img {
 	position:absolute;
 	top:12px;
@@ -209,209 +222,211 @@ label#bestfarmis {
 </div>
 <div class="row clear lineblocked" style="min-height:400px;">
 	<div class="blocked clear">
-    <div id="columnleft" style="height:100%; margin-right:2px; float:left; width:75%;">
-		<?php if(!isEmptyString($session->getVar('newsletter_success'))){ ?>
-           <div class="alert alert-success clear"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar('newsletter_success'); ?></div>
-        <?php } ?>
-        <?php if(!isEmptyString($session->getVar('newsletter_error'))){ ?>
-           <div class="alert alert-error clear"><?php echo $session->getVar('newsletter_error'); ?></div>
-        <?php } ?>
-    	<table class="border0" style="margin:0 0 15px 10px; width:98%;">
-        	<tr>
-            	<td style="height:225px; width:44%; padding:0; background-image: url('<?php echo $this->baseUrl('images/trial.png'); ?>'); background-repeat:no-repeat; background-position:left top;">
-                	<table style="width:100%; margin:0;">
-                    	<tr>
-                        	<td style="height:60px; width:63%; padding-left:15px;"><label class="calfont" style="font-weight:bold; font-size:24px; color:#4c4b4b; margin-top:-10px;">Basic FARMIS</label></td>
-                            <td class="calfont"><label style="font-weight:bold; font-size:22px; color:#fff; margin-top:20px; margin-left:40px;">B</label></td>
-                        </tr>
-                        <tr>
-                        	<td class="calfont" colspan="2" style="padding:5px 20px 0 15px; height:70px; vertical-align:top; font-size:16px; color:#111111;">The Basic Plan gets you a feel of <a href="<?php echo $this->baseUrl('howitworks'); ?>" title="How FARMIS Works">How it works</a>. For a grace period of 30days, create your farm profile and test out the different features... <a href="<?php echo $this->baseUrl('billing'); ?>">read more</a></td>
-                        </tr>
-                        <tr>
-                        	<td colspan="2" style="height:40px; padding:0;">
-                            	<table style="width:100%; margin:0;">
-                                	<tr>
-                                    	<td style="width:50%; height:40px;">
-                                        	<table style="width:100%; margin:0;">
-                                				<tr>
-                                                	<td style="width: 24%; color: rgb(255, 255, 255); padding-left: 20px; font-weight: bold; font-size: 12px;">30 Day Risk Free Trial.</td>
-                                                </tr>
-                                            </table>
-                                        </td>
-                                        <td style="height:40px;">
-                                        	<a href="<?php echo $this->baseUrl('billing'); ?>" style="display:block; width:95%; height:100%; text-decoration:none;"></a>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-                <td style="width:10px; padding:0;"></td>
-                <td style="padding:0; background-image: url('<?php echo $this->baseUrl('images/premium.png'); ?>'); background-repeat:no-repeat; background-position:left top; display:block;">
-                	<table style="width:100%; margin:0;">
-                    	<tr>
-                        	<td style="height:85px; width:70%; padding-left:15px;"><label class="calfont" style="font-weight:bold; font-size:24px; color:#4c4b4b; margin-top:10px;">Premium FARMIS</label></td>
-                            <td class="calfont"><label style="font-weight:bold; font-size:22px; color:#fff; margin-top:40px; margin-left:40px;">P</label></td>
-                        </tr>
-                        <tr>
-                        	<td class="calfont" colspan="2" style="padding:5px 20px 0 15px; height:70px; vertical-align:top; font-size:16px; color:#111111;">The Premium Plan allows you full time access to all Farmis features at a non refundable fee payable 6 months in advance... <a href="<?php echo $this->baseUrl('billing'); ?>">read more</a></td>
-                        </tr>
-                        <tr>
-                        	<td colspan="2" style="padding:0; height:60px;">
-                            	<table style="width:100%; margin:0;">
-                                	<tr>
-                                    	<td style="width:10px;"></td>
-                                        <td style="width:58%; height:60px; padding-left:5px;">
-                                        	<table style="width:100%; margin:0;">
-                                				<tr>
-                                                    <td style="color:#fff; font-size:13px; font-weight:bold;">For only Ugx 9,200 / Per Farmer</td>
-                                                </tr>
-                                                <tr>
-                                                	<td style="color:#fff; font-weight:bold; font-size:10px;">Valid and Renewable Every 6 months</td>
-                                                </tr>
-                                                
-                                            </table>
-                                        </td>
-                                        <td style="height:25px; color:#fff;">
-                                        	<a href="<?php echo $this->baseUrl('billing'); ?>" style="display:block; width:95%; height:100%; text-decoration:none;"></a>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-        </table>
-        <h2 class="subheading">Benefits</h2>
-        <label style="display:block; width:100%; border:1px solid #d0d0d0;"></label>
-        <ul id="benefitlist">
-            <li>
-            	<img src="<?php echo $this->baseUrl("images/benefit_tracking.png"); ?>" />
-            	<h2>Automated record keeping</h2>
-            	<p>This platform allows you to track all your farm businesss activities in one place. Schedule different farm events and track all the expenses incured for future reporting <a href="<?php echo $this->baseUrl('benefits'); ?>">...more</a></p>
-            </li>
-            <li>
-            	<img src="<?php echo $this->baseUrl("images/benefit_time.png"); ?>" />
-            	<h2>Market Information</h2>
-            	<p>FARMIS provides current market information throughout major markets in Uganda. FARMIS gives you access to current food prices, <a href="<?php echo $this->baseUrl('benefits'); ?>">...more</a></p>
-            </li>
-            <li>
-            	<img src="<?php echo $this->baseUrl("images/benefit_calendar.png"); ?>" />
-            	<h2>Access to credit services</h2>
-            	<p>Farmers cite unavailability of credit and capital as one of the major constraints in their business. Financial institutions on the other hand <a href="<?php echo $this->baseUrl('benefits'); ?>">...more</a></p>
-            </li>
-            <li>
-            	<img src="<?php echo $this->baseUrl("images/benefit_map.png"); ?>" />
-            	<h2>Market Linkages for produce</h2>
-            	<p>Make use of the FARMIS platform to find out who is selling and buying. Using FARMIS you can now post offers for your produce before <a href="<?php echo $this->baseUrl('benefits'); ?>">...more</a></p>
-            </li>
-            <li>
-            	<img src="<?php echo $this->baseUrl("images/benefit_report.png"); ?>" />
-            	<h2>Promotional services</h2>
-            	<p>Join FARMIS and market your produce through partnering local radio stations at no extra cost. Access other information like <a href="<?php echo $this->baseUrl('benefits'); ?>">...more</a></p>
-            </li>
-            <li>
-            	<img src="<?php echo $this->baseUrl("images/security.png"); ?>" />
-            	<h2>Access to farming tips</h2>
-            	<p>Farming tips, agribusiness news, farmer success stories, etc. You can get all this by subscribing to FARMIS. You can also register to receive this <a href="<?php echo $this->baseUrl('benefits'); ?>">...more</a></p>
-            </li>
-        </ul>
-        <h2 class="subheading">Features</h2>
-        <table style="width:100%;">
-        	<tr>
-            	<td class="benefit_td">
-                	<div class="benefitimage_1">
-                    	<label><!--Profiling--></label>
-                    </div>
-                    <label class="benefitlabel">Farmer Profiling</label>
-                    <span class="benefitdetails">
-                    	Use farmis to profile your business records in one place so as to access it easily in future...
-                    </span>
-                </td>
-                <td class="benefit_td">
-                	<div class="benefitimage_2">
-                    	<label><!--tbd texts--></label>
-                    </div>
-                    <label class="benefitlabel">Farm Groups</label>
-                    <span class="benefitdetails">
-                    	Join farmis as a Group and work collectively to help your farmers get access to credit while leveraging...
-                    </span>
-                </td>
-                <td class="benefit_td">
-                	<div class="benefitimage_3">
-                    	<label><!--tbd text--></label>
-                    </div>
-                    <label class="benefitlabel">Activity Tracking</label>
-                    <span class="benefitdetails">
-                    	Manage your events and activities using an easy to use calendar. Schedule future activities and track them...
-                    </span>
-                </td>
-                <td class="benefit_td">
-                	<div class="benefitimage_4">
-                    	<label><!--tbd text--></label>
-                    </div>
-                    <label class="benefitlabel">Customised Reports</label>
-                    <span class="benefitdetails">
-                    	Generate customised reports that come in handy in making timed decisions... 
-                    </span>
-                </td>
-            </tr>
-        </table>
-    </div>
-    <div style="height:100%; float:right; width:23%; margin-top:-65px;">
-    	<div class="widgetsection" style="min-height:325px;">
-            <h3>Latest News</h3>
-            <div>
-                <ul class="listitems">
-                	<li>
-                    	<h2 style="font-size:12px;"><a href="<?php echo $this->baseUrl('news'); ?>">FARMIS Gulu Tour</a></h2>
-                        <label style="display:inline-block; font-size:12px; color:#848282;">02/25/2013</label>
-                        <div>
-                        	<img src="<?php echo $this->baseUrl('uploads/news/01003012_1.jpg'); ?>" style="width:175px;" />
-                            <span class="calfont" style="font-size:16px; display:block; padding:16px 0 0 0;">Recently, the Farmis Team took a tour of subscribing farmers in northern uganda in a bid to provide essential training to targeted Farm Groups on how to use Farmis. A total of tbd Groups were trained on the benefits. <a href="<?php echo $this->baseUrl('news'); ?>">...more</a></span>
+        <div id="columnleft" style="height:100%; margin-right:2px; float:left; <?php echo isKenya() ? 'width:100%;' : 'width:75%;'; ?>">
+            <?php if(!isEmptyString($session->getVar('newsletter_success'))){ ?>
+               <div class="alert alert-success clear"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar('newsletter_success'); ?></div>
+            <?php } ?>
+            <?php if(!isEmptyString($session->getVar('newsletter_error'))){ ?>
+               <div class="alert alert-error clear"><?php echo $session->getVar('newsletter_error'); ?></div>
+            <?php } ?>
+            <table class="border0" style="margin:0 0 15px 10px; width:98%;">
+                <tr>
+                    <td style="height:225px; <?php echo isKenya() ? 'width:48%;' : 'width:44%;'; ?> padding:0; background-image: url('<?php echo isKenya() ? $this->baseUrl('images/trial_2.png') : $this->baseUrl('images/trial.png'); ?>'); background-repeat:no-repeat; background-position:left top;">
+                        <table style="width:100%; margin:0;">
+                            <tr>
+                                <td style="height:60px; width:63%; padding-left:15px;"><label class="calfont" style="font-weight:bold; font-size:24px; color:#4c4b4b; margin-top:-10px;">Basic FARMIS</label></td>
+                                <td class="calfont"><label style="font-weight:bold; font-size:22px; color:#fff; margin-top:20px; <?php echo isKenya() ? 'margin-left:60px;' : 'margin-left:40px;'; ?>">B</label></td>
+                            </tr>
+                            <tr>
+                                <td class="calfont" colspan="2" style="<?php echo isKenya() ? 'padding:5px 50px 0 15px;' : 'padding:5px 20px 0 15px;'; ?> height:70px; vertical-align:top; font-size:16px; color:#111111;">The Basic Plan gets you a feel of <a href="<?php echo $this->baseUrl('howitworks'); ?>" title="How FARMIS Works">How it works</a>. For a grace period of 30days, create your farm profile and test out the different features... <a href="<?php echo $this->baseUrl('billing'); ?>">read more</a></td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" style="height:40px; padding:0;">
+                                    <table style="width:100%; margin:0;">
+                                        <tr>
+                                            <td style="width:50%; height:40px;">
+                                                <table style="width:100%; margin:0;">
+                                                    <tr>
+                                                        <td style="width: 24%; color: rgb(255, 255, 255); padding-left: 20px; font-weight: bold; font-size: 12px;">30 Day Risk Free Trial.</td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                            <td style="height:40px;">
+                                                <a href="<?php echo $this->baseUrl('billing'); ?>" style="display:block; width:95%; height:100%; text-decoration:none;"></a>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                    <td style="width:10px; padding:0;"></td>
+                    <td style="padding:0; background-image: url('<?php echo isKenya() ? $this->baseUrl('images/premium_2.png') : $this->baseUrl('images/premium.png'); ?>'); background-repeat:no-repeat; background-position:left top; display:block;">
+                        <table style="width:100%; margin:0;">
+                            <tr>
+                                <td style="height:85px; width:70%; padding-left:15px;"><label class="calfont" style="font-weight:bold; font-size:24px; color:#4c4b4b; margin-top:10px;">Premium FARMIS</label></td>
+                                <td class="calfont"><label style="font-weight:bold; font-size:22px; color:#fff; margin-top:40px; <?php echo isKenya() ? 'margin-left:70px;' : 'margin-left:40px;'; ?>">P</label></td>
+                            </tr>
+                            <tr>
+                                <td class="calfont" colspan="2" style="<?php echo isKenya() ? 'padding:5px 50px 0 15px;' : 'padding:5px 20px 0 15px;'; ?> height:70px; vertical-align:top; font-size:16px; color:#111111;">The Premium Plan allows you full time access to all Farmis features at a non refundable fee payable 6 months in advance... <a href="<?php echo $this->baseUrl('billing'); ?>">read more</a></td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" style="padding:0; height:60px;">
+                                    <table style="width:100%; margin:0;">
+                                        <tr>
+                                            <td style="width:10px;"></td>
+                                            <td style="width:58%; height:60px; padding-left:5px;">
+                                                <table style="width:100%; margin:0;">
+                                                    <tr>
+                                                        <td style="color:#fff; font-size:13px; font-weight:bold;">For only <?php echo getCurrencySymbol(); ?> <?php echo getServiceAmount(); ?> Per Annum</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="color:#fff; font-weight:bold; font-size:10px;">Valid and Renewable Every 12 months</td>
+                                                    </tr>
+                                                    
+                                                </table>
+                                            </td>
+                                            <td style="height:25px; color:#fff;">
+                                                <a href="<?php echo $this->baseUrl('billing'); ?>" style="display:block; width:95%; height:100%; text-decoration:none;"></a>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+            <h2 class="subheading">Benefits</h2>
+            <label style="display:block; width:100%; border:1px solid #d0d0d0;"></label>
+            <ul id="benefitlist">
+                <li>
+                    <img src="<?php echo $this->baseUrl("images/benefit_tracking.png"); ?>" />
+                    <h2>Automated record keeping</h2>
+                    <p>This platform allows you to track all your farm businesss activities in one place. Schedule different farm events and track all the expenses incured for future reporting <a href="<?php echo $this->baseUrl('benefits'); ?>">...more</a></p>
+                </li>
+                <li>
+                    <img src="<?php echo $this->baseUrl("images/benefit_time.png"); ?>" />
+                    <h2>Market Information</h2>
+                    <p>FARMIS provides current market information throughout major markets <?php echo isUganda() ? 'in Uganda' : ''; ?>. FARMIS gives you access to current food prices, <a href="<?php echo $this->baseUrl('benefits'); ?>">...more</a></p>
+                </li>
+                <li>
+                    <img src="<?php echo $this->baseUrl("images/benefit_calendar.png"); ?>" />
+                    <h2>Access to credit services</h2>
+                    <p>Farmers cite unavailability of credit and capital as one of the major constraints in their business. Financial institutions on the other hand <a href="<?php echo $this->baseUrl('benefits'); ?>">...more</a></p>
+                </li>
+                <li>
+                    <img src="<?php echo $this->baseUrl("images/benefit_map.png"); ?>" />
+                    <h2>Market Linkages for produce</h2>
+                    <p>Make use of the FARMIS platform to find out who is selling and buying. Using FARMIS you can now post offers for your produce before <a href="<?php echo $this->baseUrl('benefits'); ?>">...more</a></p>
+                </li>
+                <li>
+                    <img src="<?php echo $this->baseUrl("images/benefit_report.png"); ?>" />
+                    <h2>Promotional services</h2>
+                    <p>Join FARMIS and market your produce through partnering local radio stations at no extra cost. Access other information like <a href="<?php echo $this->baseUrl('benefits'); ?>">...more</a></p>
+                </li>
+                <li>
+                    <img src="<?php echo $this->baseUrl("images/security.png"); ?>" />
+                    <h2>Access to farming tips</h2>
+                    <p>Farming tips, agribusiness news, farmer success stories, etc. You can get all this by subscribing to FARMIS. You can also register to receive this <a href="<?php echo $this->baseUrl('benefits'); ?>">...more</a></p>
+                </li>
+            </ul>
+            <h2 class="subheading">Features</h2>
+            <table style="width:100%;">
+                <tr>
+                    <td class="benefit_td">
+                        <div class="benefitimage_1">
+                            <label><!--Profiling--></label>
                         </div>
-                    </li>
-                </ul>
+                        <label class="benefitlabel">Farmer Profiling</label>
+                        <span class="benefitdetails">
+                            Use farmis to profile your business records in one place so as to access it easily in future...
+                        </span>
+                    </td>
+                    <td class="benefit_td">
+                        <div class="benefitimage_2">
+                            <label><!--tbd texts--></label>
+                        </div>
+                        <label class="benefitlabel">Farm Groups</label>
+                        <span class="benefitdetails">
+                            Join farmis as a Group and work collectively to help your farmers get access to credit while leveraging...
+                        </span>
+                    </td>
+                    <td class="benefit_td">
+                        <div class="benefitimage_3">
+                            <label><!--tbd text--></label>
+                        </div>
+                        <label class="benefitlabel">Activity Tracking</label>
+                        <span class="benefitdetails">
+                            Manage your events and activities using an easy to use calendar. Schedule future activities and track them...
+                        </span>
+                    </td>
+                    <td class="benefit_td">
+                        <div class="benefitimage_4">
+                            <label><!--tbd text--></label>
+                        </div>
+                        <label class="benefitlabel">Customised Reports</label>
+                        <span class="benefitdetails">
+                            Generate customised reports that come in handy in making timed decisions... 
+                        </span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <?php if(isUganda()){ ?>
+        <div style="height:100%; float:right; width:23%; margin-top:-65px;">
+            <div class="widgetsection" style="min-height:325px;">
+                <h3>Latest News</h3>
+                <div>
+                    <ul class="listitems">
+                        <li>
+                            <h2 style="font-size:12px;"><a href="<?php echo $this->baseUrl('news'); ?>">FARMIS Gulu Tour</a></h2>
+                            <label style="display:inline-block; font-size:12px; color:#848282;">02/25/2013</label>
+                            <div>
+                                <img src="<?php echo $this->baseUrl('uploads/news/01003012_1.jpg'); ?>" style="width:175px;" />
+                                <span class="calfont" style="font-size:16px; display:block; padding:16px 0 0 0;">Recently, the Farmis Team took a tour of subscribing farmers in northern uganda in a bid to provide essential training to targeted Farm Groups on how to use Farmis. A total of tbd Groups were trained on the benefits. <a href="<?php echo $this->baseUrl('news'); ?>">...more</a></span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="widgetsection height300" style="min-height:275px;">
+                <h3>Testimonials</h3>
+                <div>
+                    <label class="calfont" id="bestfarmis">FARMIS is the best. But you don't have to take our word for it:</label>
+                    <ul class="listitems" id="testimonial">
+                        <li>
+                            <img src="<?php echo $this->baseUrl('uploads/user_0/avatar/testuser1.jpg'); ?>" />
+                            <label class="username">James Sulaiman</label>
+                            <span class="calfont">I have just created my FARMIS account to help me track the different activities on my farm.<a href="<?php echo $this->baseUrl('testimonials'); ?>">...more</a></span>
+                        </li>
+                        <li>
+                            <img src="<?php echo $this->baseUrl('uploads/user_0/avatar/testuser6.jpg'); ?>" />
+                            <label class="username">Rose Mary Kateraine</label>
+                            <span class="calfont">With the new FARMIS i appreciate the ease with which i could track all expenditures i make <a href="<?php echo $this->baseUrl('testimonials'); ?>">...more</a></span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="widgetsection height200" style="min-height:0; height:135px;">
+                <h3>Feedback</h3>
+                <div>
+                    <table style="margin:0; padding:0; width:100%;">
+                        <tr>
+                            <td>
+                                <span class="calfont" style="padding:10px; padding-bottom:0; font-size:14px; display:block; line-height:20px;">
+                                    If You have any queries, questions or feedback please contact us.
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center; padding-bottom:5px;"><a href="<?php echo $this->baseUrl('contactus'); ?>" class="btn btn-primary">Contact Us Today</a></td>
+                        </tr>
+                    </table>
+                </div>
             </div>
         </div>
-        <div class="widgetsection height300" style="min-height:275px;">
-            <h3>Testimonials</h3>
-            <div>
-       	    	<label class="calfont" id="bestfarmis">FARMIS is the best. But you don't have to take our word for it:</label>
-                <ul class="listitems" id="testimonial">
-                	<li>
-                    	<img src="<?php echo $this->baseUrl('uploads/user_0/avatar/testuser1.jpg'); ?>" />
-                        <label class="username">James Sulaiman</label>
-                        <span class="calfont">I have just created my FARMIS account to help me track the different activities on my farm.<a href="<?php echo $this->baseUrl('testimonials'); ?>">...more</a></span>
-                    </li>
-                    <li>
-                    	<img src="<?php echo $this->baseUrl('uploads/user_0/avatar/testuser6.jpg'); ?>" />
-                        <label class="username">Rose Mary Kateraine</label>
-                        <span class="calfont">With the new FARMIS i appreciate the ease with which i could track all expenditures i make <a href="<?php echo $this->baseUrl('testimonials'); ?>">...more</a></span>
-                    </li>
-                </ul>
-            </div>
-        </div>
-        <div class="widgetsection height200" style="min-height:0; height:135px;">
-            <h3>Feedback</h3>
-            <div>
-            	<table style="margin:0; padding:0; width:100%;">
-                	<tr>
-                    	<td>
-                        	<span class="calfont" style="padding:10px; padding-bottom:0; font-size:14px; display:block; line-height:20px;">
-                                If You have any queries, questions or feedback please contact us.
-                            </span>
-                        </td>
-                    </tr>
-                    <tr>
-                    	<td style="text-align:center; padding-bottom:5px;"><a href="<?php echo $this->baseUrl('contactus'); ?>" class="btn btn-primary">Contact Us Today</a></td>
-                    </tr>
-                </table>
-            </div>
-        </div>
-    </div>
+        <?php } ?>
     </div>
 </div>
 <?php

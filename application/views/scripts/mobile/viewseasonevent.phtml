@@ -1,0 +1,468 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$title = '';
+	$stage = trim($request->stage);
+	$isinputs = false; $showfinanceandlabour = true;
+	if($stage == 'input'){
+		$isinputs = true; $showfinanceandlabour = false;
+		$input = new SeasonInput();
+		$input->populate(decode($request->id));	
+		
+		$type = $input->getType();
+		$isinput = true;
+		$isgeneral = false;
+		$title = $this->translate("season_input_pagetitle_view"); 
+		$detailstitle = "Season Input Details";
+		$activityref = $this->translate("season_activityref_label");
+		$activitydate = $this->translate("season_activitystart_label");
+		if($type == 2){
+			$isinput = false;
+			$isgeneral = true;
+			$title = $this->translate("season_expense_pagetitle_view"); 
+			$detailstitle = "Expense Details";
+			$activityref = $this->translate("season_expenseref_label");
+			$activitydate = $this->translate("season_expensestart_label");
+		}
+		$title = "Activity: ".$input->getActivityName();
+	}
+	
+	$istillage = false;
+	if($stage == 'tillage'){
+		$istillage = true;
+		$tillage = new SeasonTillage();
+		$tillage->populate(decode($request->id));	
+		$title = "Activity: ".$tillage->getActivityName(); 
+	}
+	
+	$isplant = false;
+	if($stage == 'plant'){
+		$isplant = true;
+		$plant = new SeasonPlanting();
+		$plant->populate(decode($request->id));	
+		$title = "Activity: ".$plant->getActivityName(); 
+	}
+	
+	$istreat = false;
+	if($stage == 'treat'){
+		$istreat = true;
+		$treat = new SeasonTracking();
+		$treat->populate(decode($request->id));	
+		$title = "Activity: ".$treat->getActivityName(); 
+	}
+	
+	$isharvest = false;
+	if($stage == 'harvest'){
+		$isharvest = true;
+		$harvest = new SeasonHarvest();
+		$harvest->populate(decode($request->id));	
+		$title = sprintf($this->translate("season_harvest_pagetitle_view"), 'Harvesting'); 
+	}
+	
+	$issale = false;
+	if($stage == 'sale'){
+		$issale = true;
+		$sale = new Sales();
+		$sale->populate(decode($request->id));	
+		$title = $this->translate("season_sale_pagetitle_view"); 
+	}
+	$this->headTitle($title);  
+?>
+<?php require APPLICATION_PATH."/views/scripts/mobile/mobileincludes.phtml"; ?>
+
+<script>
+	$(document).ready(function() {
+		$("#bottomactions").html($("#topactions").html());
+		
+	});
+</script>
+<body>
+<div class="container-fluid viewpage" id="view_farmer">
+  <div class="row-fluid">
+   <h4><?php echo $title; ?></h4>
+  </div>
+    <div class="control-group well actions" id="topactions">
+		<a class="btn noimgbutton" href="<?php echo $this->baseUrl('mobile/home'); ?>"><i class="icon-home"></i></a>
+		<?php if($isinputs){ ?>       		
+            <a class="btn btn-primary" href="<?php echo $this->baseUrl('mobile/addseasonevent/stage/input/id/'.encode($input->getID())); ?>" id="update"><i class="icon-pencil icon-white"></i> Update</a>
+            <a href="javascript: void(0)" id="deleteline" title="Delete Inputs" class="btn deleteline noimgbutton" action="<?php echo $this->baseUrl('season/delete/id/'.$input->getID()."/entityname/SeasonInput/successurl/".encode($this->baseUrl('mobile/viewseason/id/'.encode($input->getSeasonID())))); ?>"><i class="icon-trash"></i></a>   
+            <a class="btn" href="<?php echo $this->baseUrl('mobile/viewseason/id/'.encode($input->getSeasonID())); ?>" title="Return to Season"><i class="icon-list"></i> View Season</a>
+            <a class="btn" href="<?php echo $this->baseUrl('mobile/expenses/userid/'.$input->getUserID()); ?>" title="Manage Expenses"><i class="icon-list"></i> Manage Expenses</a>
+            
+        <?php } ?>
+        <?php if($istillage){ ?>       	
+        	<a class="btn btn-primary" href="<?php echo $this->baseUrl('mobile/addseasonevent/stage/tillage/id/'.encode($tillage->getID())); ?>" id="update"><i class="icon-pencil icon-white"></i> Update</a>
+            <a href="javascript: void(0)" id="deleteline" title="Delete Activity" class="btn deleteline noimgbutton" action="<?php echo $this->baseUrl('season/delete/id/'.$tillage->getID()."/entityname/SeasonTillage/successurl/".encode($this->baseUrl('mobile/viewseason/id/'.encode($tillage->getSeasonID())))); ?>"><i class="icon-trash"></i></a>
+            <a class="btn" href="<?php echo $this->baseUrl('mobile/viewseason/id/'.encode($tillage->getSeasonID())); ?>" title="Return to Season"><i class="icon-list"></i> View Season</a>     
+        <?php } ?>
+        <?php if($isplant){ ?>       	
+        	<a class="btn btn-primary" href="<?php echo $this->baseUrl('mobile/addseasonevent/stage/plant/id/'.encode($plant->getID())); ?>" id="update"><i class="icon-pencil icon-white"></i> Update</a>
+            <a href="javascript: void(0)" id="deleteline" title="Delete Entry" class="btn deleteline noimgbutton" action="<?php echo $this->baseUrl('season/delete/id/'.$plant->getID()."/entityname/SeasonPlanting/successurl/".encode($this->baseUrl('mobile/viewseason/id/'.encode($plant->getSeasonID())))); ?>"><i class="icon-trash"></i></a>   
+            <a class="btn" href="<?php echo $this->baseUrl('mobile/viewseason/id/'.encode($plant->getSeasonID())); ?>" title="Return to Season"><i class="icon-list"></i> View Season</a>
+        <?php } ?>
+        <?php if($istreat){ ?> 
+        	<a class="btn btn-primary" href="<?php echo $this->baseUrl('mobile/addseasonevent/stage/treat/id/'.encode($treat->getID())); ?>" id="update"><i class="icon-pencil icon-white"></i> Update</a>  
+            <a href="javascript: void(0)" id="deleteline" title="Delete Entry" class="btn deleteline noimgbutton" action="<?php echo $this->baseUrl('season/delete/id/'.$treat->getID()."/entityname/SeasonTracking/successurl/".encode($this->baseUrl('mobile/viewseason/id/'.encode($treat->getSeasonID())))); ?>"><i class="icon-trash"></i></a> 
+            <a class="btn" href="<?php echo $this->baseUrl('mobile/viewseason/id/'.encode($treat->getSeasonID())); ?>" title="Return to Season"><i class="icon-list"></i> View Season</a>           
+        <?php } ?>
+        <?php if($isharvest){ ?> 
+        	<a class="btn btn-primary" href="<?php echo $this->baseUrl('mobile/addseasonevent/stage/harvest/id/'.encode($harvest->getID())); ?>" id="update"><i class="icon-pencil icon-white"></i> Update</a>
+            <a href="javascript: void(0)" id="deleteline" title="Delete Entry" class="btn deleteline noimgbutton" action="<?php echo $this->baseUrl('season/delete/id/'.$harvest->getID()."/entityname/SeasonHarvest/successurl/".encode($this->baseUrl('mobile/viewseason/id/'.encode($harvest->getSeasonID())))); ?>"><i class="icon-trash"></i></a>   
+            <a class="btn" href="<?php echo $this->baseUrl('mobile/viewseason/id/'.encode($harvest->getSeasonID())); ?>" title="Return to Season"><i class="icon-list"></i> View Season</a>  
+        <?php } ?>
+        <?php if($issale){ ?> 
+        	<a class="btn btn-primary" href="<?php echo $this->baseUrl('mobile/addseasonevent/stage/sale/id/'.encode($sale->getID())); ?>" id="update"><i class="icon-pencil icon-white"></i> Update</a>  
+            <a href="javascript: void(0)" id="deleteline" title="Delete Entry" class="btn deleteline noimgbutton" action="<?php echo $this->baseUrl('season/delete/id/'.$sale->getID()."/entityname/Sales/successurl/".encode($this->baseUrl('mobile/viewseason/id/'.encode($sale->getSeasonID())))); ?>"><i class="icon-trash"></i></a>    
+            <a class="btn" href="<?php echo $this->baseUrl('mobile/viewseason/id/'.encode($sale->getSeasonID())); ?>" title="Return to Season"><i class="icon-list"></i> View Season</a>        
+        <?php } ?>
+    </div>
+  <?php if($sessionhaserror) { ?>
+      <div class="row-fluid">
+      	<div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+      </div>
+  <?php } ?>
+  <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+  	<div class="row-fluid">
+      	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+	</div>
+  <?php } ?>
+  <?php if(!isEmptyString($session->getVar("custommessage")) ){ ?>
+  	<div class="row-fluid">
+      	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar("custommessage"); ?></div>
+	</div>
+  <?php } ?>
+  <div class="row-fluid">
+      <form class="form-horizontal" id="viewform">
+      	<?php if($isinputs){ ?>
+            <fieldset class="fieldsetcontainer well">
+                <legend>Summary</legend>
+                <div class="control-group">
+                    <label class="control-label">Season: </label>
+                    <div class="controls"><a href="<?php echo $this->baseUrl('mobile/viewseason/id/'.encode($input->getSeasonID())); ?>" title="Season details"><?php echo $input->getSeason()->getName(); ?></a></div>
+                </div>
+                <?php if($input->hasPreselectActivity()){ ?>
+                    <div class="control-group">
+                        <label class="control-label"><?php echo $this->translate("season_activity_label"); ?>:</label>
+                        <div class="controls"><a href="<?php echo $this->baseUrl('mobile/viewseasonevent/stage/'.$input->getExpenseActivityStage().'/view/'.encode($input->getExpenseActivityID())); ?>" title="Season details"><?php echo $input->getExpenseActivityName(); ?></a></div>
+                    </div>
+                <?php } ?>
+                <div class="control-group">
+                    <label class="control-label"><label class="control-label"><?php echo $activityref; ?>: </label></label>
+                    <div class="controls"><?php echo $input->getRef(); ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $activitydate; ?>: </label>
+                    <div class="controls"><?php echo changeMySQLDateToPageFormat($input->getStartDate()); ?></div>
+                </div>
+            </fieldset>
+            
+			<?php 
+                $inputdetails = $input->getinputdetails();
+                $x = 1;
+				$total = 0;
+                foreach($inputdetails as $expense){
+					$total += $expense->getAmount();
+            ?>
+                <fieldset class="fieldsetcontainer well">
+                    <legend><?php echo 'Line Item '.($x); ?></legend>
+                    <?php if($isgeneral){ ?>
+                        <div class="control-group">
+                            <label class="control-label"><?php echo $this->translate("season_input_type_label"); ?></label>
+                            <div class="controls"><?php echo $expense->getName(); ?></div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label"><?php echo $this->translate("season_input_name_label"); ?></label>
+                            <div class="controls"><?php echo $expense->getDescription(); ?></div>
+                        </div>
+                    <?php } ?>
+                    <?php if($isinput){ ?>  
+                        <div class="control-group">
+                            <label class="control-label"><?php echo $this->translate("season_input_type_label"); ?></label>
+                            <div class="controls"><?php echo $expense->getTypeText(); ?></div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label"><?php echo $this->translate("season_input_name_label"); ?></label>
+                            <div class="controls"><?php echo $expense->getName(); ?></div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label"><?php echo $this->translate("season_input_source_label"); ?></label>
+                            <div class="controls"><?php echo $expense->getSource(); ?></div>
+                        </div>
+                    <?php } ?>
+                    <div class="control-group">
+                        <label class="control-label"><?php echo $this->translate("season_input_quantity_label"); ?></label>
+                        <div class="controls"><?php echo $expense->getQuantity(); ?></div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label"><?php echo $this->translate("season_input_unitcost_label"); ?> (<?php echo getCurrencySymbol(); ?>)</label>
+                        <div class="controls"><?php echo formatNumber($expense->getUnitCost()); ?></div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label"><?php echo $this->translate("season_input_amount_label"); ?> (<?php echo getCurrencySymbol(); ?>)</label>
+                        <div class="controls"><label id="amount_<?php echo $expense->getID(); ?>" class="amount_label"><?php echo formatNumber($expense->getAmount()); ?></label></div>
+                    </div>
+                    
+                </fieldset>
+            <?php $x++;} ?> 
+            	<div class="control-group">
+                    <label class="control-label pull-right">Total Expenditure: </label>
+                    <div class="controls"><label id="summation" class="amount_label bolded"><?php echo formatNumber($total);  ?></label></div>
+                </div>                   
+        <?php } ?>
+        <?php if($istillage){ ?>
+            <fieldset class="fieldsetcontainer well">
+                <legend>Summary</legend>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activity_ref_label"); ?>:</label>
+                    <div class="controls"><?php echo $tillage->getRef(); ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activitystartdate_label"); ?>:</label>
+                    <div class="controls"><?php echo changeMySQLDateToPageFormat($tillage->getStartDate()); ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activityenddate_label"); ?>:</label>
+                    <div class="controls"><?php echo changeMySQLDateToPageFormat($tillage->getEndDate()); ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_status_label"); ?>:</label>
+                    <div class="controls"><?php echo getStatusText($tillage->getStatus()); ?></div>
+                </div>
+            </fieldset>
+            <fieldset class="fieldsetcontainer well">
+            	<legend>Tillage Details</legend>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_tillage_method_label"); ?>:</label>
+                    <div class="controls"><?php echo $tillage->getMethodText(); ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_tillage_area_label"); ?>:</label>
+                    <div class="controls"><?php echo isEmptyString($tillage->getFieldSize()) ? '--' : clean_num($tillage->getFieldSize())."&nbsp;<span class='pagedescription'>(".$tillage->getFieldSizeUnitText().")</span>"; ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_tillage_depth_label"); ?>:</label>
+                    <div class="controls"><?php echo isEmptyString($tillage->getDepth()) ? '--' : clean_num($tillage->getDepth())."&nbsp;<span class='pagedescription'>(".$tillage->getDepthUnitText().")</span>"; ?></div>
+                </div>
+                <div class="control-group">
+                	<label class="control-label"><?php echo $this->translate("season_tillage_primaryimplements_label"); ?>: </label>
+                    <div class="controls"><?php echo $tillage->getPrimaryImplementsText(); ?></div>
+                </div>
+                <div class="control-group">
+                	<label class="control-label"><?php echo $this->translate("season_tillage_secondaryimplements_label"); ?>: </label>
+                    <div class="controls"><?php echo $tillage->getSecondaryImplementsText(); ?></div>
+                </div>  
+            </fieldset>
+        <?php } ?>
+        <?php if($isplant){ ?>
+        	<fieldset class="fieldsetcontainer well">
+                <legend>Summary</legend>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activity_ref_label"); ?>:</label>
+                    <div class="controls"><?php echo $plant->getRef(); ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activitystartdate_label"); ?>:</label>
+                    <div class="controls"><?php echo changeMySQLDateToPageFormat($plant->getStartDate()); ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activityenddate_label"); ?>:</label>
+                    <div class="controls"><?php echo changeMySQLDateToPageFormat($plant->getEndDate()); ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_status_label"); ?>:</label>
+                    <div class="controls"><?php echo getStatusText($plant->getStatus()); ?></div>
+                </div>
+            </fieldset>
+            <fieldset class="fieldsetcontainer well">
+            	<legend>Planting Details</legend>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_commodity_label"); ?>: &nbsp;<span class="pagedescription"><?php echo $plant->getCrop()->getName(); ?></span></label>
+                    <div class="controls" style="width:160px;"><img style="width:100%;" src="<?php echo $plant->getCrop()->getImagePath(); ?>" /></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_plant_method_label"); ?>:</label>
+                    <div class="controls"><?php echo $plant->getMethodText(); ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_plant_area_label"); ?>:</label>
+                    <div class="controls"><?php echo clean_num($plant->getFieldSize())."&nbsp;<span class='pagedescription'>(".$plant->getFieldSizeUnitText().")</span>"; ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_plant_quantity_label"); ?>:</label>
+                    <div class="controls"><?php echo clean_num($plant->getTotalPlanted())."&nbsp;<span class='pagedescription'>(".$plant->getTotalPlantedUnitText().")</span>"; ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_plant_rate_label"); ?>:</label>
+                    <div class="controls"><?php echo clean_num($plant->getSeedingRate())."&nbsp;<span class='pagedescription'>(".$plant->getSeedingRateUnitText().")</span>"; ?></div>
+                </div>
+            </fieldset>
+        <?php } ?>
+        <?php if($istreat){ ?>
+        	<fieldset class="fieldsetcontainer well">
+                <legend>Summary</legend>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activity_ref_label"); ?>:</label>
+                    <div class="controls"><?php echo $treat->getRef(); ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Type:</label>
+                    <div class="controls"><?php echo $treat->getTypeName(); ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activitystartdate_label"); ?>:</label>
+                    <div class="controls"><?php echo changeMySQLDateToPageFormat($treat->getStartDate()); ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activityenddate_label"); ?>:</label>
+                    <div class="controls"><?php echo changeMySQLDateToPageFormat($treat->getEndDate()); ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_status_label"); ?>:</label>
+                    <div class="controls"><?php echo getStatusText($treat->getStatus()); ?></div>
+                </div>
+            </fieldset>
+            <fieldset class="fieldsetcontainer well">
+            	<legend><?php echo $treat->getTypeName(); ?> Details</legend>
+                <div class="control-group">
+                    <label class="control-label">Name<?php //echo $this->translate("season_treat_itemname_label"); ?>:</label>
+                    <div class="controls"><?php echo $treat->getItemName(); ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Method Used<?php // echo $this->translate("season_treat_method_label"); ?>:</label>
+                    <div class="controls"><?php echo $treat->getItemName(); ?></div>
+                </div>
+                <div class="control-group">
+                	<label class="control-label"><?php echo $this->translate("season_treat_timing_label"); ?>: </label>
+                    <div class="controls"><?php echo $treat->getTimingText(); ?></div>
+                </div>
+                <div class="control-group">
+                	<label class="control-label">Quantity Applied<?php //echo $this->translate("season_treat_quantity_label"); ?>: </label>
+                    <div class="controls"><?php echo $treat->getTotalApplied()."&nbsp;<span class='pagedescription'>(".$treat->getTotalAppliedUnitText().")</span>"; ?></div>
+                </div>
+                <div class="control-group">
+                	<label class="control-label">Rate of Application<?php //echo $this->translate("season_treat_itemrate_label"); ?>: </label>
+                    <div class="controls"><?php echo $treat->getItemRate()."&nbsp;<span class='pagedescription'>(".$treat->getItemRateUnitText().")</span>"; ?></div>
+                </div>
+                <div class="control-group">
+                	<label class="control-label"><?php echo $this->translate("season_treat_target_label"); ?>: </label>
+                    <div class="controls"><?php echo $treat->getTarget(); ?></div>
+                </div>
+            </fieldset>
+         <?php } ?>  
+         <?php if($isharvest){ ?>
+        	<fieldset class="fieldsetcontainer well">
+                <legend>Summary</legend>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activity_ref_label"); ?>:</label>
+                    <div class="controls"><?php echo $harvest->getRef(); ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activitystartdate_label"); ?>:</label>
+                    <div class="controls"><?php echo changeMySQLDateToPageFormat($harvest->getStartDate()); ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activityenddate_label"); ?>:</label>
+                    <div class="controls"><?php echo changeMySQLDateToPageFormat($harvest->getEndDate()); ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_status_label"); ?>:</label>
+                    <div class="controls"><?php echo getStatusText($harvest->getStatus()); ?></div>
+                </div>
+            </fieldset>
+            <fieldset class="fieldsetcontainer well">
+            	<legend>Harvest Details</legend>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_commodity_label"); ?>:</label>
+                    <div class="controls"><?php echo $harvest->getSeason()->getCrop()->getName(); ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_methodused_label"); ?>:</label>
+                    <div class="controls"><?php echo $harvest->getMethodText(); ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_harvest_area_label"); ?>:</label>
+                    <div class="controls"><?php echo clean_num($harvest->getFieldSize())."&nbsp;<span class='pagedescription'>(".$harvest->getFieldSizeUnitText().")</span>"; ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_harvest_quantity_label"); ?>:</label>
+                    <div class="controls"><?php echo clean_num($harvest->getTotalHarvest())."&nbsp;<span class='pagedescription'>(".$harvest->getTotalHarvestUnitText().")</span>"; ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_harvest_yield_label"); ?>:</label>
+                    <div class="controls"><?php echo clean_num($harvest->getYield())."&nbsp;<span class='pagedescription'>(".$harvest->getYieldUnitText().")</span>"; ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activity_damage_label"); ?>:</label>
+                    <div class="controls"><?php echo clean_num($harvest->getDamaged())."&nbsp;<span class='pagedescription'>(".$harvest->getTotalDamagedUnitText().")</span>"; ?></div>
+                </div>
+            </fieldset>
+         <?php } ?>   
+         <?php if($issale){ ?>
+        	<fieldset class="fieldsetcontainer well">
+                <legend>Summary</legend>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activity_ref_label"); ?>:</label>
+                    <div class="controls"><?php echo $sale->getRef(); ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_sale_startdate_label"); ?>:</label>
+                    <div class="controls"><?php echo changeMySQLDateToPageFormat($sale->getStartDate()); ?></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_status_label"); ?>:</label>
+                    <div class="controls"><?php echo getStatusText($sale->getStatus()); ?></div>
+                </div>
+            </fieldset>
+            <fieldset class="fieldsetcontainer well">
+            	<legend>Sale Details</legend>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_commodity_label"); ?>: &nbsp;<span class="pagedescription"><?php echo $sale->getCrop()->getName(); ?></span></label>
+                    <div class="controls" style="width:160px;"><img style="width:100%;" src="<?php echo $sale->getCrop()->getImagePath(); ?>" /></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_sale_quantity_label"); ?>:</label>
+                    <div class="controls"><?php echo formatNumber($sale->getQuantity())."&nbsp;<span class='pagedescription'>(".$sale->getQuantityUnitText().")</span>"; ?></div>
+                </div>
+                <div class="control-group">
+                   <label class="control-label"><?php echo $this->translate("season_sale_unitprice_label"); ?>:</label>
+                   <div class="controls"><?php echo formatNumber($sale->getUnitPrice())."&nbsp;<span class='pagedescription'>(".getCurrencySymbol().")</span>"; ?></div>
+                </div>
+                <div class="control-group">
+                   <label class="control-label"><?php echo $this->translate("season_sale_amount_label"); ?>: </label>
+                   <div class="controls"><?php echo formatNumber($sale->getTotalAmount())."&nbsp;<span class='pagedescription'>(".getCurrencySymbol().")</span>"; ?></div>
+                </div>
+            </fieldset>
+            <fieldset class="fieldsetcontainer well">
+            	<legend>Client Details</legend>
+                <div class="control-group">
+                   <label class="control-label"><?php echo $this->translate("season_sale_clientname_label"); ?>:</label>
+                   <div class="controls"><?php echo $sale->getClientName(); ?></div>
+                </div>
+                <div class="control-group">
+                   <label class="control-label"><?php echo $this->translate("season_sale_clienttype_label"); ?>:</label>
+                   <div class="controls"><?php echo $sale->getClientTypeText(); ?></div>
+                </div>
+                <div class="control-group">
+                   <label class="control-label"><?php echo $this->translate("season_sale_clientphone_label"); ?>:</label>
+                   <div class="controls"><?php echo $sale->getClientPhone(); ?></div>
+                </div>
+                <div class="control-group">
+                   <label class="control-label"><?php echo $this->translate("season_sale_contract_label"); ?>:</label>
+                   <div class="controls"><?php echo $sale->getContract(); ?></div>
+                </div>
+                
+			</fieldset>
+        <?php } ?> 
+        <?php if($showfinanceandlabour){ ?>
+        	<?php require APPLICATION_PATH."/views/scripts/mobile/financeview.phtml"; ?>    
+        	<?php require APPLICATION_PATH."/views/scripts/mobile/labourview.phtml"; ?>   
+        <?php } ?>
+        <div class="control-group well actions" id="bottomactions"></div>       
+      </form>
+  </div>
+</div>
+</body>
+</html>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

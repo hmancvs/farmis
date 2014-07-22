@@ -1,0 +1,146 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+
+	$title = "Home";
+	$this->headTitle($title);  
+	
+	$user = new UserAccount();
+	$userid = $session->getVar('userid');
+	$user->populate($userid);
+	
+	$userlisturl = $this->baseUrl('mobile/list');
+	$addfarmerurl = $this->baseUrl('mobile/farmer');
+	$title = "Dashboard";
+	
+	if(isFarmGroupAdmin()){
+		$farmgroup = new FarmGroup();
+		$farmgroup->populate($user->getFarmGroupID());
+		$userlisturl = $this->baseUrl('mobile/list/farmgroupid/'.$user->getFarmGroupID());
+		$addfarmerurl = $this->baseUrl('mobile/farmer/farmgroupid/'.$user->getFarmGroupID()); 
+		$title = $user->getFarmGroup()->getName();
+	}
+	// debugMessage('type is '.$session->getVar('type'));
+	
+?>
+<?php require APPLICATION_PATH."/views/scripts/mobile/mobileincludes.phtml"; ?>
+<script>
+$(document).ready(function() {
+	
+}); 
+</script>
+<body>
+<div class="container-fluid" id="dashboard">
+  <div class="row-fluid"><h4><?php echo $title; ?></h4></div>
+	<?php if($sessionhaserror) { ?>
+        <div class="row-fluid">
+        	<div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+        </div>
+    <?php } ?>
+    <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+        <div class="row-fluid">
+            <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+        </div>
+    <?php } ?>
+  <?php if(!isEmptyString($session->getVar("custommessage")) ){ ?>
+  	<div class="row-fluid">
+      	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar("custommessage"); ?></div>
+	</div>
+  <?php } ?>
+  <div class="row-fluid">
+      <div id="accordion">
+      	<h3 id="head_welcome"><a href="javascript: void(0);"><span class="caret"></span>Welcome to FARMIS</a></h3>
+        <div id="div_welcome">
+            <div class="accordion">
+            	<label id="intro"><b>FARMIS</b> is the easy way to manage your agricultural business online allowing you to quickly manage your farm processes and to evaluate your income and expenses.</label>
+            </div>
+        </div>
+		<?php if(isAdmin() || isManagement() || isDataClerk() || isFarmGroupAdmin()){ ?>
+        <h3 id="head_list"><a href="<?php echo $this->baseUrl('mobile/list'); ?>"><span class="caret"></span>Farmer Directory</a></h3>
+        <div id="div_list">
+            <div class="accordion">
+            	<a class="btn btn-primary" href="<?php echo $userlisturl; ?>" id="update"><i class="icon-list icon-white"></i>Farmers</a>
+                <a class="btn" href="<?php echo $addfarmerurl; ?>"><i class="icon-plus"></i> New Farmer</a>
+                <a class="btn" href="<?php echo $this->baseUrl('mobile/seasons'); ?>"><i class="icon-list"></i> Farmer Seasons</a>
+            </div>
+        </div>
+        <?php } ?>
+        <?php if(isAdmin() || isManagement() || isDataClerk()){ ?>
+        <h3 id="head_dna"><a href="<?php echo $this->baseUrl('mobile/farmgroups'); ?>"><span class="caret"></span>DNA Profiles</a></h3>
+        <div id="div_dna">
+            <div class="accordion">
+                <a class="btn btn-primary" href="<?php echo $this->baseUrl('mobile/groups'); ?>">DNA Profiles</a>
+                <a class="btn btn-primary" href="<?php echo $this->baseUrl('mobile/groups/type/6'); ?>">Farm Groups</a>
+                <a class="btn" href="<?php echo $this->baseUrl('mobile/addgroup/type/6'); ?>"><i class="icon-plus"></i> New Farm Group</a>
+            </div>
+        </div>
+        <?php } ?>
+        <?php if(isAdmin() || isManagement() || isDataClerk() || isFarmGroupAdmin()){ ?>
+        <h3 id="head_payment"><a href="<?php echo $this->baseUrl('mobile/payments'); ?>"><span class="caret"></span>Payments</a></h3>
+        <div id="div_payment">
+            <div class="accordion">
+            	<a class="btn btn-primary" href="<?php echo $this->baseUrl('mobile/payments'); ?>" id="update"><i class="icon-list icon-white"></i>Payments</a>
+                <a class="btn" href="<?php echo $this->baseUrl('mobile/addpayment'); ?>"><i class="icon-plus"></i> New Payment</a>
+            </div>
+        </div>
+        <?php } ?>
+        <?php if(isAdmin() || isManagement()){ ?>
+        <h3 id="head_settings"><a href="<?php echo $this->baseUrl('mobile/dnaprofiles'); ?>"><span class="caret"></span>Manage Data</a></h3>
+        <div id="div_settings">
+            <div class="accordion">
+                <a class="btn btn-primary" href="<?php echo $this->baseUrl('mobile/users'); ?>">Manage Users</a>
+                <a class="btn" href="<?php echo $this->baseUrl('mobile/farmer/type/other'); ?>"><i class="icon-plus"></i> New User</a>
+            </div>
+        </div>
+        <?php } ?>
+        <h3 id="head_viewprofile"><a href="<?php echo $this->baseUrl('mobile/view/id/'.encode($userid)); ?>"><span class="caret"></span>Profile</a></h3>
+        <div id="div_viewprofile">
+            <div class="accordion">
+            	<a class="btn btn-primary" href="<?php echo $this->baseUrl('mobile/view/id/'.encode($userid)); ?>"><i class="icon-list icon-white"></i> View Profile</a>&nbsp; 
+                <a class="btn" href="<?php echo $this->baseUrl('mobile/farmer/id/'.encode($userid)); ?>"><i class="icon-pencil"></i> Update Profile</a>
+                <?php if(isFarmGroupAdmin()){ ?>
+                	<a class="btn btn-primary" href="<?php echo $this->baseUrl('mobile/viewgroup/id/'.encode($user->getFarmGroupID())); ?>">DNA Profile</a>
+                    <a class="btn" href="<?php echo $this->baseUrl('mobile/groups/type/6/dnaid/'.$user->getFarmGroupID()); ?>">Farm Groups</a>
+                <?php } ?>
+            </div>
+        </div>
+        <?php if(isFarmer()){ ?>
+            <h3 id="head_farm"><a href="javascript: void(0);"><span class="caret"></span>Manage Seasons</a></h3>
+            <div id="div_farm">
+                <div class="accordion">
+                    <a class="btn" href="<?php echo $this->baseUrl('mobile/addseason/userid/'.encode($user->getID())); ?>"><i class="icon-plus"></i> Start New Season</a>
+                    <a class="btn btn-primary" href="<?php echo $this->baseUrl('mobile/seasons'); ?>"><i class="icon-list icon-white"></i> My Seasons</a>
+                </div>
+            </div>
+            <h3 id="head_expenses"><a href="javascript: void(0);"><span class="caret"></span>Manage Expenses</a></h3>
+            <div id="div_expenses">
+                <div class="accordion">
+                    <a class="btn selectseason" id="selectseason" rel="Browse Season" title="Select Season" href="<?php echo $this->baseUrl('mobile/selectseason/pgc/true/stage/input/type/2/userid/'.encode($user->getID())); ?>" submittext="Continue"><i class="icon-list"></i> Record Expense</a>
+                    <a class="btn btn-primary" href="<?php echo $this->baseUrl('mobile/expenses/userid/'.$user->getID()); ?>"><i class="icon-plus icon-white"></i> My Expenses</a>
+                </div>
+            </div>
+            <h3 id="head_sales"><a href="javascript: void(0);"><span class="caret"></span>Manage Sales</a></h3>
+            <div id="div_sales">
+                <div class="accordion">
+                    <a class="btn selectseason" id="selectseason" rel="Browse Season" title="Select Season" href="<?php echo $this->baseUrl('mobile/selectseason/pgc/true/stage/sale/userid/'.encode($user->getID())); ?>" submittext="Continue"><i class="icon-list"></i> Record Sales</a>
+                    
+                    <a class="btn btn-primary" href="<?php echo $this->baseUrl('mobile/sales/userid/'.$user->getID()); ?>"><i class="icon-list icon-white"></i> My Sales</a><br /><br />
+                </div>
+            </div>
+        <?php } ?>
+        <h3 id="head_logout"><a href="javascript: void(0);"><span class="caret"></span>My Account</a></h3>
+        <div id="div_logout">
+            <div class="accordion">
+            	<label class="control-label bolded" style="margin-bottom:10px;"><?php echo $user->getName(); ?></label>
+            	<a class="btn" href="<?php echo $this->baseUrl('mobile/logout'); ?>"><i class="icon-lock"></i> Logout</a>
+                <a class="btn changepassword" id="changepassword" rel="Change Password" href="<?php echo $this->baseUrl('profile/changepassword/pgc/true/source/1/id/'.encode($user->getID())); ?>"><i class="icon-pencil"></i> Change Password</a>
+            </div>
+        </div>
+      </div>
+  </div>
+</div>
+<?php require APPLICATION_PATH."/views/scripts/mobile/dialog.phtml"; ?>
+</body>
+</html>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

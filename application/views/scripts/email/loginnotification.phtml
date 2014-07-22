@@ -1,0 +1,27 @@
+<?php include(APPLICATION_PATH.'/views/scripts/email/emailheader.phtml'); ?>
+
+Dear <?php echo $this->firstname; ?>,<br /><br />
+
+Your <?php echo $this->appname; ?> Account has been successfully activated.<br /><br />
+
+Login Credentials: <br />
+<?php if(!isEmptyString($this->username)){ ?>
+	<b>Username:</b> <?php echo $this->username; ?><br />
+<?php } ?>
+<?php if(!isEmptyString($this->email)){ ?>
+	<b>Email:</b> <?php echo $this->email; ?><br />
+<?php } ?>
+<?php if(!isEmptyString($this->phone)){ ?>
+	<b>Phone:</b> <?php echo $this->phone; ?><br />
+<?php } ?>   
+<b>Password:</b> <?php echo $this->password; ?><br /><br />
+
+You can use any of Username, email or Phone to login. In order to get started, go to <?php echo $this->loginlink; ?><br /><br />
+
+If the page fails to open, copy the activation link and paste it in the address window of the browser.<br />
+
+After activating your account, you should be able to login using either email address, username, phone number and your password.<br /><br />
+
+If you need any further assistance or have any question, please feel free to <a href="<?php echo $this->serverUrl($this->baseUrl('contactus')); ?>" title="Contact us">Contact us</a><br /><br />
+
+<?php include(APPLICATION_PATH.'/views/scripts/email/emailfooter.phtml'); ?>

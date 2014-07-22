@@ -1,0 +1,1148 @@
+<?php
+	include APPLICATION_PATH.'/includes/header.php';
+	
+	$loggedinuser = new UserAccount();
+	$loggedinuser->populate($userid);
+	
+	$user = new UserAccount(); 
+	$isme = false;
+	$has_subgrp = false;
+	$dateofbirth = '';  $birthday = ''; $birthmonth = ''; $birthyear = '';
+	$type = $request->type;
+	$isfarmer = true;
+	
+	if(isEmptyString($request->id)){
+		// when adding a farmer from a farmgroup
+		if(!isEmptyString($request->farmgroupid)){
+			$farmgrp = new FarmGroup(); 
+			$farmgrp->populate($request->farmgroupid);
+			$user->setFarmGroupID($request->farmgroupid);
+			$subgroups = getSubGroups($user->getFarmGroupID());
+			if(count($subgroups) > 0){
+				$has_subgrp = true;
+			}
+		} 
+		
+		$title = "Add Farmer";
+		$posturl = $this->baseUrl("mobile/create");
+		$user->setRegDate(changeMySQLDateToPageFormat(date('Y-m-d')));
+		$user->setType(2);
+		$user->setCreatedBy($userid);
+		$thecountry = strtoupper($session->getVar('country'));
+		if(!isEmptyString($type)){
+			$isfarmer = false;
+			$title = "New User";
+		}
+		
+	} else {
+		$user->populate(decode($request->id));
+		$title = "Update Farmer"; 
+		if($user->getID() == $userid || $user->getType() != 2){
+			$isme = true;
+			$title = "Update Profile"; 
+		}
+		if($user->getType() != 2){
+			$isfarmer = false;
+		}
+		$posturl = $this->baseUrl("mobile/edit");
+		
+		if(!isEmptyString($user->getDateOfBirth())){
+			$birthday = date('d', strtotime($user->getDateOfBirth())); 
+			$birthyear = date('Y', strtotime($user->getDateOfBirth())); 
+			$birthmonth = date('m', strtotime($user->getDateOfBirth())); 
+		}
+		$thecountry =  $user->getCountry();
+	}
+	$user->setRegSource('1');
+	
+	#in case of errors in session, populate the fields from session
+	if(!isEmptyString($session->getVar(ERROR_MESSAGE))){
+		$formvalues  = $session->getVar(FORM_VALUES);
+		// debugMessage($formvalues);
+		$user->processPost($formvalues);
+		$birthday = $formvalues['birthday']; $birthmonth = $formvalues['birthmonth']; $birthyear = $formvalues['birthyear']; 
+		// debugMessage($user->toArray());
+	}
+	
+	if($birthday == 1 && $birthmonth == 1 && $birthyear == 1970){
+		$birthday = ''; $birthmonth = ''; $birthyear = ''; 
+	}
+	
+	$country = 'UG';
+	$location_label = 'District';
+	$locations_label = 'Districts';
+	$countrycode = COUNTRY_CODE_UG;
+	$locationerror = $this->translate("farmer_district_error");
+	$country_params_refno_placeholder = 'placeholder="Auto" maxlength="8" ';
+	$county_label = $this->translate("global_county_label");
+	$subcounty_label = $this->translate("global_subcounty_label");
+	
+	if(isKenya() || $user->isKenyan()){
+		$session->setVar('country', 'ke');
+		$country = 'KE';
+		$location_label = 'County';
+		$locations_label = 'Counties';
+		$countrycode = COUNTRY_CODE_KE;
+		$locationerror = $this->translate("farmer_county_error");
+		$country_params_refno_placeholder = 'placeholder="" maxlength="10" ';
+		$county_label = $this->translate("global_subcounty_label");
+		$subcounty_label = $this->translate("global_ward_label");
+	}
+	
+?>
+<?php include APPLICATION_PATH."/views/scripts/mobile/mobileincludes.phtml"; ?>
+<script>
+	$(document).ready(function() {
+		$("#indexform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				firstname: "required",
+				lastname: "required",
+				email: {
+					"required": false, 
+					email: true
+				},
+				gender: "required",
+				locationid2: "required",
+				phone: {
+					required: false, 					
+					validnumber: true,
+					maxlength: 10,
+					minlength: 10,
+					<?php if(isUganda()){ ?>
+						validate_ug: true
+					<?php } ?>
+					<?php if(isKenya()){ ?>
+						validate_ke: true
+					<?php } ?>
+				},
+				<?php if(isKenya()){ ?>
+					refno: {
+						required: true, 					
+						minlength: 6,
+						maxlength: 10					
+					},
+				<?php } ?>
+				birthyear: {
+					validbirth: true
+				},
+				<?php //if(isUganda()){ ?>
+					// farmgroupid: "required",
+				<?php //} ?>
+				type: "required",
+				profiledby: "required"
+			}, 
+			// the messages for each of the fields being validated
+			messages: {		
+				firstname: "<?php echo $this->translate("farmer_firstname_error"); ?>",
+				lastname: "<?php echo $this->translate("farmer_lastname_error"); ?>",
+				email: {
+					"email": "<?php echo $this->translate("useraccount_email_invalid_error"); ?>"
+				},
+				gender: "<?php echo $this->translate("farmer_gender_error"); ?>",
+				locationid2: "<?php echo $locationerror; ?>",
+				phone: {
+					validnumber: "Please enter a valid Phone Number",
+					maxlength: "Phone Number must have 10 Digits",
+					minlength: "Phone Number must have 10 Digits",
+					<?php if(isUganda()){ ?>
+						validate_ug: "<?php echo $this->translate("globale_phonenumber_format"); ?>"
+					<?php } ?>
+					<?php if(isKenya()){ ?>
+						validate_ke: "<?php echo $this->translate("globale_phonenumber_format_ke"); ?>"
+					<?php } ?>
+				},
+				<?php if(isKenya()){ ?>
+					refno: {
+						required: "Please enter ID Number", 					
+						minlength: "ID must have more than 6 Digits",
+						maxlength: "ID must not exceed 10 Digits"
+					},
+				<?php } ?>
+				birthyear: {
+					validbirth: "Please select full Date of Birth"
+				},
+				<?php //if(isUganda()){ ?>
+					//farmgroupid: "Please select DNA",
+				<?php //} ?>
+				type: "<?php echo $this->translate("farmer_role_error"); ?>",
+				profiledby: "Please select profiling user"
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						error.appendTo("#"+element.attr("name")+"_error")
+						break;
+				}			
+			}
+		});
+		
+		$.validator.addMethod("validbirth", function(value, element, params) { 
+			var day = $("#birthday").val();
+			var month = $("#birthmonth").val();
+			var year = value;
+			if ((!isEmptyString(day) && (isEmptyString(month) || isEmptyString(year))) || 
+				(!isEmptyString(month) && (isEmptyString(day) || isEmptyString(year)))  || 
+				(!isEmptyString(year) && (isEmptyString(day) || isEmptyString(month))) ){
+				return false; 
+			}
+			return true;        
+		}, "Please select full Date of Birth");
+		
+		var dateofregOpts = datepickerOpts;
+		dateofregOpts.yearRange = "-5";
+		dateofregOpts.maxDate = new Date();
+		$("#regdate").datepicker(dateofregOpts);
+		$('.ui-datepicker-trigger').hide();
+		
+		<?php if(isUganda()){ ?>
+			var refno = '<?php echo $user->getRefNo(); ?>';
+			$("#refno").addClass('readonly');
+		<?php } ?>
+		
+		$(".datefield").attr('readOnly', 'true');
+		$(".readonly").each(function(){
+			$(this).attr('readonly','readonly');
+		});
+		
+		$("#refno").trigger('keyup');
+		
+		$('#locationid2').change(function() {
+			var locationid = $(this).val();
+			var currentvalue = "<?php echo $user->getFarmGroupID(); ?>"; // alert('cur '+currentvalue);
+			if(!isEmptyString(locationid)){
+				var posturl = "<?php echo $this->baseUrl('mobile/selectchain/select_chain_type/district_dnaprofiles/locationid2/'); ?>"+locationid;
+				$("#farmgroupid").find("option:gt(0)").remove();
+   				$("#farmgroupid").find("option:first").text("Loading...");
+				$.getJSON(posturl, function (data) {
+					$("#farmgroupid").find("option:first").text("<Select One>").attr("value","").attr("selected", true);
+					selectValues = data;
+					$.each(selectValues, function(key, value) {
+						if(!isEmptyString(currentvalue) && currentvalue == key){
+							$('#farmgroupid').append($("<option></option>").attr("value",key).text(value).attr("selected", true)).trigger("change"); 
+						} else {
+							$('#farmgroupid').append($("<option></option>").attr("value",key).text(value).trigger("change")); 
+						}
+					});
+					$('#districtid').trigger('keyup').trigger("change");
+				});
+				$('#farmgroupid').trigger("change");
+			}
+			$('#districtid').val(locationid).trigger('keyup').trigger('change');
+		});
+		$('#locationid2').trigger("change");
+		
+		$('#farmgroupid').change(function() {
+			var groupid = $(this).val();
+			var currentvalue = "<?php echo $user->getSubGroupID(); ?>"; // alert('cur '+currentvalue);
+			var posturl = "<?php echo $this->baseUrl('mobile/selectchain/select_chain_type/farmgroup_children/farmgroupid/'); ?>"+groupid;
+			// alert(posturl);
+			if(!isEmptyString(groupid)){
+				$("#subgroupid").find("option:gt(0)").remove();
+   				$("#subgroupid").find("option:first").text("Loading...");
+				$.getJSON(posturl, function (data) {
+					$("#subgroupid").find("option:first").text("<Select One>").attr("value","").attr("selected", true);
+					selectValues = data;
+					$.each(selectValues, function(key, value) {
+						if(!isEmptyString(currentvalue) && currentvalue == key){
+							$('#subgroupid').append($("<option></option>").attr("value",key).text(value).attr("selected", true)); 
+						} else {
+							$('#subgroupid').append($("<option></option>").attr("value",key).text(value)); 
+						}
+					});
+				});
+			}
+		});
+		
+		$('#districtid').change(function() {
+			var locationid = $(this).val();
+			var currentvalue = "<?php echo $user->getCountyID(); ?>"; // alert('cur '+currentvalue);
+			if(!isEmptyString(locationid)){
+				var posturl = "<?php echo $this->baseUrl('mobile/selectchain/select_chain_type/district_counties/districtid/'); ?>"+locationid;
+				$("#countyid").find("option:gt(0)").remove();
+   				$("#countyid").find("option:first").text("Loading...");
+				$.getJSON(posturl, function (data) {
+					$("#countyid").find("option:first").text("<Select One>").attr("value","").attr("selected", true);
+					selectValues = data;
+					$.each(selectValues, function(key, value) {
+						if(!isEmptyString(currentvalue) && currentvalue == key){
+							$('#countyid').append($("<option></option>").attr("value",key).text(value).attr("selected", true)).trigger("change"); 
+						} else {
+							$('#countyid').append($("<option></option>").attr("value",key).text(value).trigger("change")); 
+						}
+					});
+				});
+				$('#countyid').trigger("change");
+			}
+		});
+		
+		$('#countyid').change(function() {
+			var countyid = $(this).val();
+			var currentvalue = "<?php echo $user->getSubCountyID(); ?>"; // alert('cur '+currentvalue);
+			if(!isEmptyString(countyid)){
+				var posturl = "<?php echo $this->baseUrl('mobile/selectchain/select_chain_type/county_subcounties/countyid/'); ?>"+countyid;
+				$("#subcountyid").find("option:gt(0)").remove();
+   				$("#subcountyid").find("option:first").text("Loading...");
+				$.getJSON(posturl, function (data) {
+					$("#subcountyid").find("option:first").text("<Select One>").attr("value","").attr("selected", true);
+					selectValues = data;
+					$.each(selectValues, function(key, value) {
+						if(!isEmptyString(currentvalue) && currentvalue == key){
+							$('#subcountyid').append($("<option></option>").attr("value",key).text(value).attr("selected", true)).trigger("change"); 
+						} else {
+							$('#subcountyid').append($("<option></option>").attr("value",key).text(value).trigger("change")); 
+						}
+					});
+				});
+				// $('#subcountyid').trigger("change");
+			}
+		});
+		
+		$('#subcountyid').change(function() {
+			var subcountyid = $(this).val();
+			var currentvalue = "<?php echo $user->getParishID(); ?>"; // alert('cur '+currentvalue);
+			if(!isEmptyString(subcountyid)){
+				var posturl = "<?php echo $this->baseUrl('mobile/selectchain/select_chain_type/subcounty_parishes/subcountyid/'); ?>"+subcountyid;
+				$("#parishid").find("option:gt(0)").remove();
+   				$("#parishid").find("option:first").text("Loading...");
+				$.getJSON(posturl, function (data) {
+					$("#parishid").find("option:first").text("<Select One>").attr("value","").attr("selected", true);
+					selectValues = data;
+					$.each(selectValues, function(key, value) {
+						if(!isEmptyString(currentvalue) && currentvalue == key){
+							$('#parishid').append($("<option></option>").attr("value",key).text(value).attr("selected", true)).trigger("change"); 
+						} else {
+							$('#parishid').append($("<option></option>").attr("value",key).text(value).trigger("change")); 
+						}
+					});
+				});
+				// $('#subcountyid').trigger("change");
+			}
+		});
+		
+		$('#parishid').change(function() {
+			var parishid = $(this).val();
+			var currentvalue = "<?php echo $user->getVillageID(); ?>"; // alert('cur '+currentvalue);
+			if(!isEmptyString(parishid)){
+				var posturl = "<?php echo $this->baseUrl('mobile/selectchain/select_chain_type/parish_villages/parishid/'); ?>"+parishid;
+				$("#villageid").find("option:gt(0)").remove();
+   				$("#villageid").find("option:first").text("Loading...");
+				$.getJSON(posturl, function (data) {
+					$("#villageid").find("option:first").text("<Select One>").attr("value","").attr("selected", true);
+					selectValues = data;
+					$.each(selectValues, function(key, value) {
+						if(!isEmptyString(currentvalue) && currentvalue == key){
+							$('#villageid').append($("<option></option>").attr("value",key).text(value).attr("selected", true)).trigger("change"); 
+						} else {
+							$('#villageid').append($("<option></option>").attr("value",key).text(value).trigger("change")); 
+						}
+					});
+				});
+				// $('#subcountyid').trigger("change");
+			}
+		});
+		
+		$.validator.addMethod("minstart", function(value, element) {
+			var n = new Date();
+			var nstamp = n.getTime();
+			var syear = $("#bizstartyear").val(); var smonth = $("#bizstartmonth").val(); var sday = 1;
+			// alert(nstamp);
+			if(!isEmptyString(syear) && !isEmptyString(smonth )){
+				var start = smonth+'/'+sday+'/'+syear;
+				var s = new Date(start);
+				var sstamp = s.getTime();
+				if(sstamp > nstamp){
+					return false;
+				}
+			}
+			return true;
+		}, "Should'nt be after today");
+		
+		$("#bottomactions").html($("#topactions").html());
+		
+		<?php if(isEmptyString($user->getID())){ ?>
+			$('#firstname, #lastname').change(function() {
+				var firstname = $('#firstname').val();
+				var lastname = $('#lastname').val();
+				$('#businessname').val(firstname+' '+lastname+"'s Farm" );
+			});
+		<?php } ?>
+		
+		<?php if(isFarmer() && $isme && $user->isSelfRegistered()){ ?>
+			disableContainerByID('groupfarmer');
+		<?php } ?>
+		
+		multipleDisableContainerByClass('parish_text');
+		multipleEnableContainerByClass('parish_select');
+		$("#parishtrigger").click(function(){
+			if($(this).is(':checked')){
+				disableContainerByClass('parish_select');
+				enableContainerByClass('parish_text');
+				$(".parish_select select").val('');
+			} else {
+				disableContainerByClass('parish_text');
+				enableContainerByClass('parish_select');
+				$(".parish_text input").val('');
+			}
+		});
+		
+		multipleDisableContainerByClass('village_text');
+		multipleEnableContainerByClass('village_select');
+		$("#villagetrigger").click(function(){
+			if($(this).is(':checked')){
+				disableContainerByClass('village_select');
+				enableContainerByClass('village_text');
+				$(".village_select select").val('');
+			} else {
+				disableContainerByClass('village_text');
+				enableContainerByClass('village_select');
+				$(".village_text input").val('');
+			}
+		});
+		
+		<?php if(!$isfarmer){ ?>
+			disableContainerByClass('hideonsuper');
+				$('#type').change(function(){
+				var type = $(this).val();
+				if(type == 3){
+					enableContainerByID('groupfarmer');
+				} else {
+					disableContainerByID('groupfarmer');
+				}
+			});
+			$('#type').change();
+		<?php } ?>
+		
+		multipleDisableContainerByClass('subgroup_text');
+		multipleEnableContainerByClass('subgroup_select');
+		$("#subgrouptrigger").click(function(){
+			if($(this).is(':checked')){
+				disableContainerByClass('subgroup_select');
+				enableContainerByClass('subgroup_text');
+				$(".subgroup_select select").val('');
+			} else {
+				disableContainerByClass('subgroup_text');
+				enableContainerByClass('subgroup_select');
+				$(".subgroup_text input").val('');
+			}
+		});
+
+	}); 
+</script>
+<body>
+<div class="container-fluid">
+  <h4><?php echo $title; ?></h4>
+  <?php if(!isEmptyString($session->getVar(ERROR_MESSAGE)) ){ ?>
+      <div class="row-fluid">
+      	<div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+      </div>
+  <?php } ?>
+  <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+  	<div class="row-fluid">
+      	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+	</div>
+  <?php } ?>
+  <div class="row-fluid">
+      <form class="form-horizontal clearfix" id="indexform" action="<?php echo $posturl; ?>" method="post" style="padding-bottom:25px;">
+        <div class="control-group well actions" id="topactions">
+              <a href="<?php echo $this->referer; ?>" class="btn"><i class="icon-remove"></i> <?php echo $this->translate('global_button_cancel'); ?></a>
+              <button type="submit" class="btn btn-primary"><i class="icon-ok icon-white"></i> <?php echo $this->translate('global_button_save'); ?></button>
+        </div>
+        <fieldset class="fieldsetcontainer well">
+            <legend>Account</legend>
+            <?php if($isfarmer){ ?>
+                <div class="control-group hideonsuper">
+                    <label class="control-label" for="refno"><?php echo isKenya() ? 'National ID#'.$this->translate("global_required_field_marker") : $this->translate("farmer_regno_label"); ?>: </label>
+                    <div class="controls">
+                        <input type="text" name="refno" id="refno" value="<?php echo $user->getRefNo(); ?>" class="span2 minwidth100" <?php echo $country_params_refno_placeholder; ?> />
+                    	<div id="regno_error"></div><div id="refno_error"></div>
+                    </div>
+                </div>
+                <input type="hidden" id="type" name="type" value="<?php echo $user->getType(); ?>" />
+                <input type="hidden" id="isfarmer" name="isfarmer" value="1" />
+            <?php } else { ?>
+            	<div class="control-group">
+                    <label class="control-label" for="type"><?php echo $this->translate("farmer_type_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+						<?php
+                            $allvalues = getUserType('', '2');
+                            $dropdown = new Zend_Form_Element_Select('type',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $allvalues),
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array('85width','hastooltip'),
+                                                    'title' => $this->translate("profile_type_tooltip")
+                                                )
+                            );  
+                            $dropdown->setValue($user->getType()); 
+                            echo $dropdown->render();
+                        ?>
+                    	<div id="type_error"></div>
+                    </div>
+                    <input type="hidden" id="isfarmer" name="isfarmer" value="0" />
+                </div>
+                <?php if($user->isKenyan()){ ?>
+                	 <div class="control-group">
+                        <label class="control-label" for="refno"><?php echo 'National ID# '.$this->translate("global_required_field_marker"); ?>: </label>
+                        <div class="controls">
+                            <input type="text" name="refno" id="refno" value="<?php echo $user->getRefNo(); ?>" class="span2 minwidth100" <?php echo $country_params_refno_placeholder; ?> /><div id="refno_error"></div>
+                        </div>
+                    </div>
+                    <?php if($user->isPIA()){ ?>
+                        <div class="control-group">
+                            <label class="control-label" for="refno">PID#: </label>
+                            <div class="controls"><?php echo $user->getID(); ?></div>
+                        </div>
+                    <?php } ?>
+                <?php } ?>
+            <?php } ?>
+            <div class="control-group">
+              <label class="control-label" for="firstname"><?php echo $this->translate("farmer_firstname_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+              <div class="controls">
+                <input type="text" name="firstname" id="firstname" class="span3" value="<?php echo $user->getFirstName(); ?>" /><div id="firstname_error"></div>
+                <input type="hidden" name="entityname" value="Farmer" />
+                <input type="hidden" id="id" name="id" value="<?php echo encode($user->getID()); ?>" />
+                <input type="hidden" id="userid" name="userid" value="<?php echo $user->getID(); ?>" />
+                <input type="hidden" id="selfregistered" name="selfregistered" value="<?php echo $user->getSelfRegistered(); ?>" />
+                <input type="hidden" id="regsource" name="regsource" value="<?php echo $user->getRegSource(); ?>" />
+                <input type="hidden" id="addedbyid" name="addedbyid" value="<?php echo $userid; ?>" />
+                <input type="hidden" name="regdate" id="regdate" value="<?php echo changeMySQLDateToPageFormat($user->getRegDate()); ?>" />
+                <input type="hidden" name="<?php echo URL_SUCCESS; ?>" value="<?php echo encode($this->baseUrl('mobile/view')); ?>" />
+                <input type="hidden" name="<?php echo URL_FAILURE; ?>" value="<?php echo encode($this->baseUrl('mobile/farmer')); ?>" />
+                <input type="hidden" id="username" name="username" value="<?php echo $user->getusername(); ?>" />
+                <input type="hidden" name="<?php echo SUCCESS_MESSAGE; ?>" value="farmer_add_success" />
+                <input type="hidden" id="membershipplanid" name="membershipplanid" value="<?php echo $user->getmembershipplanid(); ?>" />
+                <input type="hidden" id="country" name="country" value="<?php echo $country; ?>" />
+                <input type="hidden" id="country2" name="country2" value="<?php echo $country; ?>" />
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="lastname"><?php echo $this->translate("farmer_lastname_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+              <div class="controls">
+                <input type="text" name="lastname" id="lastname" class="span3" value="<?php echo $user->getLastName(); ?>" /><div id="lastname_error"></div>
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="othernames"><?php echo $this->translate("farmer_othernames_label"); ?>:</label>
+              <div class="controls">
+                <input type="text" name="othernames" id="othernames" class="span3" value="<?php echo $user->getOtherNames(); ?>" /><div id="lastname_error"></div>
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label"><?php echo $this->translate("farmer_gender_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+              <div class="controls">
+                 <?php						  
+                      $genderradio = new Zend_Form_Element_Radio('gender',
+                              array(
+                                      'multiOptions' => array('1' => 'Male', '2' => 'Female'), 
+                                      'view' => new Zend_View(),
+                                      'disableLoadDefaultDecorators' => true,
+                                      'separator' => '&nbsp;&nbsp;&nbsp;&nbsp;',
+                                      'decorators' => array('ViewHelper',
+                                                          array('HtmlTag', array('tag' => 'div', 'class' => array('inline', 'radio', 'zendradio'))) // use a sorrounding DIV with classes which are copied to the label by JQuery
+                                                      )
+                              )
+                      );
+                      $genderradio->setValue($user->getGender());
+                      echo $genderradio->render();
+                  ?>
+                  <div id="gender_error"></div>
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label"><?php echo $this->translate("farmer_dateofbirth_label"); ?>:</label>
+              <div class="controls">
+                    <?php
+                        $daydp = new Zend_Form_Element_Select('birthday',
+                                            array(
+                                                'multiOptions' => array_merge_maintain_keys(array('' => 'Day'), getMonthDays()),	
+                                                'view' => new Zend_View(),
+                                                'decorators' => array('ViewHelper'),
+                                                'class' => array('birth'),
+                                                'title' => 'Select Day'		
+                                            )
+                                        );
+                        $daydp->setValue($birthday); 
+                        echo $daydp->render(); 
+                    ?>
+                    <?php
+                        $monthdp = new Zend_Form_Element_Select('birthmonth',
+                                            array(
+                                                'multiOptions' => array_merge_maintain_keys(array('' => 'Month'), getAllMonthsAsShortNames()),	
+                                                'view' => new Zend_View(),
+                                                'decorators' => array('ViewHelper'),
+                                                'class' => array('birth'),
+                                                'title' => 'Select Month'		
+                                            )
+                                        );
+                        $monthdp->setValue($birthmonth); 
+                        echo $monthdp->render(); 
+                    ?>
+                    <?php
+                        $years = getSubscribeBirthYears();
+                        $yeardp = new Zend_Form_Element_Select('birthyear',
+                                            array(
+                                                'multiOptions' => array_merge_maintain_keys(array('' => 'Year'), $years),	
+                                                'view' => new Zend_View(),
+                                                'decorators' => array('ViewHelper'),
+                                                'class' => array('birth'),
+                                                'title' => 'Select Year'		
+                                            )
+                                        );
+                        $yeardp->setValue($birthyear); 
+                        echo $yeardp->render(); 
+                    ?>
+                    <div id="birthday_error"></div><div id="birthmonth_error"></div><div id="birthyear_error"></div>
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="locationid2"><?php echo $location_label; ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+              <div class="controls">
+                <?php
+                    $districts = getDistricts($session->getVar('country'));
+                    $currentdistrict = '';
+                    if(!isEmptyString($user->getFarmGroupID())){
+                        if(!isEmptyString($user->getFarmGroup()->getDistrictID())){
+                            $currentdistrict = $user->getFarmGroup()->getDistrictID();
+                        }
+                    }
+                    if(!isEmptyString($user->getID())){
+                        // debugMessage('>> '.$user->getLocation()->getName());
+						$currentdistrict = $user->getLocationID();
+                    }
+                    $districtdropdown = new Zend_Form_Element_Select('locationid2',
+                                        array(
+                                            'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $districts),								
+                                            'view' => new Zend_View(),
+                                            'decorators' => array('ViewHelper'),
+                                            'class' => array('span3')
+                                        )
+                                    );
+                    $districtdropdown->setValue($currentdistrict); 
+                    echo $districtdropdown->render(); 
+               ?><div id="locationid2_error"></div>
+              </div>
+            </div>
+            <div id="groupfarmer" class="xhideonsuper">
+                <div class="control-group">
+                  <label class="control-label" for="farmgroupid"><?php echo $this->translate("farmgroup_dna_label"); ?>: <?php echo isUganda() ? $this->translate("global_required_field_marker") : ''; ?></label>
+                  <div class="controls">
+                        <?php if(isAdmin() || isManagement() || isDataClerk()){ ?>
+                            <?php
+                                $groupdropdown = new Zend_Form_Element_Select('farmgroupid',
+                                                    array(
+                                                        'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), getAllFarmGroups($session->getVar('country'))),								
+                                                        'view' => new Zend_View(),
+                                                        'decorators' => array('ViewHelper'),
+                                                        'class' => array('span3')
+                                                    )
+                                                );
+                                $groupdropdown->setValue($user->getFarmGroupID()); 
+                                echo $groupdropdown->render(); 
+                           ?>
+                       <?php } else { ?>
+                            <?php echo !$user->hasFarmGroup() ? "--" : $user->getFarmGroup()->getName(); ?>
+                            <input type="hidden" id="farmgroupid" name="farmgroupid" value="<?php echo $user->getFarmGroupID(); ?>" /> 
+                       <?php } ?>
+                    <div id="farmgroupid_error"></div>
+                  </div>
+                </div>
+                <div class="control-group">
+                  <label class="control-label" for="subgroupid"><?php echo $this->translate("farmgroup_farmgroup_label"); ?>:</label>
+                  <div class="controls">
+                        <?php if(isAdmin() || isManagement() || isDataClerk() || isFarmGroupAdmin()){ ?>
+                            <div class="subgroup_text inline">
+                                <input type="text" name="subgroupname" id="subgroupname" class="span3" value="<?php //echo $user->getVillageName(); ?>"  />
+                            </div>
+                            <div class="subgroup_select inline">
+                                <?php
+									$groupdropdown = new Zend_Form_Element_Select('subgroupid',
+														array(
+															'multiOptions' => array_merge_maintain_keys(array('' => '<Select DNA to Populate>')),								
+															'view' => new Zend_View(),
+															'decorators' => array('ViewHelper'),
+															'class' => array('span3')
+														)
+													);
+									$groupdropdown->setValue(''); 
+									echo $groupdropdown->render(); 
+							   ?>
+                            </div>
+                            &nbsp;<input type="checkbox" name="subgrouptrigger" id="subgrouptrigger" class="lineblocked" value="1" title="Switch entry mode" placeholder="enter free text" /> 
+                        <?php } else { ?>
+                            <?php echo isEmptyString($user->getSubGroupID()) ? "--" : $user->getSubGroup()->getName(); ?>
+                            <input type="hidden" id="subgroupid" name="subgroupid" value="<?php echo $user->getSubGroupID(); ?>" /> 
+                        <?php } ?>
+                  </div>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label class="control-label" for="phone"><label class="control-label"><?php echo $this->translate("farmer_phone_label"); ?>: </label>
+                <div class="controls phone">
+                    <div class="input-prepend">
+                        <span class="add-on"><?php echo '+'.$countrycode; ?></span>
+                        <input type="text" name="phone" id="phone" maxlength="10" value="<?php echo getShortPhone($user->getPhone()); ?>" class="span2 minwidth100" style="margin-top:0;" />
+                    </div>
+                    <?php if($user->isUserInActive() || isEmptyString($user->getID())){ ?>
+                         <div class="blocked" style="margin-top:5px;"><input type="checkbox" name="isphoneinvited" id="isphoneinvited" value="1" style="margin-top:0;" /> &nbsp;
+                         <label class="lineblocked">Invite to activate via Phone</label></div>
+                    <?php } ?>
+                    <div id="phone_error"></div>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="email"><?php echo $this->translate("farmer_email_label"); ?>: </label>
+                <div class="controls">
+                    <input type="text" name="email" id="email" value="<?php echo $user->getEmail(); ?>" class="span3" />
+                    <?php if($user->isUserInActive() || isEmptyString($user->getID())){ ?>
+                         <div class="blocked" style="margin-top:5px;"><input type="checkbox" name="isinvited" id="isinvited" value="1" /> &nbsp;
+                         <label class="lineblocked">Invite to activate via Email</label></div>
+                    <?php } ?>
+                    <div id="email_error"></div>
+                </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="username">Username:</label>
+              <div class="controls">
+                <input name="username" id="username" type="text" class="span2" value="<?php echo $user->getUsername(); ?>" />
+              </div>
+            </div>
+            <?php if($request->type == 'other' || !$user->isFarmer()){ ?>
+				<?php if($user->isUserActive()){ ?>
+                    <div class="control-group">
+                      <label class="control-label" for="oldpassword">Current Password:</label>
+                      <div class="controls">
+                        <input name="oldpassword" id="oldpassword" type="password" class="span2" value="" />
+                      </div>
+                    </div>
+                <?php } ?>
+                <div class="control-group">
+                  <label class="control-label" for="username">New Password:</label>
+                  <div class="controls">
+                    <input name="password" id="password" type="password" class="span2" value="" />
+                  </div>
+                </div>
+                <?php if($user->isUserInActive()){ ?>
+                    <div class="control-group">
+                      <label class="control-label" for="confirmpassword">Confirm Password:</label>
+                      <div class="controls">
+                        <input name="confirmpassword" id="confirmpassword" type="password" class="span2" value="" />
+                        <div class="blocked" style="margin-top:5px;"><input type="checkbox" name="adminactivate" id="adminactivate" value="1" /> &nbsp;
+                        <label class="lineblocked">Activate now</label></div>
+                        <div class="blocked" style="margin-top:5px;"><input type="checkbox" name="sendlogintophone" id="sendlogintophone" value="1" /> &nbsp;
+                        <label class="lineblocked">Send Login Details to Phone</label></div>
+                        <div class="blocked" style="margin-top:5px;"><input type="checkbox" name="sendlogintoemail" id="sendlogintoemail" value="1" /> &nbsp;
+                        <label class="lineblocked">Send Login Details to Email</label></div>
+                      </div>
+                    </div>
+                <?php } ?>    
+           	<?php } ?>
+		</fieldset>
+        <div class="divider15"></div>
+        <fieldset class="fieldsetcontainer well">
+            <legend>Location</legend>
+            <div class="control-group">
+              <label class="control-label" for="country"><?php echo $this->translate("global_country_label"); ?>:</label>
+              <div class="controls">
+                <?php
+                    $countries = getCountries();
+                    $countrydropdown = new Zend_Form_Element_Select('country',
+                                        array(
+                                            'multiOptions' => array_merge_maintain_keys(array('' => "<Select One>", "UG"=>"Uganda"), $countries),
+                                            'view' => new Zend_View(), 
+                                            'decorators' => array('ViewHelper'),
+                                            'class' => array('span2', 'disabledfield')                                                            )
+                                    );
+                    $countrydropdown->setValue($thecountry); 
+                    echo $countrydropdown->render(); 
+                ?><input type="hidden" name="country" id="country" value="<?php echo $thecountry; ?>" />
+                <div id="country_error"></div>
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="districtid"><?php echo $location_label; ?>:</label>
+              <div class="controls">
+                    <?php
+                        $districts = getDistricts($session->getVar('country'));
+                        $districtdropdown = new Zend_Form_Element_Select('districtid',
+                                            array(
+                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $districts),								
+                                                'view' => new Zend_View(),
+                                                'decorators' => array('ViewHelper'),
+                                                'class' => array('span2')
+                                            )
+                                        );
+                        $districtdropdown->setValue($user->getLocationID()); 
+                        echo $districtdropdown->render(); 
+                   ?>
+                   <div id="districtid_error"></div>
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="county"><?php echo $county_label; ?>:</label>
+              <div class="controls">
+                <select name="countyid" id="countyid" class="span2">
+                  <option value="">&lt;Select One&gt;</option>
+                </select>
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="subcounty"><?php echo $subcounty_label; ?>:</label>
+              <div class="controls">
+                <select name="subcountyid" id="subcountyid" class="span2">
+                  <option value="">&lt;Select One&gt;</option>
+                </select>
+              </div>
+            </div>
+            <?php if(isUganda()){ ?>
+                <div class="control-group">
+                  <label class="control-label" for="parish"><?php echo $this->translate("global_parish_label"); ?>:</label>
+                  <div class="controls">
+                    <div class="parish_text inline">
+                        <input type="text" name="parishname" id="parishname" class="span2" value="<?php //echo $user->getVillageName(); ?>"  />
+                    </div>
+                    <div class="parish_select inline">
+                        <select name="parishid" id="parishid" class="span2">
+                          <option value="">&lt;Select One&gt;</option>
+                        </select>
+                    </div>
+                    &nbsp;<input type="checkbox" name="parishtrigger" id="parishtrigger" class="lineblocked" value="1" title="Switch entry mode" placeholder="enter free text" /> 
+                    <div id="parishname_error"></div><div id="parishid_error"></div>
+                  </div>
+                </div>
+                <div class="control-group">
+                  <label class="control-label" for="village"><?php echo $this->translate("global_village_label"); ?>:</label>
+                  <div class="controls">
+                    <div class="village_text inline">
+                        <input type="text" name="villagename" id="villagename" class="span2" value="<?php //echo $user->getVillageName(); ?>"  />
+                    </div>
+                    <div class="village_select inline">
+                        <select name="villageid" id="villageid" class="span2">
+                          <option value="">&lt;Select One&gt;</option>
+                        </select>
+                    </div>
+                    &nbsp;<input type="checkbox" name="villagetrigger" id="villagetrigger" class="lineblocked" value="1" title="Switch entry mode" placeholder="enter free text" /> 
+                    <div id="villagename_error"></div><div id="villageid_error"></div>
+                  </div>
+                </div>
+                <?php } ?>
+            <div class="control-group">
+              <label class="control-label" for="address"><?php echo $this->translate("contact_address_label"); ?>:</label>
+              <div class="controls">
+                <textarea name="streetaddress" id="streetaddress" class="span4 expanding" style="min-height:60px;"><?php echo $user->getStreetAddress(); ?></textarea>
+              </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="lat"><?php echo $this->translate("farmer_gps_label")." ".$this->translate("farmer_latitude_label"); ?>:</label>
+                <div class="controls">
+                    <input name="lat" id="lat" type="text" class="span2 minwidth100" value="<?php echo $user->getLat(); ?>" />
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="lng"><?php echo $this->translate("farmer_gps_label")." ".$this->translate("farmer_longitude_label"); ?>:</label>
+                <div class="controls">
+                    <input name="lng" id="lng" type="text" class="span2 minwidth100" value="<?php echo $user->getLng(); ?>" />
+                </div>
+            </div>
+		</fieldset>
+        <fieldset class="fieldsetcontainer well hideonsuper">
+            <legend>About</legend>            
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmer_biography_label"); ?>:</label>
+                <div class="controls">
+                    <textarea name="bio" id="bio" class="span4 expanding" style="min-height:65px;"><?php echo $user->getBio(); ?></textarea>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="educationlevel"><?php echo $this->translate("farmer_educlevel_label"); ?>:</label>
+                <div class="controls">
+                    <?php
+                        $educlevels = getAllEducationLevels();
+                        $educleveldropdown = new Zend_Form_Element_Select('educationlevel',
+                                            array(
+                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $educlevels),								
+                                                'view' => new Zend_View(),
+                                                'decorators' => array('ViewHelper'),
+                                                'class' => array('span2')
+                                            )
+                                        );
+                        $educleveldropdown->setValue($user->getEducationLevel()); 
+                        echo $educleveldropdown->render(); 
+                   ?>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="maritalstatus"><?php echo $this->translate("farmer_maritalstatus_label"); ?>:</label>
+                <div class="controls">
+                    <?php
+                        $maritalstatuses = getAllMaritalStatuses();
+                        $maritalstatusesdropdown = new Zend_Form_Element_Select('maritalstatus',
+                                            array(
+                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $maritalstatuses),								
+                                                'view' => new Zend_View(),
+                                                'decorators' => array('ViewHelper'),
+                                                'class' => array('span2')
+                                            )
+                                        );
+                        $maritalstatusesdropdown->setValue($user->getMaritalStatus()); 
+                        echo $maritalstatusesdropdown->render(); 
+                   ?>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="nochildren"><?php echo $this->translate("farmer_nochildren_label"); ?>:</label>
+                <div class="controls">
+                    <input name="numberofchildren" id="numberofchildren" type="text" class="span2 minwidth100 centeralign isnumber" value="<?php echo $user->getNumberOfChildren(); ?>" /><div id="numberofchildren_error"></div>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="numberofdependants"><?php echo $this->translate("farmer_nodependants_label"); ?>:</label>
+                <div class="controls">
+                    <input name="numberofdependants" id="numberofdependants" type="text" class="span2 minwidth100 centeralign isnumber" value="<?php echo $user->getNumberOfDependants(); ?>" /><div id="numberofdependants_error"></div>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="totalhousehold"><?php echo $this->translate("farmer_totalhousehold_label"); ?>:</label>
+                <div class="controls">
+                    <input name="totalhousehold" id="totalhousehold" type="text" class="span2 minwidth100 centeralign isnumber" value="<?php echo $user->getTotalHousehold(); ?>" /><div id="totalhousehold_error"></div>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="nextofkin_name"><?php echo $this->translate("farmer_nextofkin_label")." ".$this->translate("global_name_label"); ?>:</label>
+                <div class="controls">
+                    <input name="nextofkin_name" id="nextofkin_name" type="text" class="span3" value="<?php echo $user->getNextofkin_Name(); ?>" />
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="nextofkin_phone"><?php echo $this->translate("farmer_nextofkin_label")." ".$this->translate("global_phone_label"); ?>:</label>
+                <div class="controls">
+                    <div class="input-prepend">
+                        <span class="add-on"><?php echo '+'.$countrycode; ?></span><input name="nextofkin_phone" id="nextofkin_phone" type="text" maxlength="10" class="span2 minwidth100 isnumber" value="<?php echo $user->getNextofkin_phone(); ?>" placeholder="e.g 0712123456" />
+                    </div>
+                    <div id="nextofkin_phone_error"></div>
+                </div>
+            </div>
+		</fieldset>
+        <fieldset class="fieldsetcontainer well hideonsuper">
+            <legend>Farm</legend>            
+            <div class="control-group">
+              <label class="control-label" for="businessname"><?php echo $this->translate("farm_name_label"); ?>:</label>
+              <div class="controls">
+                <input type="text" name="businessname" id="businessname" value="<?php echo $user->getName(); ?>" class="span3" /><div id="businessname_error"></div>
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="startyear"><?php echo $this->translate("farm_since_label"); ?>:</label>
+              <div class="controls">
+                <?php
+                    $years = getAllYears("63","0");
+                    $yeardp = new Zend_Form_Element_Select('bizstartyear',
+                                        array(
+                                            'multiOptions' => array_merge_maintain_keys(array('' => 'Year'), $years),	
+                                            'view' => new Zend_View(),
+                                            'decorators' => array('ViewHelper'),
+                                            'class' => array('width80')
+                                        )
+                                    );
+                    $yeardp->setValue($user->getBizStartYear()); 
+                    echo $yeardp->render(); 
+                ?>
+                <?php
+                    $monthdp = new Zend_Form_Element_Select('bizstartmonth',
+                                        array(
+                                            'multiOptions' => array_merge_maintain_keys(array('' => 'Month'), getAllMonthsAsShortNames()),	
+                                            'view' => new Zend_View(),
+    
+                                            'decorators' => array('ViewHelper'),
+                                            'class' => array('width80')
+                                        )
+                                    );
+                    $monthdp->setValue($user->getBizStartMonth()); 
+                    echo $monthdp->render(); 
+                ?>
+                <div id="bizstartyear_error"></div><div id="bizstartmonth_error"></div>
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="numberofemployees"><?php echo $this->translate("farm_numberofemployees_label"); ?>:</label>
+              <div class="controls">
+                <input name="numberofemployees" id="numberofemployees" type="text" class="span1 minwidth80" value="<?php echo $user->getNumberOfEmployees(); ?>" />
+              </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="landsize"><?php echo $this->translate("farm_landsize_label"); ?>:</label>
+                <div class="controls">
+                    <input name="landsize" id="landsize" type="text" class="span2 minwidth100" value="<?php echo clean_num($user->getLandSize()); ?>" />&nbsp;&nbsp;
+                    <?php
+                        $landunits = getAreaUnits();
+                        $landunitdropdown = new Zend_Form_Element_Select('landunits',
+                                            array(
+                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $landunits),								
+                                                'view' => new Zend_View(),
+                                                'decorators' => array('ViewHelper'),
+                                                'class' => array('width80')
+                                            )
+                                        );
+                        $landunitdropdown->setValue($user->getLandUnits()); 
+                        echo $landunitdropdown->render(); 
+                   ?><div id="landsize_error"></div><div id="landunits_error"></div>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="landacquiremethod"><?php echo $this->translate("farm_landacquiremethod_label"); ?>:</label>
+                <div class="controls">
+                    <?php
+                        $landmethods = getLandAcquireMethods();
+                        $landmethoddropdown = new Zend_Form_Element_Select('landacquiremethod',
+                                            array(
+                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $landmethods),								
+                                                'view' => new Zend_View(),
+                                                'decorators' => array('ViewHelper'),
+                                                'class' => array('span2')
+                                            )
+                                        );
+                        $landmethoddropdown->setValue($user->getLandAcquireMethod()); 
+                        echo $landmethoddropdown->render(); 
+                   ?><div id="landacquiremethod_error"></div>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="landsizeactive"><?php echo $this->translate("farm_landsizeactive_label"); ?>:</label>
+                <div class="controls">
+                    <input name="landactivesize" id="landactivesize" type="text" class="span1 minwidth80" value="<?php echo clean_num($user->getLandActiveSize()); ?>" /> <span class="pagedescription" id="activeland"></span><div id="landactivesize_error"></div>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="farmlands"><?php echo $this->translate("farm_farmlands_label"); ?>:</label>
+                <div class="controls">
+                    <?php
+                        $fieldcount = array("1"=>"1","2"=>"2","3"=>"3","4"=>"4");
+                        $fieldsdropdown = new Zend_Form_Element_Select('numberoffields',
+                                            array(
+                                                'multiOptions' => $fieldcount,								
+                                                'view' => new Zend_View(),
+                                                'decorators' => array('ViewHelper'),
+                                                'class' => array('span1 minwidth80')
+                                            )
+                                        );
+                        $fieldsdropdown->setValue($user->getNumberOfFields()); 
+                        echo $fieldsdropdown->render(); 
+                   ?><div id="numberoffields_error"></div>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="crops">Enterprise Crops:</label>
+                <div class="controls">
+                	<?php
+						$preselectarray = $user->getCropIDs();
+						if(!isEmptyString($session->getVar(ERROR_MESSAGE))){
+							$preselectarray = $formvalues['cropids'];
+						}
+						// debugMessage($preselectarray);
+						$commodities = getFarmisCommodities();
+					?>
+                    <ul class="nav croplist">
+						<?php foreach($commodities as $key => $value){
+								$isselected = false;
+								if(in_array($key, $preselectarray)){
+									// debugMessage('is selected');
+									$isselected = true;
+								}
+						?>
+                            <li><label for="cropids-<?php echo $key; ?>"><input type="checkbox" class="checkbox <?php echo $isselected == true ? 1 : 0; ?>" id="cropids-<?php echo $key; ?>" name="cropids[]" value="<?php echo $key; ?>" />&nbsp; <?php echo $value; ?></label></li>
+                        <?php } ?>
+                    </ul>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="enterpriseids">Other Enterprises:</label>
+                <div class="controls">
+                	<?php
+						$preselectarray = $user->getEnterpriseIDs();
+						if(!isEmptyString($session->getVar(ERROR_MESSAGE))){
+							$preselectarray = $formvalues['cropids'];
+						}
+						// debugMessage($preselectarray);
+						$enterprises = getOtherEnterprises();
+					?>
+                    <ul class="nav croplist">
+						<?php foreach($enterprises as $key => $value){
+								$isselected = false;
+								if(in_array($key, $preselectarray)){
+									// debugMessage('is selected');
+									$isselected = true;
+								}
+						?>
+                            <li><label for="cropids-<?php echo $key; ?>"><input type="checkbox" class="checkbox <?php echo $isselected == true ? 1 : 0; ?>" id="enterpriseids-<?php echo $key; ?>" name="cropids[]" value="<?php echo $key; ?>" />&nbsp; <?php echo $value; ?></label></li>
+                        <?php } ?>
+                    </ul>
+                </div>
+            </div>
+		</fieldset>
+        <fieldset class="fieldsetcontainer well xhideonsuper">
+            <legend>Profile Settings</legend>            
+            <div class="control-group">
+              <label class="control-label" style="width:100%;">Recieve Market Information alerts?</label>
+              <div class="controls" style="margin-left:0;">
+                 <div class="blocked" style="margin-top:5px;"><input type="checkbox" name="receivephonealerts" id="receivephonealerts" class="<?php echo $user->getreceivephonealerts(); ?>" value="1" /> &nbsp;
+                 <label class="lineblocked">Send updates and alerts to Phone</label></div>
+                 <div class="blocked" style="margin-top:5px;"><input type="checkbox" name="receiveemailalerts" id="receiveemailalerts" class="<?php echo $user->getreceiveemailalerts(); ?>" value="1" /> &nbsp;
+                 <label class="lineblocked">Send updates and alerts to Email</label></div>
+              </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="updatesfrequency">Frequency of Updates<?php //echo $this->translate("farmer_updatesfrequency_label"); ?>:</label>
+                <div class="controls">
+                    <?php
+                        $values = array("1"=>"Weekly","2"=>"Bi-weekly","3"=>"Fortnightly","4"=>"Monthly");
+                        $dropdown = new Zend_Form_Element_Select('updatesfrequency',
+                                            array(
+                                                'multiOptions' => $values,								
+                                                'view' => new Zend_View(),
+                                                'decorators' => array('ViewHelper'),
+                                                'class' => array('span2 minwidth100')
+                                            )
+                                        );
+                        $dropdown->setValue($user->getUpdatesFrequency()); 
+                        echo $dropdown->render(); 
+                   ?><div id="updatesfrequency_error"></div>
+                </div>
+            </div>
+            <?php if(!$isme){ ?>
+                <div class="control-group">
+                  <label class="control-label" for="username">Profiled By: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                  <div class="controls">
+                    <?php if(isAdmin()){ ?>
+						<?php
+                            $users = getProfilingUsers($session->getVar('country'));
+                            $dropdown = new Zend_Form_Element_Select('profiledby',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $users),								
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array('span2')
+                                                )
+                                            );
+                            $dropdown->setValue($user->getCreatedBy()); 
+                            echo $dropdown->render(); 
+                          ?>
+                    <?php } else { ?>
+                        <?php echo $loggedinuser->getName(); ?>
+                    <?php } ?>
+                    <div id="profiledby_error"></div>
+                  </div>
+            </div>
+            <?php } ?>
+        </fieldset>
+        <div class="control-group well actions" id="bottomactions"></div>
+      </form>
+  </div>
+</div>
+</body>
+</html>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

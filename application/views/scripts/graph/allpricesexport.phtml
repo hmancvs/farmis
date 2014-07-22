@@ -19,9 +19,9 @@
         ?>
         <tr>
           <td><?php echo $line['name']; ?></td>
-          <td class="rightalign"><?php echo $line['WholesalePrice']; ?></td>
+          <td class="rightalign"><?php echo /*is_numeric($line['WholesalePrice']) ? $line['WholesalePrice'] : ''*/$line['WholesalePrice']; ?></td>
          
-          <td class="rightalign"><?php echo $line['RetailPrice']; ?></td>
+          <td class="rightalign"><?php echo /*is_numeric($line['RetailPrice']) ? $line['RetailPrice'] : ''*/$line['RetailPrice']; ?></td>
         </tr>
         <?php 						
             } // end processing results 

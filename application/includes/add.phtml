@@ -1,0 +1,511 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$has_subgrp = false;
+	$farmer = new Farmer();
+	$has_subgrp =  false; 
+	$subgroups = '';
+	
+	$country = 'UG';
+	$location_label = 'District';
+	$locations_label = 'Districts';
+	$countrycode = COUNTRY_CODE_UG;
+	$locationerror = $this->translate("farmer_district_error");
+	$country_params_refno_placeholder = 'placeholder="Auto" maxlength="8" '; 
+	if(isKenya()){
+		$country = 'KE';
+		$location_label = 'County';
+		$locations_label = 'Counties';
+		$countrycode = COUNTRY_CODE_KE;
+		$locationerror = $this->translate("farmer_county_error");
+		$country_params_refno_placeholder = 'placeholder="" maxlength="10" '; 
+	}
+	// debugMessage($session->getVar('country'));
+	
+	if(!isEmptyString($request->farmgroupid)){
+		$farmgrp = new FarmGroup(); 
+		$farmgrp->populate($request->farmgroupid);
+		$farmer->setFarmGroupID($request->farmgroupid);
+		$subgroups = getSubGroups($farmer->getFarmGroupID());
+		if(count($subgroups) > 0){
+			$has_subgrp = true;
+		}
+	} 
+	
+	$isfarmer = true;
+	$farmer->setRegSource('0');
+	$farmer->setRegDate(changeMySQLDateToPageFormat(date('Y-m-d')));
+	$farmer->getUser()->setType(2);
+	// adding admin user
+	if($request->type == 'other'){
+		$farmer->getUser()->setType('');
+		$isfarmer = false;
+	}
+	$address = $farmer->getUser()->getFarmerAddress();
+	
+	#in case of errors in session, populate the fields from session
+	if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
+		$farmer->processPost($session->getVar(FORM_VALUES));	
+	}
+	
+	$title = $this->translate("farmer_pagetitle_new"); 
+	$this->headTitle($title);
+	
+?>
+<script>
+	$(document).ready(function() {
+		$("#indexform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				firstname: "required",
+				lastname: "required",		
+				email: {
+					"required": false, 
+					email: true
+				},
+				gender: "required",
+				locationid2: "required",
+				phone: {
+					required: false, 					
+					validnumber: true,
+					maxlength: 10,
+					minlength: 10,
+					<?php if(isUganda()){ ?>
+						validate_ug: true
+					<?php } ?>
+					<?php if(isKenya()){ ?>
+						validate_ke: true
+					<?php } ?>
+				},
+				<?php if(isKenya()){ ?>
+					refno: {
+						required: true, 					
+						minlength: 6,
+						maxlength: 10					
+					},
+				<?php } ?>
+				type: "required"
+				
+			}, 
+			// the messages for each of the fields being validated
+			messages: {		
+				firstname: "<?php echo $this->translate("farmer_firstname_error"); ?>",
+				lastname: "<?php echo $this->translate("farmer_lastname_error"); ?>",		
+				email: {
+					"email": "<?php echo $this->translate("useraccount_email_invalid_error"); ?>"
+				},
+				gender: "<?php echo $this->translate("farmer_gender_error"); ?>",
+				locationid2: "<?php echo $locationerror; ?>",
+				phone: {
+					validnumber: "Please enter a valid Phone Number",
+					maxlength: "Phone Number must have 10 Digits",
+					minlength: "Phone Number must have 10 Digits",
+					<?php if(isUganda()){ ?>
+						validate_ug: "<?php echo $this->translate("globale_phonenumber_format"); ?>"
+					<?php } ?>
+					<?php if(isKenya()){ ?>
+						validate_ke: "<?php echo $this->translate("globale_phonenumber_format_ke"); ?>"
+					<?php } ?>
+				},
+				<?php if(isKenya()){ ?>
+					refno: {
+						required: "Please enter ID Number", 					
+						minlength: "ID must have more than 6 Digits",
+						maxlength: "ID must not exceed 10 Digits"
+					},
+				<?php } ?>
+				type: "<?php echo $this->translate("farmer_role_error"); ?>"
+				
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						error.appendTo("#"+element.attr("name")+"_error")
+						break;
+				}			
+			}
+		});
+		
+		// reset tab index
+		var tabindex = 1;
+		$('input,select').each(function() {
+			if (this.type != "hidden") {
+				var $input = $(this);
+				$input.attr("tabindex", tabindex);
+				tabindex++;
+			}
+		});
+		
+		<?php if(isUganda()){ ?>
+			var refno = '<?php echo $farmer->getRefNo(); ?>';
+			$("#refno").addClass('readonly');
+		<?php } ?>
+
+		$(".datefield").attr('readOnly', 'true');
+		$(".readonly").each(function(){
+			$(this).attr('readonly','readonly');
+		});
+		
+		$("#refno").trigger('keyup');
+		
+		// chained select to load the subcounties for a county
+		$('#dialog #locationid2').selectChain({
+			target: $('#dialog #farmgroupid'),
+			url: '<?php echo $this->baseUrl('farmer/selectchain/'.SELECT_CHAIN_TYPE.'/district_dnaprofiles/')?>',
+			data: 'currentvalue=<?php echo $farmer->getFarmGroupID(); ?>',
+			type: 'get'
+		});
+		<?php if(!isEmptyString($address->getDistrictID())){ ?>
+			//$('#dialog #locationid2').trigger("change");
+		<?php } ?>
+		
+		// chained select to load the subcounties for a county
+		$('#dialog #farmgroupid').selectChain({
+			target: $('#dialog #subgroupid'),
+			url: '<?php echo $this->baseUrl('farmer/selectchain/'.SELECT_CHAIN_TYPE.'/farmgroup_children/country/'.$country)?>',
+			data: 'currentvalue=<?php echo $farmer->getSubGroupID(); ?>',
+			type: 'get'
+		});
+		<?php if(!isEmptyString($farmer->getFarmGroupID())){ ?>
+			//$('#dialog #farmgroupid').trigger("change");
+		<?php } ?>
+		
+		//when button is clicked  
+        $('#check_phone_availability').click(function(){ 
+			check_phone_availability();  
+        });
+		$('#phone').change(function(){ 
+			check_phone_availability();  
+        });
+		
+		//function to check phone availability  
+		function check_phone_availability(){  
+			//get the username
+			var checking_html = 'Checking availability...';   
+			var phone = $('#phone').val();  
+			var country = '<?php echo $session->getVar('country'); ?>';
+			if(!isEmptyString(phone) && (isUgNumber(phone) || isKeNumber(phone))){
+				$('#phone_availability_result').html(checking_html);  
+				
+				//use ajax to run the check  
+				$.post("<?php echo $this->baseUrl('signup/checkphone'); ?>", { phone: phone },  
+					function(result){  
+						//if the result is 1  
+						// alert(result); return false;
+						if(result == 1){  
+							//show that the phone is available
+							$('#phone_availability_result').html(phone + ' is NOT available!').addClass('alert').addClass('alert-error').removeClass('alert-success'); 
+						} else {  
+							//show that the phone is NOT available  
+							$('#phone_availability_result').html(phone + ' is available').addClass('alert').addClass('alert-success').removeClass('alert-error');
+						}  
+				});  
+			}
+		} 
+		
+		//when button is clicked  
+        $('#check_email_availability').click(function(){ 
+			check_email_availability();  
+        });
+		$('#email').change(function(){ 
+			check_email_availability();  
+        });  
+		$('#email').keyup(function(){
+			this.value = this.value.toLowerCase();
+		});
+		
+		//function to check email availability  
+		function check_email_availability(){  
+			//get the username
+			var checking_html = 'Checking availability...';   
+			var email = $('#email').val();  
+			if(!isEmptyString(email) && validateEmail(email)){
+				$('#email_availability_result').html(checking_html);  
+				
+				//use ajax to run the check  
+				$.post("<?php echo $this->baseUrl('signup/checkemail'); ?>", { email: email },  
+					function(result){  
+						//if the result is 1  
+						// alert(result); // return false;
+						if(result == 1){  
+							//show that the email is available
+							$('#email_availability_result').html(email + ' is NOT available!').addClass('alert').addClass('alert-error').removeClass('alert-success'); 
+						} else {  
+							//show that the email is NOT available  
+							$('#email_availability_result').html(email + ' is available').addClass('alert').addClass('alert-success').removeClass('alert-error');
+						}  
+				});  
+			}
+		} 
+		
+		$("#firstname").focus();
+		
+		multipleDisableContainerByClass('subgroup_text');
+		multipleEnableContainerByClass('subgroup_select');
+		$("#subgrouptrigger").click(function(){
+			if($(this).is(':checked')){
+				disableContainerByClass('subgroup_select');
+				enableContainerByClass('subgroup_text');
+				$(".subgroup_select select").val('');
+			} else {
+				disableContainerByClass('subgroup_text');
+				enableContainerByClass('subgroup_select');
+				$(".subgroup_text input").val('');
+			}
+		});
+	}); 
+</script>
+<style>
+body {
+	overflow:hidden;
+}
+.form-horizontal.well {
+	margin:0;
+	padding-top:0;
+	padding-bottom:0;
+	width:93%;
+}
+.form-horizontal .control-label {
+	font-size: 11px;
+	padding-top:3px;
+	width: 130px;
+}
+.form-horizontal .control-label.gender {
+	width: 60px;
+	display:inline-block;
+}
+.form-horizontal input {
+	height:15px;
+}
+.form-horizontal select {
+	height:25px;
+	font-size: 12px;
+}
+.form-horizontal .table td {
+	vertical-align: middle;
+}
+.form-horizontal .table tr:last-child td {
+	height:10px;
+}
+.form-horizontal .table tbody {
+	border-top:none;
+}
+/*.radio.inline, .checkbox.inline {
+	display:inline-block;
+	margin-bottom: 1px;
+    padding-top: 0;
+}*/
+.radio input[type="radio"], .checkbox input[type="checkbox"] {
+	margin-top:1px;
+}
+
+</style>
+<form class="form-horizontal well span6" id="indexform" action="<?php echo $this->baseUrl("farmer/create"); ?>" method="post">
+    <table class="table">
+		<?php if($sessionhaserror) { ?>
+	        <tr>
+	        	<td colspan="2"><div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div></td>
+	        </tr>
+        <?php } ?>
+        <?php if($isfarmer){ ?>
+            <tr>
+                <td><label class="control-label" for="refno"><?php echo isKenya() ? 'National ID No'.$this->translate("global_required_field_marker") : $this->translate("farmer_regno_label"); ?>: </label></td>
+                <td><input type="text" name="refno" id="refno" value="<?php echo $farmer->getRefNo(); ?>" class="span2 minwidth100" <?php echo $country_params_refno_placeholder; ?> />
+                	<div id="regno_error"></div>
+                    <input type="hidden" id="type" name="type" value="<?php echo $farmer->getUser()->getType(); ?>" />
+                    <input type="hidden" id="isfarmer" name="isfarmer" value="1" />
+                    <div id="refno_error"></div>
+                </td>
+           	</tr>
+        <?php } ?>
+        <?php if(!$farmer->isFarmer()){ ?>
+        	<tr>
+                <td><label class="control-label" for="type"><?php echo $this->translate("farmer_type_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                <td><?php
+						$allvalues = getUserType('', '2');
+						$dropdown = new Zend_Form_Element_Select('type',
+											array(
+												'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $allvalues),
+												'view' => new Zend_View(),
+												'decorators' => array('ViewHelper'),
+												'class' => array('85width')
+											)
+						);  
+						$dropdown->setValue($farmer->getUser()->getType()); 
+						echo $dropdown->render();
+					?>
+                    <div id="type_error"></div>
+                    <input type="hidden" id="isfarmer" name="isfarmer" value="0" /></td>
+            </tr>
+        <?php } ?>
+        <tr>
+            <td><label class="control-label" for="firstname"><?php echo $this->translate("farmer_firstname_label"); ?>:<?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><input type="text" name="firstname" id="firstname" class="span3" value="<?php echo $farmer->getFirstName(); ?>" /><div id="firstname_error"></div>
+            	<input type="hidden" name="entityname" value="Farmer" />
+			    <input type="hidden" id="id" name="id" value="<?php echo encode($farmer->getID()); ?>" />
+                <input type="hidden" id="userid" name="userid" value="<?php echo $farmer->getUserID(); ?>" />
+                <input type="hidden" id="addedbyid" name="addedbyid" value="<?php echo $userid; ?>" />
+                <input type="hidden" id="selfregistered" name="selfregistered" value="<?php echo $farmer->getSelfRegistered(); ?>" />
+                <input type="hidden" id="regsource" name="regsource" value="<?php echo $farmer->getRegSource(); ?>" />
+                <input type="hidden" name="regdate" id="regdate" value="<?php echo changeMySQLDateToPageFormat($farmer->getRegDate()); ?>" />
+                <input type="hidden" name="<?php echo URL_SUCCESS; ?>" value="<?php echo encode($this->baseUrl('farmer/addsuccess')); ?>" />
+                <input type="hidden" name="<?php echo URL_FAILURE; ?>" value="<?php echo encode($this->baseUrl('farmer/adderror')); ?>" />
+                <input type="hidden" name="<?php echo SUCCESS_MESSAGE; ?>" value="farmer_add_success" />
+                <input type="hidden" id="username" name="username" value="<?php echo $farmer->getUser()->getusername(); ?>" />
+                <input type="hidden" id="membershipplanid" name="membershipplanid" value="<?php echo $farmer->getUser()->getmembershipplanid(); ?>" />
+                <input type="hidden" id="country" name="country" value="<?php echo $country; ?>" /><input type="hidden" id="country2" name="country2" value="<?php echo $country; ?>" />
+            </td>
+        </tr>
+        <tr>
+            <td style="width:25%;"><label class="control-label"><?php echo $this->translate("farmer_lastname_label"); ?>:<?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><input type="text" name="lastname" id="lastname" class="span3" value="<?php echo $farmer->getLastName(); ?>" /><div id="lastname_error"></div></td>
+        </tr>
+        <tr class="gender">
+        	<td><label class="control-label"><?php echo $this->translate("farmer_gender_label"); ?>:<?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><?php						  
+				  $genderradio = new Zend_Form_Element_Radio('gender',
+						  array(
+								  'multiOptions' => array('1' => 'Male', '2' => 'Female'), 
+								  'view' => new Zend_View(),
+								  'disableLoadDefaultDecorators' => true,
+								  'separator' => '&nbsp;&nbsp;&nbsp;&nbsp;',
+								  'decorators' => array('ViewHelper',
+													  array('HtmlTag', array('tag' => 'div', 'class' => array('inline', 'radio', 'zendradio'))) // use a sorrounding DIV with classes which are copied to the label by JQuery
+												  )
+						  )
+				  );
+				  $genderradio->setValue('');
+				  echo $genderradio->render();
+			  ?>
+			  <div id="gender_error"></div></td>
+		</tr>
+        <tr>
+        	<td><label class="control-label"><?php echo $location_label; ?>:<?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><?php
+					$districts = getDistricts($session->getVar('country'));
+					$defaultdistrict = '';
+					if(!isEmptyString($farmer->getFarmGroupID())){
+						if(!isEmptyString($farmer->getFarmGroup()->getAddress()->getDistrictID())){
+							$defaultdistrict = $farmer->getFarmGroup()->getAddress()->getDistrictID();
+						}
+					}
+					$districtdropdown = new Zend_Form_Element_Select('locationid2',
+										array(
+											'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $districts),								
+											'view' => new Zend_View(),
+											'decorators' => array('ViewHelper'),
+											'class' => array('width250'),
+											'title' => $this->translate("farmer_district_tooltip")
+										)
+									);
+					$districtdropdown->setValue($defaultdistrict); 
+					echo $districtdropdown->render(); 
+			   ?><div id="locationid2_error"></div></td>
+        </tr>
+        <tr>
+            <td><label class="control-label"><?php echo $this->translate("farmer_dna_label"); ?>: </label></td>
+            <td>
+            	<?php if(isEmptyString($farmer->getFarmGroupID())) { ?>
+					<?php
+                        $groupdropdown = new Zend_Form_Element_Select('farmgroupid',
+                                            array(
+                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), getAllFarmGroups($session->getVar('country'))),								
+                                                'view' => new Zend_View(),
+                                                'decorators' => array('ViewHelper'),
+                                                'class' => array('width250'),
+                                                'title' => $this->translate("farmer_farmgroupid_tooltip")
+                                            )
+                                        );
+                        $groupdropdown->setValue(''); 
+                        echo $groupdropdown->render(); 
+                   ?>
+                <?php } else { ?>
+                	<?php echo $farmer->getFarmGroup()->getName(); ?><input type="hidden" id="farmgroupid" name="farmgroupid" value="<?php echo $farmer->getFarmGroupID(); ?>" />
+                <?php } ?>
+                <div id="farmgroupid_error"></div>
+            </td>
+        </tr>
+        <?php // if($has_subgrp){ ?>
+        <tr>
+        	<td><label class="control-label"><?php echo $this->translate("farmer_group_label"); ?>: </label></td>
+            <td>
+                <div class="subgroup_text inline">
+                    <input type="text" name="subgroupname" id="subgroupname" class="span3" value="<?php //echo $farmer->getVillageName(); ?>"  />
+                </div>
+                <div class="subgroup_select inline">
+                    <?php
+                        $groupdropdown = new Zend_Form_Element_Select('subgroupid',
+                                            array(
+                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select DNA to Populate>')),								
+                                                'view' => new Zend_View(),
+                                                'decorators' => array('ViewHelper'),
+                                                'class' => array('span3')
+                                            )
+                                        );
+                        $groupdropdown->setValue(''); 
+                        echo $groupdropdown->render(); 
+                   ?>
+                </div>
+                &nbsp;<input type="checkbox" name="subgrouptrigger" id="subgrouptrigger" class="lineblocked" value="1" title="Switch entry mode" placeholder="enter free text" /> 
+            </td>
+        </tr>
+        <?php // } ?>
+        <tr>
+            <td><label class="control-label"><label class="control-label">Phone: </label></td>
+            <td><div class="input-prepend">
+                    <span class="add-on"><?php echo '+'.$countrycode; ?></span><input name="phone" id="phone" type="text" maxlength="10" class="span2" style="width:110px; height:18px;" value="" />
+                    
+                    <label class='lineblocked'><a href="javascript: void(0);" class="btn btn-primary btn-mini" id='check_phone_availability' title="Check Availability">Check</a></label><label class="pagedescription" style="font-size:10px;">e.g &nbsp; <span class="green">071123456</span></label>
+                    <?php if($farmer->getUser()->isUserInActive() || isEmptyString($farmer->getID())){ ?>
+                         <div class="blocked" style="margin-top:5px;"><input type="checkbox" name="isphoneinvited" id="isphoneinvited" value="1" style="margin-top:0;" /> &nbsp;
+                         <label class="lineblocked">Invite to activate via Phone</label></div>
+                    <?php } ?>
+                    <div id="phone_error"></div><div id="phone_availability_result" style="margin-top:5px;"></div>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td><label class="control-label" for="email"><?php echo $this->translate("farmer_email_label"); ?>: </label></td>
+            <td><input type="text" name="email" id="email" value="" class="span3" />
+                <label class="lineblocked" style="margin-top: 5px;"><a href="javascript: void(0);" class="btn btn-primary btn-mini" id='check_user_availability' title="Check Availability">Check</a></label>
+                <?php if($farmer->getUser()->isUserInActive() || isEmptyString($farmer->getID())){ ?>
+                     <div class="blocked" style="margin-top:5px;"><input type="checkbox" name="isinvited" id="isinvited" value="1" /> &nbsp;
+                     <label class="lineblocked">Invite to activate via Email</label></div>
+                <?php } ?>
+                <div id="email_error"></div><div id="email_availability_result" style="margin-top:5px;"></div>
+            </td>
+        </tr>
+        <?php if($request->type == 'other' || !$farmer->isFarmer()){ ?>
+            <tr>
+                <td><label class="control-label"><?php echo $this->translate("farmer_username_label"); ?>: </label></td>
+                <td><input type="text" name="username" id="username" class="span3" value="<?php echo $farmer->getUser()->getUsername(); ?>" /><div id="username_error"></div></td>
+            </tr>
+            <?php if($farmer->getUser()->isUserActive()){ ?>
+                <tr>
+                    <td><label class="control-label">Current Password: </label></td>
+                    <td><input name="oldpassword" id="oldpassword" type="password" class="span2" value="" /></td>
+                </tr>
+            <?php } ?>    
+            <tr>
+                <td><label class="control-label">New Password: </label></td>
+                <td><input name="password" id="password" type="password" class="span2" value="" /></td>
+            </tr>    
+            <?php if($farmer->getUser()->isUserInActive()){ ?>
+                <tr>
+                    <td><label class="control-label">Confirm Password: </label></td>
+                    <td> <input name="confirmpassword" id="confirmpassword" type="password" class="span2" value="" />
+                    <div class="blocked" style="margin-top:5px;"><input type="checkbox" name="adminactivate" id="adminactivate" value="1" /> &nbsp;
+                    <label class="lineblocked">Activate now</label></div>
+                    <div class="blocked" style="margin-top:5px;"><input type="checkbox" name="sendlogintophone" id="sendlogintophone" value="1" /> &nbsp;
+                    <label class="lineblocked">Send Login Details to Phone</label></div>
+                    <div class="blocked" style="margin-top:5px;"><input type="checkbox" name="sendlogintoemail" id="sendlogintoemail" value="1" /> &nbsp;
+                    <label class="lineblocked">Send Login Details to Email</label></div></td>
+                </tr>   
+            <?php } ?>    
+        <?php } ?>
+  </table>
+</form>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

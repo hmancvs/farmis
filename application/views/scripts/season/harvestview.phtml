@@ -3,12 +3,14 @@
 	
 	$harvest = new SeasonHarvest();
 	$harvest->populate(decode($request->id));	
-	$thefarmid = $harvest->getSeason()->getFarmID();
+	$request->setParam('tab', 'seasons');
+	$user = $harvest->getUser();
 	
 	$title = sprintf($this->translate("season_harvest_pagetitle_view"), 'Harvesting'); 
 		
-	$this->headTitle($title);  
-	$farmtitle = isFarmer() ? "Manage Farm" : "Manage Farm: ".$harvest->getFarm()->getName();
+	$title = "Activity: ".$harvest->getActivityName();	
+	$farmtitle = $harvest->getUser()->getName();
+	$this->headTitle($title.$browserappend);  
 ?>
 <script>
 	$(document).ready(function() {
@@ -17,9 +19,9 @@
 </script>
 <h1><?php echo $farmtitle; ?></h1>
 <div id="tabs">
-    <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
+    <?php require APPLICATION_PATH."/views/scripts/profile/profileleftcolumn.phtml"; ?>
     <div class="span9 tab-content" id="center">
-    	<?php require APPLICATION_PATH."/views/scripts/farm/tabstop.phtml"; ?>
+    	<?php require APPLICATION_PATH."/views/scripts/profile/tabstop.phtml"; ?>
 		<div id="seasons">
             <form id="viewform" class="form-horizontal seasons">
             <?php if($request->tab == 'seasons'){ ?>
@@ -59,7 +61,10 @@
                                     <td class="formactions">
                                         <a class="btn btn-primary" href="<?php echo $this->baseUrl('season/harvest/id/'.encode($harvest->getID())); ?>" id="update"><i class="icon-pencil icon-white"></i> Update</a>
                                         <a href="javascript: void(0)" id="deleteline" title="Delete Entry" class="btn deleteline noimgbutton" action="<?php echo $this->baseUrl('season/delete/id/'.$harvest->getID()."/entityname/SeasonHarvest/successurl/".encode($this->baseUrl('season/view/id/'.encode($harvest->getSeasonID())))); ?>"><i class="icon-trash"></i></a>   
-                                        <a class="btn" href="<?php echo $this->baseUrl('season/view/id/'.encode($harvest->getSeasonID())); ?>" title="Return to Timeline"><i class="icon-list"></i> View Timeline</a>           
+                                        <a class="btn" href="<?php echo $this->baseUrl('season/view/id/'.encode($harvest->getSeasonID())); ?>" title="Return to Timeline"><i class="icon-list"></i> View Season</a>  
+                                        <?php if($harvest->getUser()->getSeasons()->count() > 1){ ?>           
+                                        	<a class="btn" href="<?php echo $this->baseUrl('profile/view/id/'.encode($harvest->getUserID()).'/tab/seasons'); ?>"><i class="icon-list"></i> All Seasons</a>
+                                        <?php } ?>          
                                     </td>
                                </tr>
                             </table>                           
@@ -83,17 +88,13 @@
                                                 <td><?php echo $harvest->getMethodText(); ?></td>
                                             </tr>
                                             <tr>
-                                                <td><label class="control-label"><?php echo $this->translate("season_activity_damage_label"); ?>:</label></td>
-                                                <td><?php echo clean_num($harvest->getDamaged())."&nbsp;<span class='pagedescription'>(".$harvest->getTotalDamagedUnitText().")</span>"; ?></td>
+                                                <td style="width:30%;"><label class="control-label"><?php echo $this->translate("season_harvest_area_label"); ?>:</label></td>
+                                                <td><?php echo clean_num($harvest->getFieldSize())."&nbsp;<span class='pagedescription'>(".$harvest->getFieldSizeUnitText().")</span>"; ?></td>
                                             </tr>
                                         </table>
                                     </td>
                                     <td>
                                         <table class="table">
-                                        	<tr>
-                                                <td style="width:30%;"><label class="control-label"><?php echo $this->translate("season_harvest_area_label"); ?>:</label></td>
-                                                <td><?php echo clean_num($harvest->getFieldSize())."&nbsp;<span class='pagedescription'>(".$harvest->getFieldSizeUnitText().")</span>"; ?></td>
-                                            </tr>
                                             <tr>
                                                 <td><label class="control-label"><?php echo $this->translate("season_harvest_quantity_label"); ?>:</label></td>
                                                 <td><?php echo clean_num($harvest->getTotalHarvest())."&nbsp;<span class='pagedescription'>(".$harvest->getTotalHarvestUnitText().")</span>"; ?></td>
@@ -102,7 +103,10 @@
                                                 <td><label class="control-label"><?php echo $this->translate("season_harvest_yield_label"); ?>:</label></td>
                                                 <td><?php echo clean_num($harvest->getYield())."&nbsp;<span class='pagedescription'>(".$harvest->getYieldUnitText().")</span>"; ?></td>
                                             </tr>
-                                            
+                                            <tr>
+                                                <td><label class="control-label"><?php echo $this->translate("season_activity_damage_label"); ?>:</label></td>
+                                                <td><?php echo clean_num($harvest->getDamaged())."&nbsp;<span class='pagedescription'>(".$harvest->getTotalDamagedUnitText().")</span>"; ?></td>
+                                            </tr>
                                         </table>
                                     </td>
                                 </tr>
@@ -117,7 +121,7 @@
             <?php } ?>    
             </form>
 		</div>
-		<?php require APPLICATION_PATH."/views/scripts/farm/tabsbottom.phtml"; ?> 
+		<?php require APPLICATION_PATH."/views/scripts/profile/tabsbottom.phtml"; ?>  
     </div>
 </div>    
 <?php

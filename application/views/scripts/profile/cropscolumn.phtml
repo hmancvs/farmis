@@ -1,0 +1,45 @@
+<span class="marginleft0 span9" style="width:99%;">
+                    <div class="margin0" style="position:absolute; right:15px; top:15px;">
+                         <a href="<?php echo $this->baseUrl('profile/addcrop/userid/'.encode($user->getID()).'/pgc/true'); ?>" class="addpopup addfarmcrop btn btn-primary btn-mini" title="Add Crops" rel="Add Crop" id="newcrop" formtitle="indexform" successurl="<?php echo $this->baseUrl('profile/view/id/'.encode($user->getID()).'/tab/farm'); ?>" action="<?php echo $this->baseUrl("profile/processaddcrop"); ?>"><i class="icon-plus icon-white"></i> Add Crops</a>
+                    </div>
+                    <style>
+						ul.sectionitems li {
+							display:block;
+							width:100%;
+							margin-bottom:20px;
+							background:none;
+							height:170px;
+							position:relative;
+							padding-top:0;
+							text-align:left;
+							border-bottom: 1px dashed #9F9D9D;
+							margin-bottom: 20px;
+							padding-bottom: 50px;
+						}
+						ul.sectionitems li:hover {
+							background:none;
+						}
+                    </style>
+                    <ul class="sectionitems">
+                    	<?php 
+							$crops = $user->getCrops();
+							$countcrops = $crops->count();
+							//debugMessage($crops->toArray());
+							if($countcrops == 0) { ?>
+                            <div class="alert alert-info">No Crops have been Setup yet. Click on 'Add Crops' to get started</div>
+                        <?php } else { ?>                
+                        	<label class="labeldescription">Viewing <?php echo $countcrops; ?> <?php echo $countcrops == 1 ? ' Farm Crop' : 'Farm Crops'; ?></label>
+							<?php foreach($crops as $crop){ ?>
+                                <li>
+                                    <div class="imagecontainer" style="width:22%; min-height:90px; padding:2px; position:absolute; top:10px; left:5px;">
+                                        <img style="width:100%;" src="<?php echo $crop->getCrop()->getImagePath(); ?>" />
+                                    </div>
+                                    <div style="float:right; width:74%; margin-top:0;">
+                                        <h2><?php echo $crop->getCrop()->getName(); ?></h2>
+                                    </div>
+                                    <a style="position:absolute; left:2px; bottom:5px;" href="javascript: void(0)" id="deleteline" title="Remove Crop" class="btn btn-mini  deleteline noimgbutton" action="<?php echo $this->baseUrl('index/delete/id/'.$crop->getID()."/entityname/FarmCrop/successurl/".encode($this->baseUrl('profile/view/tab/farm/id/'.encode($user->getID())))); ?>"><!--<i class="icon-trash"></i>--> Remove</a>
+                                </li>
+                            <?php } ?>
+                        <?php } ?>
+                    </ul>
+                </span>

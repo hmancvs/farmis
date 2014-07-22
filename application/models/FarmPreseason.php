@@ -8,8 +8,6 @@ class FarmPreseason extends BaseEntity {
 		
 		$this->setTableName('farmpreseason');
 		$this->hasColumn('userid', 'integer', null);
-		$this->hasColumn('farmerid', 'integer', null, array( 'notnull' => true, 'notblank' => true));
-		$this->hasColumn('farmid', 'integer', null);
 		$this->hasColumn('startday', 'string', 4);
 		$this->hasColumn('startmonth', 'string', 4);
 		$this->hasColumn('startyear', 'string', 4);
@@ -30,7 +28,7 @@ class FarmPreseason extends BaseEntity {
 		
 		// set the custom error messages
        	$this->addCustomErrorMessages(array(
-       									"farmerid.notblank" => $this->translate->_("farm_farmerid_error")
+       									"userid.notblank" => $this->translate->_("farm_userid_error")
        	       						));
 	}
 	/**
@@ -42,18 +40,6 @@ class FarmPreseason extends BaseEntity {
 		$this->hasOne('UserAccount as user', 
 								array(
 									'local' => 'userid',
-									'foreign' => 'id'
-								)
-						);
-		$this->hasOne('Farmer as farmer', 
-								array(
-									'local' => 'farmerid',
-									'foreign' => 'id'
-								)
-						);
-		$this->hasOne('Farm as farm', 
-								array(
-									'local' => 'farmid',
 									'foreign' => 'id'
 								)
 						);
@@ -71,18 +57,11 @@ class FarmPreseason extends BaseEntity {
 	function processPost($formvalues){
 		// debugMessage($formvalues);
 		$session = SessionWrapper::getInstance();
-    	$farmerid = $session->getVar('farmerid');
     	$userid = $session->getVar('userid');
     	
 		// set default values for integers, dates, decimals
 		if(isArrayKeyAnEmptyString('userid', $formvalues)){
 			unset($formvalues['userid']); 
-		}
-		if(isArrayKeyAnEmptyString('farmerid', $formvalues)){
-			unset($formvalues['farmerid']); 
-		}
-		if(isArrayKeyAnEmptyString('farmid', $formvalues)){
-			unset($formvalues['farmid']); 
 		}
 		if(isArrayKeyAnEmptyString('isdefault', $formvalues)){
 			unset($formvalues['isdefault']); 
@@ -125,7 +104,7 @@ class FarmPreseason extends BaseEntity {
 		$details_count = $details->count();
 		$total = 0;
 		$count = 0;
-		if($this->getFarm()->hasPreviousSeason()){
+		if($this->hasPreviousSeason()){
 			$total += 10;
 		}
 		$count += 10; 

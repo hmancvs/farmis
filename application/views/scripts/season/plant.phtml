@@ -7,7 +7,7 @@
 	if(!isEmptyString($request->sid)){
 		$season->populate(decode($request->sid));
 		$plant->setSeasonID($season->getID());
-		$plant->setFarmID($season->getFarmID());
+		$plant->setUserID($season->getUserID());
 		$plant->setStartDate(date('Y-m-d'));
 		$pcounter = $plant->getNextReferencePointer();
 		$plant->setSeedingRateUnit('2');
@@ -31,7 +31,8 @@
 		$pcounter = substr($plant->getRef(), -3);
 		$successurl = encode($this->baseUrl("season/plant/id/".$request->id));
 	}
-	$thefarmid = $plant->getSeason()->getFarmID();
+	$request->setParam('tab', 'seasons');
+	$user = $plant->getUser();
 	$loan = $plant->getCreditDetails();
 	
 	#in case of errors in session, populate the fields from session
@@ -39,115 +40,114 @@
 		$plant->processPost($session->getVar(FORM_VALUES));	
 	}
 	
-	// $planttypes = getAllTillageTypes();
-		
-	$this->headTitle($title);  
-	$farmtitle = isFarmer() ? "Manage Farm" : "Manage Farm: ".$plant->getFarm()->getName();
+	$title = 'Manage Season: '.$plant->getActivityName();
+	$farmtitle = $plant->getUser()->getName();
+	$this->headTitle($title.$browserappend);  
 ?>
 <script>
-	$(document).ready(function() {
-		$("#indexform").validate({		
-			// define the validation rules one field at a time
-			rules: {
-				activityname: {
-					required: true,
-					maxlength: 25,
-					minlength: 4
-				},
-				ref: "required",
-				startdate: "required",
-				enddate: {
-					required: true
-				},
-				method: "required",
-				status: "required",
-				totalplanted: {
-					required: true
-				},
-				cropid: "required"
-			}, 
-			// the messages for each of the fields being validated
-			messages: {
-				activityname: {
-					required: "Please specify activity name",
-					maxlength: "Maximum of 25 character needed",
-					minlength: "Minimum of 4 characters needed"
-				},
-				ref: "Reference not specified",		
-				startdate: "<?php echo $this->translate("season_activity_startdate_error"); ?>",
-				enddate: {
-					required: "<?php echo $this->translate("season_activity_enddate_error"); ?>"
-				},
-				method: "<?php echo $this->translate("season_method_error"); ?>",
-				status: "<?php echo $this->translate("season_status_error"); ?>",
-				totalplanted: {
-					required: "<?php echo $this->translate("season_plant_totalplanted_error"); ?>"
-				},
-				cropid: "<?php echo $this->translate("season_cropid_error"); ?>"
+$(document).ready(function() {
+	$("#indexform").validate({		
+		// define the validation rules one field at a time
+		rules: {
+			activityname: {
+				required: true,
+				maxlength: 25,
+				minlength: 4
 			},
-			// custom error positions
-			errorPlacement: function(error, element) {
-				switch(element.attr("name")){					
-					default:
-						if(element.hasClass("useid_error")){
-							error.appendTo("#"+element.attr("id")+"_error");
-						} else {
-							error.appendTo("#"+element.attr("name")+"_error");
-						}
-						break;
-				}			
-			}
-		});
-		
-		// datepickerOpts = new Date();   
-		$("#startdate, #enddate").datepicker(datepickerOpts);
-		
-		// compute activity reference
-		$("#startdate").change(function(){
-			var label = '';
-			var counter = '<?php echo $pcounter; ?>';
-			var date = new Date($(this).val());
-			var year = date.getFullYear();
-			var month = date.getShortMonthName();
-			var label = "<?php echo ACTIVITY_PLANTING_PREFIX; ?>"+month+"/"+year+"/"+counter;
-			$("#reflabel").html(label);
-			$("#ref").val(label);
-		});
-		$("#startdate").change();
-		
-		$("#creditdate").datepicker(datepickerOpts);
-		$("#sourcetype").val("");
-		$("#clienttype").val("");
-		$("#financetype-1, #financetype-2").click(function(){
-			multipleDisableContainerByID('hasloan,bankrow,softrow,cropfinancing');
-		});
-		$("#financetype-3").click(function(){
-			multipleEnableContainerByID('hasloan,softrow');
-			multipleDisableContainerByID('bankrow','cropfinancing');
-			$("#sourcetype").val(2);
-		});
-		$("#financetype-4").click(function(){
-			enableContainerByID('hasloan');
-			enableContainerByID('bankrow');
-			multipleDisableContainerByID('cropfinancing,softrow');
-			$("#sourcetype").val(1);
-		});
-		$("#financetype-5").click(function(){
-			enableContainerByID('cropfinancing');
-			multipleDisableContainerByID('hasloan,bankrow,softrow');
-			$("#clienttype").val(1);
-		});
-		<?php if(!isEmptyString($plant->getFinanceType())){ ?>
-			var currentval = '<?php echo $plant->getFinanceType(); ?>';
-			$("#financetype-"+currentval).click();
-		<?php } ?>
-	}); 
+			ref: "required",
+			startdate: "required",
+			enddate: {
+				required: true
+			},
+			method: "required",
+			status: "required",
+			totalplanted: {
+				required: true
+			},
+			cropid: "required"
+		}, 
+		// the messages for each of the fields being validated
+		messages: {
+			activityname: {
+				required: "Please specify activity name",
+				maxlength: "Maximum of 25 character needed",
+				minlength: "Minimum of 4 characters needed"
+			},
+			ref: "Reference not specified",		
+			startdate: "<?php echo $this->translate("season_activity_startdate_error"); ?>",
+			enddate: {
+				required: "<?php echo $this->translate("season_activity_enddate_error"); ?>"
+			},
+			method: "<?php echo $this->translate("season_method_error"); ?>",
+			status: "<?php echo $this->translate("season_status_error"); ?>",
+			totalplanted: {
+				required: "<?php echo $this->translate("season_plant_totalplanted_error"); ?>"
+			},
+			cropid: "<?php echo $this->translate("season_cropid_error"); ?>"
+		},
+		// custom error positions
+		errorPlacement: function(error, element) {
+			switch(element.attr("name")){					
+				default:
+					if(element.hasClass("useid_error")){
+						error.appendTo("#"+element.attr("id")+"_error");
+					} else {
+						error.appendTo("#"+element.attr("name")+"_error");
+					}
+					break;
+			}			
+		}
+	});
+	
+	// datepickerOpts = new Date();   
+	$("#startdate, #enddate").datepicker(datepickerOpts);
+	
+	// compute activity reference
+	$("#startdate").change(function(){
+		var label = '';
+		var counter = '<?php echo $pcounter; ?>';
+		var date = new Date($(this).val());
+		var year = date.getFullYear();
+		var month = date.getShortMonthName();
+		var label = "<?php echo ACTIVITY_PLANTING_PREFIX; ?>"+month+"/"+year+"/"+counter;
+		$("#reflabel").html(label);
+		$("#ref").val(label);
+	});
+	$("#startdate").change();
+	
+	$("#creditdate").datepicker(datepickerOpts);
+	$("#sourcetype").val("");
+	$("#clienttype").val("");
+	$("#financetype-1, #financetype-2").click(function(){
+		multipleDisableContainerByID('hasloan,bankrow,softrow,cropfinancing');
+	});
+	$("#financetype-3").click(function(){
+		multipleEnableContainerByID('hasloan,softrow');
+		multipleDisableContainerByID('bankrow','cropfinancing');
+		$("#sourcetype").val(2);
+	});
+	$("#financetype-4").click(function(){
+		enableContainerByID('hasloan');
+		enableContainerByID('bankrow');
+		multipleDisableContainerByID('cropfinancing,softrow');
+		$("#sourcetype").val(1);
+	});
+	$("#financetype-5").click(function(){
+		enableContainerByID('cropfinancing');
+		multipleDisableContainerByID('hasloan,bankrow,softrow');
+		$("#clienttype").val(1);
+	});
+	<?php if(!isEmptyString($plant->getFinanceType())){ ?>
+		var currentval = '<?php echo $plant->getFinanceType(); ?>';
+		$("#financetype-"+currentval).click();
+	<?php } ?>
+}); 
 </script>
 <h1><?php echo $farmtitle; ?></h1>
 <div id="tabs">
-    <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
+    <?php require APPLICATION_PATH."/views/scripts/profile/profileleftcolumn.phtml"; ?>
     <div class="span9 tab-content" id="center">
-    	<?php require APPLICATION_PATH."/views/scripts/farm/tabstop.phtml"; ?>
+    	<?php require APPLICATION_PATH."/views/scripts/profile/tabstop.phtml"; ?>
 		<div id="seasons">
             <form id="indexform" class="form-horizontal seasons" action="<?php echo $posturl; ?>" method="post">
             <?php if($request->tab == 'seasons'){ ?>
@@ -205,8 +205,7 @@
                                             <input type="hidden" name="entityname" value="SeasonPlanting" />
                                             <input type="hidden" id="id" name="id" value="<?php echo encode($plant->getID()); ?>" />
                                             <input type="hidden" id="seasonid" name="seasonid" value="<?php echo $plant->getSeasonID(); ?>" />
-                                            <input type="hidden" id="farmid" name="farmid" value="<?php echo $plant->getFarmID(); ?>" />
-                                            <input type="hidden" id="farmerid" name="farmerid" value="<?php echo $plant->getFarm()->getFarmerID(); ?>" />
+                                            <input type="hidden" id="userid" name="userid" value="<?php echo $plant->getSeason()->getUserID(); ?>" />
                                             <input type="hidden" id="stage" name="stage" value="7" />
                                             <input type="hidden" id="type" name="type" value="1" />
                                             <input type="hidden" name="sourcetype" id="sourcetype" value="<?php echo $loan->getSourceType(); ?>" />
@@ -336,7 +335,7 @@
             <?php } ?>    
             </form>
 		</div>
-		<?php require APPLICATION_PATH."/views/scripts/farm/tabsbottom.phtml"; ?> 
+		<?php require APPLICATION_PATH."/views/scripts/profile/tabsbottom.phtml"; ?>  
     </div>
 </div>    
 <?php

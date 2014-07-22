@@ -1,45 +1,23 @@
 <?php
 	require_once APPLICATION_PATH.'/includes/header.php';
 	
-	$farmer = new Farmer();
+	$user = new UserAccount();
 	
 	$theid = decode($request->id);
 	if(isEmptyString($theid)){
-		$theid = $farmerid;
+		$theid = $userid;
 	}
-	$farmer->populate($theid);
-	$id = $farmer->getID();
+	$user->populate($theid);
+	$id = $user->getID();
 	
-	$id = $farmer->getID();	
-	$name = $farmer->getName();
-	$firstname = $farmer->getFirstName();
+	$id = $user->getID();	
+	$name = $user->getName();
+	$firstname = $user->getFirstName();
 	
 	# profile for one viewing
 	$isme = false;
-	if($farmerid == $farmer->getID()){
+	if($userid == $user->getID()){
 		$isme = true;
-	}
-	
-	$hasfarm = false;
-	$hasmultiplefarms = false;
-	$hasnofarm = false;
-	$countfarms = $farmer->getFarms()->count();
-	if($countfarms == 0){
-		$farmlabel = "Setup Farm";
-		$hasnofarm = true;
-	}
-	if($countfarms == 1){
-		$hasfarm = true;
-		$farmid = $farmer->getFarms()->get(0)->getID();
-		$farmlabel = "Manage Farm";
-	}
-	if(!isEmptyString($farmer->getFarm()->getID())){
-		$hasfarm = true;
-		$farmid = $farmer->getFarm()->getID();
-	}
-	if($countfarms > 1){
-		$hasmultiplefarms = true;
-		$farmlabel = "Manage Farms";
 	}
 	
 	$request->setParam('tab', 'subscription');
@@ -50,9 +28,8 @@
 	
 	$payment = new Payment();
 	$payment->setTrxDate(date('Y-m-d'));
-	$payment->setUserID($farmer->getUserID());
-	$payment->setFarmerID($farmer->getID());
-	$payment->setPhone($farmer->getUser()->getPhone());
+	$payment->setUserID($user->getID());
+	$payment->setPhone($user->getPhone());
 	$payment->setStem(2);	
 	$payment->setItem(2);
 	$payment->setAmount($payment->getDefaultFarmerAmount());
@@ -66,119 +43,28 @@
 		$step = 1;
 	}
 		
-	$title = $payment->getFarmer()->getName();
+	$title = $payment->getUser()->getName();
 	$formtitle = "New Payment";	
 	$this->headTitle($title);
 	
 ?>
 <script>
 $(document).ready(function() {
-	<?php //if($step == 2){ ?>
-		
-	<?php //} ?>
 	
-	// form wizard
-	$('#paynowform').stepy({
-		backLabel:	'Back',
-		block:		true,
-		errorImage:	false,
-		nextLabel:	'Continue',
-		titleClick:	true,
-		validate:	true,
-		back: function(index) {
-			$("#paynowform-next-1, #paynowform-next-2, #step2auth, #step3pay").hide();
-			if(index == 2){
-				$("#step2auth").show();
-			}
-			if(index == 3){
-				$("#step3pay").show();
-			}
-		},
-		next: function(index) {
-			$("#paynowform-next-1, #paynowform-next-2, #step2auth, #step3pay").hide();
-			if(index == 2){
-				$("#step2auth").show();
-			}
-			if(index == 3){
-				$("#step3pay").show();
-			}
-			$("#step2auth").click(function(e){
-				// e.preventDefault();
-				if(isStep2valid()){
-					// no validation errors
-					$("div#pin_error").html('');
-					var phone = $("#phone").val();
-					var pin = $("#pin").val();
-					var successurl = $("#step2_successurl").val();
-					var step2authaction = '<?php echo $this->baseUrl('payment/step2auth/id/'.encode($payment->getFarmerID())); ?>/phone/'+phone+'/pin/'+pin+'/successurl/'+successurl;
-					$(location).attr('href', step2authaction);
-				} 
-			});
-			
+	var subscriptionmount = '<?php echo $payment->getAmount(); ?>';
+	var halfpay = subscriptionmount/2 ;
+	$("#period").change(function(){
+		var period = $(this).val();
+		if(period  == 180){
+			$("#amount").val(halfpay);
+			$('span#computedtotal').html(addCommas(parseInt(halfpay)));
+		}
+		if(period  == 365){
+			$("#amount").val(subscriptionmount);
+			$('span#computedtotal').html(addCommas(parseInt(subscriptionmount)));
 		}
 	});
-	
-	$(".button-back").html('').prepend('<i class="icon-arrow-left icon-white"></i> Back').addClass('btn btn-primary btn-large');
-	$(".button-next").html('').prepend('<i class="icon-arrow-right icon-white"></i> Continue').addClass('btn btn-primary btn-large'); 
-	$(".finish").html('').prepend('<i class="icon-ok icon-white"></i> Continue').addClass('btn btn-primary btn-large pull-left');
-	$(".step legend, #paynowform-next-1, #paynowform-next-2, #step2auth, #step3pay").hide();
-	$(".step").attr('title','');
-	
-	var step = '<?php echo $step; ?>';
-	$('#paynowform').stepy('step', step);
-	
-	<?php if($step == 3){ ?>
-		// change name of step 3 button
-		$("#step3pay").show();
-		// compute amout 
-		computeRenewAmount();
-		$("#period").change(function(e){
-			computeRenewAmount();
-		});
-		
-		$("#step3pay").click(function(e){
-			// e.preventDefault();
-			bootbox.confirm('<label class="blockcontainer">Confirm transaction by specifying your FARMIS password? <br /><br />Click <b>OK</b> to proceed, and <b>Cancel</b> to ignore</label>', function(confirmed) {
-				if(confirmed){
-					alert('confirmed');
-				} else {
-					return false;
-				}
-			});
-		});
-		
-		// 
-	<?php } ?>
-	$('span#computedunit').html('1,200');
-	
-	function isStep2valid(){
-		var value = $("#pin").val();
-		if(isEmptyString(value)){
-			$("div#pin_error").html('<div class="alert alert-error">Please enter PIN Code</div>');
-			$("div.alert-error").css({'background': 'url("<?php echo $this->baseUrl('images/cross.png'); ?>") no-repeat #EDDBE3 5px 8px','margin-top': '5px'});
-			return false;
-		}
-		if(value.length < 4 && value.length > 4){
-			$("div#pin_error").html('<div class="alert alert-error">Please enter a Valid PIN Code</div>');
-			$("div.alert-error").css({'background': 'url("<?php echo $this->baseUrl('images/cross.png'); ?>") no-repeat #EDDBE3 5px 8px','margin-top': '5px'});
-			return false;
-		}
-		return true;
-	}
-	
-	function addCommas(x) {
-		return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-	}
-	
-	function computeRenewAmount(){
-		var selectedperiod = $('#period').val();
-		// alert(addCommas(selectedperiod * 1200));
-		var unitcost = 1200;
-		$('span#computedunit').html(addCommas(unitcost));
-		$('span#computedamount').html(addCommas(selectedperiod * unitcost));
-		var total = $('#trxfees').val();
-		$('span#computedtotal').html(addCommas(parseInt(total) + parseInt((selectedperiod * unitcost))));
-	}
+	$("#period").trigger('change');
 }); 
 </script>
 <style>
@@ -201,32 +87,80 @@ $(document).ready(function() {
 <h1><?php echo $title; ?></h1>
 <?php } ?>
 <div id="tabs">
-    <?php require APPLICATION_PATH."/views/scripts/farmer/farmerleftcolumn.phtml"; ?>
+    <?php require APPLICATION_PATH."/views/scripts/profile/profileleftcolumn.phtml"; ?>
     <div class="span9 tab-content" id="center">
-    	<?php require APPLICATION_PATH."/views/scripts/farmer/tabstop.phtml"; ?>
+    	<?php require APPLICATION_PATH."/views/scripts/profile/tabstop.phtml"; ?>
 		<div id="subscription" class="makerelative">
         	<h2><?php echo $formtitle; ?></h2>
             <form class="form-horizontal well" id="paynowform" action="<?php echo $posturl; ?>" method="post" style="width:97%;">
 				<?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
                     <div class="alert alert-success"><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
                 <?php } ?>	
-                <fieldset title="Requirements" id="summary">
+                <fieldset title="Payment Summary" id="summary">
                     <legend>Step 1</legend>
-                    <table class="table nohover">
-                        <tr>
-                           <td colspan="2">
-                           		<div style="padding:10px 10px; width:80%; font-size:14px;" class="alert alert-info margin5">
-                                    To effect a Payment via the FARMIS Payment System, please note carefully the following requirements.<br /><br />
-                                    1. You should have a valid account with the <b>FARMIS Trading Platform (FTP)</b>. If you do not have an account <a href="javascript: void(0);">click here</a>.<br /><br />
-                                    2. You should have some money on your payment to renew or make a payment. We recommend that you maintain atleast UGX 10,000 so as to renew your subscription. For more information on how to credit your FTP Account, <a href="javascript: void(0);">click here</a>.<br /><br />
-                                    3. TBD<br /><br />
-                                    4. TBD<br /><br />
-                                </div>
-                           </td>
-                        </tr>
-                    </table>    
+                    <div class="well lighter row marginleft0" style="min-height:100px; width:94%; margin:10px; background-color:#fff;">
+                        <h3 class="well-legend">Account Details</h3>
+                        <table class="table">                       
+                            <tr>
+                                <td width="20%"><label class="control-label">Name:</label></td>
+                                <td><?php echo $payment->getUser()->getName(); ?></td>
+                            </tr>
+                            <tr>     
+                                <td><label class="control-label">Phone:</label></td>
+                                <td><?php echo $payment->getUser()->getPhone(); ?></td>
+                            </tr>
+                            <tr>     
+                                <td><label class="control-label">Email:</label></td>
+                                <td><?php echo $payment->getUser()->getEmail(); ?></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="well lighter row marginleft0" style="min-height:100px; width:94%; margin:10px; background-color:#fff;">
+                        <h3 class="well-legend">Payment Summary</h3>
+                        <table class="table">                       
+                            <tr>
+                                <td width="20%"><label class="control-label">Subject:</label></td>
+                                <td><?php
+										$types = getPaymentSubjects();
+										$typesdropdown = new Zend_Form_Element_Select('item',
+															array(
+																'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $types),								
+																'view' => new Zend_View(),
+																'decorators' => array('ViewHelper'),
+																'class' => array('hastooltip', 'span3'),
+																'title' => $this->translate("payment_type_tooltip")
+															)
+														);
+										$typesdropdown->setValue($payment->getItem()); 
+										echo $typesdropdown->render(); 
+								   ?><div id="item_error"></div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><label class="control-label">Subscription Period: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+                                <td><?php
+                                        $univalues = array('12'=>'12 Months', '6'=>'6 Months');
+                                        $unitdropdown = new Zend_Form_Element_Select('period',
+                                                            array(
+                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
+                                                                'view' => new Zend_View(),
+                                                                'decorators' => array('ViewHelper'),
+                                                                'class' => array('span2','width100','hastooltip', 'selectrequired'),
+                                                                'title' => $this->translate("payment_renewed_period_tooltip")
+                                                            )
+                                                        );
+                                        $unitdropdown->setValue('12'); 
+                                        echo $unitdropdown->render(); 
+                                    ?><div id="period_error"></div></td>
+                            </tr>
+                            <tr>
+                                <td><label class="control-label">Amount Due (UGX):</label></td>
+                                <td><span id="computedtotal">0</span><input type="hidden" class="hidden" name="amount" id="amount" value="0" /></td>
+                            </tr>
+                        </table>
+                    </div>
                 </fieldset>
-                <fieldset title="Validate Account" id="validateaccount" class="makerelative">
+                <fieldset title="Send Mobile Money" id="validateaccount" class="makerelative">
                     <legend>Step 2</legend>
                     <table class="table nohover">
                         <tr>
@@ -238,7 +172,7 @@ $(document).ready(function() {
                         </tr>
                         <tr>
                            <td style="width:20%; padding-bottom:30px;"><label class="control-label">Phone Number:</label></td>
-                           <td><?php echo $farmer->getUser()->getPhone(); ?><input type="hidden" id="phone" name="phone" value="<?php echo $farmer->getUser()->getPhone(); ?>" /><div id="phone_error"></div></td>
+                           <td><?php echo $user->getPhone(); ?><input type="hidden" id="phone" name="phone" value="<?php echo $user->getPhone(); ?>" /><div id="phone_error"></div></td>
                         </tr>
                         <tr>
                            <td style="padding-bottom:70px;"><label class="control-label">Trading Platform PIN:</label><span class="pagedescription">(4 digits)</span></td>
@@ -246,70 +180,8 @@ $(document).ready(function() {
                         </tr>
                     </table>  
                 </fieldset>
-                <fieldset title="Validate Payment" id="validatepayment">
+                <fieldset title="Confirmation" id="confirmation">
                     <legend>Step 3</legend>
-                    <div class="well lighter row marginleft0" style="min-height:100px; width:94%; margin:10px; background-color:#fff;">
-                        <h3 class="well-legend">Account Summary</h3>
-                        <table class="table">                       
-                            <tr>
-                                <td width="20%"><label class="control-label">Name:</label></td>
-                                <td><?php echo $payment->getFarmer()->getUser()->getName(); ?></td>
-                            </tr>
-                            <tr>     
-                                <td><label class="control-label">Phone:</label></td>
-                                <td><?php echo $payment->getFarmer()->getUser()->getPhone(); ?></td>
-                            </tr>
-                            <tr>
-                                <td><label class="control-label">Available Balance (UGX):</label></td>
-                                <td><?php echo /*$plan->getUnitAmount();*/'65,500'; ?></td>
-                            </tr>
-                        </table>
-                    </div>
-                    <div class="well lighter row marginleft0" style="min-height:100px; width:94%; margin:10px; background-color:#fff;">
-                        <h3 class="well-legend">Payment Instructions</h3>
-                        <table class="table">                       
-                            <tr>
-                                <td width="20%"><label class="control-label">Subject:</label></td>
-                                <td><?php echo 'FARMIS Premium Subscription Account Renewal'; ?></td>
-                            </tr>
-                            <tr>     
-                                <td><label class="control-label">Unit Cost (UGX):</label></td>
-                                <td><span id="computedunit"></span> Per Month</td>
-                            </tr>
-                            <tr>
-                                <td><label class="control-label">Subscription Period: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
-                                <td><?php
-                                        $univalues = array('12'=>'12 Months', '6'=>'6 Months', '3'=>'3 Months');
-                                        $unitdropdown = new Zend_Form_Element_Select('period',
-                                                            array(
-                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
-                                                                'view' => new Zend_View(),
-                                                                'decorators' => array('ViewHelper'),
-                                                                'class' => array('span2','width100','hastooltip', 'selectrequired'),
-                                                                'title' => $this->translate("payment_renewed_period_tooltip")
-                                                            )
-                                                        );
-                                        $unitdropdown->setValue('6'); 
-                                        echo $unitdropdown->render(); 
-                                    ?><div id="period_error"></div></td>
-                            </tr>
-                            <tr>
-                                <td><label class="control-label">Total Cost (UGX):</label></td>
-                                <td><span id="computedamount"></span></td>
-                            </tr>
-                            <tr>
-                                <td><label class="control-label">Transaction Fees (UGX):</label></td>
-                                <td><input type="hidden" class="hidden" name="trxfees" id="trxfees" value="0" />0</td>
-                            </tr>
-                            <tr>
-                                <td><label class="control-label">Amount Due (UGX):</label></td>
-                                <td><span id="computedtotal">0</span><input type="hidden" class="hidden" name="amount" id="amount" value="0" /></td>
-                            </tr>
-                        </table>
-                    </div>
-                </fieldset>
-                <fieldset title="Complete Transaction" id="completepayment">
-                    <legend>Step 4</legend>
                     <table class="table nohover">
                         <tr>
                            <td colspan="2"></td>
@@ -318,19 +190,18 @@ $(document).ready(function() {
                 </fieldset>
                 <button type="button" class="btn btn-primary btn-large step2auth hidden" id="step2auth" style="position:absolute; left:160px; bottom:55px;"><i class="icon-arrow-right icon-white"></i> Validate</button>
                 <button type="button" class="btn btn-primary btn-large step3pay hidden" id="step3pay" style="position:absolute; left:160px; bottom:55px;"><i class="icon-arrow-right icon-white"></i> Pay Now</button>
-                <input type="hidden" id="step2_successurl" name="step2_successurl" value="<?php echo encode($this->baseUrl('payment/paynow/id/'.encode($payment->getFarmerID()).'/step/3')); ?>" />
-                <input type="hidden" id="step3_successurl" name="step3_successurl" value="<?php echo encode($this->baseUrl('payment/paynow/id/'.encode($payment->getFarmerID()).'/step/4')); ?>" />
+                <input type="hidden" id="step2_successurl" name="step2_successurl" value="<?php echo encode($this->baseUrl('payment/paynow/id/'.encode($payment->getUserID()).'/step/3')); ?>" />
+                <input type="hidden" id="step3_successurl" name="step3_successurl" value="<?php echo encode($this->baseUrl('payment/paynow/id/'.encode($payment->getUserID()).'/step/4')); ?>" />
                 <button type="submit" class="btn btn-primary btn-large finish" id="complete"><i class="icon-arrow-right icon-white"></i> Complete</button>
                 <input type="hidden" id="id" name="id" value="<?php echo encode($payment->getID()); ?>" />
                 <input type="hidden" id="stem" name="stem" value="<?php echo $payment->getStem(); ?>" />
                 <input type="hidden" id="farmgroupid" name="farmgroupid" value="<?php echo $payment->getFarmGroupID(); ?>" />
-                <input type="hidden" id="farmerid" name="farmerid" value="<?php echo $payment->getFarmerID(); ?>" />
                 <input type="hidden" id="userid" name="userid" value="<?php echo $payment->getUserID(); ?>" />
                 <input type="hidden" name="<?php echo SUCCESS_MESSAGE; ?>" value="global_save_success" />
                 
             </form>
         </div>
-        <?php require APPLICATION_PATH."/views/scripts/farmer/tabsbottom.phtml"; ?> 
+        <?php require APPLICATION_PATH."/views/scripts/profile/tabsbottom.phtml"; ?> 
     </div>
 </div>    
 <?php

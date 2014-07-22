@@ -3,22 +3,21 @@
 	
 	$season = new Season(); 
 	$season->populate(decode($request->id));
-	/*$croplines = $season->getSeasonDetails();
-	$noofcrops = $croplines->count();*/
+	
 	$plant = $season->getSeasonPlants()->get(0);
 	$hasplanted = false;
 	if(!isEmptyString($plant->getID())){
 		$hasplanted = true;
 	}
 	$crop = $season->getCrop();
-	$thefarmid = $season->getFarmID();
 	$loan = $season->getLoans()->get(0);
+	$user = $season->getUser();
+	$request->setParam('tab', 'seasons');
 	
 	// default title is to enable adding any payee
-	$title = $season->getName()." - ".$season->getRef(); 
-		
-	$this->headTitle($title);  
-	$farmtitle = isFarmer() ? "Manage Farm" : "Manage Farm: ".$season->getFarm()->getName();
+	$title = $season->getName()." - ".$season->getRef();
+	$farmtitle = $season->getUser()->getName();
+	$this->headTitle('Season Details '.$browserappend);  
 ?>
 <script>
 	$(document).ready(function() {
@@ -33,11 +32,11 @@
 </style>
 <h1><?php echo $farmtitle; ?></h1>
 <div id="tabs">
-    <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
+    <?php require APPLICATION_PATH."/views/scripts/profile/profileleftcolumn.phtml"; ?>
     <div class="span9 tab-content" id="center">
-    	<?php require APPLICATION_PATH."/views/scripts/farm/tabstop.phtml"; ?>
+    	<?php require APPLICATION_PATH."/views/scripts/profile/tabstop.phtml"; ?>
 		<div id="seasons">
-            <form id="profileform-farmers" class="form-horizontal seasons">
+            <form id="profileform-seasons" class="form-horizontal seasons">
             <?php if($request->tab == 'seasons'){ ?>
                 <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
                     <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
@@ -66,23 +65,26 @@
                             <table class="table">                       
                                <tr>		                    
                                     <td class="formactions" style="padding-right:0;">
-                                        <?php //if($season->getFarmerID() == $farmerid){ ?>
-                                            <a class="btn btn-primary" href="<?php echo $this->baseUrl('season/index/id/'.encode($season->getID())); ?>" title="Update Season" id="update"><i class="icon-pencil icon-white"></i> Update</a>
-                                            <a href="javascript: void(0)" id="deleteline" title="Delete Season" class="btn deleteline noimgbutton" action="<?php echo $this->baseUrl('season/delete/id/'.$season->getID()."/entityname/Season/successurl/".encode($this->baseUrl('farm/view/tab/seasons/id/'.encode($season->getFarmID())))); ?>"><i class="icon-trash"></i></a>            
-                                            <div class="btn-group">
-                                                <button class="btn btn-primary dropdown-toggle centeralign" data-toggle="dropdown" id="" href="javascript: void(0)" style="width:110px; padding-left:0;"><i class="icon-plus icon-white"></i> Log Activity</button>
-                                                <button class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="padding-bottom:11px;"><span class="caret"></span></button>
-                                                <ul class="dropdown-menu">
-                                                    <li><a href="<?php echo $this->baseUrl('season/input/sid/'.encode($season->getID())."/type/1"); ?>"><i class="icon-plus"></i> Season Inputs</a></li>
-                                                    <li><a href="<?php echo $this->baseUrl('season/tillage/sid/'.encode($season->getID())); ?>"><i class="icon-plus"></i> Tillage</a></li>
-                                                    <li><a href="<?php echo $this->baseUrl('season/plant/sid/'.encode($season->getID())); ?>"><i class="icon-plus"></i> Planting</a></li>
-                                                    <li><a href="<?php echo $this->baseUrl('season/treat/sid/'.encode($season->getID())); ?>"><i class="icon-plus"></i> Treatment & Pesticides</a></li>
-                                                    <li><a href="<?php echo $this->baseUrl('season/harvest/sid/'.encode($season->getID())); ?>"><i class="icon-plus"></i> Harvesting</a></li>
-                                                    <li><a href="<?php echo $this->baseUrl('season/activity/sid/'.encode($season->getID())); ?>"><i class="icon-plus"></i> Post Harvest</a></li>
-                                                    <li><a href="<?php echo $this->baseUrl('season/sale/sid/'.encode($season->getID())); ?>"><i class="icon-plus"></i> Season Sales</a></li>
-                                                </ul>
-                                            </div>
-                                        <?php //} ?>
+                                        <a class="btn btn-primary" href="<?php echo $this->baseUrl('season/index/id/'.encode($season->getID())); ?>" title="Update Season" id="update"><i class="icon-pencil icon-white"></i> Update</a>
+                                        <a href="javascript: void(0)" id="deleteline" title="Delete Season" class="btn deleteline noimgbutton" action="<?php echo $this->baseUrl('season/delete/id/'.$season->getID()."/entityname/Season/successurl/".encode($this->baseUrl('profile/view/tab/seasons/id/'.encode($season->getUserID())))); ?>"><i class="icon-trash"></i></a>            
+                                        <div class="btn-group">
+                                            <button class="btn btn-primary dropdown-toggle centeralign" data-toggle="dropdown" id="" href="javascript: void(0)" style="width:110px; padding-left:0;"><i class="icon-plus icon-white"></i> Log Activity</button>
+                                            <button class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="padding-bottom:11px;"><span class="caret"></span></button>
+                                            <ul class="dropdown-menu">
+                                                <li><a href="<?php echo $this->baseUrl('season/input/sid/'.encode($season->getID())."/type/1"); ?>"><i class="icon-plus"></i> Season Inputs</a></li>
+                                                <li><a href="<?php echo $this->baseUrl('season/tillage/sid/'.encode($season->getID())); ?>"><i class="icon-plus"></i> Tillage</a></li>
+                                                <li><a href="<?php echo $this->baseUrl('season/plant/sid/'.encode($season->getID())); ?>"><i class="icon-plus"></i> Planting</a></li>
+                                                <li><a href="<?php echo $this->baseUrl('season/treat/sid/'.encode($season->getID())); ?>"><i class="icon-plus"></i> Treatment & Pesticides</a></li>
+                                                <li><a href="<?php echo $this->baseUrl('season/harvest/sid/'.encode($season->getID())); ?>"><i class="icon-plus"></i> Harvesting</a></li>
+                                                <?php //if(false){ ?>
+                                                <li><a href="<?php echo $this->baseUrl('season/activity/sid/'.encode($season->getID())); ?>"><i class="icon-plus"></i> Post Harvest</a></li>
+                                                <?php // } ?>
+                                                <li><a href="<?php echo $this->baseUrl('season/sale/sid/'.encode($season->getID())); ?>"><i class="icon-plus"></i> Season Sales</a></li>
+                                            </ul>
+                                        </div>
+                                        <?php if($season->getUser()->getSeasons()->count() > 1){ ?>           
+                                        	<a class="btn" href="<?php echo $this->baseUrl('profile/view/id/'.encode($season->getUserID()).'/tab/seasons'); ?>" title="Return to Timeline"><i class="icon-list"></i> All Seasons</a>
+                                        <?php } ?>
                                     </td>
                                </tr>
                             </table>                           
@@ -200,7 +202,7 @@
                 <div class="row margin0" style="padding:2px;">
                     <span class="pull-left well lighter margin0" style="width:97%; min-height:200px; position:relative;">
                         <h3 class="well-legend margin0">Season Activity Timeline</h3>
-                        <a style="position:absolute; right:30px; top:10px; font-size:16px; font-weight:bold;" href="<?php echo $this->baseUrl('farm/view/tab/calendar/id/'.encode($season->getFarmID())); ?>" id="calendar" title="View Season Calendar">View Calendar</a>
+                        <a style="position:absolute; right:30px; top:10px; font-size:16px; font-weight:bold;" href="<?php echo $this->baseUrl('profile/view/tab/calendar/id/'.encode($season->getUserID())); ?>" id="calendar" title="View Season Calendar">View Calendar</a>
                         <?php 
                             $timeline = sort_multi_array($season->getTimeLineDetails(), 'order');
                             $acount = count($timeline);
@@ -257,7 +259,7 @@
             <?php } ?>
         	</form>
     	</div>
-        <?php require APPLICATION_PATH."/views/scripts/farm/tabsbottom.phtml"; ?> 
+        <?php require APPLICATION_PATH."/views/scripts/profile/tabsbottom.phtml"; ?> 
     </div>
 </div>    
 <?php

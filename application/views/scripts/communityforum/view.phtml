@@ -276,10 +276,10 @@ ul.comments li img.loading.bottomwait {
 							?>
 								<li id="comment_<?php echo $comment->getID(); ?>">
                                 	<div class="thumbinfo new_pic"> 
-                                        <a href="javascript: void(0)" class="profilepopup" title="<?php echo $comment->getCreator()->getName(); ?>"><img src="<?php echo $comment->getCreator()->getThumbnailPicturePath(); ?>" alt="<?php echo $comment->getCreator()->getName(); ?>" /></a>
+                                        <a href="javascript: void(0)" class="profilepopup" title="<?php echo $comment->getUser()->getName(); ?>"><img src="<?php echo $comment->getUser()->getMediumPicturePath(); ?>" style="width:60px;" alt="<?php echo $comment->getUser()->getName(); ?>" /></a>
                                     </div>        	
 									<div class="postdetail">
-										<a href="javascript: void(0)" class="profilepopup" title="<?php echo $comment->getCreator()->getName(); ?>"><h2><?php echo $comment->getCreator()->getName(); ?></h2></a>                    
+										<a href="javascript: void(0)" class="profilepopup" title="<?php echo $comment->getUser()->getName(); ?>"><h2><?php echo $comment->getUser()->getName(); ?></h2></a>                    
 										<span><?php echo nl2br($comment->getContent()); ?></span>                                
 										<label>Posted on <?php echo date('m/d/Y - g:i A', strtotime($comment->getDateCreated())); ?></label>
 										<?php if($userid == $comment->getCreatedBy() || isAdmin()){ ?>
@@ -292,7 +292,7 @@ ul.comments li img.loading.bottomwait {
 							<?php } ?>
 							<li class="commentdetails" id="newcomment" >
                             	<div class="thumbinfo new_pic"> 
-									<img src="<?php echo $user->getCreator()->getThumbnailPicturePath(); ?>" alt="<?php echo $session->getVar('fullname'); ?>" />
+									<img src="<?php echo $user->getMediumPicturePath(); ?>" style="width:60px;" alt="<?php echo $user->getName(); ?>" />
                                 </div>
 								<div class="postdetail">
 									<h2><?php echo $user->getName(); ?></h2>
@@ -309,7 +309,6 @@ ul.comments li img.loading.bottomwait {
                         <div class="actionbuttons">
                             <input type="hidden" name="communityforumid" id="communityforumid" value="<?php echo $communityforum->getID(); ?>" />
                             <input type="hidden" name="userid" id="userid" value="<?php echo $user->getID(); ?>" />
-                            <input type="hidden" name="farmerid" id="farmerid" value="<?php echo $user->getFarmerID(); ?>" />                    
                             <input type="hidden" name="type" id="type" value="1" />
                             <input type="hidden" name="entityname" id="entityname" value="CommunityForumComment" /> 
                             <input type="hidden" name="<?php echo URL_SUCCESS; ?>" id="<?php echo URL_SUCCESS; ?>" value="<?php echo encode($this->baseUrl('communityforumcomment/view')); ?>" />

@@ -9,8 +9,6 @@ class Contact extends BaseEntity {
 		$this->hasColumn('categoryid', 'integer', null, array('notnull' => true, 'notblank' => true));
 		$this->hasColumn('contacttype', 'integer', array('notnull' => true, 'notblank' => true, 'default' => 1));
 		$this->hasColumn('userid', 'integer', null);
-		$this->hasColumn('farmerid', 'integer', null);
-		$this->hasColumn('farmid', 'integer', null);
 		$this->hasColumn('farmgroupid', 'integer', null);
 		$this->hasColumn('organisationid', 'integer', null);
 		$this->hasColumn('type', 'integer', null, array('default' => '1')); // 1 farmer, 2 farm group, 3 farm, 4 organisation
@@ -27,6 +25,7 @@ class Contact extends BaseEntity {
 		$this->hasColumn('email', 'string', 255);
 		$this->hasColumn('address', 'string', 255);
 		$this->hasColumn('visibility', 'integer', null, array('default' => 1));
+		$this->hasColumn('country', 'string', 2, array('default' => 'UG'));
 		$this->hasColumn('locationid', 'integer', null);
 		$this->hasColumn('countyid', 'integer', null);
 		$this->hasColumn('subcountyid', 'integer', null);
@@ -79,37 +78,31 @@ class Contact extends BaseEntity {
 	public function setUp() {
 		parent::setUp(); 
 		
-		$this->hasOne('Farmer as farmer', 
-								array(
-									'local' => 'farmerid',
-									'foreign' => 'id'
-								)
-						);
+		$this->hasOne('UserAccount as user', 
+						array(
+							'local' => 'userid',
+							'foreign' => 'id'
+						)
+					);
 		$this->hasOne('FarmGroup as farmgroup', 
-								array(
-									'local' => 'farmgroupid',
-									'foreign' => 'id'
-								)
-						);
-		$this->hasOne('FarmGroup as farm', 
-								array(
-									'local' => 'farmid',
-									'foreign' => 'id'
-								)
-						);
-		$this->hasOne('District as location',
+						array(
+							'local' => 'farmgroupid',
+							'foreign' => 'id'
+						)
+					);
+		$this->hasOne('Location as location',
 						 array(
 								'local' => 'locationid',
 								'foreign' => 'id'
 							)
 					); 
-		$this->hasOne('County as county',
+		$this->hasOne('Location as county',
 						 array(
 								'local' => 'countyid',
 								'foreign' => 'id'
 							)
 					); 
-		$this->hasOne('Subcounty as subcounty',
+		$this->hasOne('Location as subcounty',
 						 array(
 								'local' => 'subcountyid',
 								'foreign' => 'id'
@@ -180,18 +173,13 @@ class Contact extends BaseEntity {
 		if(isArrayKeyAnEmptyString('userid', $formvalues)){
 			unset($formvalues['userid']); 
 		}
-		if(isArrayKeyAnEmptyString('farmerid', $formvalues)){
-			unset($formvalues['farmerid']); 
-		}
 		if(isArrayKeyAnEmptyString('farmgroupid', $formvalues)){
 			unset($formvalues['farmgroupid']); 
-		}
-		if(isArrayKeyAnEmptyString('farmid', $formvalues)){
-			unset($formvalues['farmid']); 
 		}
 		if(isArrayKeyAnEmptyString('organisationid', $formvalues)){
 			unset($formvalues['organisationid']); 
 		}
+		$formvalues['country'] = !isArrayKeyAnEmptyString('country', $formvalues) ? $formvalues['country'] : 'UG';
 		if (isArrayKeyAnEmptyString('locationid', $formvalues)) {
 			$formvalues['locationid'] = NULL;
 		}
@@ -398,6 +386,14 @@ class Contact extends BaseEntity {
 	# determine if contact is a company
     function isCompany(){
     	return $this->getContactType() == '2' ? true : false; 
+    }
+	# determine if farmer is ugandan
+    function isUgandan() {
+    	return $this->getCountry() == 'UG' ? true : false; 
+    }
+	# determine if farmer is kenyan
+    function isKenyan() {
+    	return $this->getCountry() == 'KE' ? true : false; 
     }
 }
 ?>

@@ -4,6 +4,17 @@
 	$id = decode($request->id);	
 	$payment = new Payment();
 	
+	$country = 'UG';
+	$location_label = 'District';
+	$locations_label = 'Districts';
+	$countrycode = COUNTRY_CODE_UG;
+	if(isKenya()){
+		$country = 'KE';
+		$location_label = 'County';
+		$locations_label = 'Counties';
+		$countrycode = COUNTRY_CODE_KE;
+	}
+	
 	$isfarmer = false;
 	$isfarmgroup = false;
 	$groupid = decode($request->farmgroupid);
@@ -27,11 +38,10 @@
 			$user = new UserAccount();
 			$user->populate($subcriberid);
 			$payment->setUserID($user->getID());
-			$payment->setFarmerID($user->getFarmerID());
 			$payment->setPhone($user->getPhone());
 			$payment->setStem(2);	
 			$payment->setItem(2);
-			$payment->setAmount($payment->getDefaultFarmerAmount());
+			$payment->setAmount(getServiceAmount());
 		}
 	}
 	
@@ -46,7 +56,6 @@
 	
 	$title = "New Payment"; 
 	$this->headTitle($title);
-	
 ?>
 <script>
 	$(document).ready(function() {
@@ -63,7 +72,12 @@
 					validnumber: true,
 					maxlength: 10,
 					minlength: 10,
-					validate_ug: true
+					<?php if(isUganda()){ ?>
+						validate_ug: true
+					<?php } ?>
+					<?php if(isKenya()){ ?>
+						validate_ke: true
+					<?php } ?>
 				},
 				verifier: "required"
 			}, 
@@ -78,7 +92,12 @@
 					validnumber: "Please enter a valid Phone Number",
 					maxlength: "Phone Number must have 10 Digits",
 					minlength: "Phone Number must have 10 Digits",
-					validate_ug: "<?php echo $this->translate("globale_phonenumber_format"); ?>"
+					<?php if(isUganda()){ ?>
+						validate_ug: "<?php echo $this->translate("globale_phonenumber_format"); ?>"
+					<?php } ?>
+					<?php if(isKenya()){ ?>
+						validate_ke: "<?php echo $this->translate("globale_phonenumber_format_ke"); ?>"
+					<?php } ?>
 				},
 				verifier: "Please enter name"
 			},
@@ -105,22 +124,7 @@
 			}
 			return true;        
 		}, "<?php echo $this->translate("globale_phonenumber_format"); ?>");
-		
-		// datepickerOpts = new Date();   
-		$("#trxdate").datepicker(datepickerOpts);
-		
-		// tooltips in popup
-		$(".hastooltip").each(function(){		
-			var theid = $(this).attr('id');
-			var thepath = '<?php echo $this->baseUrl('images/questionmark.png'); ?>';
-			if($(this).attr('title') != "undefined" || $(this).attr('title') != ""){
-				$('<a href="javascript: void(0);" class="qcontainer" id="q_'+theid+'"><img src="'+thepath+'" /></a>').insertAfter(this);
-				$("#q_"+theid).attr('title', $(this).attr('title')).addClass('qtooltip');
-			}	    
-		}); 
-		$('.qtooltip').tipsy({fade: true, gravity: 'w', html: true, trigger: 'hover', offset: -5});
-    	$(".hastooltip").attr('title','');
-		
+				
 		// reset tab index
 		var tabindex = 1;
 		$('input,select').each(function() {
@@ -131,15 +135,12 @@
 			}
 		});
 		
-		// enable/disable previous season estimates
-		$("#paymenttype").change(function(){
-			if($(this).val() == 1){
-				enableContainerByID('mobilepay');
-			} else {
-				disableContainerByID('mobilepay');
-			}
+		$(".chzn-select").chosen();
+
+		// if a select field with chosen changes, revalidate the field 
+		$("select.chzn-select:not('.novalidate')").chosen().change(function(){
+			$("form").validate().element(this);
 		});
-		$("#paymenttype").change();
 	}); 
 </script>
 <style>
@@ -155,39 +156,51 @@
 	        </tr>
         <?php } ?>
         <tr>
-            <td style="width:28%;"><label class="control-label">Transaction Date: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
-            <td><input type="text" name="trxdate" id="trxdate" class="datefield hastooltip width100" value="<?php echo changeMySQLDateToPageFormat($payment->getTrxDate()); ?>" title="<?php echo $this->translate("payment_expensedate_tooltip"); ?>" />
+            <td><label class="control-label">Farmer: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><?php if(isEmptyString($payment->getUserID())){ ?>
+                	<?php
+						$userarray = getAllFarmers($country);
+						$userdropdown = new Zend_Form_Element_Select('userid',
+											array(
+													'multiOptions' => array_merge_maintain_keys(array('' => '<Select Farmer>'), $userarray),								
+												'view' => new Zend_View(),
+												'decorators' => array('ViewHelper'),
+													'class' => array('chzn-select', 'width180')
+											)
+										);
+						$userdropdown->setValue($payment->getUserID()); 
+						echo $userdropdown->render();
+					?>
+                <?php } else { ?>
+                	<?php echo $payment->getUser()->getName(); ?>
+                	<input type="hidden" id="userid" name="userid" value="<?php echo $payment->getUserID(); ?>" />
+                <?php } ?>
+                <div id="farmerid_error"></div><div id="userid_error"></div>
                 <input type="hidden" name="entityname" value="Payment" />
                 <input type="hidden" id="id" name="id" value="<?php echo encode($payment->getID()); ?>" />
                 <input type="hidden" id="stem" name="stem" value="<?php echo $payment->getStem(); ?>" />
                 <input type="hidden" id="farmgroupid" name="farmgroupid" value="<?php echo $payment->getFarmGroupID(); ?>" />
-                <input type="hidden" id="farmerid" name="farmerid" value="<?php echo $payment->getFarmerID(); ?>" />
-                <input type="hidden" id="userid" name="userid" value="<?php echo $payment->getUserID(); ?>" />
+                <input type="hidden" id="country" name="country" value="<?php echo $country; ?>" />
+                <input type="hidden" id="trxdate" name="trxdate" value="<?php echo changeMySQLDateToPageFormat($payment->getTrxDate()); ?>" />
                 <input type="hidden" name="<?php echo SUCCESS_MESSAGE; ?>" value="global_save_success" />
-                <div id="trxdate_error"></div></td>
+            </td>
         </tr>
         <tr>
             <td><label class="control-label">Subject: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
-            <td>
-           	 <?php
+            <td><?php
                     $types = getPaymentSubjects();
                     $typesdropdown = new Zend_Form_Element_Select('item',
                                         array(
                                             'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $types),								
                                             'view' => new Zend_View(),
                                             'decorators' => array('ViewHelper'),
-                                            'class' => array('hastooltip', 'span3'),
-                                            'title' => $this->translate("payment_type_tooltip")
+                                            'class' => array('span3')
                                         )
                                     );
                     $typesdropdown->setValue($payment->getItem()); 
                     echo $typesdropdown->render(); 
-               ?><div id="item_error"></div></td>
-        </tr>
-        <tr>
-            <td><label class="control-label">Description: </label></td>
-            <td><input type="text" name="description" id="description" class="span4 hastooltip" style="width:85;" value="<?php echo $payment->getdescription(); ?>" title="<?php echo $this->translate("payment_description_tooltip"); ?>" />
-            </td>
+               ?><div id="item_error"></div>
+        	</td>
         </tr>
         <tr>
             <td><label class="control-label">Payment Method: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
@@ -198,8 +211,7 @@
                                             'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $types),								
                                             'view' => new Zend_View(),
                                             'decorators' => array('ViewHelper'),
-                                            'class' => array('hastooltip', 'span2'),
-                                            'title' => $this->translate("payment_type_tooltip")
+                                            'class' => array('span2')
                                         )
                                     );
                     $typesdropdown->setValue($payment->getPaymentType()); 
@@ -207,9 +219,13 @@
                ?><div id="paymenttype_error"></div></td>
         </tr>
         <tr id="mobilepay">
-            <td><label class="control-label"><label class="control-label">Phone: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
+            <td><label class="control-label"><label class="control-label">Phone: </label></td>
             <td><div class="input-prepend">
-                    <span class="add-on"><?php echo '+'.COUNTRY_CODE_UG; ?></span><input name="phone" id="phone" type="text" maxlength="10" class="span2 hastooltip" style="width:110px; height:18px;" value="<?php echo getShortPhone($payment->getPhone()); ?>" title="<?php echo $this->translate("payment_phone_tooltip"); ?>" /><div id="phone_error"></div></td>
+                    <span class="add-on"><?php echo '+'.getCurrencyCode(); ?></span>
+                    <input name="phone" id="phone" type="text" maxlength="10" class="span2" style="width:110px; height:18px;" value="<?php echo getShortPhone($payment->getPhone()); ?>" />
+                </div>    
+                <div id="phone_error"></div>
+            </td>
         </tr>
         <tr>
             <td><label class="control-label">Status: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
@@ -220,8 +236,7 @@
                                             'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $statuses),								
                                             'view' => new Zend_View(),
                                             'decorators' => array('ViewHelper'),
-                                            'class' => array('hastooltip', 'span2'),
-                                            'title' => $this->translate("payment_status_tooltip")
+                                            'class' => array('span2')
                                         )
                                     );
                     $typesdropdown->setValue($payment->getStatus()); 
@@ -230,16 +245,21 @@
         </tr>
         <tr>
             <td><label class="control-label">Total Amount: <?php echo $this->translate("global_required_field_marker"); ?> </label></td>
-            <td><div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="amount" id="amount" class="width100 hastooltip isamount rightalign" value="<?php echo $payment->getAmount(); ?>" title="<?php echo $this->translate("payment_amount_tooltip"); ?>" /></div><div id="amount_error"></div>
+            <td><div class="input-prepend"><span class="add-on"><?php echo getCurrencySymbol(); ?></span><input type="text" name="amount" id="amount" class="width100 isamount rightalign" value="<?php echo $payment->getAmount(); ?>" /></div><div id="amount_error"></div>
             </td>
         </tr>
         <tr>
-            <td><label class="control-label">Receipt# / Ref#: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
-            <td><input type="text" name="trxcode" id="trxcode" class="span2 hastooltip" value="<?php echo $payment->getTrxCode(); ?>" title="<?php echo $this->translate("payment_trxcode_tooltip"); ?>" /><div id="trxcode_error"></div></td>
+            <td><label class="control-label">Trx Ref# / Receipt#: </label></td>
+            <td><input type="text" name="trxcode" id="trxcode" class="span2" value="<?php echo $payment->getTrxCode(); ?>" /><div id="trxcode_error"></div></td>
         </tr>
         <tr>
             <td><label class="control-label">Verified By: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
-            <td><input type="text" name="verifier" id="verifier" class="span3 hastooltip" value="<?php echo $payment->getVerifier(); ?>" title="<?php echo $this->translate("payment_verifier_tooltip"); ?>" /><div id="verifier_error"></div>
+            <td><input type="text" name="verifier" id="verifier" class="span3" value="<?php echo $payment->getVerifier(); ?>" /><div id="verifier_error"></div>
+            </td>
+        </tr>
+        <tr>
+            <td><label class="control-label">Notes: </label></td>
+            <td><input type="text" name="description" id="description" class="span4" style="width:85;" value="<?php echo $payment->getdescription(); ?>" />
             </td>
         </tr>
   </table>

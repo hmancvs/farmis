@@ -1,0 +1,476 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$title = $this->translate("location_pagetitle_list");
+	$listitems = $this->translate("location_pagetitle_list");
+	$moduleitem = "Location";
+	$leveltwoname = '';
+	
+	$loggedinuser = new UserAccount();
+	$loggedinuser->populate($userid);
+	
+	$country = 'UG';
+	$location_label = 'District';
+	$locations_label = 'Districts';
+	$countrycode = COUNTRY_CODE_UG;
+	$county_label = $this->translate("global_county_label");
+	$countys_label = "Counties";
+	$subcounty_label = $this->translate("global_subcounty_label");
+	$subcountys_label = "Sub-counties";
+	
+	if(isKenya()){
+		$country = 'KE';
+		$session->setVar('country', 'ke');
+		$location_label = 'County';
+		$locations_label = 'Counties';
+		$countrycode = COUNTRY_CODE_KE;
+		$county_label = $this->translate("global_subcounty_label");
+		$countys_label = "Sub-counties";
+		$subcounty_label = $this->translate("global_ward_label");
+		$subcountys_label = "Wards";		
+	}
+	$countryreq = strtolower($request->country);
+	
+	$listurl = $this->baseUrl("location/list");
+	$addurl = $this->baseUrl("location/indexpopup");
+	if(!isEmptyString($country)){
+		$listurl = $this->baseUrl('location/list/country/'.$country); 
+		$addurl = $this->baseUrl("location/indexpopup/country/".$country."/pgc/true");
+	}
+	
+	# Create an instance of the class to handle the pagination
+	$paginate = new Pagination();	
+	$paginate->setView($this);
+	# set the search columns to be used on this list
+	$paginate->setSearchColumns(array("l.name", "l.description"));
+	$paginate->setFilterColumns(array("l.regionid","l.districtid","l.countyid","l.subcountyid","l.parishid","l.villageid"));
+	$paginate->setDefaultSortBy("l.datecreated");	
+	$paginate->setDefaultSortOrder("DESC");
+	$paginate->setStartAndEndDateFilterColumn("l.datecreated"); 
+	$paginate->setItemCountPerPage(25);
+	
+	$ugcustom_query ='';
+	if(strtolower($country) == 'ug'){
+		$ugcustom_query = " OR l.country is null ";
+	}
+	
+	$where_query = " WHERE l.id <> '' AND (l.country = UPPER('".$country."') ".$ugcustom_query.")  ";
+	$allowclear = false;
+	$islist = true;
+	
+	$type = $request->type;
+	if(!isEmptyString($type)){
+		$where_query .= " AND (l.locationtype = '".$type."') ";
+		$addurl = $this->baseUrl("location/indexpopup/type/".$type."/pgc/true");
+		$listurl = $this->baseUrl("location/list/type/".$type);
+		switch($type){
+			case 1:
+				$moduleitem = "Region";
+				$listitems = "Regions";
+				$moduleitem_lower = strtolower($moduleitem);
+				$title = 'Regions';				
+				break;
+			case 2:
+				$moduleitem = $location_label;
+				$listitems = $locations_label;
+				$title = $listitems;
+				break;
+			case 3:
+				$moduleitem = $county_label;
+				$listitems = $countys_label;
+				$moduleitem_lower = strtolower($moduleitem);
+				$title = $listitems;
+				break;
+			case 4:
+				$moduleitem = $subcounty_label;
+				$listitems = $subcountys_label;
+				$moduleitem_lower = strtolower($moduleitem);
+				$title = $listitems;
+				break;
+			case 5:
+				$moduleitem = "Parish";
+				$listitems = "Parishes";
+				$moduleitem_lower = strtolower($moduleitem);
+				$title = $listitems;
+				break;
+			case 6:
+				$moduleitem = "Village";
+				$listitems = "Villages";
+				$moduleitem_lower = strtolower($moduleitem);
+				$title = $listitems;
+				break;
+		}
+		$leveltwoname = $listitems;
+	}
+	
+	$order = trim($request->order);
+	$order_query = " ";
+	if(isEmptyString($order)){
+		$order = 1;
+	}
+	if($order == 1){
+		$order_query = " ORDER BY l.datecreated DESC ";
+	}
+	if($order == 2){
+		$order_query = " ORDER BY l.name ASC ";
+	}
+	if($order == 3){
+		$order_query = " ORDER BY l.name DESC ";
+	}
+	if($order == 4){
+		$order_query = " ORDER BY l.datecreated ASC ";
+	}
+	
+	$paginate->processPost($request->getParams());
+	$all_results_query = "SELECT l.id as lid, l.name as `Name`, l.description as `Description`, l.locationtype, r.name as Region, d.name as District, c.name as County, s.name as Subcounty, p.name as Parish FROM location l
+		LEFT JOIN location r on l.regionid = r.id
+		LEFT JOIN location d on l.districtid = d.id
+		LEFT JOIN location c on l.countyid = c.id
+		LEFT JOIN location s on l.subcountyid = s.id 
+		LEFT JOIN location p on l.parishid = p.id
+		".$where_query." ".$paginate->getSearchAndFilterSQL()." GROUP BY l.id ".$order_query;
+	
+	// debugMessage($all_results_query); // exit();
+	// determine total number of records found
+	$conn = Doctrine_Manager::connection(); 
+	$count_query = "SELECT count(l.id) as total FROM location l LEFT JOIN location r on l.regionid = r.id
+		LEFT JOIN location d on l.districtid = d.id
+		LEFT JOIN location c on l.countyid = c.id
+		LEFT JOIN location s on l.subcountyid = s.id 
+		LEFT JOIN location p on l.parishid = p.id
+		".$where_query." ".$paginate->getSearchAndFilterSQL();
+	$total = $conn->fetchOne($count_query);
+	$paginate->setItemCount($total); // debugMessage('>> '.$total);	
+	$current_results_query = $all_results_query." ".$paginate->getSQLLimit();
+	// debugMessage($current_results_query); // exit();
+	
+	$conn = Doctrine_Manager::connection(); 
+	$result = $conn->fetchAll($current_results_query);
+	$has_no_data = (count($result) == 0) ? true : false; 
+	
+	# Page title
+	$this->headTitle($title.$browserappend); 
+	
+?>
+<script>
+$(document).ready(function() {
+	// breadcrumb config
+	
+}); 
+</script>	
+<div>
+	<?php require APPLICATION_PATH."/views/scripts/index/leftcolumn.phtml"; ?>
+    <div id="centercolumn" style="overflow:hidden;">
+        <form action="<?php echo $this->baseUrl("location/listsearch"); ?>" method="get" id="listform" class="form-search">
+    	<h1><?php echo $title; ?></h1>
+        <div class="wellcontent" style=" margin-top:-10px;">
+            <div class=" blocked clear" style="position:relative; margin-top:25px;">
+            	<div class="advsearch" style="display:block; float:right; text-align:right; position:absolute; right:0; top:10px; width:60px;">
+                    <a href="<?php echo $listurl; ?>" id="reset" class="btn btn-primary btn-mini pull-left" title="Reset list or clear all filters">Reset</a>&nbsp;&nbsp;
+                    
+            	</div>
+                <ul class="peoplegroup" style="border:1px solid #DDDDDD; padding:5px;">
+                	<li style="width:120px;">
+					<?php if(isAdmin() || isManagement() || isDataClerk()){ ?>
+                        	<a href="<?php echo $addurl; ?>" class="addpopup btn btn-primary" title="New Location" rel="New Location" formtitle="indexform" successurl="<?php echo $listurl; ?>" action="<?php echo $this->baseUrl("location/create"); ?>"><i class="icon-plus icon-white"></i> New Location</a>
+                    <?php } ?>     
+                    <?php if($loggedinuser->isUgandan() && isUganda() && (isAdmin() || isManagement())){ ?>
+                        <?php if(isEmptyString($request->country) || $countryreq == 'ug'){ ?>
+                            <a class="btn btn-mini" style="margin-top: 10px; display:block;" href="<?php echo $this->baseUrl('location/list/country/ke'); ?>" title="Browse Kenya Directory"><i class="icon-list"></i> Browse Kenya</a>
+                        <?php } ?>
+                    <?php } ?>
+                    <?php if($loggedinuser->isUgandan() && isKenya() && (isAdmin() || isManagement())){ ?>
+                        <?php if(!isEmptyString($request->country) && $countryreq == 'ke'){ ?>
+                            <a class="btn btn-mini" style="margin-top: 10px; display:block;" href="<?php echo $this->baseUrl('location/list/country/ug'); ?>" title="Browse Uganda Directory"><i class="icon-list"></i> Browse Uganda</a>
+                        <?php } ?>
+                    <?php } ?>
+                    </li>
+                    <li>
+                    	<?php
+                            $values = array('1'=>'Regions','2'=>$locations_label,'3'=>$countys_label,'4'=>$subcountys_label);
+							if(isUganda()){
+								$values[5] = 'Parishes';
+								$values[6] = 'Villages';
+							}
+                            $dropdown = new Zend_Form_Element_Select('type',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => 'All types'), $values),								
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array("autofilter", "form-control", 'chosen-select', 'span2')
+                                                )
+                                            );
+                            $dropdown->setValue($request->type); 
+                            echo $dropdown->render(); 
+                        ?>
+                    </li>
+                    <li>
+                        <?php
+							$values = getRegions($country);
+                            $dropdown = new Zend_Form_Element_Select('l'.HTML_TABLE_COLUMN_SEPARATOR.'regionid',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => 'All Regions'), $values),								
+													'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array("autofilter", "form-control", 'chosen-select', 'span2')
+                                                )
+                                            );
+                            $dropdown->setValue($request->getParam('l'.HTML_TABLE_COLUMN_SEPARATOR.'regionid')); 
+                            echo $dropdown->render();
+                        ?> 
+                    </li>
+                    <li>
+                       <?php
+                            $values = getDistricts($country, $request->getParam('l'.HTML_TABLE_COLUMN_SEPARATOR.'regionid'));
+                            $dropdown = new Zend_Form_Element_Select('l__districtid',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => 'All '.$locations_label), $values),								
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array("autofilter", "form-control", 'chosen-select', 'span2')
+                                                )
+                                            );
+                            $dropdown->setValue($request->getParam('l__districtid')); 
+                            echo $dropdown->render();
+                        ?> 
+                    </li>
+                    <?php if(!isEmptyString($request->getParam('l'.HTML_TABLE_COLUMN_SEPARATOR.'districtid'))){ ?>
+                        <li>
+                           <?php
+                                $values = array('0'=>'Select '.$location_label.' First');
+                                if(!isEmptyString($request->getParam('l'.HTML_TABLE_COLUMN_SEPARATOR.'districtid'))){
+                                    $values = getCountiesInDistrict($request->getParam('l'.HTML_TABLE_COLUMN_SEPARATOR.'districtid'));
+                                }
+                                $dropdown = new Zend_Form_Element_Select('l'.HTML_TABLE_COLUMN_SEPARATOR.'countyid',
+                                                    array(
+                                                        'multiOptions' => array_merge_maintain_keys(array('' => 'All '.$countys_label), $values),								
+                                                        'view' => new Zend_View(),
+                                                        'decorators' => array('ViewHelper'),
+                                                        'class' => array("autofilter", "form-control", 'chosen-select', 'span2')
+                                                    )
+                                                );
+                                $dropdown->setValue($request->getParam('l'.HTML_TABLE_COLUMN_SEPARATOR.'countyid')); 
+                                echo $dropdown->render();
+                            ?> 
+                        </li>
+                    <?php } ?>
+                    <?php if(!isEmptyString($request->getParam('l'.HTML_TABLE_COLUMN_SEPARATOR.'countyid'))){ ?>
+                        <li>
+                           <?php
+                                $values = array('0'=>'Select County First');
+                                if(!isEmptyString($request->getParam('l'.HTML_TABLE_COLUMN_SEPARATOR.'countyid'))){
+                                    $values = getSubcountiesInCounty($request->getParam('l'.HTML_TABLE_COLUMN_SEPARATOR.'countyid'));
+                                }
+                                $dropdown = new Zend_Form_Element_Select('l'.HTML_TABLE_COLUMN_SEPARATOR.'subcountyid',
+                                                    array(
+                                                        'multiOptions' => array_merge_maintain_keys(array('' => 'All '.$subcountys_label), $values),								
+                                                        'view' => new Zend_View(),
+                                                        'decorators' => array('ViewHelper'),
+                                                        'class' => array("autofilter", "form-control", 'chosen-select', 'span2')
+                                                    )
+                                                );
+                                $dropdown->setValue($request->getParam('l'.HTML_TABLE_COLUMN_SEPARATOR.'subcountyid')); 
+                                echo $dropdown->render();
+                            ?> 
+                        </li>	
+                    <?php } ?>
+                    <?php if(!isEmptyString($request->getParam('l'.HTML_TABLE_COLUMN_SEPARATOR.'subcountyid'))){ ?>
+                    <li>
+                       <?php
+                            $values = array('0'=>'Select Sub-county First');
+                            if(!isEmptyString($request->getParam('l'.HTML_TABLE_COLUMN_SEPARATOR.'subcountyid'))){
+                                $values = getParishesInSubCounty($request->getParam('l'.HTML_TABLE_COLUMN_SEPARATOR.'subcountyid'));
+                            }
+                            $dropdown = new Zend_Form_Element_Select('l'.HTML_TABLE_COLUMN_SEPARATOR.'parishid',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => 'All Parishes'), $values),								
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array("autofilter", "form-control", 'chosen-select', 'span2')
+                                                )
+                                            );
+                            $dropdown->setValue($request->getParam('l'.HTML_TABLE_COLUMN_SEPARATOR.'parishid')); 
+                            echo $dropdown->render();
+                        ?> 
+                    </li>
+                    <?php } ?>
+                    <li>
+                        <?php
+                            $allorders = array('1' => 'Latest First', '2'=>'Alphabetical Ascending','3'=>'Alphabetical Descending', '4'=>'Earliest First');
+                            $ordersdropdown = new Zend_Form_Element_Select('order',
+                                                array(
+                                                    'multiOptions' => $allorders,
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array("autofilter", "form-control", 'chosen-select', 'span2'),
+                                                    'title' => 'Order list by'		
+                                                )
+                            );  
+                            $ordersdropdown->setValue($request->getParam('order')); 
+                            echo $ordersdropdown->render();
+                        ?>
+                    </li>
+                    <li style="float:right;"><input name="searchterm" id="searchterm" value="<?php echo $request->searchterm; ?>" type="text" class="input-medium span3" style="margin-bottom:5px;" placeholder="Search...">
+                        <button type="submit" id="searchbutton" class="btn btn-primary" style="vertical-align:top; margin-left:-2px;"><i class="icon-search icon-white"></i> Search or Filter</button>
+                        <input type="hidden" name="letter" id="letter" value="<?php echo $request->getParam('letter'); ?>" />
+                        <input type="hidden" name="country" id="country" value="<?php echo $country; ?>" />
+                    </li>
+                </ul>
+                <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE))){ ?>
+                    <div class="alert alert-success clear"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+                <?php } ?>
+                <?php if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ ?>
+                    <div class="alert alert-error clear"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+                <?php } ?>
+                <div class="alphabetlist pull-left"><a href="<?php echo $listurl; ?>" title="All">All</a>&nbsp;&nbsp;|&nbsp;&nbsp;<?php echo $paginate->getAlphabetString(); ?></div>
+                <?php if ($has_no_data) { ?>
+                    <div style="clear:both;" class="alert alert-info margin5"><?php echo $this->translate("global_list_norecords"); ?></div>
+                <?php } else { ?>
+                    <div class="makerelative">
+                        <div style="top:10px; right:5px; left:auto;" class="paginatecustom"><?php echo sprintf($this->translate("global_list_counter"), $paginate->getItemCounterText()); ?></div>
+                    </div>
+                	<div class="row-fluid span12 margin0 padding0 clearfix" style="margin-top:15px;">
+						<?php
+                            $counter = 1;			  		
+                            foreach($result as $line){
+                                $counter_mod = $counter % 2;
+                                $modclass = '';
+                                // debugMessage('mod is '.$counter_mod);
+                                if($counter_mod == 0){
+                                    $modclass = ' odd';
+                                }
+								$id = $line['lid'];
+                                /*$loc = new Location();
+								$loc->populate($id);*/ 
+								
+                                $viewurl =  $this->baseUrl("location/viewpopup/id/".encode($id)."/pgc/true");
+								$editurl =  $this->baseUrl("location/indexpopup/id/".encode($id)."/pgc/true/country/".$country);
+								$typelabel = '--';
+								$regionname = '--';
+								$districtname = '--';
+								$countyname = '--';
+								$subcountyname = '--';
+								$parishname = '--';
+								switch($line['locationtype']){
+									case 1:
+										$typelabel = 'Region';
+										break;
+									case 2:
+										$typelabel = $location_label;
+										$regionname = /*$loc->getRegion()->getName();*/ $line['Region'];
+										break;
+									case 3:
+										$typelabel = $county_label;
+										$regionname = /*$loc->getRegion()->getName();*/ $line['Region'];
+										$districtname = /*$loc->getDistrict()->getName()*/$line['District'];
+										break;
+									case 4:
+										$typelabel = $subcounty_label;
+										$regionname = /*$loc->getRegion()->getName();*/ $line['Region'];
+										$districtname = /*$loc->getDistrict()->getName()*/$line['District'];
+										$countyname = /*$loc->getCounty()->getName()*/$line['County'];
+										break;
+									case 5:
+										$typelabel = 'Parish';
+										$regionname = /*$loc->getRegion()->getName();*/ $line['Region'];
+										$districtname = /*$loc->getDistrict()->getName()*/$line['District'];
+										$countyname = /*$loc->getCounty()->getName()*/$line['County'];
+										$subcountyname = /*$loc->getSubcounty()->getName()*/$line['Subcounty'];
+										break;
+									case 6:
+										$typelabel = 'Village';
+										$regionname = /*$loc->getRegion()->getName();*/ $line['Region'];
+										$districtname = /*$loc->getDistrict()->getName()*/$line['District'];
+										$countyname = /*$loc->getCounty()->getName()*/$line['County'];
+										$subcountyname = /*$loc->getSubcounty()->getName()*/$line['Subcounty'];
+										$parishname = /*$loc->getParish()->getName()*/$line['Parish'];
+										break;
+									default:
+										break;
+								}
+                            ?>
+                                <?php if($counter_mod == 1){ ?>
+                                <div class="row-fluid">
+                                <?php }?>
+                                    <div class="span6">
+                                        <div class="widget box" style="margin-bottom:10px;">
+                                            <div class="widget-header">
+                                                <h4 style="margin-top:12px;"><a class="addpopup" title="Location Details" rel="<?php echo $line['Name']; ?>" href="<?php echo $viewurl; ?>"><?php echo $line['Name']; ?></a></h4>
+                                                <div class="toolbar no-padding">
+                                                    <div class="btn-group">
+                                                        <span data-toggle="dropdown" class="btn btn-primary dropdown-toggle">
+                                                             Actions <i class="icon-arrow-down icon-white"></i>
+                                                        </span>
+                                                        <ul class="dropdown-menu pull-right">
+                                                            <?php //if ($acl->checkPermission($moduleitem, ACTION_EDIT)) { ?>
+                                                                <li><a class="addpopup" title="Update Location" rel="Update Location" formtitle="indexform" successurl="<?php echo $listurl; ?>" action="<?php echo $this->baseUrl("location/create"); ?>" href="<?php echo $editurl; ?>"><i class="icon-pencil"></i> Update Profile</a></li>
+                                                            <?php //} ?>
+                                                            <?php //if ($acl->checkPermission($moduleitem, ACTION_DELETE)) { ?>
+                                                                <li><a title="Remove Location" class="deleteline noimgbutton" action="<?php echo $this->baseUrl('index/delete/id/'.$id."/entityname/Location/successurl/".encode($listurl)); ?>" message="<?php echo $this->translate('global_delete_confirm_message'); ?>"><i class="icon-trash"></i> Delete</a></li>
+                                                            <?php //} ?>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="widget-content" style="position:relative; margin-bottom:5px; height:<?php echo isUganda() ? '180px;' : '130px;'; ?>">
+                                                <div class="form-group clearfix" style="margin-left:0; padding-left:0; margin-bottom:5px;">
+                                                    <label class="padding0 bolded" style="width:20%; float:left;">Type:</label>
+                                                    <div class="padding0" style="display:inline; width:78%; float:right;"><p><?php echo $typelabel; ?></p></div>
+                                                </div>
+                                                <?php if(in_array($line['locationtype'], array(2,3,4,5,6))){ ?>
+                                                    <div class="form-group clearfix" style="margin-left:0; padding-left:0; margin-bottom:5px;">
+                                                        <label class="padding0 bolded" style="width:20%; float:left;">Region:</label>
+                                                        <div class="padding0" style="display:inline; width:78%; float:right;"><p><?php echo $regionname; ?></p></div>
+                                                    </div>
+                                                <?php } ?>
+                                                <?php if(in_array($line['locationtype'], array(3,4,5,6))){ ?>
+                                                    <div class="form-group clearfix" style="margin-left:0; padding-left:0; margin-bottom:5px;">
+                                                        <label class="padding0 bolded" style="width:20%; float:left;"><?php echo $location_label; ?>:</label>
+                                                        <div class="padding0" style="display:inline; width:78%; float:right;"><p><?php echo $districtname; ?></p></div>
+                                                    </div>
+                                                <?php } ?>
+                                                <?php if(in_array($line['locationtype'], array(4,5,6))){ ?>
+                                                    <div class="form-group clearfix" style="margin-left:0; padding-left:0; margin-bottom:5px;">
+                                                        <label class="padding0 bolded" style="width:20%; float:left;"><?php echo $county_label; ?>:</label>
+                                                        <div class="padding0" style="display:inline; width:78%; float:right;"><p><?php echo $countyname; ?></p></div>
+                                                    </div>
+                                                <?php } ?>
+                                                <?php if(in_array($line['locationtype'], array(5,6))){ ?>
+                                                    <div class="form-group clearfix" style="margin-left:0; padding-left:0; margin-bottom:5px;">
+                                                        <label class="padding0 bolded" style="width:20%; float:left;"><?php echo $subcounty_label; ?>:</label>
+                                                        <div class="padding0" style="display:inline; width:78%; float:right;"><p><?php echo $subcountyname; ?></p></div>
+                                                    </div>
+                                                <?php } ?>
+                                                <?php if(in_array($line['locationtype'], array(6)) && isUganda()){ ?>
+                                                    <div class="form-group clearfix" style="margin-left:0; padding-left:0; margin-bottom:5px;">
+                                                        <label class="padding0 bolded" style="width:20%; float:left;">Parish:</label>
+                                                        <div class="padding0" style="display:inline; width:78%; float:right;"><p><?php echo $parishname; ?></p></div>
+                                                    </div>
+                                                <?php } ?>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php if($counter_mod == 0){ ?>
+                                </div>
+                                <?php }?>
+                            <?php $counter++; } ?>
+                        </div>    
+                        <div class="row-fluid span12 margin0 padding0 clearfix" style="">
+                            <div style="display:block; position:relative;">
+								<?php echo $paginate->getPaginationLinks(); ?>  
+								<?php if (!$has_no_data) { ?>
+                                    <div class="paginatecustom"><?php echo sprintf($this->translate("farmgroup_list_counter"), $paginate->getItemCounterText()); ?></div>
+                                <?php } ?>
+                        	</div>
+                       	</div>
+                <?php } ?>
+           	</div>
+     	</div>
+		</form>
+	</div>        
+</div>         	
+
+<?php
+	$session->setVar(SUCCESS_MESSAGE, "");
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

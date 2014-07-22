@@ -103,24 +103,35 @@ ul.footerlinks.connect li span {
         <td class="section">
         	<h2 class="footerheading calfont">Partners</h2>
             <ul class="footerlinks">
-            	<li><a href="http://www.infotradeuganda.com" target="_blank"><span>InfoTrade Uganda</span></a></li>
-                <li><a href="http://www.fituganda.com" target="_blank"><span>FIT Uganda</span></a></li>
-                <li><a href="http://mis.infotradeuganda.com" target="_blank"><span>AGMIS</span></a></li>
-                <li><a href="http://www.nogamu.org.ug" target="_blank"><span>NOGAMU</span></a></li>
-                <li><a href="http://www.grameenfoundation.org" target="_blank"><span>Grameen Foundation</span></a></li>
-                <li><a href="http://www.ricnet.info" target="_blank"><span>RICNET</span></a></li>
+            	<?php if(isKenya()){; ?>
+                	<li><a href="http://farmis.ug" target="_blank"><span>Farmis Uganda</span></a></li>
+                <?php } ?>
+                <li><a href="http://www.infotradeuganda.com" target="_blank"><span>InfoTrade Uganda</span></a></li>
+                <?php if(isUganda()){; ?>
+                	<li><a href="http://www.fituganda.com" target="_blank"><span>FIT Uganda</span></a></li>
+                	<li><a href="http://farmis.co.ke" target="_blank"><span>Farmis Kenya</span></a></li>
+                    <li><a href="http://mis.infotradeuganda.com" target="_blank"><span>AGMIS</span></a></li>
+                    <li><a href="http://www.nogamu.org.ug" target="_blank"><span>NOGAMU</span></a></li>
+                    <li><a href="http://www.grameenfoundation.org" target="_blank"><span>Grameen Foundation</span></a></li>
+                    <li><a href="http://www.ricnet.info" target="_blank"><span>RICNET</span></a></li>
+                <?php } ?>
             </ul>
         </td>
         <td class="section" style="width:23%;">
         	<h2 class="footerheading calfont">Connect with Us</h2>
             <ul class="footerlinks connect">
-            	<li><a href="http://www.facebook.com/infotrade.uganda" target="_blank"><img src="<?php echo $this->baseUrl('images/facebook.png'); ?>" /><span>Facebook Page</span></a></li>
-                <li><a href="https://twitter.com/InfotradeUganda" target="_blank"><img src="<?php echo $this->baseUrl('images/twitter.png'); ?>" /><span>Twitter</span></a></li>
-                <li><a href="http://www.youtube.com/user/FarmisUg" target="_blank"><img src="<?php echo $this->baseUrl('images/youtube.png'); ?>" /><span>YouTube</span></a></li>
+            	<?php if(isUganda()){; ?>
+                    <li><a href="http://www.facebook.com/infotrade.uganda" target="_blank"><img src="<?php echo $this->baseUrl('images/facebook.png'); ?>" /><span>Facebook Page</span></a></li>
+                    <li><a href="https://twitter.com/InfotradeUganda" target="_blank"><img src="<?php echo $this->baseUrl('images/twitter.png'); ?>" /><span>Twitter</span></a></li>
+                    <li><a href="http://www.youtube.com/user/FarmisUg" target="_blank"><img src="<?php echo $this->baseUrl('images/youtube.png'); ?>" /><span>YouTube</span></a></li>
+                <?php } ?>
+                <?php if(isKenya()){; ?>
+                	<li><a href="https://www.facebook.com/sokopepe.sokopepe" target="_blank"><img src="<?php echo $this->baseUrl('images/facebook.png'); ?>" /><span>Facebook Page</span></a></li>
+                    <li><a href="https://twitter.com/sokopepeltd" target="_blank"><img src="<?php echo $this->baseUrl('images/twitter.png'); ?>" /><span>Twitter</span></a></li>
+                <?php } ?>
                 <li><a href="<?php echo $this->baseUrl('rss'); ?>" target="_blank"><img src="<?php echo $this->baseUrl('images/rss.png'); ?>" /><span>RSS Feed</span></a></li>
                 <li><a href="<?php echo $this->baseUrl('contactus'); ?>"><img src="<?php echo $this->baseUrl('images/contactus.png'); ?>" /><span>Contact Us</span></a></li>
-                <li><a href="<?php echo $this->baseUrl('contactus/tellfriend'); ?>"><img src="<?php echo $this->baseUrl('images/contacts.png'); ?>" /><span>Tell A Friend</span></a></li>
-            </ul>
+	    	</ul>
         </td>
         <td class="section" style="border-left:2px solid #838181; padding-left:20px; width:auto;">
         	<h2 class="footerheading calfont">FARMIS Newsletter</h2>
@@ -146,7 +157,7 @@ ul.footerlinks.connect li span {
     </tr>
     <tr>
     	<td colspan="3" style="padding:0; height:30px; padding-right:40px;">
-        	<p style="color:#8ca77f; text-align:center; "><?php echo sprintf($this->translate("copyright"), date("Y"), 'Infotrade Uganda'); ?>.</p>
+        	<p style="color:#f4f4f4; text-align:center; "><?php echo sprintf($this->translate("copyright"), date("Y"), isUganda() ? 'Infotrade Uganda' : 'Farmis Kenya'); ?>.</p>
         </td>
         <td style="padding:15px 0 0 15px;">
         	<div style="position:relative; display:block;">

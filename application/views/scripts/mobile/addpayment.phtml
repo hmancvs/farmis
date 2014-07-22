@@ -1,0 +1,355 @@
+<?php
+	include APPLICATION_PATH.'/includes/header.php';
+	
+	$title = "New Payment"; 
+	$posturl = $this->baseUrl('mobile/createaddpayment');
+	
+	$country = 'UG';
+	$location_label = 'District';
+	$locations_label = 'Districts';
+	$countrycode = COUNTRY_CODE_UG;
+	$locationerror = $this->translate("farmer_district_error");
+	$country_params_refno_placeholder = 'placeholder="Auto" maxlength="8" ';
+	$county_label = $this->translate("global_county_label");
+	$subcounty_label = $this->translate("global_subcounty_label");
+	
+	if(isKenya()){
+		$session->setVar('country', 'ke');
+		$country = 'KE';
+		$location_label = 'County';
+		$locations_label = 'Counties';
+		$countrycode = COUNTRY_CODE_KE;
+		$locationerror = $this->translate("farmer_county_error");
+		$country_params_refno_placeholder = 'placeholder="" maxlength="10" ';
+		$county_label = $this->translate("global_subcounty_label");
+		$subcounty_label = $this->translate("global_ward_label");
+	}
+	
+	$id = decode($request->id);	
+	$payment = new Payment();
+	
+	$isfarmer = false;
+	$isfarmgroup = false;
+	$groupid = decode($request->farmgroupid);
+	$subcriberid = decode($request->userid); 
+	if(isEmptyString($request->id)){
+		$payment->setTrxDate(date('Y-m-d'));
+		# farmgroup payment	
+		if(!isEmptyString($groupid)){
+			$isfarmgroup = true;
+			$title = "New DNA Payment"; 
+			$farmgroup = new FarmGroup();
+			$farmgroup->populate($groupid); 
+			$payment->setFarmGroupID($farmgroup->getID());
+			$payment->setPhone($farmgroup->getPhone());
+			$payment->setStem(1);	
+			$payment->setItem(4);
+			$payment->setAmount($payment->getDefaultDNAAmount());
+		}
+		# subscriber [user] payment 
+		if(!isEmptyString($subcriberid)){
+			$isuser = true;
+			$title = "New Farmer Payment"; 
+			$user = new UserAccount();
+			$user->populate($subcriberid);
+			$payment->setUserID($user->getID());
+			$payment->setPhone($user->getPhone());
+			$payment->setStem(2);	
+			$payment->setItem(2);
+			
+			$amount = $payment->getDefaultFarmerAmount();
+			if(strtolower($country) == 'ke'){
+				$amount = $payment->getDefaultFarmerAmountKe();
+			}
+			$payment->setAmount($amount);
+		}
+		/*# farmer payment 
+		if(!isEmptyString($userid)){
+			$isuser = true;
+			$title = "New Farmer Payment"; 
+			$user = new UserAccount();
+			$user->populate($userid);
+			$payment->setUserID($userid);
+			$payment->setPhone($user->getPhone());
+			$payment->setStem(2);	
+			$payment->setItem(2);
+			$payment->setAmount(getServiceAmount());
+			debugMessage($payment->toArray());
+		}*/
+		if(isEmptyString($payment->getAmount()) || $payment->getAmount() == 0){
+			$payment->setAmount(getServiceAmount());
+			$payment->setStem(2);	
+			$payment->setItem(2);
+		}
+	}
+	$payment->setVerifiedByID($session->getVar('userid'));
+	$nextmonth_ts = strtotime("next month");
+	$firstdayofnextmonth = mktime (0,0,0, date("n", $nextmonth_ts),1, date("Y", $nextmonth_ts));
+		
+	$payment->getSubscription()->setStartDate(date('Y-m-d', $firstdayofnextmonth));
+	
+	if(!isEmptyString($request->id)){
+		$payment->populate(decode($request->id));
+		$title = "Update Payment"; 
+	}
+	// debugMessage($payment->toArray());
+	
+	#in case of errors in session, populate the fields from session
+	if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
+		$payment->processPost($session->getVar(FORM_VALUES));	
+	}
+	
+	$this->headTitle($title);
+?>
+<?php include APPLICATION_PATH."/views/scripts/mobile/mobileincludes.phtml"; ?>
+<script>
+	$(document).ready(function() {
+		// datepickerOpts = new Date();   
+		// $("#startdate, #enddate").datepicker(datepickerOpts);
+		
+		$("#indexform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				userid: "required",
+				trxdate: "required",
+				amount: {
+					required: true,
+					min:50
+				},
+				"item": "required",
+				paymenttype: "required",
+				phone: {
+					required: false, 					
+					validnumber: true,
+					maxlength: 10,
+					minlength: 10,
+					<?php if(isUganda()){ ?>
+						validate_ug: true
+					<?php } ?>
+					<?php if(isKenya()){ ?>
+						validate_ke: true
+					<?php } ?>
+				},
+				verifiedbyid: "required",
+				startdate: "required",
+				enddate: "required"
+			}, 
+			// the messages for each of the fields being validated
+			messages: {		
+				userid: "Please select a Farmer<?php //echo $this->translate("payment_farmerid_error"); ?>",
+				trxdate: "Please select Transaction Date",
+				amount: {
+					required: "Please enter Amount",
+					min:"Minimum allowed amount is UGX 50"
+				},
+				"item": "Please select Subject",
+				paymenttype: "Please select Method",
+				trxcode: "Please enter a Reference Number",
+				phone: {
+					validnumber: "Please enter a valid Phone Number",
+					maxlength: "Phone Number must have 10 Digits",
+					minlength: "Phone Number must have 10 Digits",
+					<?php if(isUganda()){ ?>
+						validate_ug: "<?php echo $this->translate("globale_phonenumber_format"); ?>"
+					<?php } ?>
+					<?php if(isKenya()){ ?>
+						validate_ke: "<?php echo $this->translate("globale_phonenumber_format_ke"); ?>"
+					<?php } ?>
+				},
+				verifiedbyid: "Please select verifying user",
+				startdate: "Please select Subscription Start",
+				enddate: "Please select Subscription End"
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						error.appendTo("#"+element.attr("name")+"_error")
+						break;
+				}			
+			},
+			ignore: ":hidden:not(select)"
+		});
+				
+		$("#bottomactions").html($("#topactions").html());
+		
+		if(isEmptyString($('#enddate').val())){
+			$('#days').val('365');
+		}
+		$('#days').change(function() {
+			start = $('#startdate').val()
+			var s = new Date(start); 
+			var days = $(this).val();
+			
+			if(!isEmptyString($(this).val())){
+				var e = new Date(s.getFullYear(), s.getMonth(), s.getDate());
+				e.setDate(s.getDate() + parseInt(days)); 
+				var assigned =  getShortMonthName(e.getMonth())+" "+e.getDate()+", "+e.getFullYear(); 
+				$('#enddate').val(assigned);
+			} else { 
+				$('#enddate').val('<?php echo changeMySQLDateToPageFormat($payment->getSubscription()->getEndDate()); ?>');
+			}
+		});
+		$('#days').change();
+		
+		$('#startdate').change(function() {
+			$('#days').change();
+		});
+		
+		function getShortMonthName(d){
+			var month=new Array();
+			month[0]="Jan";
+			month[1]="Feb";
+			month[2]="Mar";
+			month[3]="Apr";
+			month[4]="May";
+			month[5]="Jun";
+			month[6]="Jul";
+			month[7]="Aug";
+			month[8]="Sep";
+			month[9]="Oct";
+			month[10]="Nov";
+			month[11]="Dec";
+			var n = month[d];
+			return n;
+		}
+		function days_between(date1, date2) {
+			// The number of milliseconds in one day
+			var ONE_DAY = 1000 * 60 * 60 * 24
+			// Convert both dates to milliseconds
+			var date1_ms = date1.getTime()
+			var date2_ms = date2.getTime()
+			// Calculate the difference in milliseconds
+			var difference_ms = Math.abs(date1_ms - date2_ms)
+			// Convert back to days and return
+			return Math.round(difference_ms/ONE_DAY)
+		}
+		
+		// disable fields
+		$("#amount").attr('readonly', true);
+		disableField("item_select");
+		disableField("status_select");
+	}); 
+</script>
+<body>
+<div class="container-fluid">
+  <h4><?php echo $title; ?></h4>
+  <?php if(!isEmptyString($session->getVar(ERROR_MESSAGE)) ){ ?>
+      <div class="row-fluid">
+      	<div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+      </div>
+  <?php } ?>
+  <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+  	<div class="row-fluid">
+      	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+	</div>
+  <?php } ?>
+  <div class="row-fluid">
+      <form class="form-horizontal clearfix" id="indexform" action="<?php echo $posturl; ?>" method="post" style="padding-bottom:25px;">
+        <div class="control-group well actions" id="topactions">
+              <a href="<?php echo $this->referer; ?>" class="btn"><i class="icon-remove"></i> <?php echo $this->translate('global_button_cancel'); ?></a>
+              <button type="submit" class="btn btn-primary"><i class="icon-ok icon-white"></i> <?php echo $this->translate('global_button_save'); ?></button>
+        </div>
+        <fieldset class="fieldsetcontainer well">
+            <legend>Payment Details</legend>
+            <div class="control-group">
+            	<label class="control-label" for="farmer">Farmer:</label>
+            	<div class="controls">
+					<?php echo 'Name('.$payment->getUser()->getName().')'; ?> 
+                    <?php if(!isEmptyString($payment->getUser()->getFarmGroupID())){ ?>
+                    	<?php echo ', DNA('.$payment->getUser()->getFarmGroup()->getName().') '; ?>
+                    <?php } ?>
+                    <?php echo ', FIN('.$payment->getUser()->getRefNo().')'; ?> 
+					<input type="hidden" name="entityname" value="Payment" />
+					<input type="hidden" id="id" name="id" value="<?php echo encode($payment->getID()); ?>" />
+					<input type="hidden" id="stem" name="stem" value="<?php echo $payment->getStem(); ?>" />
+					<input type="hidden" id="farmgroupid" name="farmgroupid" value="<?php echo $payment->getFarmGroupID(); ?>" />
+                    <input type="hidden" id="userid" name="userid" value="<?php echo $payment->getUserID(); ?>" />
+					<input type="hidden" id="trxdate" name="trxdate" value="<?php echo changeMySQLDateToPageFormat($payment->getTrxDate()); ?>" />
+					<input type="hidden" name="<?php echo SUCCESS_MESSAGE; ?>" value="global_save_success" />
+					<input type="hidden" id="regsource" name="regsource" value="1" />
+					<input type="hidden" id="hassubscription" name="hassubscription" value="1" />
+					<input type="hidden" id="subscriptionid" name="subscriptionid" value="<?php echo $payment->getSubscriptionID(); ?>" />
+					<input type="hidden" name="<?php echo URL_SUCCESS; ?>" value="<?php echo encode($this->baseUrl('mobile/viewpayment')); ?>" />
+					<input type="hidden" name="<?php echo URL_FAILURE; ?>" value="<?php echo encode($this->baseUrl('mobile/addpayment')); ?>" />
+					<input type="hidden" name="country" id="country" value="<?php echo $country; ?>" />
+                    <input type="hidden" id="item" name="item" value="<?php echo $payment->getItem(); ?>" />
+                    <input type="hidden" id="days" name="days" value="365" />
+            	</div>
+            </div>
+            <div class="control-group">
+                <label class="control-label">Method: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                <div class="controls">
+                    <?php
+						$types = getPaymentMethods();
+						$typesdropdown = new Zend_Form_Element_Select('paymenttype',
+											array(
+												'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $types),								
+												'view' => new Zend_View(),
+												'decorators' => array('ViewHelper'),
+												'class' => array('span3')
+											)
+										);
+						$typesdropdown->setValue($payment->getPaymentType()); 
+						echo $typesdropdown->render(); 
+				   ?><div id="paymenttype_error"></div>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label">Amount: <?php echo $this->translate("global_required_field_marker"); ?> </label>
+                <div class="controls">
+                    <div class="input-prepend">
+                    	<span class="add-on"><?php echo getCurrencySymbol(); ?></span>
+                        <input type="text" name="amount" id="amount" class="width80 isamount centeralign" value="<?php echo $amount; ?>" />
+                    </div>
+                    <div id="amount_error"></div>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label">Payment Phone: </label>
+                <div class="controls phone">
+                    <div class="input-prepend">
+                        <span class="add-on"><?php echo '+'.getCurrencyCode(); ?></span>
+                        <input type="text" name="phone" id="phone" maxlength="10" value="<?php echo getShortPhone($payment->getPhone()); ?>" class="span2 minwidth100" style="margin-top:0;" />
+                    </div>
+                    <div class="blocked" style="margin-top:5px;"><input type="checkbox" name="sendconfirmationtophone" id="sendconfirmationtophone" value="1" style="margin-top:0;" /> &nbsp;
+                         <label class="lineblocked">Send Confirmation to Phone</label>
+                    </div>
+                    <div id="phone_error"></div>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label">Subscription Start: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                <div class="controls"><?php echo changeMySQLDateToPageFormat($payment->getSubscription()->getStartDate()); ?>
+                    <input type="text" name="start" id="start" class="datefield span2 width100" value="<?php echo changeMySQLDateToPageFormat($payment->getSubscription()->getStartDate()); ?>" /><div id="startdate_error"></div>
+                    <input type="text" name="startdate" id="startdate" value="<?php echo changeMySQLDateToPageFormat($payment->getSubscription()->getStartDate()); ?>" />
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label class="control-label">Subscription End: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                <div class="controls">
+                    <input type="text" name="enddate" id="enddate" class="datefield span2 width100" value="<?php echo changeMySQLDateToPageFormat($payment->getSubscription()->getEndDate()); ?>" /><div id="enddate_error"></div>
+                    <input type="text" name="enddate" id="enddate" value="<?php echo changeMySQLDateToPageFormat($payment->getSubscription()->getEndDate()); ?>" />
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label">Verified By: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                <div class="controls">
+                	<?php echo $payment->getverifiedby()->getName(); ?>
+                	<input type="hidden" name="verifier" id="verifier" class="span3 hastooltip" value="<?php echo $payment->getVerifier(); ?>" />
+                    <input type="hidden" name="verifiedbyid" id="verifiedbyid" value="<?php echo $payment->getverifiedbyid(); ?>" /><div id="trxcode_error"></div>
+                </div>
+            </div>
+		</fieldset>
+        <div class="divider15"></div>
+        
+        <div class="control-group well actions" id="bottomactions"></div>
+      </form>
+  </div>
+</div>
+</body>
+</html>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

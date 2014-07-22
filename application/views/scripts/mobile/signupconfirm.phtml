@@ -1,0 +1,101 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$title = $this->translate("useraccount_pagetitle_signup_confirm"); 
+	$this->headTitle("Signup | FARMIS"); 
+	
+	// the usermaking the payment
+	$useraccount = new UserAccount();
+	$useraccount->populate(decode($request->id));
+	
+	$resending = false;
+	if($request->resend == '1'){
+		$sendresult = $useraccount->sendActivationCodeToMobile();
+		$resending = true;
+	}
+	
+	$posturl = $this->baseUrl("mobile/activate/id/".encode($useraccount->getID())); 
+	if ($sessionhaserror) {
+		$useraccount->processPost($session->getVar(FORM_VALUES)); 
+	} 
+?>
+<?php require APPLICATION_PATH."/views/scripts/mobile/mobileincludes.phtml"; ?>
+<script>
+	$(document).ready(function() {
+		$("#activateform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				actkey: {
+					required: true,
+					maxlength: 6,
+					minlength: 6					
+				}
+			}, 
+			// the messages for each of the fields being validated
+			messages: {				
+				actkey: {
+					required: "<?php echo $this->translate("useraccount_activationkey_error"); ?>",
+					maxlength: "Code must have 6 Characters",
+					minlength: "Code must have 6 Characters"
+				}
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						error.appendTo("#"+element.attr("name")+"_error")
+						break;
+				}			
+			}
+		});
+	}); 
+</script>
+<body>
+<div class="container-fluid viewpage">
+  <div class="row-fluid">
+   <h4><?php echo $title; ?></h4>
+  </div>
+  <?php if($sessionhaserror) { ?>
+      <div class="row-fluid">
+      	<div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+      </div>
+  <?php } ?>
+  <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+  	<div class="row-fluid">
+      	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a>Registration completed</div>
+	</div>
+  <?php } ?>
+  <div class="row-fluid">
+      <form id="activateform" action="<?php echo $posturl; ?>" method="post">
+      	<div class="control-group" style="margin-bottom:0;">
+            <label class="centerblock">Thank you for registering with <b><?php echo $this->translate("appname"); ?></b></label>
+            <label class="centerblock">However, before you can get started, you have got to activate your account <br />using either one of the methods below;</label><br /> 
+            <?php if($sessionhaserror) { ?>
+                <label class="error"><?php echo $session->getVar(ERROR_MESSAGE); ?></label><br />
+                <a id="reset" title="Request new Code" class="btn btn-primary" href="<?php echo $this->baseUrl('signup/confirm/id/'.$request->id.'/resend/1'); ?>">Request New</a><br /><br />
+            <?php } ?>
+            <?php if($resending) { ?>
+                <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a>Activation code has been resent to your phone</div>
+            <?php } ?>
+            <label class="normalblock">1. Click on the activation link sent to the email address you provided during registration.</label>
+            or<br /><br />
+            <label class="normalblock">2. Enter the 6 Digit Activation Code sent to your mobile phone <br />in box below and click activate:<br /></label>
+            
+            <div class="input-append">
+              <input type="text" name="actkey" maxlength="10" id="actkey" style="width:100px;" class="" value="<?php // echo $useraccount->getActivationKey(); ?>" />
+              <input type="hidden" name="act_byphone" id="act_byphone" value="1" />
+              <input type="hidden" id="mobilereg" name="mobilereg" value="1" />
+              <button id="activate" class="btn btn-primary" type="submit" style="margin-left:-2px;">Activate</button>
+           </div>
+            <div id="actkey_error"></div>    
+            
+            <label class="centerblock"><br /><br />For any assistance please feel free to <a href="<?php echo $this->serverUrl($this->baseUrl('contactus')); ?>" title="Contact us">Contact us</a></label>
+        </div>
+      </form>
+  </div>
+</div>
+</body>
+</html>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

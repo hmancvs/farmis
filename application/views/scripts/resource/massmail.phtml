@@ -8,10 +8,23 @@
 	$user = new UserAccount();
 	$user->populate($userid);
 		
-	$farmer = new Farmer();
-	$farmer->populate($farmerid);
+	$country = 'UG';
+	$location_label = 'District';
+	$locations_label = 'Districts';
+	$countrycode = COUNTRY_CODE_UG;
+	$county_label = $this->translate("global_county_label");
+	$subcounty_label = $this->translate("global_subcounty_label");
 	
-	$farmid = $farmer->getFarms()->get(0)->getID();
+	if(isKenya() || $user->isKenyan()){
+		$country = 'KE';
+		$session->setVar('country', 'ke');
+		$location_label = 'County';
+		$locations_label = 'Counties';
+		$countrycode = COUNTRY_CODE_KE;
+		$county_label = $this->translate("global_subcounty_label");
+		$subcounty_label = $this->translate("global_ward_label");
+	}
+	$countryreq = strtolower($request->country); 
 	
 	$title = "Mass Mail";
 	$this->headTitle($title); 
@@ -65,6 +78,12 @@ $(window).load(function() {
     <div id="centercolumn">
         <div class="widgetsection" style="min-height:625px; height:auto;">
             <h3 style="color:#282727;"><?php echo $title; ?></h3>
+            <?php if ($sessionhaserror) { ?>
+                 <div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+            <?php } ?>
+            <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+                <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+            <?php } ?>  
             <div style="margin-top:10px;">
                <form id="massmailform" action="<?php echo $posturl; ?>" method="post">
                <table class="table">                       
@@ -74,14 +93,14 @@ $(window).load(function() {
                    </tr>
                    <tr>
                         <td><label class="control-label"><?php echo $this->translate("message_sender_name_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
-                        <td><input type="text" name="sendername" id="sendername" class="span2 hastooltip" title="<?php echo $this->translate("message_sendername_tooltip"); ?>" value="<?php echo $farmer->getUser()->getName(); ?>" /><div id="sendername_error"></div></td>
+                        <td><input type="text" name="sendername" id="sendername" class="span2 hastooltip" title="<?php echo $this->translate("message_sendername_tooltip"); ?>" value="<?php echo $user->getName(); ?>" /><div id="sendername_error"></div></td>
                    </tr>
                    <tr>
                         <td><label class="control-label"><?php echo $this->translate("message_recipient_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
                         <span class="pagedescription" style="text-align:right; display:block;">(Only farmers with email addresses apply)</span>
                         </td>
                         <td><?php 
-								 $farmers = getFarmers($farmer->getFarmGroupID(), true);
+								 $users = getFarmers($user->getFarmGroupID(), false, false, true, '', $session->getVar('country'));
 								 $list = array('1'=>'All Farmers with emails', '2'=>'Select Farmers',);
 								 $typeradio = new Zend_Form_Element_Radio('type',
 											  array(
@@ -101,7 +120,7 @@ $(window).load(function() {
 									  <?php
 										  $listdropdown = new Zend_Form_Element_Multiselect('farmerids',
 												  array(
-														  'multiOptions' => $farmers,
+														  'multiOptions' => $users,
 														  'view' => new Zend_View(),
 														  'decorators' => array(array('ViewHelper')),
 														  'class' => array('chzn-select','multipleselect','span7', 'hastooltip_custom'),
@@ -133,6 +152,10 @@ $(window).load(function() {
                             
                             <input type="hidden" name="entityname" value="Message" />
                             <input type="hidden" id="id" name="id" value="" />
+                            <?php if(isFarmGroupAdmin()){ ?>
+	                            <input type="hidden" id="groupid" name="groupid" value="<?php echo $user->getFarmGroupID(); ?>" />
+                            <?php } ?>
+                            <input type="hidden" id="country" name="country" value="<?php echo $country; ?>" />
                             <input type="hidden" class="successurl" id="<?php echo URL_SUCCESS; ?>" name="<?php echo URL_SUCCESS; ?>" value="" />
                             <input type="hidden" class="failureurl" id="<?php echo URL_FAILURE; ?>" name="<?php echo URL_FAILURE; ?>" value="" />
                             <input type="hidden" id="<?php echo SUCCESS_MESSAGE; ?>" name="<?php echo SUCCESS_MESSAGE; ?>" value="Message successfully sent" />    

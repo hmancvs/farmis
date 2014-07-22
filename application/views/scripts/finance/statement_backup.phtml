@@ -3,13 +3,11 @@
 	require_once(APPLICATION_PATH.'/../'.PUBLICFOLDER.'/dompdf/dompdf_config.inc.php');
 	// require_once APPLICATION_PATH.'/../'.PUBLICFOLDER.'/html2pdf/html2pdf.class.php';
 	
-	$farm = new Farm(); 
-	$farm->populate($request->farmid);
-	$farmer = $farm->getFarmer();
+	$user = new UserAccount(); 
+	$user->populate($request->user);
 	
 	$request->setParam('tab', 'finance'); 
 	
-	$thefarmid = $farm->getID();
 	$seasonid = $request->seasonid;
 	$showresults = false;
 	if(!isEmptyString($seasonid)){
@@ -20,7 +18,7 @@
 	}
 	
 	if($showresults){
-		$currency_text = "&nbsp;<span class='pagedescription'>(".$config->currency->default.")</span>";
+		$currency_text = "&nbsp;<span class='pagedescription'>(".getCurrencySymbol().")</span>";
 		$sales = $season->getTotalRevenue(); 
 		$inputs = $season->getTotalSeasonInputs();
 		$margin = $sales - $inputs;
@@ -35,7 +33,7 @@
 		 
 		$farmis_logo = $this->serverUrl($this->baseUrl('images/logo_gray.png'));
 		$infotrade_logo = $this->serverUrl($this->baseUrl('images/logo_infotrade.png'));
-		$profile_image = $this->serverUrl($farmer->getUser()->getMediumPicturePath());
+		$profile_image = $this->serverUrl($user->getMediumPicturePath());
 		
 		/*if($request->download == 1 || $request->pdf == 1){
 			$farmis_logo = APPLICATION_PATH.DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR."public".DIRECTORY_SEPARATOR."images".DIRECTORY_SEPARATOR.'logo_gray.png';
@@ -202,9 +200,9 @@ pdfquicklinks {
 <h1 class="hideonprint"><?php echo $this->translate('farm_title'); ?></h1>
 <div class="printpage"></div>
 <div id="tabs">
-    <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
+    <?php require APPLICATION_PATH."/views/scripts/profile/profileleftcolumn.phtml"; ?>
     <div class="span9 tab-content" id="center">
-    	<?php require APPLICATION_PATH."/views/scripts/farm/tabstop.phtml"; ?>
+    	<?php require APPLICATION_PATH."/views/scripts/profile/tabstop.phtml"; ?>
 		<div id="finance" class="makerelative">
             <table class="table table-condensed noborder margin0 nohover hideonprint" style="width:100%; position:absolute; right:5px; top:-18px;">
                 <tr>
@@ -260,7 +258,7 @@ pdfquicklinks {
 												<table class="table table-condensed margin0 border0" style="width:100%;">
 													<tr>
 														<td style="width:32%;"><label class="control-label pull-left leftalign">Farmer: </label></td>
-														<td>'.$season->getFarmer()->getName().'</td>
+														<td>'.$season->getUser()->getName().'</td>
 													</tr>
 													<tr>
 														<td><label class="control-label pull-left leftalign">Season: </label></td>
@@ -800,7 +798,7 @@ pdfquicklinks {
                  <?php } ?>
             </div>
         </div>
-        <?php require APPLICATION_PATH."/views/scripts/farm/tabsbottom.phtml"; ?> 
+        <?php require APPLICATION_PATH."/views/scripts/profile/tabsbottom.phtml"; ?>  
     </div>
 </div>    
 <?php

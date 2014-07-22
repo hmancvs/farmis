@@ -1,13 +1,12 @@
 <?php
 	require_once APPLICATION_PATH.'/includes/header.php';
 	
-	$farm = new Farm(); 
-	$farm->populate(decode($request->id));
+	$user = new UserAccount(); 
+	$user->populate(decode($request->id));
 	
 	$request->setParam('tab', 'finance'); 
 	
-	$thefarmid = $farm->getID();
-	
+	$farmtitle = $user->getName();
 	$title = "Credit History"; 
 	$this->headTitle($title);  
 	
@@ -19,11 +18,11 @@
 </script>
 <style>
 </style>
-<h1><?php echo $this->translate('farm_title'); ?></h1>
+<h1><?php echo $farmtitle; ?></h1>
 <div id="tabs">
-    <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
+    <?php require APPLICATION_PATH."/views/scripts/profile/profileleftcolumn.phtml"; ?>
     <div class="span9 tab-content" id="center">
-    	<?php require APPLICATION_PATH."/views/scripts/farm/tabstop.phtml"; ?>
+    	<?php require APPLICATION_PATH."/views/scripts/profile/tabstop.phtml"; ?>
 		<div id="finance">
             <form id="viewform" class="form-horizontal">
                 <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
@@ -33,10 +32,10 @@
                     <span class="pull-left well lighter margin0" style="width:96%; min-height:160px; position:relative;">
                         <h3 class="well-legend"><?php echo $title; ?></h3>
                         <div class="margin0" style="position:absolute; right:10px; top:10px;">
-                        	<a class="btn btn-mini" href="<?php echo $this->baseUrl('farm/view/id/'.encode($farm->getID()).'/tab/finance'); ?>" title="Finance Dashboard"><i class="icon-list"></i> Finance Dashboard</a>                                       
+                        	<a class="btn btn-mini" href="<?php echo $this->baseUrl('profile/view/id/'.encode($user->getID()).'/tab/finance'); ?>" title="Finance Dashboard"><i class="icon-list"></i> Finance Dashboard</a>                                       
                         </div>
                         <?php 
-							$loans = $farm->getCreditDetails();
+							$loans = $user->getCreditDetails();
 							
 							$lcount = $loans->count();
 							if($lcount == 0) { ?>
@@ -143,7 +142,7 @@
                 </div>
             </form>
         </div>
-        <?php require APPLICATION_PATH."/views/scripts/farm/tabsbottom.phtml"; ?> 
+        <?php require APPLICATION_PATH."/views/scripts/profile/tabsbottom.phtml"; ?>  
     </div>
 </div>    
 <?php

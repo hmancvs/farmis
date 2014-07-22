@@ -72,14 +72,14 @@
                                 </tr>
                                 <tr>
                                     <td style="width:40%;"><label class="control-label"><?php echo $this->translate("season_credit_principal_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
-                                        <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" style="width:80px;" name="principal" id="principal" class="width100 hastooltip isamount rightalign inputrequired greaterthanzero" value="<?php echo $loan->getPrincipal(); ?>" title="<?php echo $this->translate("season_principal_tooltip"); ?>" /></div><div id="principal_error"></div></td>
+                                        <div class="input-prepend"><span class="add-on"><?php echo getCurrencySymbol(); ?></span><input type="text" style="width:80px;" name="principal" id="principal" class="width100 hastooltip isamount rightalign inputrequired greaterthanzero" value="<?php echo $loan->getPrincipal(); ?>" title="<?php echo $this->translate("season_principal_tooltip"); ?>" /></div><div id="principal_error"></div></td>
                                     <td><label class="control-label"><?php echo $this->translate("season_credit_interestrate_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
                                     <input style="width:50px;" type="text" name="interestrate" id="interestrate" class="centeralign isdecimal hastooltip inputrequired greaterthanzero" value="<?php echo $loan->getInterestRate(); ?>" title="<?php echo $this->translate("season_interestrate_tooltip"); ?>" />&nbsp;<span class="pagedescription">(%)</span><div id="interestrate_error"></div>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td><label class="control-label"><?php echo $this->translate("season_credit_repayment_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
-                                        <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" style="width:80px;" name="paybackamount" id="paybackamount" class="width100 hastooltip isamount rightalign inputrequired greaterthanzero" value="<?php echo $loan->getPayBackAmount(); ?>" title="<?php echo $this->translate("season_paybackamount_tooltip"); ?>" /></div><div id="paybackamount_error"></div></td>
+                                        <div class="input-prepend"><span class="add-on"><?php echo getCurrencySymbol(); ?></span><input type="text" style="width:80px;" name="paybackamount" id="paybackamount" class="width100 hastooltip isamount rightalign inputrequired greaterthanzero" value="<?php echo $loan->getPayBackAmount(); ?>" title="<?php echo $this->translate("season_paybackamount_tooltip"); ?>" /></div><div id="paybackamount_error"></div></td>
                                     <td><label class="control-label"><?php echo $this->translate("season_credit_payperiod_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
                                         <input style="width:50px;" type="text" name="paybackperiod" id="paybackperiod" class="centeralign isnumber inputrequired greaterthanzero" value="<?php echo $loan->getPayBackPeriod(); ?>" />
                                         <?php
@@ -102,7 +102,7 @@
                                     <td><label class="control-label"><?php echo $this->translate("season_credit_datereceived_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
                                     <input type="text" name="creditdate" id="creditdate" class="datefield width100 selectrequired" value="<?php echo changeMySQLDateToPageFormat($loan->getcreditdate()); ?>" /><div id="creditdate_error"></div></td>
                                     <td><label class="control-label"><?php echo $this->translate("season_credit_regularpay_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
-                                        <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" style="width:65px;" name="installment" id="installment" class="width50 isamount rightalign inputrequired greaterthanzero" value="<?php echo $loan->getInstallment(); ?>" /></div>
+                                        <div class="input-prepend"><span class="add-on"><?php echo getCurrencySymbol(); ?></span><input type="text" style="width:65px;" name="installment" id="installment" class="width50 isamount rightalign inputrequired greaterthanzero" value="<?php echo $loan->getInstallment(); ?>" /></div>
                                         &nbsp;/&nbsp;
                                         <?php
                                             $univalues = getLoanRepaymentFrequencyValues();
@@ -172,7 +172,7 @@
                                 </tr>
                                 <tr>
                                     <td colspan="2"><label class="control-label"><?php echo $this->translate("season_credit_value_label"); ?>:</label>
-                                        <div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" style="width:80px;" name="price" id="price" class="width100 hastooltip isamount rightalign" value="<?php echo $loan->getPrice(); ?>" title="<?php echo $this->translate("season_creditvalue_tooltip"); ?>" /></div><div id="price_error"></div></td>
+                                        <div class="input-prepend"><span class="add-on"><?php echo getCurrencySymbol(); ?></span><input type="text" style="width:80px;" name="price" id="price" class="width100 hastooltip isamount rightalign" value="<?php echo $loan->getPrice(); ?>" title="<?php echo $this->translate("season_creditvalue_tooltip"); ?>" /></div><div id="price_error"></div></td>
                                 </tr>
                                 <tr>
                                     <td colspan="2">

@@ -1,0 +1,228 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+?>
+<fieldset class="fieldsetcontainer">
+	<legend><?php echo $this->translate("season_labour_estimates_label"); ?></legend>
+    <div class="control-group" style="margin-bottom:5px; width:340px;">
+	<?php 
+        switch($stage){
+            case 'tillage':
+                $labourdetails = $tillage->getFamilyLabourDetails();
+                break;
+            case 'plant':
+                $labourdetails = $plant->getFamilyLabourDetails();
+                break;
+            case 'treat':
+                $labourdetails = $treat->getFamilyLabourDetails();
+                break;
+            case 'harvest':
+                $labourdetails = $harvest->getFamilyLabourDetails();
+                break;
+            case 'activity':
+                $labourdetails = $activity->getFamilyLabourDetails();
+                break;
+            case 'sale':
+                $labourdetails = $sale->getFamilyLabourDetails();
+                break;
+            default:
+                break;
+        }
+        $familycount = $labourdetails->count();
+        $e = 0;		
+		$sumhours = 0;
+	?>
+    <?php if($familycount == 0){ ?>
+        <span class="pagedescription">No unskilled labour estimates currently available.</span>
+    <?php } else { ?>
+		<?php
+            $sumhours_men_total = 0; $sumhours_women_total = 0; $sumhours_kids_total = 0;
+            foreach($labourdetails as $labour){
+                $totalno = 0;
+                $totalhours = 0;
+                $sumhours_men = 0; $sumhours_women = 0; $sumhours_kids = 0;
+                if(!isEmptyString($labour->getmcount())){
+                    $totalno += $labour->getmcount();
+                    if(!isEmptyString($labour->getmhoursperday()) && !isEmptyString($labour->getmtotaldays())){
+                        $sumhours_men = $labour->getmcount() * ($labour->getmhoursperday() * $labour->getmtotaldays());
+                        $sumhours_men_total += $sumhours_men;
+                        $totalhours += $sumhours_men;
+                    }
+                }
+                if(!isEmptyString($labour->getwcount())){
+                    $totalno += $labour->getwcount();
+                    if(!isEmptyString($labour->getwhoursperday()) && !isEmptyString($labour->getwtotaldays())){
+                        $sumhours_women = $labour->getwcount() * ($labour->getwhoursperday() * $labour->getwtotaldays());
+                        $sumhours_women_total += $sumhours_women;
+                        $totalhours += $sumhours_women;
+                    }
+                }
+                if(!isEmptyString($labour->getkcount())){
+                    $totalno += $labour->getkcount();
+                    if(!isEmptyString($labour->getkhoursperday()) && !isEmptyString($labour->getktotaldays())){
+                        $sumhours_kids = $labour->getkcount() * ($labour->getkhoursperday() * $labour->getktotaldays());
+                        $sumhours_kids_total += $sumhours_kids;
+                        $totalhours += $sumhours_kids;
+                    }
+                }
+                $sumhours += $totalhours;
+        ?>
+            <div>
+                <fieldset class="fieldsetcontainer well">
+                    <legend><?php echo $this->translate("season_labour_family_label"); ?> : Task <?php echo ($e+1); ?></legend>
+                    <div style="margin-left:10px; width:320px;">
+                        <label class="control-label" style="display:block;">Task Description: </label>
+                        <?php echo $labour->getActivityName(); ?>
+                        <table class="table table-stripped table-bordered hasheader" style="margin-top:5px; margin-bottom:5px; ">
+                            <thead>
+                                <tr class="rowheader">
+                                    <td colspan="3"><label class="control-label centeralign"><?php echo $this->translate("season_labour_men_label"); ?></label></td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_number_label"); ?></span></td>
+                                    <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_hrs_label"); ?></span></td>
+                                    <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_days_label"); ?></span></td>
+                                </tr>
+                                <tr>
+                                    <td><?php echo clean_num($labour->getmcount()); ?></td>
+                                    <td><?php echo clean_num($labour->getmhoursperday()); ?></td>
+                                    <td><?php echo clean_num($labour->getmtotaldays()); ?></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table class="table table-stripped table-bordered hasheader" style="margin-top:5px; margin-bottom:5px; ">
+                            <thead>
+                                <tr class="rowheader">
+                                    <td colspan="3"><label class="control-label centeralign"><?php echo $this->translate("season_labour_women_label"); ?></label></td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_number_label"); ?></span></td>
+                                    <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_hrs_label"); ?></span></td>
+                                    <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_days_label"); ?></span></td>
+                                </tr>
+                                <tr>
+                                    <td><?php echo clean_num($labour->getwcount()); ?></td>
+                                    <td><?php echo clean_num($labour->getwhoursperday()); ?></td>
+                                    <td><?php echo clean_num($labour->getwtotaldays()); ?></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table class="table table-stripped table-bordered hasheader" style="margin-top:5px; margin-bottom:5px; ">
+                            <thead>
+                                <tr class="rowheader">
+                                    <td colspan="3"><label class="control-label centeralign"><?php echo $this->translate("season_labour_children_label"); ?></label></td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_number_label"); ?></span></td>
+                                    <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_hrs_label"); ?></span></td>
+                                    <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_days_label"); ?></span></td>
+                                </tr>
+                                <tr>
+                                    <td><?php echo clean_num($labour->getkcount()); ?></td>
+                                    <td><?php echo clean_num($labour->getkhoursperday()); ?></td>
+                                    <td><?php echo clean_num($labour->getktotaldays()); ?></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </fieldset>
+            </div>
+        <?php } ?>
+    <?php } ?>       
+    </div>
+
+    <div class="control-group" style="margin-bottom:10px; margin-bottom:5px; width:340px;">
+		<?php 
+			switch($stage){
+				case 'tillage':
+					$labourdetails = $tillage->getHiredLabourDetails();
+					break;
+				case 'plant':
+					$labourdetails = $plant->getHiredLabourDetails();
+					break;
+				case 'treat':
+					$labourdetails = $treat->getHiredLabourDetails();
+					break;
+				case 'harvest':
+					$labourdetails = $harvest->getHiredLabourDetails();
+					break;
+				case 'activity':
+					$labourdetails = $activity->getHiredLabourDetails();
+					break;
+				case 'sale':
+					$labourdetails = $sale->getHiredLabourDetails();
+					break;
+				default:
+					break;
+			}
+           	
+				$hiredcount = $labourdetails->count();
+			?>
+            <?php if($hiredcount == 0){ ?>
+                <span class="pagedescription">No skilled labour estimates currently available.</span>
+            <?php } else { ?>
+				<?php
+                    $sumamount = 0; $l = 1;
+                    foreach($labourdetails as $labour){
+                        $sumamount += $labour->getamount();
+                ?>
+                <div>
+                    <fieldset class="fieldsetcontainer well " >
+                        <legend><?php echo $this->translate("season_labour_hired_label"); ?> : Task <?php echo $l; ?></legend>
+                        <div style="margin-left:10px; width:320px;">
+                            <label class="control-label" style="display:block;">Task Description: </label>
+                            <?php echo $labour->getActivityName(); ?>
+                            <table class="table table-stripped table-bordered hasheader" style="margin-top:5px; margin-bottom:5px; ">
+                                <thead>
+                                    <tr class="rowheader">
+                                        <td colspan="3"><label class="control-label centeralign"><?php echo $this->translate("season_labour_cashexpenditure_label"); ?></label></td>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_landsize_label"); ?></span></td>
+                                        <td><span class="blocked centeralign">Total Cost<?php //echo $this->translate("season_labour_cost_label"); ?></span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><?php echo clean_num($labour->getFieldSize())."&nbsp;<span class='pagedescription'>(".$labour->getFieldSizeUnitText().")</span>"; ?></td>
+                                        <td><?php echo $labour->getfieldcost(); ?></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <table class="table table-stripped table-bordered hasheader" style="margin-top:5px; margin-bottom:5px; ">
+                                <thead>
+                                    <tr class="rowheader">
+                                        <td><label class="control-label centeralign"><?php echo $this->translate("season_labour_kindexpenditure_label"); ?></label></td>
+                                    </tr>
+                                </thead>
+                                <td style="text-align:left;">
+                                    <div class="control-group">
+                                        <label class="control-label" style="display:inline; width:100px;"><?php echo $this->translate("season_labour_kinditem_label"); ?></label>
+                                        <?php echo $labour->getitempaid(); ?>
+                                    </div>
+                                    <div class="control-group">
+                                        <label class="control-label" style="display:inline; width:100px;"><?php echo $this->translate("season_labour_qty_label"); ?></label>
+                                        <?php echo clean_num($labour->getitemqty()); ?>
+                                    </div>
+                                    <div class="control-group">
+                                        <label class="control-label" style="display:inline; width:100px;"><?php echo $this->translate("season_labour_unitcost_label"); ?></label>
+                                        <?php echo $labour->getunitprice(); ?>
+                                    </div>
+                                    <div class="control-group">
+                                        <label class="control-label" style="display:inline; width:100px;"><?php echo $this->translate("season_labour_amount_label"); ?></label>
+                                        <?php echo $labour->getamount(); ?>
+                                    </div>
+                                </td>
+                            </table>
+                        </div>                        
+                    </fieldset>
+                </div>
+            <?php $l++;} ?>
+        <?php } ?>    
+	</div>        
+</fieldset>    	

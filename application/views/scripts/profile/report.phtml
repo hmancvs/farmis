@@ -1,0 +1,95 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	require_once(APPLICATION_PATH.'/../'.PUBLICFOLDER.'/dompdf/dompdf_config.inc.php');
+	
+	$user = new UserAccount();
+	
+	$theid = $request->id;
+	$user->populate($theid);
+	
+	// debugMessage($user->toArray());
+	$title = 'Test Report';
+	$this->headTitle($title);
+	
+?>
+<script>
+$(document).ready(function() {
+	
+	
+}); 
+</script>
+<style>
+#center .ui-widget-content {
+	width:100%;
+	float:left;
+}
+#center {
+	margin-top:0;
+}
+</style>
+<h1><?php //elcho $title; ?></h1>
+<div id="tabs" style="height:300px;">
+    <div class="span9 tab-content" id="center">   
+        <div id="basics">
+            <form id="profileform-basics" class="form-horizontal basics">
+        	<div class="row" style="margin-left:0px;">
+                <span class="span6 marginleft0" style="width:99%;">
+                    <div id="row1_left" class="well row marginleft0" style="min-height:170px; padding-left:10px;">                        
+                        <?php 
+							$html = '<table class="table">                       
+								<tr>
+									<td style="width:50x;"><label class="control-label">'.$this->translate("farmer_name_label").':</label></td>
+									<td style="width:150px;">'.$user->getName().$user->getSalutationLabel().'</td>
+									<td style="width:80px;"><label class="control-label">'.$this->translate("farmer_gender_label").':</label></td>
+									<td>'.$user->getGenderLabel().'</td>                                                             
+								</tr>
+								<tr>		                    
+									<td><label class="control-label prefix">'."FIN ID#"/*$this->translate("farmer_identity_label")*/.':</label></td>
+									<td>'.$user->getRegNo().'</td>  
+									<td><label class="control-label">'.$this->translate("farmer_dateofbirth_label").':</label></td>
+									<td>'.$user->getBirthDateFormatted().'</td>     
+								</tr>   
+								<tr>
+									<td><label class="control-label">'.$this->translate("farmer_country_label").':</label></td>
+									<td>'.$user->getAddress()->getCountryName().'</td>
+									<td><label class="control-label">'.$this->translate("farmer_location_label").':</label></td>
+									<td>Kla</td>                           
+								</tr>
+								<tr>
+									<td><label class="control-label">'.$this->translate("farmer_profilepath_label").':</label></td>
+									<td colspan="3">'.$user->getProfilePath().'</td>                                                             
+								</tr>
+								<tr>
+									<td><label class="control-label">'.$this->translate("farmer_dna_label").':</label></td>
+									<td colspan="3">'.$user->getFarmGroup()->getName().'
+									</td>
+								</tr>
+								
+							</table>';
+							echo ($html);
+							
+								$timestamp = time().rand(100, 5000);
+								$temp_file_name = md5($timestamp).".pdf";
+
+								$dompdf = new DOMPDF();
+								$dompdf->load_html($html);
+								
+								$dompdf->render();
+								$output = $dompdf->output();
+								// debugMessage($output);
+								$path = APPLICATION_PATH.DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR."public".DIRECTORY_SEPARATOR."dompdf".DIRECTORY_SEPARATOR."temp".DIRECTORY_SEPARATOR.$temp_file_name;
+								$relativepathtodocument = $this->serverUrl($this->baseUrl('dompdf/temp/'.$temp_file_name));
+								
+								file_put_contents($path, $output);
+						?>
+                    </div>
+                    <iframe style ="width: 99%; height: 533px; margin-top: 5px;" src="http://docs.google.com/gview?url=<?php echo $relativepathtodocument; ?>&embedded=true" frameborder="0"></iframe>
+                </span> 
+        	</div>
+        	</form> 
+        </div>
+    </div> 
+</div>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

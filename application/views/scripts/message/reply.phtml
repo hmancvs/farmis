@@ -53,9 +53,9 @@ $(document).ready(function() {
 					var wait = '<?php echo $this->baseUrl('images/loader.gif'); ?>';
 					var alt = '<?php echo $session->getVar('fullname'); ?>';
 					var fullname = '<?php echo $session->getVar('fullname'); ?>';
-					var plan = '<?php echo $session->getVar('membershipplanname'); ?>'
+					var plan = ''
 					// html string of comment list item to be appended to the ul
-					var postedhtml = "<li style='display:none;' id='message_"+messsage.id+"'><img src="+src+" alt="+alt+" /><div><h2>"+fullname+", "+plan+" Member</h2><span>"+messsage.contents+"</span><label>Sent on "+messsage.datecreated+"</label><a href='javascript: doNothing();' title='Delete Message' class='delete_message' id='remove_message_"+messsage.id+"'><img src="+del+" /></a><input type='hidden' class='remove_message_"+messsage.id+"' title='"+messsage.id+"' value='"+messsage.id+"' /></div><img class='loading hidden' id='waiting_old_"+messsage.id+"' src="+wait+" /></li>";
+					var postedhtml = "<li style='display:none;' id='message_"+messsage.id+"'><img src="+src+" alt="+alt+" /><div><h2>"+fullname+"</h2><span>"+messsage.contents+"</span><label>Sent on "+messsage.datecreated+"</label><a href='javascript: doNothing();' title='Delete Message' class='delete_message' id='remove_message_"+messsage.id+"'><img src="+del+" /></a><input type='hidden' class='remove_message_"+messsage.id+"' title='"+messsage.id+"' value='"+messsage.id+"' /></div><img class='loading hidden' id='waiting_old_"+messsage.id+"' src="+wait+" /></li>";
 					// alert(postedhtml);	
 					
 					// insert message to the bottom of the list  as the 2nd last child
@@ -116,17 +116,14 @@ ul.comments li div:not(.loading) {
 textarea.expanding {
 	width:350px;	
 }
-<?php if($message->getSenderID() == 1){ ?> 
+<?php if($message->getSenderID() == 1 || $message->getSenderID() == 0 || $message->getSenderID() == 3131){ ?> 
 #rightcolumn {
 	display:none;
 }
-/*img.header, img.footer {
-	display:none;
-}*/
 <?php } ?> 
 </style>
 
-<?php if($message->getSenderID() == 1){ ?> 
+<?php if($message->getSenderID() == 1 || $message->getSenderID() == 0 || $message->getSenderID() == 3131){ ?> 
 <div>
     <?php require APPLICATION_PATH."/views/scripts/index/leftcolumn.phtml"; ?>
     <div id="centercolumn" class="content">
@@ -136,7 +133,17 @@ textarea.expanding {
          <div class="widgetsection height300" style="">
             <h3><?php echo isEmptyString($message->getSubject()) ? 'Message Details' : $message->getSubject(); ?></h3>
             <div style="padding:0 20px 0 10px;">
-            	<label class="control-label" style="margin-bottom:10px; margin-top:10px; font-size:15px; display:block; text-align:left;">From: <?php echo $this->translate("company_signoff"); ?></label>
+            	<label class="control-label" style="margin-bottom:10px; margin-top:10px; font-size:15px; display:block; text-align:left;">From: 
+					<?php if($message->getSenderID() == 1 || $message->getSenderID() == 3131){ ?>
+                        <?php echo $this->translate("company_signoff"); ?>
+                    <?php } else { ?>
+                        <?php if($message->getSenderID() == 0){ ?>
+                            <?php echo $message->getSenderName().'['.$message->getSenderEmail().']'; ?>
+                        <?php } else { ?>
+                            <?php echo $message->getSender()->getName().'['.$message->getSender()->getEmail().']'; ?>
+                        <?php } ?>
+                    <?php } ?>  
+				</label>
 				<p style="margin-bottom:10px;">
                 	<?php if($message->getContents() != sprintf($this->translate('useraccount_email_subject_signup'), $this->translate('appname'))){ ?>
 						<?php echo $message->getContents(); ?>
@@ -163,9 +170,9 @@ textarea.expanding {
                 
         ?>
             <li id="message_<?php echo $themessage->getID(); ?>">
-                <a href="<?php echo $this->baseUrl('message/index/'.PAGE_CONTENTS_ONLY.'/true/userid/'.encode($themessage->getSenderID())); ?>" class="profilepopup" title="<?php echo $themessage->getSender()->getName(); ?>, <?php echo $themessage->getSender()->getMembershipPlan()->getName(); ?> Member"><img src="<?php echo $themessage->getSender()->getThumbnailPicturePath(); ?>" alt="<?php echo $themessage->getSender()->getName(); ?>" /></a>
+                <a href="<?php echo $this->baseUrl('message/index/'.PAGE_CONTENTS_ONLY.'/true/userid/'.encode($themessage->getSenderID())); ?>" class="profilepopup" title="<?php echo $themessage->getSender()->getName(); ?>"><img src="<?php echo $themessage->getSender()->getThumbnailPicturePath(); ?>" alt="<?php echo $themessage->getSender()->getName(); ?>" /></a>
                 <div>
-                    <a href="<?php echo $this->baseUrl('message/index/'.PAGE_CONTENTS_ONLY.'/true/userid/'.encode($themessage->getSenderID())); ?>" class="profilepopup" title="<?php echo $themessage->getSender()->getName(); ?>, <?php echo $themessage->getSender()->getMembershipPlan()->getName(); ?> Member"><h2><?php echo $themessage->getSender()->getName(); ?>, <?php echo $themessage->getSender()->getMembershipPlan()->getName(); ?> Member</h2></a>
+                    <a href="<?php echo $this->baseUrl('message/index/'.PAGE_CONTENTS_ONLY.'/true/userid/'.encode($themessage->getSenderID())); ?>" class="profilepopup" title="<?php echo $themessage->getSender()->getName(); ?>"><h2><?php echo $themessage->getSender()->getName(); ?></h2></a>
                     <span><?php echo nl2br($themessage->getContents()); ?></span>                                
                     <label>Sent on <?php echo date('m/d/Y - g:i A', strtotime($themessage->getDateCreated())); ?></label>
                     <?php if($userid == $themessage->getSenderID()){ ?>
@@ -179,7 +186,7 @@ textarea.expanding {
             <li class="commentdetails" id="newmessage" >
                 <img src="<?php echo $message->getRecipient()->getThumbnailPicturePath(); ?>" alt="<?php echo $session->getVar('fullname'); ?>" />
                 <div>
-                    <h2><?php echo $session->getVar('fullname'); ?>, <?php echo $session->getVar('membershipplanname'); ?> Member</h2>
+                    <h2><?php echo $session->getVar('fullname'); ?></h2>
                     <span id="beforesend"><textarea id="contents" name="contents" class="expanding {required: true, maxlength:<?php echo $config->workarea->maxprivatemessagelength; ?> , messages:{required: '<?php echo $this->translate("message_contents_error"); ?>', maxlength: '<?php echo sprintf($this->translate("message_contents_length_error"), $config->workarea->maxprivatemessagelength); ?>'}}"></textarea></span>                    
                  </div>
                  <img class="loading hidden" id="waiting_new" src="<?php echo $this->baseUrl('images/loader.gif'); ?>" />           

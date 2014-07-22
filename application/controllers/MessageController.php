@@ -134,33 +134,51 @@ class MessageController extends SecureController  {
 	function processmassmailAction() {
 		$session = SessionWrapper::getInstance();
 		$formvalues = $this->_getAllParams();
-		// debugMessage($formvalues);
-		// user group collection object
-		$query = Doctrine_Query::create()->from('UserAccount u')->innerJoin('u.usergroups g')->where("g.groupid = '".$formvalues['groupid']."'");
-		$users = $query->execute();
-		// debugMessage($groups->toArray());
+		// debugMessage($formvalues); // exit();
 		
 		$messages = array();
-		// collection to be used to save messages to inbox
 		$message_collection = new Doctrine_Collection(Doctrine_Core::getTable("Message"));
-		foreach ($users as $member){
-			$messages[$member->getID()]['senderid'] = $session->getVar('userid');
-			$messages[$member->getID()]['subject'] = $formvalues['subject'];
-			$messages[$member->getID()]['contents'] = $formvalues['contents'];
-			$messages[$member->getID()]['recipients'][md5($member->getID())]['recipientid'] = $member->getID();
+		// user group collection object
+		if($formvalues['type'] == 1){
+			if(!isArrayKeyAnEmptyString('groupid', $formvalues)){
+				$users = getFarmers($formvalues['groupid'], false, false, true, '', $formvalues['country']);
+			} else {
+				$users = getFarmers('', false, false, true, '', $formvalues['country']);
+			}
+			if(count($users) > 0){
+				foreach ($users as $id => $line){
+					$user = new UserAccount();
+					$user->populate($id); 
+					$messages[0]['senderid'] = $session->getVar('userid');
+					$messages[0]['subject'] = $formvalues['subject'];
+					$messages[0]['contents'] = $formvalues['contents'];
+					$messages[0]['recipients'][md5($user->getID())]['recipientid'] = $user->getID();
+				}
+			}
+		} else {
+			if(!isArrayKeyAnEmptyString('farmerids', $formvalues)){
+				foreach ($formvalues['farmerids'] as $id){
+					$user = new UserAccount();
+					$user->populate($id); 
+					$messages[$user->getID()]['senderid'] = $session->getVar('userid');
+					$messages[$user->getID()]['subject'] = $formvalues['subject'];
+					$messages[$user->getID()]['contents'] = $formvalues['contents'];
+					$messages[$user->getID()]['recipients'][md5($user->getID())]['recipientid'] = $user->getID();
+				}
+			}
 		}
 		
-		// debugMessage($messages);
+		// debugMessage($messages); exit;
 		foreach ($messages as $data) {
 			$message = new Message();
 			$message->processPost($data);
-			//debugMessage('error is '.$message->getErrorStackAsString());
+			// debugMessage('error is '.$message->getErrorStackAsString());
 			if($message->isValid()) {
 				$message_collection->add($message);
 			}			
 		}
 		
-		// debugMessage($message_collection->toArray());
+		// debugMessage($message_collection->toArray()); exit;
 		// save messages to each members's application inbox
 		if($message_collection->count() > 0){
 			$message_collection->save();
@@ -173,6 +191,7 @@ class MessageController extends SecureController  {
 		
 		// return to mass mail page
 		$session->setVar(SUCCESS_MESSAGE, 'Mass email has been successfully sent'); 
-		$this->_helper->redirector->gotoUrl($this->view->baseUrl('message/massmail'));
+		$this->_helper->redirector->gotoUrl($this->view->baseUrl('resource/massmail'));
+		// exit();
 	}
 }

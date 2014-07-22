@@ -13,15 +13,14 @@ class Sales extends BaseEntity  {
 		
 		// set the table
 		$this->setTableName('sales');
-		$this->hasColumn('farmid', 'integer', null, array( 'notnull' => true, 'notblank' => true));
-		$this->hasColumn('farmerid', 'integer', null, array( 'notnull' => true, 'notblank' => true));
+		$this->hasColumn('userid', 'integer', null, array('notblank' => true));
 		$this->hasColumn('seasonid', 'integer', null);
 		$this->hasColumn('cropid', 'integer', null);
 		$this->hasColumn('ref', 'string', 50);
 		$this->hasColumn('activityname', 'string', 255);
 		$this->hasColumn('type', 'integer', null, array('default' => 1)); // 1 Season, 2 Non Season/Other sales
 		
-		$this->hasColumn('startdate','date', null, array( 'notnull' => true, 'notblank' => true));
+		$this->hasColumn('startdate','date', null, array('notblank' => true));
 		$this->hasColumn('enddate','date', null);
 		$this->hasColumn('status', 'integer', null, array('default' => 3));
 		$this->hasColumn('quantity', 'decimal', 10, array('default' => NULL));
@@ -50,8 +49,7 @@ class Sales extends BaseEntity  {
 		
 		// set the custom error messages
        	$this->addCustomErrorMessages(array(
-       									"farmerid.notblank" => $this->translate->_("season_farmerid_error"),
-       									"farmid.notblank" => $this->translate->_("season_farmid_error"),
+       									"userid.notblank" => $this->translate->_("season_farmerid_error"),
        									"startdate.notblank" => $this->translate->_("season_activitydate_error")
        	       						));
 	}
@@ -63,14 +61,9 @@ class Sales extends BaseEntity  {
 									'foreign' => 'id'
 							)
 						);
-		$this->hasOne('Farm as farm',
-							array('local' => 'farmid',
-									'foreign' => 'id'
-							)
-						);
-		$this->hasOne('Farmer as farmer', 
+		$this->hasOne('UserAccount as user', 
 							array(
-								'local' => 'farmerid',
+								'local' => 'userid',
 								'foreign' => 'id'
 							)
 						);
@@ -80,6 +73,12 @@ class Sales extends BaseEntity  {
 							)
 						);
 		$this->hasMany('SeasonLabour as labourdetails',
+					 		array(
+								'local' => 'id',
+								'foreign' => 'saleid'
+							)
+						);
+		$this->hasMany('Loan as activitycredit',
 					 		array(
 								'local' => 'id',
 								'foreign' => 'saleid'
@@ -134,8 +133,7 @@ class Sales extends BaseEntity  {
 		if(!isArrayKeyAnEmptyString('financetype', $formvalues)){
 			if($formvalues['financetype'] == 3 || $formvalues['financetype'] == 4 || $formvalues['financetype'] == 5){
 				$formvalues['activitycredit'][0]['financetype'] = $formvalues['financetype'];
-				$formvalues['activitycredit'][0]['farmerid'] = $formvalues['farmerid'];
-				$formvalues['activitycredit'][0]['farmid'] = $formvalues['farmid'];
+				$formvalues['activitycredit'][0]['userid'] = $formvalues['userid'];
 				$formvalues['activitycredit'][0]['stage'] = $formvalues['stage'];
 				$formvalues['activitycredit'][0]['type'] = $formvalues['type'];
 				isArrayKeyAnEmptyString('principal', $formvalues) ? $formvalues['activitycredit'][0]['principal'] = NULL : $formvalues['activitycredit'][0]['principal'] = $formvalues['principal'];
@@ -181,8 +179,7 @@ class Sales extends BaseEntity  {
 					if(!isArrayKeyAnEmptyString('id', $value)){
 						$detailsarray[$key]['id'] = $value['id'];
 					}
-					$detailsarray[$key]['farmerid'] = $formvalues['farmerid'];
-					$detailsarray[$key]['farmid'] = $formvalues['farmid'];
+					$detailsarray[$key]['userid'] = $formvalues['userid'];
 					$detailsarray[$key]['seasonid'] = $formvalues['seasonid'];
 					if(!isArrayKeyAnEmptyString('labourdetails_fieldsizeunit_'.$key, $formvalues)){
 						$detailsarray[$key]['fieldsizeunit'] = $formvalues['labourdetails_fieldsizeunit_'.$key];
@@ -205,7 +202,7 @@ class Sales extends BaseEntity  {
     function getNextReferencePointer() {
     	$conn = Doctrine_Manager::connection();
     	$session = SessionWrapper::getInstance();
-    	$farmerid = $session->getVar('farmerid');
+    	$userid = $session->getVar('userid');
 		$sql = "SELECT COUNT(id) FROM sales WHERE seasonid = ".$this->getSeasonID()." "; 
 		$result = $conn->fetchOne($sql);
 		return str_pad(($result+1), 3, "0", STR_PAD_LEFT);

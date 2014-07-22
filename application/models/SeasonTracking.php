@@ -13,19 +13,19 @@ class SeasonTracking extends BaseEntity  {
 		
 		// set the table
 		$this->setTableName('seasontracking');
-		$this->hasColumn('seasonid', 'integer', null, array('notnull' => true, 'notblank' => true));	
-		$this->hasColumn('farmid', 'integer', null, array( 'notnull' => true, 'notblank' => true));
+		$this->hasColumn('seasonid', 'integer', null, array('notblank' => true));	
+		$this->hasColumn('userid', 'integer', null, array('default' => NULL));
 		$this->hasColumn('cropid', 'integer', null);
-		$this->hasColumn('type', 'integer', null, array('notnull' => true, 'notblank' => true)); // 1 - Herbicide, 2 - Insectcide, 3 - Fungicide, 4 - Fertiliser, 5 - Manure, 6 - Irrigation
+		$this->hasColumn('type', 'integer', null, array('notblank' => true)); // 1 - Herbicide, 2 - Insectcide, 3 - Fungicide, 4 - Fertiliser, 5 - Manure, 6 - Irrigation
 		$this->hasColumn('ref', 'string', 50);
 		$this->hasColumn('activityname', 'string', 255);
 		$this->hasColumn('itemname', 'string', 255);
 		$this->hasColumn('itemtype', 'integer', null);
 		$this->hasColumn('itemform', 'integer', null);
 		$this->hasColumn('itemstorage', 'integer', null);
-		$this->hasColumn('startdate','date', null, array( 'notnull' => true, 'notblank' => true));
+		$this->hasColumn('startdate','date', null, array('notblank' => true));
 		$this->hasColumn('enddate','date', null);
-		$this->hasColumn('method', 'integer', null, array( 'notnull' => true, 'notblank' => true));
+		$this->hasColumn('method', 'integer', null, array('notblank' => true));
 		$this->hasColumn('timing', 'integer', null);
 		$this->hasColumn('status', 'integer', null);
 		$this->hasColumn('itemrate', 'decimal', 10, array('default' => NULL));
@@ -49,7 +49,6 @@ class SeasonTracking extends BaseEntity  {
 		
 		// set the custom error messages
        	$this->addCustomErrorMessages(array(
-       									"farmid.notblank" => $this->translate->_("season_farmid_error"),
        									"seasonid.notblank" => $this->translate->_("season_seasonid_error"),
        									"type.notblank" => $this->translate->_("season_trackingtype_error"),
        									"startdate.notblank" => $this->translate->_("season_activitydate_error"),
@@ -64,8 +63,8 @@ class SeasonTracking extends BaseEntity  {
 									'foreign' => 'id'
 							)
 						);
-		$this->hasOne('Farm as farm',
-							array('local' => 'farmid',
+		$this->hasOne('UserAccount as user',
+							array('local' => 'userid',
 									'foreign' => 'id'
 							)
 						);
@@ -94,6 +93,9 @@ class SeasonTracking extends BaseEntity  {
 		// trim spaces from the name field
 		if(isArrayKeyAnEmptyString('cropid', $formvalues)){
 			$formvalues['cropid'] = NULL;
+		}
+		if(isArrayKeyAnEmptyString('userid', $formvalues)){
+			$formvalues['userid'] = NULL;
 		}
 		if(isArrayKeyAnEmptyString('status', $formvalues)){
 			$formvalues['status'] = NULL;
@@ -132,8 +134,7 @@ class SeasonTracking extends BaseEntity  {
 		if(!isArrayKeyAnEmptyString('financetype', $formvalues)){
 			if($formvalues['financetype'] == 3 || $formvalues['financetype'] == 4 || $formvalues['financetype'] == 5){
 				$formvalues['activitycredit'][0]['financetype'] = $formvalues['financetype'];
-				$formvalues['activitycredit'][0]['farmerid'] = $formvalues['farmerid'];
-				$formvalues['activitycredit'][0]['farmid'] = $formvalues['farmid'];
+				$formvalues['activitycredit'][0]['userid'] = $formvalues['userid'];
 				$formvalues['activitycredit'][0]['stage'] = $formvalues['stage'];
 				$formvalues['activitycredit'][0]['type'] = $formvalues['type'];
 				isArrayKeyAnEmptyString('principal', $formvalues) ? $formvalues['activitycredit'][0]['principal'] = NULL : $formvalues['activitycredit'][0]['principal'] = $formvalues['principal'];
@@ -179,8 +180,7 @@ class SeasonTracking extends BaseEntity  {
 					if(!isArrayKeyAnEmptyString('id', $value)){
 						$detailsarray[$key]['id'] = $value['id'];
 					}
-					$detailsarray[$key]['farmerid'] = $formvalues['farmerid'];
-					$detailsarray[$key]['farmid'] = $formvalues['farmid'];
+					$detailsarray[$key]['userid'] = $formvalues['userid'];
 					$detailsarray[$key]['seasonid'] = $formvalues['seasonid'];
 					if(!isArrayKeyAnEmptyString('labourdetails_fieldsizeunit_'.$key, $formvalues)){
 						$detailsarray[$key]['fieldsizeunit'] = $formvalues['labourdetails_fieldsizeunit_'.$key];
@@ -275,7 +275,7 @@ class SeasonTracking extends BaseEntity  {
     function getNextReferencePointer() {
     	$conn = Doctrine_Manager::connection();
     	$session = SessionWrapper::getInstance();
-    	$farmerid = $session->getVar('farmerid');
+    	$userid = $session->getVar('userid');
 		$sql = "SELECT COUNT(id) FROM seasontracking WHERE seasonid = ".$this->getSeasonID()." "; 
 		$result = $conn->fetchOne($sql);
 		return str_pad(($result+1), 3, "0", STR_PAD_LEFT);

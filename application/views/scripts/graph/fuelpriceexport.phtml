@@ -9,9 +9,11 @@
 	if(!$has_no_data){
 		$processeddata = array();
 		$months = array(); 
-		foreach($result as $key => $line){			
-			$months[] = $line['Month'];
-			$processeddata[$line['Commodity']]['retailprices'][] = $line['RetailPrice'];
+		foreach($result as $key => $line){		
+			if(is_numeric($line['RetailPrice'])){	
+				$months[] = $line['Month'];
+				$processeddata[$line['Commodity']]['retailprices'][] = $line['RetailPrice'];
+			}
 			//$processeddata[$line['Commodity']]['wholesaleprices'][] = $line['Wholesale Price'];
 		}
 		
@@ -26,8 +28,6 @@
 		}
 	}
 ?>
-<script src="<?php echo $this->baseUrl('javascript/chart/highcharts.js'); ?>"></script>
-<script src="<?php echo $this->baseUrl('javascript/chart/exporting.js'); ?>"></script>
 <script type="text/javascript">
 var chart;
 <?php 

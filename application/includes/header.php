@@ -4,9 +4,6 @@ $session = SessionWrapper::getInstance();
 $sessionhaserror = !isEmptyString($session->getVar(ERROR_MESSAGE));
 
 $userid = $session->getVar("userid");  
-$farmerid = $session->getVar("farmerid"); 
-$farmid = $session->getVar("farmid"); 
-$farmergroupid = $session->getVar("farmergroupid");  
 $type = $session->getVar("type");
 
 # the request object instance
@@ -63,3 +60,5 @@ $c->where("(mr.recipientid = '".$userid."' AND mr.isread = 0) ORDER BY m.datecre
 $c->addComponent('m', 'Message m');
 $c->addComponent('mr', 'm.recipients mr');
 $unread_messages = $c->execute()->count();
+
+$browserappend = " | ".$this->translate('appname');

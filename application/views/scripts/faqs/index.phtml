@@ -46,6 +46,9 @@ td.qn {
 .table {
 	margin-bottom:2px;
 }
+td.qn {
+	width:15px;
+}
 </style>
 <div class="row marginleft0">
     <div class="span8 pull-left marginleft0 public_leftcolumn">
@@ -119,8 +122,11 @@ td.qn {
                     </tr>
                     <tr>
                         <td class="qn">A:</td>
-                        <td class="ans"><p>For the first month, no obligations! Simply fill out a simple registration form and you will have free access to a number of Farmis services for a month. If you would like to continue using Farmis after the first month, you simply pay a fee of Shs. 1200 per month ($0.9) payable in collective sum for 6 months subscription – that is 1,200x6 = Shs.7,200 ($2.6).</p> 
+                        <td class="ans">
+                        <?php if(isUganda()){ ?>
+                        <p>For the first month, no obligations! Simply fill out a simple registration form and you will have free access to a number of Farmis services for a month. If you would like to continue using Farmis after the first month, you simply pay a fee of Shs. 1200 per month ($0.9) payable in collective sum for 6 months subscription – that is 1,200x6 = Shs.7,200 ($2.6).</p> 
                         <p>In addition, every farmer will be allocated a farmer crop card to enter their records before taking them for data entry at the district farmer association offices.This will give you access to all the benefits Farmis offers.</p></td>
+                        <?php } ?>
                     </tr>                  
                 </tbody>
             </table>
@@ -134,13 +140,16 @@ td.qn {
                     </tr>
                     <tr>
                         <td class="qn">A:</td>
-                        <td class="ans"><p>You can pay for Farmis using mobile money. Every farmer is allocated an ID, please make sure you include this ID in the message when making payments through mobile money.</p>
+                        <td class="ans">
+                        <?php if(isUganda()){ ?>
+                        <p>You can pay for Farmis using mobile money. Every farmer is allocated an ID, please make sure you include this ID in the message when making payments through mobile money.</p>
                         To send subscription, simply follow these guidelines;
-                       
+                       	<?php } ?>
                         </p></td>
                     </tr>                  
                 </tbody>
             </table>
+            <?php if(isUganda()){ ?>
             <table class="table table-bordered table-condesed list cat5">
                 <tbody>
                     <tr>
@@ -155,6 +164,7 @@ td.qn {
                     </tr>                  
                 </tbody>
             </table>
+            <?php } ?>
             <table class="table table-bordered table-condesed list cat4">
                 <tbody>
                     <tr>
@@ -183,6 +193,7 @@ td.qn {
                     </tr>                  
                 </tbody>
             </table>
+            <?php if(isUganda()){ ?>
             <table class="table table-bordered table-condesed list cat2">
                 <tbody>
                     <tr>
@@ -213,6 +224,7 @@ td.qn {
                     </tr>                  
                 </tbody>
             </table>
+            <?php } ?>
         </div>
     </div>
     <?php require APPLICATION_PATH."/views/scripts/index/righthandband.phtml"; ?>

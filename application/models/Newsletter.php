@@ -53,7 +53,6 @@ class Newsletter extends BaseRecord {
 	function processPost($formvalues){
 		// debugMessage($formvalues);
 		$session = SessionWrapper::getInstance();
-    	$farmerid = $session->getVar('farmerid');
     	$userid = $session->getVar('userid');
     	
 		// set default values for integers, dates, decimals

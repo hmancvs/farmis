@@ -1,0 +1,417 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$location = new Location();
+	$location->populate(decode($request->id));
+	
+	$title = $location->getName();
+	$viewurl = $this->baseUrl('location/view/id/'.encode($location->getID()));
+	$indexurl = $this->baseUrl('location/index/id/'.encode($location->getID()));
+	$listurl = $this->baseUrl("location/list");
+	$listitems = "Locations";
+	$plural = $listitems;	
+	$moduleitem = "Location";
+	$moduleitem_lower = strtolower($moduleitem);
+	$type = $location->getLocationType();
+	if(!isEmptyString($type)){
+		$listurl = $this->baseUrl("location/list/type/".$type);
+	}
+	$posturl = "";
+	if($request->detect == '1'){
+		$posturl = $this->baseUrl("location/processgps");
+	}
+	
+	switch($location->getLocationType()){
+		case 1:
+			$moduleitem = "Region";
+			$plural = $listitems = "Regions";
+			$moduleitem_lower = strtolower($moduleitem);
+			break;
+		case 2:
+			$moduleitem = "District";
+			$plural = $listitems = "Districts";
+			$moduleitem_lower = strtolower($moduleitem);
+			break;
+		case 3:
+			$moduleitem = "County";
+			$plural = $listitems = "Counties";
+			$moduleitem_lower = strtolower($moduleitem);
+			break;
+		case 4:
+			$moduleitem = "Subcounty";
+			$plural = $listitems = "Subcounties";
+			$moduleitem_lower = strtolower($moduleitem);
+			break;
+		case 5:
+			$moduleitem = "Parish";
+			$plural = $listitems = "Parishes";
+			$moduleitem_lower = strtolower($moduleitem);
+			break;
+		case 6:
+			$moduleitem = "Village";
+			$plural = $listitems = "Villages";
+			$moduleitem_lower = strtolower($moduleitem);
+			break;
+		default:
+			$moduleitem = "Location";
+			$plural = "Locations";
+			$moduleitem_lower = strtolower($moduleitem);
+			break;
+	}
+	
+	$this->headTitle($title.$browserappend); 
+	
+?>
+<?php if($location->hasGPSCoordinates() || !isEmptyString($request->detect)){ ?>
+	<script src="http://maps.google.com/maps/api/js?sensor=true" type="text/javascript"></script>
+	<script type="text/javascript" src="<?php echo $this->serverUrl($this->baseUrl('plugins/gmaps/gmaps.min.js')); ?>"></script>
+    <script src="<?php echo $this->serverUrl($this->baseUrl('plugins/gmaps/geoPosition.js')); ?>"></script>
+<?php } ?>
+<script>
+$(document).ready(function() {
+	// breadcrumb config
+	$("#levelone_icon").addClass('icon-globe');
+	$("#levelone_link").attr('href', '<?php echo $listurl; ?>').html('Locations');
+	$("#leveltwo_link").attr('href', '<?php echo $listurl.'/type/2'; ?>').html('<?php echo $listitems; ?>');
+	$("#levelthree_link").html('<?php echo $title; ?>');
+	// $("#bottomactions").html($("#topactions").html());
+	
+	disableContainerByClass('locationspecific');
+	var locationtype = '<?php echo $location->getLocationType(); ?>';
+	enableContainerByClass('<?php echo $moduleitem_lower; ?>');
+	
+	<?php if($location->hasGPSCoordinates() && isEmptyString($request->detect)){ ?>
+		var gpslat = '<?php echo $location->getgpslat(); ?>';
+		var gpslng = '<?php echo $location->getgpslng(); ?>';
+		var title = "<?php echo $location->getName(); ?>";
+		var map = new GMaps({
+			div: '#map_canvas',
+			lat: gpslat,
+			lng: gpslng
+		});
+		map.addMarker({
+			lat: gpslat,
+			lng: gpslng,
+			title: "<?php echo $location->getName(); ?>",
+			infoWindow: {
+				content: '<span><b>'+title+'</b><br /> Lat: '+gpslat+'<br />Lng: '+gpslng+'</span>'
+			}
+		});
+		map.setZoom(10);
+	<?php } ?>
+	<?php if(!isEmptyString($request->detect)){ ?>
+		initialiseMap2();
+		initialise2();
+		var gpslat = '<?php echo $location->getgpslat(); ?>';
+		var gpslng = '<?php echo $location->getgpslng(); ?>';
+		$("#lat").val(gpslat);
+		$("#lng").val(gpslng);
+			
+		$("#viewform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				lat: {
+					required: true, 					
+					maxlength: 10
+				},
+				lng: {
+					required: true, 					
+					maxlength: 10
+				}
+			}, 
+			// the messages for each of the fields being validated
+			messages: {		
+				lat: {
+					required: "Please enter coordinates", 					
+					maxlength: "Length must not exceed 10 characters"
+				},
+				lng: {
+					required: "Please enter coordinates", 					
+					maxlength: "Length must not exceed 10 characters"
+				}
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						error.appendTo("#hasgps_error")
+						break;
+				}			
+			}
+		});
+		
+		// initialise the google map
+		function initialiseMap2(){
+			var myOptions = {
+				  zoom: 10,
+				  mapTypeControl: true,
+				  mapTypeControlOptions: {style: google.maps.MapTypeControlStyle.DROPDOWN_MENU},
+				  navigationControl: true,
+				  navigationControlOptions: {style: google.maps.NavigationControlStyle.SMALL},
+				  mapTypeId: google.maps.MapTypeId.ROADMAP      
+				}        
+			map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+		}
+		function initialise2() {
+			if(geoPosition.init()){
+				document.getElementById('current').innerHTML="Receiving location... please wait... <br / ><br />Click on 'Share Location' to allow your browser to detect your current location";
+				geoPosition.getCurrentPosition(
+					showPosition,
+					function(){
+						document.getElementById('current').innerHTML="Couldn't get location"
+					},
+					{maximumAge:60000, timeout:10000, enableHighAccuracy:true}
+				);
+			} else {
+				document.getElementById('current').innerHTML="Your Browser is not supported for this function";
+			}
+		}
+	
+		function showPosition(p){
+			var latitude = parseFloat(p.coords.latitude);
+			latitude = latitude.toFixed(6);
+			
+			var longitude = parseFloat(p.coords.longitude);
+			longitude = longitude.toFixed(6);
+			
+			$("#lat").val(latitude);
+			$("#lng").val(longitude);
+			if(!isEmptyString(latitude) && !isEmptyString(longitude)){
+				$("#hasgps").val(latitude+','+longitude);
+			}
+			document.getElementById('current').innerHTML=" Latitude: "+latitude+", Longitude: "+longitude+" <br /><br />Location successfully found. Click on 'Save Position' to update profile.<br />"
+			
+			$("#saveposition").show().removeClass('hide');
+			
+			var pos=new google.maps.LatLng(latitude, longitude);
+			map.setCenter(pos);
+			map.setZoom(10);
+	
+			var infowindow = new google.maps.InfoWindow({
+				content: "<strong>New Location Found</strong> <br />Latitude: "+latitude+", <br /> Longitude: "+longitude+"<br /> "
+			});
+	
+			var marker = new google.maps.Marker({
+				position: pos,
+				map: map,
+				title:"You are here"
+			});
+	
+			google.maps.event.addListener(marker, 'click', function() {
+			  infowindow.open(map,marker);
+			});
+		} 
+	<?php } ?>
+	// alert(hostReachable());
+});
+</script>
+<!--=== Page Header ===-->
+<div class="page-header">
+    <div class="page-title">
+        <h3><?php echo $title; ?></h3>
+        <span><?php echo $moduleitem; ?> Profile</span>
+    </div>
+</div>
+<form class="form-horizontal clearfix" id="viewform" action="<?php echo $posturl; ?>" method="post">
+<!--=== Page Content ===-->
+<?php if(isAdmin()){ ?>
+<div class="form-actions fluid" id="topactions">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="xcol-md-offset-2 xcol-md-10 pull-left">
+                <?php if ($acl->checkPermission($moduleitem, ACTION_DELETE)) { ?>
+					<a class="btn btn-sm btn-danger deleteline noimglink" action="<?php echo $this->baseUrl('location/delete/id/'.encode($location->getID())."/entityname/Location/successurl/".encode($listurl)); ?>" message="<?php echo $this->translate('global_delete_confirm_message'); ?>" title="Delete Entry"><i class="icon-trash"></i></a>&nbsp;
+                <?php } ?>
+                <?php if ($acl->checkPermission($moduleitem, ACTION_EDIT)) { ?>
+                	<a class="btn btn-sm btn-primary" href="<?php echo $this->baseUrl('location/index/id/'.encode($location->getID())); ?>"><i class="icon-pencil icon-white"></i> Update Profile</a>&nbsp;
+          		<?php } ?>
+				<?php if ($acl->checkPermission($moduleitem, ACTION_LIST)) { ?>
+                	<a class="btn btn-sm btn-default" href="<?php echo $listurl; ?>"><i class="icon-list"></i> List of <?php echo $listitems; ?></a>&nbsp;
+               	<?php } ?>
+            </div>
+        </div>
+    </div>
+</div>
+<?php } ?>
+<?php if ($sessionhaserror) { ?>
+    <div class="alert alert-danger fade in"><i class="icon-remove close" data-dismiss="alert"></i><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+<?php } ?>
+<?php if (!isEmptyString($session->getVar(SUCCESS_MESSAGE))) { ?>
+    <div class="alert alert-success fade in"><i class="icon-remove close" data-dismiss="alert"></i><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+<?php } ?>
+<div class="row">
+    <div class="col-md-12">
+        <div class="widget xbox">
+            <div class="widget-header">
+                <h4><i class="icon-reorder"></i> About <?php echo $location->getName(); ?></h4>
+            </div>
+            <div class="widget-content leftalignlabels" style="min-height:180px;">
+                <div class="form-group">
+                    <div class="col-md-12 nullifempty"><?php echo nl2br($location->getDescription()); ?></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+	<div class="col-md-12">
+        <div class="widget xbox">
+            <div class="widget-header">
+                <h4><i class="icon-reorder"></i>Location</h4>
+            </div>
+            <div class="widget-content leftalignlabels" style="min-height:280px;">
+            	<div class="row">
+					<div class="col-md-9">
+                    	<div class="well clearfix makerelative" style="min-height:300px; height:auto; background-color:#fcfcfc; padding-bottom:10px;">
+							<?php if(isEmptyString($request->detect) && $acl->checkPermission($moduleitem, ACTION_EDIT)){ ?>
+                               <a class="btn btn-xs btn-default makeabsolute gonowhere" style="top:-25px; left:0;">Map not yet uploaded</a>
+                               
+                                <div id="map_canvas" class="gmaps"></div>
+                             <?php } else { ?>
+                            	 <a class="btn btn-xs btn-info makeabsolute" style="top:-25px; left:0;" href="<?php echo $this->baseUrl('location/view/id/'.encode($location->getID()).'/detect/1'); ?>"><?php echo $location->hasGPSCoordinates() ? 'Update Position' : 'Compute Location'; ?></a>
+                                <div id="map_canvas" class="gmaps"></div>
+                            <?php } ?>    
+                            <?php if(!isEmptyString($request->detect) && $acl->checkPermission($moduleitem, ACTION_EDIT)){ ?>
+                                <div id="current" class="bolded">Initializing...</div>
+                                <input type="text" id="lat" name="lat" value="" class="form-control input-width-small isdecimal" /> &nbsp;
+                                <input type="text" id="lng" name="lng" value="" class="form-control input-width-small isdecimal" /><input type="hidden" id="hasgps" name="hasgps" value="" /><br /><br />
+                                
+                                <a href="<?php echo $this->referer; ?>" class="btn btn-sm"><i class="icon-remove"></i> <?php echo $this->translate('global_button_cancel'); ?></a>
+                                <a href="<?php echo $this->baseUrl('location/view/id/'.encode($location->getID()).'/detect/1'); ?>" class="btn btn-sm btn-inverse"><i class="icon-refresh"></i> Reload</a>
+                                <button type="submit" class="btn btn-sm btn-success hide" id="saveposition"><i class="icon-ok icon-white"></i> <?php echo $this->translate('global_button_save')." Position"; ?></button>
+                                <div class="form-group">
+                                    <div id="hasgps_error"></div>
+                                </div>
+                                <div id="map_canvas" class="gmaps"></div>
+                                <div class="divider20"></div>	
+                                <input type="hidden" name="entityname" value="Location" />
+                                <input type="hidden" id="id" name="id" value="<?php echo encode($location->getID()); ?>" />
+                                
+                                
+                                <input type="hidden" name="<?php echo URL_SUCCESS; ?>" value="<?php echo encode($this->baseUrl('location/view/id/'.encode($location->getID()))); ?>" />
+                                <input type="hidden" name="<?php echo URL_FAILURE; ?>" value="<?php echo encode($this->baseUrl('location/view/id/'.encode($location->getID()).'/detect/1')); ?>" />
+                                <input type="hidden" name="<?php echo SUCCESS_MESSAGE; ?>" value="global_save_success" />
+                            <?php } ?>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label class="col-md-4 control-label"><?php echo $this->translate("global_country_label"); ?>:</label>
+                            <div class="col-md-8"><?php echo $location->getCountryName(); ?></div>
+                        </div>
+                        <?php if($location->isDistrict() || $location->isCounty() || $location->isSubcounty() || $location->isParish() || $location->isVillage()){ ?>
+                            <div class="form-group">
+                                <label class="col-md-4 control-label"><?php echo $this->translate("global_region_label"); ?>:</label>
+                                <div class="col-md-8 nullifempty"><?php echo $location->getRegion()->getName(); ?></div>
+                            </div>
+                        <?php } ?>
+                        <?php if( $location->isCounty() || $location->isSubcounty() || $location->isParish() || $location->isVillage()){ ?>
+                        <div class="form-group">
+                            <label class="col-md-4 control-label"><?php echo $this->translate("global_district_label"); ?>:</label>
+                            <div class="col-md-8 nullifempty"><?php echo $location->getDistrict()->getName(); ?></div>
+                        </div>
+                        <?php } ?>
+                        <?php if($location->isSubcounty() || $location->isParish() || $location->isVillage()){ ?>
+                        <div class="form-group">
+                            <label class="col-md-4 control-label"><?php echo $this->translate("global_county_label"); ?>:</label>
+                            <div class="col-md-8 nullifempty"><?php echo $location->getCounty()->getName(); ?></div>
+                        </div>
+                        <?php } ?>
+                        <?php if($location->isParish() || $location->isVillage()){ ?>
+                        <div class="form-group">
+                            <label class="col-md-4 control-label"><?php echo $this->translate("global_subcounty_label"); ?>:</label>
+                            <div class="col-md-8 nullifempty"><?php echo $location->getSubcounty()->getName(); ?></div>
+                        </div>
+                        <?php } ?>
+                        <?php if($location->isVillage()){ ?>
+                        <div class="form-group">
+                            <label class="col-md-4 control-label"><?php echo $this->translate("global_parish_label"); ?>:</label>
+                            <div class="col-md-8 nullifempty"><?php echo $location->getParish()->getName(); ?></div>
+                        </div>
+                        <?php } ?>
+                        <div class="form-group">
+                            <label class="col-md-4 control-label">GPS:</label>
+                            <div class="col-md-8 nullifempty"><?php echo $location->hasGPSCoordinates() ? $location->getGPSLat().', '.$location->getGPSLng() : ''; ?></div>
+                        </div>
+                    </div>
+				</div>                    
+            </div>
+		</div>
+	</div>
+</div> 
+<div class="row" style="margin-top:-25px;">
+	<div class="col-md-12">
+        <div class="widget box">
+            <div class="widget-header">
+                <h4><i class="icon-reorder"></i>News and Updates</h4>
+            </div>
+            <div class="widget-content leftalignlabels" style="min-height:280px;">
+            	<div class="divider20"></div>
+            	<div class="alert alert-warning fade in">No records currently available</div>
+            </div>
+		</div>
+	</div>
+</div>	
+<div class="row">
+	<div class="col-md-12">
+        <div class="widget box">
+            <div class="widget-header">
+                <h4><i class="icon-reorder"></i>Latest Commodity Prices</h4>
+            </div>
+            <div class="widget-content leftalignlabels" style="min-height:280px;">
+            	<div class="divider20"></div>
+            	<div class="alert alert-warning fade in">No records currently available</div>
+            </div>
+		</div>
+	</div>
+</div> 
+<div class="row">
+	<div class="col-md-12">
+        <div class="widget box">
+            <div class="widget-header">
+                <h4><i class="icon-reorder"></i>Commodity Price Trends</h4>
+            </div>
+            <div class="widget-content leftalignlabels" style="min-height:280px;">
+            	<div class="divider20"></div>
+            	<div class="alert alert-warning fade in">No records currently available</div>
+            </div>
+		</div>
+	</div>
+</div>
+<div class="row">
+	<div class="col-md-12">
+        <div class="widget box">
+            <div class="widget-header">
+                <h4><i class="icon-reorder"></i>Trading Offers</h4>
+            </div>
+            <div class="widget-content leftalignlabels" style="min-height:280px;">
+            	<div class="divider20"></div>
+            	<div class="alert alert-warning fade in">No records currently available</div>
+            </div>
+		</div>
+	</div>
+</div>      
+<?php if(isAdmin()){ ?>
+<div class="widgetbox">
+    <table class="table nohover table-condensed footertable" style="font-size:12px;">
+        <thead class="bolded">
+            <tr>
+                <td style="width:25%;">Input Date:</td>
+                <td style="width:25%;">Input By:</td>
+                <td style="width:25%;">Last Updated By</td>
+                <td style="width:25%;">Last Updated By</td>
+            </tr>
+        </thead>
+        <tr>
+            <td class="nullifempty"><?php echo formatDateAndTime($location->getDateCreated()); ?></td>
+            <td class="nullifempty"><?php echo format($location->getCreator()->getName()); ?></td>
+            <td class="nullifempty"><?php echo !isEmptyString($location->getLastUpdateDate()) ? formatDateAndTime($location->getLastUpdateDate()) : ''; ?></td>
+            <td class="nullifempty"><?php echo !isEmptyString($location->getLastUpdatedBy()) ? format($location->getUpdator()->getName()) : ''; ?></td>
+        </tr>
+    </table>	
+</div> 
+<?php } ?> 
+</form>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

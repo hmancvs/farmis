@@ -14,8 +14,7 @@ class SeasonInput extends BaseEntity  {
 		// set the table
 		$this->setTableName('seasoninput');
 		$this->hasColumn('seasonid', 'integer', null);	
-		$this->hasColumn('farmid', 'integer', null, array( 'notnull' => true, 'notblank' => true));
-		$this->hasColumn('farmerid', 'integer', null, array( 'notnull' => true, 'notblank' => true));
+		$this->hasColumn('userid', 'integer', null, array('notblank' => true));
 		$this->hasColumn('type', 'integer', null, array('default' => 1)); // 1 Season, 2 Non Season/Other sales
 		$this->hasColumn('ref', 'string', 50);
 		$this->hasColumn('activityname', 'string', 255);
@@ -39,8 +38,7 @@ class SeasonInput extends BaseEntity  {
 		
 		// set the custom error messages
        	$this->addCustomErrorMessages(array(
-       									"farmerid.notblank" => $this->translate->_("season_farmerid_error"),
-       									"farmid.notblank" => $this->translate->_("season_farmid_error"),
+       									"userid.notblank" => $this->translate->_("season_userid_error"),
        									"startdate.notblank" => $this->translate->_("season_activitydate_error"),
        	       						));
 	}
@@ -52,14 +50,9 @@ class SeasonInput extends BaseEntity  {
 									'foreign' => 'id'
 							)
 						);
-		$this->hasOne('Farm as farm',
-							array('local' => 'farmid',
-									'foreign' => 'id'
-							)
-						);
-		$this->hasOne('Farmer as farmer', 
+		$this->hasOne('UserAccount as user', 
 							array(
-								'local' => 'farmerid',
+								'local' => 'userid',
 								'foreign' => 'id'
 							)
 						);
@@ -83,6 +76,19 @@ class SeasonInput extends BaseEntity  {
 		# trim spaces from the name field
 		if(isArrayKeyAnEmptyString('type', $formvalues)){
 			unset($formvalues['type']); 
+		} else {
+			$type = $formvalues['type'];
+			if($type == 2){
+				$stage = '';
+				$activityid = '';
+				if(!isArrayKeyAnEmptyString('activityid', $formvalues)){
+					$datarray = explode(',', $formvalues['activityid']);
+					if(is_array($datarray)){
+						$stage = $datarray[0];
+						$activityid = $datarray[1];
+					}
+				}
+			}
 		}
 		if(isArrayKeyAnEmptyString('status', $formvalues)){
 			unset($formvalues['status']); 
@@ -93,8 +99,12 @@ class SeasonInput extends BaseEntity  {
 		if(isArrayKeyAnEmptyString('seasonid', $formvalues)){
 			unset($formvalues['seasonid']); 
 		}
+		if(isArrayKeyAnEmptyString('userid', $formvalues)){
+			unset($formvalues['userid']); 
+		}
 		# process season input details
 		$detailsarray = array();
+		$total = 0;
 		if(!isArrayKeyAnEmptyString('inputdetails', $formvalues)){
 			foreach ($formvalues['inputdetails'] as $key => $value){
 				if(isEmptyString($value['name'])){
@@ -107,9 +117,52 @@ class SeasonInput extends BaseEntity  {
 					if(!isArrayKeyAnEmptyString('inputdetails_type_'.$key, $formvalues)){
 						$detailsarray[$key]['type'] = $formvalues['inputdetails_type_'.$key];
 					}
+					if(!isEmptyString($stage) && !isEmptyString($activityid)){
+						switch ($stage){
+							case 2:
+								$detailsarray[$key]['tillageid'] = $activityid;
+								$detailsarray[$key]['plantingid'] = NULL;
+								$detailsarray[$key]['trackingid'] = NULL;
+								$detailsarray[$key]['harvestid'] = NULL;
+								$detailsarray[$key]['saleid'] = NULL;
+								break;
+							case 3:
+								$detailsarray[$key]['plantingid'] = $activityid;
+								$detailsarray[$key]['tillageid'] = NULL;
+								$detailsarray[$key]['trackingid'] = NULL;
+								$detailsarray[$key]['harvestid'] = NULL;
+								$detailsarray[$key]['saleid'] = NULL;
+								break;
+							case 4:
+								$detailsarray[$key]['trackingid'] = $activityid;
+								$detailsarray[$key]['tillageid'] = NULL;
+								$detailsarray[$key]['plantingid'] = NULL;
+								$detailsarray[$key]['harvestid'] = NULL;
+								$detailsarray[$key]['saleid'] = NULL;
+								break;
+							case 6:
+								$detailsarray[$key]['harvestid'] = $activityid;
+								$detailsarray[$key]['tillageid'] = NULL;
+								$detailsarray[$key]['plantingid'] = NULL;
+								$detailsarray[$key]['trackingid'] = NULL;
+								$detailsarray[$key]['saleid'] = NULL;
+								break;
+							case 7:
+								$detailsarray[$key]['saleid'] = $activityid;
+								$detailsarray[$key]['tillageid'] = NULL;
+								$detailsarray[$key]['plantingid'] = NULL;
+								$detailsarray[$key]['trackingid'] = NULL;
+								$detailsarray[$key]['harvestid'] = NULL;
+								break;
+							default:
+								break;
+						}
+					}
+					$total += $value['amount'];
 				}
 			}
 		}
+		$formvalues['totalamount'] = $total;
 		if(count($detailsarray) > 0){
 			$formvalues['inputdetails'] = $detailsarray;
 		} else {
@@ -119,8 +172,7 @@ class SeasonInput extends BaseEntity  {
 		if(!isArrayKeyAnEmptyString('financetype', $formvalues)){
 			if($formvalues['financetype'] == 3 || $formvalues['financetype'] == 4 || $formvalues['financetype'] == 5){
 				$formvalues['activitycredit'][0]['financetype'] = $formvalues['financetype'];
-				$formvalues['activitycredit'][0]['farmerid'] = $formvalues['farmerid'];
-				$formvalues['activitycredit'][0]['farmid'] = $formvalues['farmid'];
+				$formvalues['activitycredit'][0]['userid'] = $formvalues['userid'];
 				$formvalues['activitycredit'][0]['stage'] = $formvalues['stage'];
 				$formvalues['activitycredit'][0]['type'] = $formvalues['type'];
 				isArrayKeyAnEmptyString('principal', $formvalues) ? $formvalues['activitycredit'][0]['principal'] = NULL : $formvalues['activitycredit'][0]['principal'] = $formvalues['principal'];
@@ -144,7 +196,7 @@ class SeasonInput extends BaseEntity  {
 				$formvalues['activitycredit'] = array();
 			}
 		}
-		// debugMessage($formvalues);
+		debugMessage($formvalues); // exit();
 		parent::processPost($formvalues);
 	}
 	/**
@@ -190,7 +242,7 @@ class SeasonInput extends BaseEntity  {
     function getNextReferencePointer() {
     	$conn = Doctrine_Manager::connection();
     	$session = SessionWrapper::getInstance();
-    	$farmerid = $session->getVar('farmerid');
+    	$userid = $session->getVar('userid');
 		$sql = "SELECT COUNT(id) FROM seasoninput WHERE seasonid = ".$this->getSeasonID()." "; 
 		$result = $conn->fetchOne($sql);
 		return str_pad(($result+1), 3, "0", STR_PAD_LEFT);
@@ -215,6 +267,90 @@ class SeasonInput extends BaseEntity  {
     	$q = Doctrine_Query::create()->from('Loan l')->where("l.inputid = '".$this->getID()."'");
 		$result = $q->execute();
 		return $result->get(0);
+	}
+	function hasPreselectActivity(){
+		$name = $this->getExpenseActivityName();
+		return isEmptyString($name) ? false : true;
+	}
+	function getExpenseActivityName(){
+		$name= '';
+		$details = $this->getInputDetails()->get(0);
+		if(!isEmptyString($details->getTillageID())){
+			$name = $details->getTillage()->getActivityName().' - '.$details->getTillage()->getRef();
+		}
+		if(!isEmptyString($details->getPlantingID())){
+			$name = $details->getPlanting()->getActivityName().' - '.$details->getPlanting()->getRef();
+		}
+		if(!isEmptyString($details->getTrackingID())){
+			$name = $details->gettreatment()->getActivityName().' - '.$details->gettreatment()->getRef();
+		}
+		if(!isEmptyString($details->getHarvestID())){
+			$name = $details->getHarvest()->getActivityName().' - '.$details->getHarvest()->getRef();
+		}
+		if(!isEmptyString($details->getSaleID())){
+			$name = $details->getSale()->getActivityName().' - '.$details->getSale()->getRef();
+		}
+		return $name;
+	}
+	function getExpenseActivityID() {
+		$id= '';
+		$details = $this->getInputDetails()->get(0);
+		if(!isEmptyString($details->getTillageID())){
+			$id = $details->getTillageID();
+		}
+		if(!isEmptyString($details->getPlantingID())){
+			$id = $details->getPlantingID();
+		}
+		if(!isEmptyString($details->getTrackingID())){
+			$id = $details->getTrackingID();
+		}
+		if(!isEmptyString($details->getHarvestID())){
+			$id = $details->getHarvestID();
+		}
+		if(!isEmptyString($details->getSaleID())){
+			$id = $details->getSaleID();
+		}
+		return $id;
+	}
+	function getExpenseActivityStage() {
+		$stage = '';
+		$details = $this->getInputDetails()->get(0);
+		if(!isEmptyString($details->getTillageID())){
+			$stage = 'tillage';
+		}
+		if(!isEmptyString($details->getPlantingID())){
+			$stage = 'plant';
+		}
+		if(!isEmptyString($details->getTrackingID())){
+			$stage = 'treat';
+		}
+		if(!isEmptyString($details->getHarvestID())){
+			$stage = 'harvest';
+		}
+		if(!isEmptyString($details->getSaleID())){
+			$stage = 'sale';
+		}
+		return $stage;
+	}
+	function getExpenseActivityType() {
+		$stage = '';
+		$details = $this->getInputDetails()->get(0);
+		if(!isEmptyString($details->getTillageID())){
+			$stage = '2';
+		}
+		if(!isEmptyString($details->getPlantingID())){
+			$stage = '3';
+		}
+		if(!isEmptyString($details->getTrackingID())){
+			$stage = '4';
+		}
+		if(!isEmptyString($details->getHarvestID())){
+			$stage = '6';
+		}
+		if(!isEmptyString($details->getSaleID())){
+			$stage = '7';
+		}
+		return $stage;
 	}
 }
 

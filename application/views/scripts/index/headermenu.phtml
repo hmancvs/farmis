@@ -8,96 +8,87 @@
 	$c->addComponent('m', 'Message m');
 	$c->addComponent('mr', 'm.recipients mr');
 	$unread_messages = $c->execute()->count();
-
+	
+	$controllername = $request->getControllerName();
+	$controlleraction = $request->getActionName();
 ?>
 
     <ul class="mainnav" id="middlebar">
         <?php if(isEmptyString($session->getVar('userid'))){ ?>
-            <li id="home" class="<?php echo ($request->getControllerName() == 'index') ? 'active' : ''; ?>">
+            <li id="home" class="<?php echo ($controllername == 'index') ? 'active' : ''; ?>">
                 <a href="<?php echo $this->baseUrl('index'); ?>"><span>Home</span></a>	
             </li>
         <?php } else { ?>
-        	<li id="home" class="<?php echo ($request->getControllerName() == 'dashboard') ? 'active' : ''; ?>">
+        	<li id="home" class="<?php echo ($controllername == 'dashboard') ? 'active' : ''; ?>">
                 <a href="<?php echo $this->baseUrl('dashboard'); ?>"><span>Dashboard</span></a>	
             </li>
         <?php } ?>
         <?php if(!$isInnerPage){ ?>
-            <li id="about" class="<?php echo ($request->getControllerName() == 'aboutus') ? 'active' : ''; ?>">
+            <li id="about" class="<?php echo ($controllername == 'aboutus') ? 'active' : ''; ?>">
                 <a href="<?php echo $this->baseUrl('aboutus'); ?>"><span>About</span></a>	
                 <ul class="submenu nav nav-pills nav-stacked dropdown-menu">            
                     <li><a title="Background" href="#">Background</a></li>                
                     <li><a title="Vision and Mission" href="#">Vision and Mission</a></li>
                 </ul>			
             </li>
-            <li id="benefits" class="<?php echo ($request->getControllerName() == 'benefits') ? 'active' : ''; ?>">
+            <li id="benefits" class="<?php echo ($controllername == 'benefits') ? 'active' : ''; ?>">
                 <a href="<?php echo $this->baseUrl('benefits'); ?>"><span>Benefits</span></a>	
             </li>
-            <li id="tour" class="<?php echo ($request->getControllerName() == 'tour') ? 'active' : ''; ?>">
+            <li id="tour" class="<?php echo ($controllername == 'tour') ? 'active' : ''; ?>">
                 <a href="<?php echo $this->baseUrl('tour'); ?>"><span>Feature Tour</span></a>	
             </li>
-            <li id="howitworks" class="<?php echo ($request->getControllerName() == 'howitworks') ? 'active' : ''; ?>">
+            <li id="howitworks" class="<?php echo ($controllername == 'howitworks') ? 'active' : ''; ?>">
                 <a href="<?php echo $this->baseUrl('howitworks'); ?>"><span>How it Works</span></a>	
             </li>
         <?php } ?>
         <?php if(isEmptyString($session->getVar('userid'))){ ?>
-            <li id="signup" class="<?php echo ($request->getControllerName() == 'signup' || $request->getControllerName() == 'billing') ? 'active' : ''; ?>">
+            <li id="signup" class="<?php echo ($controllername == 'signup' || $controllername == 'billing') ? 'active' : ''; ?>">
                 <a href="<?php echo $this->baseUrl('signup'); ?>"><span>Signup and Pricing</span></a>	
             </li>
         <?php } ?>
         <?php if(!isEmptyString($session->getVar('userid')) && $isInnerPage && isFarmer()){ ?>
-            <li id="profile" class="<?php echo (($request->getControllerName() == 'farmer'  && $request->getActionName() != 'list') || $request->getControllerName() == 'profile') ? 'active' : ''; ?>">
-                <a href="<?php echo $this->baseUrl('farmer/view/id/'.encode($session->getVar('farmerid'))); ?>"><span>My Profile</span></a>	
+            <li id="profile" class="<?php echo (($controllername == 'farmer'  && $controlleraction != 'list') || $controllername == 'profile') ? 'active' : ''; ?>">
+                <a href="<?php echo $this->baseUrl('profile/view/id/'.encode($session->getVar('farmerid'))); ?>"><span>My Profile</span></a>	
             </li>
         <?php } ?>    
         <?php if(isFarmer() && $isInnerPage){ ?>
-            <li id="farm" class="<?php echo ($request->getControllerName() == 'farm' || $request->getControllerName() == 'season' || $request->getControllerName() == 'inventory' || $request->getControllerName() == 'finance') ? 'active' : ''; ?>">
-                <?php if($hasfarm){ ?>
-                    <?php if($hasmultiplefarms){ ?>
-                        <a href="<?php echo $this->baseUrl('farm/list'); ?>" class="" id=""><span>Manage Farms</span></a>
-                    <?php } else { ?>
-                        <a href="<?php echo $this->baseUrl('farm/view/id/'.encode($farmid)); ?>" class="" id=""><span>Manage Farm</span></a>
-                    <?php } ?>
-                    
-                <?php } else { ?>
-                    <a href="<?php echo $this->baseUrl('farm/index/farmerid/'.encode($session->getVar('farmerid'))); ?>"><span>Setup Farm</span></a>
-                <?php } ?>
-            </li>
+            <li id="farm" class="<?php echo ($controllername == 'farm' || $controllername == 'season' || $controllername == 'inventory' || $controllername == 'finance') ? 'active' : ''; ?>"><a href="<?php echo $this->baseUrl('profile/view/id/'.encode($userid).'/tab/farm'); ?>" class="" id=""><span>Manage Farm</span></a></li>
         <?php } ?>
-        <?php if(isAdmin() && $isInnerPage){ ?>
-            <li id="farmgroup" class="<?php echo ($request->getControllerName() == 'farmer' && $request->getActionName() == 'list') ? 'active' : ''; ?>"><a href="<?php echo $this->baseUrl('farmer/list'); ?>" class="" id=""><span>Farmers</span></a></li>
-            <li id="farmgroup" class="<?php echo ($request->getControllerName() == 'farmgroup') ? 'active' : ''; ?>">
+        <?php if((isAdmin() || isManagement() || isDataClerk()) && $isInnerPage){ ?>
+            <li id="farmgroup" class="<?php echo $controllername == 'profile' ? 'active' : ''; ?>"><a href="<?php echo $this->baseUrl('profile/list'); ?>" class="" id=""><span>Farmers</span></a></li>
+            <li id="farmgroup" class="<?php echo ($controllername == 'farmgroup') ? 'active' : ''; ?>">
                 <a href="<?php echo $this->baseUrl('farmgroup/list'); ?>"><span>DNA Profiles</span></a>
             </li>
         <?php } ?>
         <?php if(isFarmGroupAdmin() && $isInnerPage){ 
 			$farmgroup = new FarmGroup();
-			$farmgroup->populate($farmer->getFarmGroupID());
+			$farmgroup->populate($user->getFarmGroupID());
 		?>
-			<li id="farmgroup" class="<?php echo ($request->getControllerName() == 'farmgroup') ? 'active' : ''; ?>"><a href="<?php echo $this->baseUrl('farmgroup/view/id/'.encode($farmer->getFarmGroupID())); ?>" class="" id=""><span>DNA Profile</span></a></li>
-            <li id="farmgroup" class="<?php echo ($request->getControllerName() == 'farmer' && $request->getActionName() == 'list') ? 'active' : ''; ?>"><a href="<?php echo $this->baseUrl('farmer/list/farmgroupid/'.$farmer->getFarmGroupID()); ?>" class="" id=""><span>Farmers</span></a></li>
+			<li id="farmgroup" class="<?php echo ($controllername == 'farmgroup') ? 'active' : ''; ?>"><a href="<?php echo $this->baseUrl('farmgroup/view/id/'.encode($user->getFarmGroupID())); ?>" class="" id=""><span>DNA Profile</span></a></li>
+            <li id="farmgroup" class="<?php echo $controllername == 'profile' ? 'active' : ''; ?>"><a href="<?php echo $this->baseUrl('profile/list/farmgroupid/'.$user->getFarmGroupID()); ?>" class="" id=""><span>Farmers</span></a></li>
 		<?php } ?>  
         <?php if($isInnerPage){ ?>
-            <li id="resources" class="<?php echo ($request->getControllerName() == 'resource' || $request->getControllerName() == 'contact' || $request->getControllerName() == 'commodity') ? 'active' : ''; ?>">
+            <li id="resources" class="<?php echo ($controllername == 'resource' || $controllername == 'contact' || $controllername == 'commodity') ? 'active' : ''; ?>">
                 <a href="<?php echo $this->baseUrl('resource'); ?>"><span>Resources</span></a>	
             </li>
-            <li id="reports" class="<?php echo ($request->getControllerName() == 'report') ? 'active' : ''; ?>">
+            <li id="reports" class="<?php echo ($controllername == 'report') ? 'active' : ''; ?>">
                 <a href="<?php echo $this->baseUrl('report/overview'); ?>"><span>Reports</span></a>	
             </li>
-            <li id="inbox" style="width:90px;" class="<?php echo ($request->getControllerName() == 'message') ? 'active' : ''; ?>">
+            <li id="inbox" style="width:90px;" class="<?php echo ($controllername == 'message') ? 'active' : ''; ?>">
             	<a href="<?php echo $this->baseUrl('message/list'); ?>" title="Inbox: <?php echo $unread_messages; ?> Unread" style="text-align:left;"><span style="">Inbox </span><label class="error" style="background-image:none; float:right; position:absolute; right:12px; top:4px; padding:2px 8px 2px 8px;"><?php echo $unread_messages; ?></label></a>	
             </li>
         <?php } ?>
         <?php if(!$isInnerPage && !isEmptyString($session->getVar('userid'))){ ?>
-        	<li id="faqs'" class="<?php echo ($request->getControllerName() == 'faqs') ? 'active' : ''; ?>">
+        	<li id="faqs'" class="<?php echo ($controllername == 'faqs') ? 'active' : ''; ?>">
                 <a href="<?php echo $this->baseUrl('faqs'); ?>"><span>Help Center</span></a>	
             </li>
         <?php } ?>
         <?php if(isEmptyString($session->getVar('userid'))){ ?>
-            <li id="forum" class="<?php echo ($request->getControllerName() == 'communityforum' || $request->getControllerName() == 'forum') ? 'active' : ''; ?>">
+            <li id="forum" class="<?php echo ($controllername == 'communityforum' || $controllername == 'forum') ? 'active' : ''; ?>">
                 <a href="<?php echo $this->baseUrl('forum'); ?>"><span>Community Forum</span></a>	
             </li>
         <?php } else { ?>
-            <li id="forum" class="<?php echo ($request->getControllerName() == 'communityforum' || $request->getControllerName() == 'forum') ? 'active' : ''; ?>">
+            <li id="forum" class="<?php echo ($controllername == 'communityforum' || $controllername == 'forum') ? 'active' : ''; ?>">
                 <a href="<?php echo $this->baseUrl('communityforum/list'); ?>"><span>Community Forum</span></a>	
             </li>
         <?php } ?>

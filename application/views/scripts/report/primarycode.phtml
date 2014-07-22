@@ -1,8 +1,8 @@
 <?php 
-	$farmerid = decode($request->id);
-	$farmer = new Farmer();
-	$farmer->populate($farmerid);
-	$id = $farmer->getID();
+	$userid = decode($request->id);
+	$user = new UserAccount();
+	$user->populate($userid);
+	$id = $user->getID();
 ?>
  <table style="margin-top:10px; height:auto; width:100%;">
                         <tr>
@@ -22,20 +22,20 @@
                                     <tbody>
                                         <tr>
                                             <td style="width:50%;"><label class="control-label">Name of Farmer:</label>
-                                            <?php echo $farmer->getName(); ?></td>
+                                            <?php echo $user->getName(); ?></td>
                                             <td></td>
                                         </tr>
                                         <tr>
                                             <td><label class="control-label nowrapping">Farmer Identification (FIN ID#):</label>
-                                            <?php echo $farmer->getRegNo(); ?></td>
+                                            <?php echo $user->getRegNo(); ?></td>
                                             <td><label class="control-label"><?php echo $this->translate("farmer_gender_label"); ?>:</label>
-                                            <?php echo $farmer->getGenderLabel(); ?></td>
+                                            <?php echo $user->getGenderLabel(); ?></td>
                                         </tr>
                                         <tr>
                                             <td><label class="control-label"><?php echo $this->translate("farmer_dateofbirth_label"); ?>:</label>
-                                            <?php echo $farmer->getUser()->getBirthDateFormatted(); ?></td> 
+                                            <?php echo $user->getBirthDateFormatted(); ?></td> 
                                             <td><label class="control-label">Date Registered:</label>
-                                            <?php echo isEmptyString($farmer->getUser()->getActivationDate()) ? '--' : changeMySQLDateToPageFormat($farmer->getUser()->getActivationDate()); ?></td> 
+                                            <?php echo isEmptyString($user->getActivationDate()) ? '--' : changeMySQLDateToPageFormat($user->getActivationDate()); ?></td> 
                                         </tr>
                                     </tbody>
                                 </table>
@@ -48,23 +48,23 @@
                                     <tbody>
                                         <tr>
                                             <td style="width:35%;"><label class="control-label">Country:</label>
-                                            <?php echo isEmptyString($farmer->getUser()->getAddress()->getCountry()) ? '--' : $farmer->getUser()->getAddress()->getCountryName(); ?>
+                                            <?php echo isEmptyString($user->getCountry()) ? '--' : $user->getCountryName(); ?>
                                             <td style="width:35%;"><label class="control-label">District:</label>
-                                            <?php echo isEmptyString($farmer->getUser()->getLocationID()) ? '--' : $farmer->getUser()->getLocation()->getName(); ?></td>
+                                            <?php echo isEmptyString($user->getLocationID()) ? '--' : $user->getLocation()->getName(); ?></td>
                                             <td><label class="control-label">County:</label>
-                                            <?php echo isEmptyString($farmer->getUser()->getAddress()->getCountyID()) ? '--' : $farmer->getUser()->getAddress()->getCounty()->getName(); ?></td>
+                                            <?php echo isEmptyString($user->getCountyID()) ? '--' : $user->getCounty()->getName(); ?></td>
                                         </tr>
                                         <tr>
                                             <td><label class="control-label">Sub-county:</label>
-                                            <?php echo isEmptyString($farmer->getUser()->getAddress()->getSubCountyID()) ? '--' : $farmer->getUser()->getAddress()->getSubCounty()->getName(); ?></td>
+                                            <?php echo isEmptyString($user->getSubCountyID()) ? '--' : $user->getSubCounty()->getName(); ?></td>
                                             <td><label class="control-label">Parish:</label>
-                                            <?php echo isEmptyString($farmer->getUser()->getAddress()->getParishID()) ? '--' : $farmer->getUser()->getAddress()->getParish()->getName(); ?></td>
+                                            <?php echo isEmptyString($user->getParishID()) ? '--' : $user->getParish()->getName(); ?></td>
                                             <td><label class="control-label">Village:</label>
-                                            <?php echo isEmptyString($farmer->getUser()->getAddress()->getVillageID()) ? '--' : $farmer->getUser()->getAddress()->getVillage()->getName(); ?></td>
+                                            <?php echo isEmptyString($user->getVillageID()) ? '--' : $user->getVillage()->getName(); ?></td>
                                         </tr>
                                         <tr>
                                             <td colspan="3"><label class="control-label">Postal/Street Address</label>
-                                            <?php echo isEmptyString($farmer->getUser()->getAddress()->getStreetAddress()) ? '--' : nl2br($farmer->getUser()->getAddress()->getStreetAddress()); ?></td>
+                                            <?php echo isEmptyString($user->getStreetAddress()) ? '--' : nl2br($user->getStreetAddress()); ?></td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -77,20 +77,20 @@
                                     <tbody>
                                         <tr>
                                             <td colspan="3"><label class="control-label">About:</label>
-                                                <span style="min-height:40px; display:block; width:100%;"><?php echo isEmptyString($farmer->getUser()->getBio()) ? '--' : nl2br($farmer->getUser()->getBio()); ?></span>
+                                                <span style="min-height:40px; display:block; width:100%;"><?php echo isEmptyString($user->getBio()) ? '--' : nl2br($user->getBio()); ?></span>
                                             </td>
                                         </tr>
                                         <tr>
                                             <td colspan="3"><label class="control-label">Education Level:</label>
-                                            <?php echo $farmer->getEducationLevelText(); ?></td>
+                                            <?php echo $user->getEducationLevelText(); ?></td>
                                         </tr>
                                         <tr>
                                             <td style="width:30%"><label class="control-label"><?php echo $this->translate("farmer_maritalstatus_label"); ?>:</label>
-                                            <?php echo isEmptyString($farmer->getMaritalStatusText()) ? '--': $farmer->getMaritalStatusText(); ?></td>  
+                                            <?php echo isEmptyString($user->getMaritalStatusText()) ? '--': $user->getMaritalStatusText(); ?></td>  
                                             <td style="width:30%"><label class="control-label"><?php echo $this->translate("farmer_nochildren_label"); ?>:</label>
-                                            <?php echo isEmptyString($farmer->getNumberOfChildren()) ? '--': $farmer->getNumberOfChildren(); ?></td>
+                                            <?php echo isEmptyString($user->getNumberOfChildren()) ? '--': $user->getNumberOfChildren(); ?></td>
                                             <td><label class="control-label"><?php echo $this->translate("farmer_nodependants_label"); ?>:</label>
-                                            <?php echo isEmptyString($farmer->getNumberOfDependants()) ? '--': $farmer->getNumberOfDependants(); ?></td>
+                                            <?php echo isEmptyString($user->getNumberOfDependants()) ? '--': $user->getNumberOfDependants(); ?></td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -100,7 +100,7 @@
                                     <tr>
                                         <td>
                                             <div id="profileinfo" style="padding:4px;"> 
-                                                <img id="profileimage" src="<?php echo $farmer->getUser()->getMediumPicturePath(); ?>" />
+                                                <img id="profileimage" src="<?php echo $user->getMediumPicturePath(); ?>" />
                                             </div>
                                         </td>
                                     </tr>
@@ -115,7 +115,7 @@
                                                 <tbody>
                                                     <tr>
                                                         <td style="height:90px;"><label class="control-label">Name:</label>
-                                                        <?php echo isEmptyString($farmer->getFarmGroupID()) ? '--' : $farmer->getFarmGroup()->getName(); ?></td>
+                                                        <?php echo isEmptyString($user->getFarmGroupID()) ? '--' : $user->getFarmGroup()->getName(); ?></td>
                                                     </tr>
                                                 </tbody>
                                             </table>
@@ -128,17 +128,17 @@
                                                 <tbody>
                                                     <tr>
                                                         <td style="width:45%;"><label class="control-label">Phone:</label>
-                                                        <?php echo isEmptyString($farmer->getUser()->getPhone()) ? '--' : $farmer->getUser()->getPhone(); ?></td>
+                                                        <?php echo isEmptyString($user->getPhone()) ? '--' : $user->getPhone(); ?></td>
                                                         <td><label class="control-label">Alt Phone:</label>
-                                                        <?php echo isEmptyString($farmer->getUser()->getAltPhone()) ? '--' : $farmer->getUser()->getAltPhone(); ?></td>
+                                                        <?php echo isEmptyString($user->getPhone2()) ? '--' : $user->getPhone2(); ?></td>
                                                     </tr>
                                                     <tr>
                                                         <td colspan="2"><label class="control-label">Email:</label>
-                                                        <?php echo isEmptyString($farmer->getUser()->getEmail()) ? '--' : $farmer->getUser()->getEmail(); ?></td>
+                                                        <?php echo isEmptyString($user->getEmail()) ? '--' : $user->getEmail(); ?></td>
                                                     </tr>
                                                     <tr>
                                                         <td colspan="2"><label class="control-label">Alt Email:</label>
-                                                        <?php echo isEmptyString($farmer->getUser()->getEmail2()) ? '--' : $farmer->getUser()->getEmail2(); ?></td>
+                                                        <?php echo isEmptyString($user->getEmail2()) ? '--' : $user->getEmail2(); ?></td>
                                                     </tr>
                                                 </tbody>
                                             </table>
@@ -151,15 +151,15 @@
                                                 <tbody>
                                                     <tr>
                                                         <td><label class="control-label">Name:</label>
-                                                        <?php echo isEmptyString($farmer->getNextofkin_Name()) ? '--': $farmer->getNextofkin_Name(); ?>
+                                                        <?php echo isEmptyString($user->getNextofkin_Name()) ? '--': $user->getNextofkin_Name(); ?>
                                                     </tr>
                                                     <tr>
                                                         <td><label class="control-label">Phone:</label>
-                                                        <?php echo isEmptyString($farmer->getNextofkin_phone()) ? '--': $farmer->getNextofkin_phone(); ?></td>
+                                                        <?php echo isEmptyString($user->getNextofkin_phone()) ? '--': $user->getNextofkin_phone(); ?></td>
                                                     </tr>
                                                     <tr>
                                                         <td colspan="2"><label class="control-label">Email:</label>
-                                                        <?php echo isEmptyString($farmer->getNextofkin_email()) ? '--': $farmer->getNextofkin_email(); ?></td>
+                                                        <?php echo isEmptyString($user->getNextofkin_email()) ? '--': $user->getNextofkin_email(); ?></td>
                                                     </tr>
                                                 </tbody>
                                             </table>
@@ -173,7 +173,7 @@
                                                     <tr>
                                                         <td style="height:100px;">
                                                             <div class="profileinfo pull-left" id="signinfo"> 
-                                                                <a href="<?php echo $this->baseUrl('farmer/picture/id/'.encode($farmer->getID()).'/type/sign'); ?>" class="editpic" title="Upload Signature Image"><img id="profileimage" src="<?php echo $farmer->getSignaturePath(); ?>" width="180" height="90" /><pre id="signlink" class="hide absoluteupload"><i class="icon-pencil"></i> Upload Image</pre></a>
+                                                                <a href="<?php echo $this->baseUrl('profile/picture/id/'.encode($user->getID()).'/type/sign'); ?>" class="editpic" title="Upload Signature Image"><img id="profileimage" src="<?php echo $user->getSignaturePath(); ?>" width="180" height="90" /><pre id="signlink" class="hide absoluteupload"><i class="icon-pencil"></i> Upload Image</pre></a>
                                                             </div>
                                                         </td>
                                                     </tr>

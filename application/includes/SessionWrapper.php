@@ -96,5 +96,4 @@ class SessionWrapper {
     public function getAllValues() {
     	return $this->namespace->getIterator()->getArrayCopy(); 
     }
-   
 }

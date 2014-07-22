@@ -15,11 +15,11 @@ class Commodity extends BaseEntity  {
 		$this->setTableName('commodity');
 		$this->hasColumn('name', 'string', 150, array('notnull' => true, 'notblank' => true));
 		$this->hasColumn('description', 'string', 500);
-		$this->hasColumn('parentid', 'integer'); 
+		$this->hasColumn('parentid', 'integer', null, array('default' => NULL)); 
 		$this->hasColumn('categoryid', 'integer', null,array('notnull' => true, 'notblank' => true) );
-		$this->hasColumn('unitid', 'integer', null); 
-		$this->hasColumn('minprice', 'integer', 11);
-		$this->hasColumn('maxprice', 'integer', 11);
+		$this->hasColumn('unitid', 'integer', null, array('default' => NULL)); 
+		$this->hasColumn('minprice', 'decimal', 10, array('default' => 0));
+		$this->hasColumn('maxprice', 'decimal', 10, array('default' => 0));
 		$this->hasColumn('image','string', 255);
 		$this->hasColumn('allowfarmer', 'integer', 11, array('default' => 0));
 	}
@@ -105,20 +105,6 @@ class Commodity extends BaseEntity  {
 		parent::processPost($formvalues);
 	}
 	/**
-	 * Update the folder and file name for the uploaded documents 
-	 */
-	function afterSave(){
-		
-		return true;
-	}
-	/**
-	 * Update the folder and file name for the uploaded documents 
-	 */
-	function afterUpdate(){
-		
-		return true;
-	}
-	/**
 	 * Get the name of the commodity depending on whether it has a parent or not 
 	 *
 	 * @return String 
@@ -138,6 +124,20 @@ class Commodity extends BaseEntity  {
     function getUnitsDescription() {
     	return $this->getUnits()->getName(); 
     }
+# determine commodityid from searchable name
+    function findByName($name) {
+    	$str_len = strlen($name);
+    	trim($name);
+    	// $name = str_replace(' ', '', trim($name));
+    	$name = strtolower($name);
+		$conn = Doctrine_Manager::connection();
+		// query for check if location exists
+		$unique_query = "SELECT id FROM commodity WHERE LOWER(name) LIKE LOWER('%".$name."%') OR LOWER(name) LIKE LOWER('%".$name."%') OR LOWER(name) LIKE LOWER('%".$name."%') ";
+		$result = $conn->fetchAll($unique_query);
+		// debugMessage($unique_query);
+		// debugMessage($result);
+		return $result; 
+	}
 	/**
 	 * image path
 	 */	

@@ -40,11 +40,6 @@ class InventoryService extends BaseRecord  {
 		parent::setUp();
 		
 		// match the parent id
-		$this->hasOne('Farm as farm',
-							array('local' => 'farmid',
-									'foreign' => 'id'
-							)
-						);
 		$this->hasOne('Season as season',
 							array('local' => 'seasonid',
 									'foreign' => 'id'

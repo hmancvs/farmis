@@ -7,10 +7,14 @@ class Message extends BaseRecord  {
 		$this->hasColumn('id', 'integer', null, array('primary' => true, 'autoincrement' => true));
 		$this->hasColumn('parentid', 'integer', null);
 		$this->hasColumn('senderid', 'integer', null, array("notblank" => true, "notnull" => true));
+		$this->hasColumn('sendername', 'string', 255);
+		$this->hasColumn('senderemail', 'string', 255);
 		$this->hasColumn('contents', 'string', 65535, array("notblank" => true, "notnull" => true));
 		$this->hasColumn('subject', 'string', 255);
 		$this->hasColumn('datecreated', 'timestamp');
 		$this->hasColumn('commentid', 'integer', null);
+		$this->hasColumn('isoutbox', 'integer', null, array('default'=> '0'));
+		$this->hasColumn('country', 'string', 4);
 	}
 	
 	public function setUp() {
@@ -71,6 +75,9 @@ class Message extends BaseRecord  {
 		}
 		if(isArrayKeyAnEmptyString('commentid', $formvalues)){
 			unset($formvalues['commentid']); 
+		}
+		if(isArrayKeyAnEmptyString('isoutbox', $formvalues)){
+			unset($formvalues['isoutbox']); 
 		}
 		parent::processPost($formvalues);
 	}
@@ -162,7 +169,7 @@ class Message extends BaseRecord  {
 	 * @return Bool whether the email notification has been sent
 	 *
 	 */
-	function sendInboxEmailNotification($fromemail, $fromname) {
+	function sendInboxEmailNotification($fromemail, $fromname, $subject = '') {
 		$template = new EmailTemplate(); 
 		# create mail object
 		$mail = getMailInstance(); 
@@ -182,12 +189,16 @@ class Message extends BaseRecord  {
 		// the message sender's name
 		$template->assign('emailsender', $sendername);	
 		
+		$subject = $this->getSubject();
+		if(isEmptyString($this->getSubject())){
+			$subject = sprintf($this->translate->_('message_private_email_subject'), $sendername);
+		}
 		// message subject
-		$mail->setSubject(sprintf($this->translate->_('message_private_email_subject'), $sendername));
+		$mail->setSubject($subject);
 		// message introduction
 		$template->assign('emailintro', sprintf($this->translate->_('message_private_email_subject'), $sendername));
 		// message contents 
-		$template->assign('emailcontent', $this->getContents());			
+		$template->assign('emailcontent', nl2br($this->getContents()));			
 		// the actual url will be built in the view 
 		$template->assign('emaillink', array("controller"=> "message", "action"=> "reply", "id" => encode($this->getID())));
 		// message html file

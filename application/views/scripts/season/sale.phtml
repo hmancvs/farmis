@@ -7,8 +7,7 @@
 	if(!isEmptyString($request->sid)){
 		$season->populate(decode($request->sid));
 		$sale->setSeasonID($season->getID());
-		$sale->setFarmID($season->getFarmID());
-		$sale->setFarmerID($season->getFarmerID());
+		$sale->setUserID($season->getUserID());
 		$sale->setType(1);
 		$sale->setStartDate(date('Y-m-d'));
 		$sale->setStatus(3);
@@ -31,7 +30,8 @@
 		$scounter = substr($sale->getRef(), -3);
 		$successurl = encode($this->baseUrl("season/sale/id/".$request->id));
 	}
-	$thefarmid = $sale->getSeason()->getFarmID();
+	$request->setParam('tab', 'seasons');
+	$user = $sale->getUser();
 	$loan = $sale->getCreditDetails();
 	
 	#in case of errors in session, populate the fields from session
@@ -39,9 +39,9 @@
 		$sale->processPost($session->getVar(FORM_VALUES));	
 	}
 	
-	// $saletypes = getAllTillageTypes();
-	$this->headTitle($title);  
-	$farmtitle = isFarmer() ? "Manage Farm" : "Manage Farm: ".$sale->getFarm()->getName();
+	$title = 'Manage Season: '.$sale->getActivityName();
+	$farmtitle = $sale->getUser()->getName();
+	$this->headTitle($title.$browserappend);  
 ?>
 <script>
 	$(document).ready(function() {
@@ -153,9 +153,9 @@
 </script>
 <h1><?php echo $this->translate('farm_title'); ?></h1>
 <div id="tabs">
-    <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
+    <?php require APPLICATION_PATH."/views/scripts/profile/profileleftcolumn.phtml"; ?>
     <div class="span9 tab-content" id="center">
-    	<?php require APPLICATION_PATH."/views/scripts/farm/tabstop.phtml"; ?>
+    	<?php require APPLICATION_PATH."/views/scripts/profile/tabstop.phtml"; ?>
 		<div id="seasons">
             <form id="indexform" class="form-horizontal seasons" action="<?php echo $posturl; ?>" method="post">
             <?php if($request->tab == 'seasons'){ ?>
@@ -207,8 +207,7 @@
                                             <input type="hidden" name="entityname" value="Sales" />
                                             <input type="hidden" id="id" name="id" value="<?php echo encode($sale->getID()); ?>" />
                                             <input type="hidden" id="seasonid" name="seasonid" value="<?php echo $sale->getSeasonID(); ?>" />
-                                            <input type="hidden" id="farmerid" name="farmerid" value="<?php echo $sale->getFarmerID(); ?>" />
-                                            <input type="hidden" id="farmid" name="farmid" value="<?php echo $sale->getFarmID(); ?>" />
+                                            <input type="hidden" id="userid" name="userid" value="<?php echo $sale->getUserID(); ?>" />
                                             <input type="hidden" id="type" name="type" value="<?php echo $sale->getType(); ?>" />
                                             <input type="hidden" id="<?php echo SUCCESS_MESSAGE; ?>" name="<?php echo SUCCESS_MESSAGE; ?>" value="<?php echo $this->translate("global_save_success"); ?>" /> 
                                             <input type="hidden" id="<?php echo URL_SUCCESS; ?>" name="<?php echo URL_SUCCESS; ?>" value="<?php echo encode($this->baseUrl("season/saleview")); ?>" /> 
@@ -222,7 +221,7 @@
                 <div class="row margin0" style="padding:2px; margin-bottom:10px;">
                     <span class="pull-left" style="width:100%; margin-right:5px;">
                         <div id="location_left" class="well lighter margin0" style="min-height:150px;"> 
-                            <h3 class="well-legend">Harvest Details</h3>
+                            <h3 class="well-legend">Sale Details</h3>
                             <table class="maxwidth">
                                 <tr>
                                     <td style="width:40%; padding-left:0;">
@@ -267,11 +266,11 @@
                                             </tr>
                                             <td><label class="control-label"><?php echo $this->translate("season_sale_unitprice_label"); ?>:</label></td>
                                             <td>
-                                            	<div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="unitprice" id="unitprice" class="width100 hastooltip isamount rightalign inputrequired" value="<?php echo clean_num($sale->getUnitPrice()); ?>" title="<?php echo $this->translate("season_sale_unitprice_tooltip"); ?>" /></div><div id="unitprice_error"></div>
+                                            	<div class="input-prepend"><span class="add-on"><?php echo getCurrencySymbol(); ?></span><input type="text" name="unitprice" id="unitprice" class="width100 hastooltip isamount rightalign inputrequired" value="<?php echo clean_num($sale->getUnitPrice()); ?>" title="<?php echo $this->translate("season_sale_unitprice_tooltip"); ?>" /></div><div id="unitprice_error"></div>
                                             </td>
                                             <tr>
                                                 <td><label class="control-label"><?php echo $this->translate("season_sale_amount_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
-                                                <td><div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="totalamount" id="totalamount" class="width100 hastooltip isamount rightalign inputrequired" value="<?php echo clean_num($sale->getTotalAmount()); ?>" title="<?php echo $this->translate("season_sale_totalamount_tooltip"); ?>" /></div><div id="totalamount_error"></div>
+                                                <td><div class="input-prepend"><span class="add-on"><?php echo getCurrencySymbol(); ?></span><input type="text" name="totalamount" id="totalamount" class="width100 hastooltip isamount rightalign inputrequired" value="<?php echo clean_num($sale->getTotalAmount()); ?>" title="<?php echo $this->translate("season_sale_totalamount_tooltip"); ?>" /></div><div id="totalamount_error"></div>
                                                 </td>
                                             </tr>
                                         </table>
@@ -306,7 +305,7 @@
                                                 <td><label class="control-label"><?php echo $this->translate("season_sale_clientphone_label"); ?>:</label></td>
                                                 <td>
                                                 <div class="input-prepend">
-                                                    <span class="add-on"><?php echo '+'.COUNTRY_CODE_UG; ?></span><input name="clientphone" id="clientphone" type="text" maxlength="10" class="span2 hastooltip isnumber" style="width:110px;" value="<?php echo $sale->getClientPhone(); ?>" title="<?php echo $this->translate("season_sale_clientphone_tooltip"); ?>" placeholder="e.g 0772123456" />
+                                                    <span class="add-on"><?php echo '+'.getCurrencyCode(); ?></span><input name="clientphone" id="clientphone" type="text" maxlength="10" class="span2 hastooltip isnumber" style="width:110px;" value="<?php echo $sale->getClientPhone(); ?>" title="<?php echo $this->translate("season_sale_clientphone_tooltip"); ?>" placeholder="e.g 0772123456" />
                                                 </div>
                                                 <div id="phone_error"></div></td>
                                             </tr>
@@ -327,7 +326,7 @@
             <?php } ?>    
             </form>
 		</div>
-		<?php require APPLICATION_PATH."/views/scripts/farm/tabsbottom.phtml"; ?> 
+		<?php require APPLICATION_PATH."/views/scripts/profile/tabsbottom.phtml"; ?>  
     </div>
 </div>    
 <?php

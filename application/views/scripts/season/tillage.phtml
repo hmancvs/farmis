@@ -7,7 +7,7 @@
 	if(!isEmptyString($request->sid)){
 		$season->populate(decode($request->sid));
 		$tillage->setSeasonID($season->getID());
-		$tillage->setFarmID($season->getFarmID());
+		$tillage->setUserID($season->getUserID());
 		$tillage->setStartDate(date('Y-m-d'));
 		$tillage->setfieldsizeunit(1); 
 		$tillage->setdepthunit(1);
@@ -29,7 +29,8 @@
 		$tcounter = substr($tillage->getRef(), -3);
 		$successurl = encode($this->baseUrl("season/tillage/id/".$request->id));
 	}
-	$thefarmid = $tillage->getSeason()->getFarmID();
+	$request->setParam('tab', 'seasons');
+	$user = $tillage->getUser();
 	$loan = $tillage->getCreditDetails();
 	
 	#in case of errors in session, populate the fields from session
@@ -37,10 +38,9 @@
 		$tillage->processPost($session->getVar(FORM_VALUES));	
 	}
 	
-	// $tillagetypes = getAllTillageTypes();
-		
-	$this->headTitle($title);  
-	$farmtitle = isFarmer() ? "Manage Farm" : "Manage Farm: ".$tillage->getFarm()->getName();
+	$title = 'Manage Season: '.$tillage->getActivityName();
+	$farmtitle = $tillage->getUser()->getName();
+	$this->headTitle($title.$browserappend);  
 ?>
 <script>
 	$(document).ready(function() {
@@ -54,7 +54,9 @@
 				},
 				ref: "required",
 				startdate: "required",
-				enddate: "required",
+				enddate: {
+					required: true
+				},
 				method: "required",
 				status: "required",
 				fieldsize: {
@@ -70,7 +72,9 @@
 				},
 				ref: "Reference not specified",		
 				startdate: "<?php echo $this->translate("season_activity_startdate_error"); ?>",
-				enddate: "<?php echo $this->translate("season_activity_enddate_error"); ?>",
+				enddate: {
+					required: "<?php echo $this->translate("season_activity_enddate_error"); ?>"
+				},
 				method: "<?php echo $this->translate("season_method_error"); ?>",
 				status: "<?php echo $this->translate("season_status_error"); ?>",
 				fieldsize: {
@@ -136,7 +140,6 @@
 		
 		$('.chzn-container#primaryimplements_chzn, .chzn-container#secondaryimplements_chzn').css({'width':'85%'});
 		
-		
 	}); 
 </script>
 <style>
@@ -144,9 +147,9 @@
 </style>
 <h1><?php echo $farmtitle; ?></h1>
 <div id="tabs">
-    <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
+    <?php require APPLICATION_PATH."/views/scripts/profile/profileleftcolumn.phtml"; ?>
     <div class="span9 tab-content" id="center">
-    	<?php require APPLICATION_PATH."/views/scripts/farm/tabstop.phtml"; ?>
+    	<?php require APPLICATION_PATH."/views/scripts/profile/tabstop.phtml"; ?>
 		<div id="seasons">
             <form id="indexform" class="form-horizontal seasons" action="<?php echo $posturl; ?>" method="post">
             <?php if($request->tab == 'seasons'){ ?>
@@ -204,8 +207,7 @@
                                             <input type="hidden" name="entityname" value="SeasonTillage" />
                                             <input type="hidden" id="id" name="id" value="<?php echo encode($tillage->getID()); ?>" />
                                             <input type="hidden" id="seasonid" name="seasonid" value="<?php echo $tillage->getSeasonID(); ?>" />
-                                            <input type="hidden" id="farmid" name="farmid" value="<?php echo $tillage->getFarmID(); ?>" />
-                                            <input type="hidden" id="farmerid" name="farmerid" value="<?php echo $tillage->getFarm()->getFarmerID(); ?>" />
+                                            <input type="hidden" id="userid" name="userid" value="<?php echo $tillage->getUserID(); ?>" />
                                             <input type="hidden" id="stage" name="stage" value="6" />
                                             <input type="hidden" name="sourcetype" id="sourcetype" value="<?php echo $loan->getSourceType(); ?>" />
                                             <input type="hidden" name="clienttype" id="clienttype" value="<?php echo $loan->getClientType(); ?>" />
@@ -338,7 +340,7 @@
             <?php } ?>    
             </form>
 		</div>
-		<?php require APPLICATION_PATH."/views/scripts/farm/tabsbottom.phtml"; ?> 
+		<?php require APPLICATION_PATH."/views/scripts/profile/tabsbottom.phtml"; ?>  
     </div>
 </div>    
 <?php

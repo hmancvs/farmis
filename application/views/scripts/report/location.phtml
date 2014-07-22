@@ -1,0 +1,565 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	// require_once(APPLICATION_PATH.'/../'.PUBLICFOLDER.'/dompdf/dompdf_config.inc.php');
+		
+	$loggedinuser = new UserAccount();
+	$loggedinuser->populate($userid);
+	
+	$paginate = new Pagination();	
+	$paginate->setView($this);
+	# set the search columns to be used on this list
+	$paginate->setSearchColumns(array());
+	$paginate->setFilterColumns(array());
+	// $paginate->setDefaultSortBy("u.datecreated");	
+	// $paginate->setDefaultSortOrder("DESC");
+	$paginate->setItemCountPerPage("ALL");
+	
+	# define the letter to be clicked to ease navigation 
+	$where_query = " AND l.id <> '' ";
+	
+	$startdate = $request->getParam('startdate');
+	if(!isEmptyString($startdate)){
+		$startdate = changeDateFromPageToMySQLFormat($startdate);
+	}
+	$enddate = $request->getParam('enddate');
+	if(!isEmptyString($enddate)){
+		$enddate = changeDateFromPageToMySQLFormat($enddate);
+	}
+	
+	if(!isEmptyString($startdate)){
+		$where_query .= " AND (TO_DAYS(u.datecreated) >= TO_DAYS('".$startdate."')) ";
+	}
+	if(!isEmptyString($enddate)){
+		$where_query .= " AND (TO_DAYS(u.datecreated) <= TO_DAYS('".$enddate."')) ";
+	}
+	
+	// maritalstatus 
+	$maritalstatus = $request->getParam('maritalstatus');
+	if(!isEmptyString($maritalstatus)){
+		$where_query .= " AND u.maritalstatus = '".$maritalstatus."' ";
+	}
+	
+	// educationlevel 
+	$educationlevel = $request->getParam('educationlevel');
+	if(!isEmptyString($educationlevel)){
+		$where_query .= " AND u.educationlevel = '".$educationlevel."' ";
+	}
+	
+	// age group filter 
+	$range = $request->getParam('range');
+	if(!isEmptyString($range)){
+		switch($range){
+			case 1:
+				$where_query .= " AND (DATEDIFF(CURRENT_DATE, u.dateofbirth) >= (0 * 365.25) AND DATEDIFF(CURRENT_DATE, u.dateofbirth) <= (14 * 365.25)) ";
+				break;
+			case 2:
+				$where_query .= " AND (DATEDIFF(CURRENT_DATE, u.dateofbirth) >= (15 * 365.25) AND DATEDIFF(CURRENT_DATE, u.dateofbirth) <= (24 * 365.25)) ";
+				break;
+			case 3:
+				$where_query .= " AND (DATEDIFF(CURRENT_DATE, u.dateofbirth) >= (25 * 365.25) AND DATEDIFF(CURRENT_DATE, u.dateofbirth) <= (29 * 365.25)) ";
+				break;
+			case 4:
+				$where_query .= " AND (DATEDIFF(CURRENT_DATE, u.dateofbirth) >= (30 * 365.25) AND DATEDIFF(CURRENT_DATE, u.dateofbirth) <= (39 * 365.25)) ";
+				break;
+			case 5:
+				$where_query .= " AND (DATEDIFF(CURRENT_DATE, u.dateofbirth) >= (40 * 365.25) AND DATEDIFF(CURRENT_DATE, u.dateofbirth) <= (49 * 365.25)) ";
+				break;
+			case 6:
+				$where_query .= " AND (DATEDIFF(CURRENT_DATE, u.dateofbirth) >= (50 * 365.25) AND DATEDIFF(CURRENT_DATE, u.dateofbirth) <= (59 * 365.25)) ";
+				break;
+			case 7:
+				$where_query .= " AND (DATEDIFF(CURRENT_DATE, u.dateofbirth) >= (30 * 365.25) AND DATEDIFF(CURRENT_DATE, u.dateofbirth) <= (60 * 365.25)) ";
+				break;
+			case 8:
+				$where_query .= " AND (DATEDIFF(CURRENT_DATE, u.dateofbirth) > (60 * 365.25)) ";
+				break;
+		}
+	}
+	
+	// farming since
+	$farmingsince = $request->getParam('farmingsince');
+	if(!isEmptyString($farmingsince)){
+		switch($farmingsince){
+			case 1: // less than 3 years
+				$where_query .= " AND YEAR(CURRENT_DATE()) - u.bizstartyear BETWEEN 0 and 2 ";
+				break;
+			case 2: // 3 to 5 years
+				$where_query .= " AND YEAR(CURRENT_DATE()) - u.bizstartyear BETWEEN 3 and 5 ";
+				break;
+			case 3: // 6 - 10 years
+				$where_query .= " AND YEAR(CURRENT_DATE()) - u.bizstartyear BETWEEN 6 and 10 ";
+				break;
+			case 4: // 11 - 20 years
+				$where_query .= " AND YEAR(CURRENT_DATE()) - u.bizstartyear BETWEEN 11 and 20 ";
+				break;
+			case 5: // 21 - 30 years
+				$where_query .= " AND YEAR(CURRENT_DATE()) - u.bizstartyear BETWEEN 21 and 30 ";
+				break;
+			case 6: // 
+				$where_query .= " AND YEAR(CURRENT_DATE()) - u.bizstartyear >= 31  ";
+				break;
+		}
+	}
+	
+	// acrage
+	$landusage = $request->getParam('landusage');
+	if(!isEmptyString($landusage)){
+		switch($landusage){
+			case 1: // less than 3 years
+				$where_query .= " AND u.landsize BETWEEN 0 and 2 ";
+				break;
+			case 2: // 3 to 5 years
+				$where_query .= " AND u.landsize BETWEEN 3 and 5 ";
+				break;
+			case 3: // 6 - 10 years
+				$where_query .= " AND u.landsize BETWEEN 6 and 10 ";
+				break;
+			case 4: // 11 - 20 years
+				$where_query .= " AND u.landsize BETWEEN 11 and 20 ";
+				break;
+			case 5: // 21 - 30 years
+				$where_query .= " AND u.landsize BETWEEN 21 and 30 ";
+				break;
+			case 6: // 
+				$where_query .= " AND u.landsize >= 31  ";
+				break;
+		}
+	}
+	
+	$paginate->processPost($request->getParams());
+	$all_results_query = "
+			SELECT l.id as id, 
+			l.name as district,
+			count(u.id) as totalfarmers,
+			SUM(IF(u.gender =1,1,0)) as male, 
+			SUM(IF(u.gender =2,1,0)) as female, 
+			SUM(IF(u.phone <> '',1,0)) as withphone, 
+			SUM(IF(u.phone = '' || u.phone is null ,1,0)) as nophone 
+			from location l 
+			left join useraccount u on(u.locationid = l.id AND u.type = 2)
+			where LOWER(u.country) = LOWER('".$session->getVar('country')."') ".$where_query."
+			GROUP BY u.locationid
+			HAVING count(u.id) > 0
+			order by totalfarmers desc";
+	
+	// debugMessage($all_results_query);
+	$conn = Doctrine_Manager::connection(); 
+	$result = $conn->fetchAll($all_results_query);
+	$has_no_data = (count($result) == 0) ? true : false; 
+	// debugMessage($result);
+	
+	$country = 'UG';
+	$location_label = 'District';
+	$locations_label = 'Districts';
+	$countrycode = COUNTRY_CODE_UG;
+	$county_label = $this->translate("global_county_label");
+	$subcounty_label = $this->translate("global_subcounty_label");
+	
+	if(isKenya()){
+		$country = 'KE';
+		$session->setVar('country', 'ke');
+		$location_label = 'County';
+		$locations_label = 'Counties';
+		$countrycode = COUNTRY_CODE_KE;
+		$county_label = $this->translate("global_subcounty_label");
+		$subcounty_label = $this->translate("global_ward_label");
+	}
+	$countryreq = strtolower($request->country);
+	
+	$title = $location_label." Profiling Aggregated Report";
+	$this->headTitle($title); 
+	
+?>
+<script type="text/javascript" src="<?php echo $this->baseUrl('assets/js/custom/table2CSV.js'); ?>"></script>
+<script>
+$(document).ready(function() {
+	<?php if($request->print == 1){ ?>
+		$("#headercontainer, #leftcolumn, .footer, #blankrow").remove().hide();
+		$(".printpage").html($("#printer_page_action_buttons").html());
+	<?php } ?>
+	
+	datepickerOpts.dateFormat = '<?php echo $config->dateandtime->javascriptmediumformat; ?>'; 
+	$("#startdate, #enddate").datepicker(datepickerOpts); 
+	
+	<?php if($request->print == 1 || $request->excel == 1){ ?>
+		$("body").addClass('print');
+		$("body.print .hideonprint").html('').remove();
+		$("body.print a.sortlink").removeAttr('href').removeAttr('title');
+	<?php } ?>
+	
+	$("#searchbutton").click(function(e){
+		$("#listform").attr('action', '<?php echo $this->baseUrl('report/locationsearch'); ?>').attr('method', 'get').submit();
+	});
+	$(".submitexcel").click(function(e){
+		e.preventDefault();
+		var csv_value = $('#data').table2CSV({delivery:'value'});
+		var decoded_value = base64_encode(csv_value);	// alert(decoded_value);
+		$("#csv_text").val(decoded_value);	/**/
+		
+		$("#listform").attr('action', '<?php echo $this->baseUrl('download/excel'); ?>').attr('method', 'post').submit();
+		return true;
+	});
+});
+</script>
+<style>
+#contentcolumn {
+	min-height:600px;
+}
+#centercolumn {
+	padding: 5px 0;
+	width: 100%;
+	margin-left:0;
+	float:left;
+}
+#centercolumn h1, #centercolumn h2 {
+	font-family:calibri, Telex, sans-serif;
+}
+#pageleft {
+	margin:0 5px 0 0;
+	width:100%;
+	float:left;
+	position:relative;
+}
+#pageleft .widgetsection {
+	width:98%;
+}
+.widgetsection {
+	margin-bottom:10px;
+}
+.widgetsection h3 {
+	font-size:15px;
+}
+.contenttable {
+	border:solid 1px #b3b3b3;
+	border-collapse: separate;
+ 	*border-collapse: collapsed;
+	-webkit-border-radius: 4px;
+	-moz-border-radius: 4px;
+	border-radius: 4px;
+}
+.contenttable .control-label {
+	width:auto;
+	white-space:normal;
+	text-align:left;
+	display:block;
+}
+.contenttable h2 {
+	margin: 0;
+	padding: 8px 0 8px 0;
+	line-height:auto;
+	text-align: left;
+	border-bottom:1px solid #c4c2c2;
+	color:#498D0F;
+	font-size:18px;
+	width:100%;
+	font-weight:bold;
+	line-height:16px;
+}
+.contenttable#estimates thead tr td {
+	font-weight:bold;
+	font-size:12px;
+}
+#outlength {
+	width:72%;
+}
+.reportcontainer {
+	height:auto; 
+	min-height:400px; 
+	display:block; 
+	margin-top:10px;
+	position:relative;
+}
+.reportlabel {
+	display:inline-block;
+	font-weight:bold;
+	font-size:16px;
+	padding-right:5px;
+}
+.reportfilter {
+	margin-top:0; 
+	float:right;
+	margin-right:-10px;
+	width:100%;
+}
+.reportlinks {
+	margin-top:-10px;
+}
+#generate {
+	margin-top:-10px;
+}
+.printpage {
+	display:none;
+}
+pdfquicklinks {
+	position:absolute; 
+	left:10px; 
+	top:8px;
+}
+.widgetsection h3.reportpagetitle {
+	color:#282727;
+}
+.control-label {
+	font-size:12px;
+	white-space:nowrap;
+	display:block;
+	width:100%;
+	text-align:left;
+}
+.table#data tr td {
+	white-space:nowrap;
+}
+.paginatecustom {
+	position:absolute;
+	left:12px;
+	top:10px;
+	width:auto;
+	text-align:left;
+	float:left;
+}
+.pager {
+	text-align:right;
+}
+<?php if($request->print == 1) { ?> 
+#contentwrapper {
+	margin: 10px 0 5px;
+}
+#centercolumn {
+	float:left;
+	width:90%;
+}
+#maincontainer.container {
+	margin-left:20px;
+	margin-top:10px;
+}
+#printer_page_action_buttons {
+	margin:10px;
+}
+.hideonprint {
+	display:none;
+}
+.printpage {
+	margin:10px;
+	display:block;
+}
+<?php } ?>
+</style>
+<form action="<?php echo $this->baseUrl("report/locationsearch"); ?>" method="get" id="listform" class="form-search margin0" style="margin-top:5px;">
+
+<div>
+  <div id="centercolumn">
+  	<div class="printpage"></div>
+    <?php if($request->print == 1){ ?>
+    	<table class="table border0 table-condensed nohover nobg margin0">
+        	<tr>
+                <td style="width:118px;"><a title="Export to Excel" class="btn export gonowhere " ><i class="icon-download-alt"></i> Export Data </a>&nbsp;</td>
+                <td></td>
+           	</tr>
+		</table>            
+    <?php } ?>
+    <div class="hideonprint" style="width:100%;">
+        <?php if((isAdmin() || isFarmGroupAdmin() || isManagement())){ ?>
+    	
+        <span class="reportfilter">
+        	<table class="table table-condensed noborder margin0" style="width:auto; display:inline-block;">
+            	<tr>
+                	<td style="width:120px;"><label class="control-label inline" style="font-size:12px;">Added From:</label>
+                        <input name="startdate"  id="startdate" type="text" class="datefield startdate inline input-width-small width110" value="<?php echo $request->startdate; ?>" />
+                    </td>
+                    <td style="width:120px;"><label class="control-label inline" style="font-size:12px;">Added To:</label>
+                        <input name="enddate" id="enddate" type="text" class="datefield input-width-small width110"  value="<?php echo $request->enddate; ?>" />
+                    </td>
+                    <td style="width:100px;">
+                    	<label class="control-label">Education:</label>
+                        <?php
+							$educlevels = getAllEducationLevels();
+							$educleveldropdown = new Zend_Form_Element_Select('educationlevel',
+												array(
+													'multiOptions' => array_merge_maintain_keys(array('' => 'All'), $educlevels),								
+													'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+													'class' => array('width100'),
+												)
+											);
+							$educleveldropdown->setValue($request->getParam('educationlevel')); 
+							echo $educleveldropdown->render(); 
+                        ?>
+                    </td>
+                    <td style="width:80px;">
+                    	<label class="control-label">Marital Status:</label>
+                        <?php
+							$maritalstatuses = getAllMaritalStatuses();
+							$maritalstatusesdropdown = new Zend_Form_Element_Select('maritalstatus',
+												array(
+													'multiOptions' => array_merge_maintain_keys(array('' => 'All'), $maritalstatuses),								
+													'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+													'class' => array('width80'),
+												)
+											);
+							$maritalstatusesdropdown->setValue($request->getParam('maritalstatus')); 
+							echo $maritalstatusesdropdown->render(); 
+                           ?>
+                    </td>
+                    <td style="width:100px;">
+                    	<label class="control-label">Age Group:</label>
+						<?php
+                            $allgenders = array('' => 'All Ranges','1'=>'0-14yrs','2'=>'15-24yrs','3'=>'25-29yrs','4'=>'30-39yrs','5'=>'40-49yrs','6'=>'50-59yrs','7'=>'Btn 30 and 60yrs','8'=>'More than 60yrs');
+                            $dropdown = new Zend_Form_Element_Select('range',
+                                                array(
+                                                    'multiOptions' => $allgenders,
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array('gender','width100'),
+                                                    'title' => 'Filter By Age Group'		
+                                                )
+                            );  
+                            $dropdown->setValue($request->getParam('range')); 
+                            echo $dropdown->render();
+                        ?>
+                    </td>
+                    <td style="width:100px;">
+                    	<label class="control-label">Duration in Farming:</label>
+						<?php
+                            $allgenders = array('' => 'All Ranges','1'=>'Less than 3yrs','2'=>'3-5yrs','3'=>'6-10yrs','4'=>'11-20yrs','5'=>'21-30yrs','6'=>'More than 30yrs');
+                            $dropdown = new Zend_Form_Element_Select('farmingsince',
+                                                array(
+                                                    'multiOptions' => $allgenders,
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array('gender','width100'),
+                                                    'title' => 'Filter By Duration in Farming'		
+                                                )
+                            );  
+                            $dropdown->setValue($request->getParam('farmingsince')); 
+                            echo $dropdown->render();
+                        ?>
+                    </td>
+                    <td style="width:100px;">
+                    	<label class="control-label">Average Land Size:</label>
+						<?php
+                            $allgenders = array('' => 'All Ranges','1'=>'Less than 3Acres','2'=>'3-5Acres','3'=>'6-10Acres','4'=>'11-20Acres','5'=>'21-30Acres','6'=>'More than 30Acres');
+                            $dropdown = new Zend_Form_Element_Select('landusage',
+                                                array(
+                                                    'multiOptions' => $allgenders,
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array('gender','width100'),
+                                                    'title' => 'Filter By Land Usage'		
+                                                )
+                            );  
+                            $dropdown->setValue($request->getParam('landusage')); 
+                            echo $dropdown->render();
+                        ?>
+                    </td>
+                    <td style="width:100px; vertical-align:bottom;">
+                        <button type="submit" id="searchbutton" class="btn btn-primary" style="padding:6px 10px;"><i class="icon-white icon-search"></i> Generate</button>
+                        <input type="hidden" name="country" id="country" value="<?php echo $country; ?>" />
+                    </td>
+                    <?php if (!$has_no_data) { ?>
+                    <td>
+                    	<label class="control-label">&nbsp;</label>
+                    	<input type="hidden" name="csv_text" id="csv_text" value="" />
+                        <button type="button" class="btn btn-primary submitexcel" title="Export to Excel" style="padding:6px 10px;"><i class='icon-download-alt icon-white'></i> Export to Excel</button>
+                    </td>
+                    <?php } ?>
+                    <td><label class="control-label">&nbsp;</label><a href="<?php echo $this->baseUrl('report/location');; ?>" id="reset" class="btn" title="Reset Report">Reset</a></td>
+                </tr>
+                <tr>
+                    <?php if($loggedinuser->isUgandan() && isUganda() && (isAdmin() || isManagement())){ ?>
+						<td colspan="2">
+							<?php if(isEmptyString($request->country) || $countryreq == 'ug'){ ?>
+                                <a class="btn" href="<?php echo $this->baseUrl('report/location/country/ke'); ?>" title="Browse Kenya"><i class="icon-list"></i> Browse Kenya</a>
+                            <?php } ?>
+                        </td>
+                    <?php } ?>    
+                    <?php if($loggedinuser->isUgandan() && isKenya() && (isAdmin() || isManagement())){ ?>
+                    	<td colspan="2">
+							<?php if(!isEmptyString($request->country) && $countryreq == 'ke'){ ?>
+                                <a class="btn" href="<?php echo $this->baseUrl('report/location/country/ug'); ?>" title="Browse Uganda"><i class="icon-list"></i> Browse Uganda</a>
+                            <?php } ?>
+                        </td>
+                    <?php } ?>
+				</tr>                    
+            </table>
+    	</span>
+		<?php } ?>
+    </div>
+    <div class="pull-left" id="pageleft">
+        <div class="widgetsection reportcontainer">
+        	<h3 class="reportpagetitle"><?php echo $title; ?></h3>
+			<?php if ($has_no_data) { ?>
+                <div style="clear:both;" class="alert alert-info margin5">There are no records for this report</div>
+            <?php } else { ?>
+                <div style="width:100%; display:block; height:30px;; position:relative;">
+                    <div class="paginatecustom"><?php echo "Viewing records for ".count($result).' '.$locations_label; ?></div>
+                    <div style="margin-top:5px;"><?php echo $this->listcountdropdown; ?></div>
+                </div>
+                <div style="width:100%; height:auto; overflow:auto; margin-bottom:10px; display:block;">
+                    
+                    <table id="data" class="table table-bordered" style="margin:10px 0 10px 0; width:auto;">
+                        <thead>
+                            <tr>
+                                <td style="width:25px;"><label class="control-label">ID#</label></td>
+                                <td style="width:150px;"><label class="control-label">Name of <?php echo $location_label; ?></label></td>
+                                <td style="width:60px;"><label class="control-label bolded">Total Farmers</label></td>
+                                <td style="width:100px; text-align:center;" colspan="2"><label class="control-label centeralign">Male %</label></td>
+                                <td style="width:100px; text-align:center;" colspan="2"><label class="control-label centeralign">Female %</label></td>
+                                <td style="width:120px; text-align:center;" colspan="2"><label class="control-label centeralign">With Phone %</label></td>
+                                <td style="width:120px; text-align:center;" colspan="2"><label class="control-label centeralign">No Phone %</label></td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+								 $counter = 1;
+								 $total = 0;
+								 $maletotal = 0; $femaletotal = 0; $phonetotal = 0; $nophonetotal = 0;
+                                 foreach($result as $line){
+									 $total += $line['totalfarmers'];
+									 $maletotal += $line['male']; 
+									 $femaletotal += $line['female'];
+									 $phonetotal += $line['withphone'];
+									 $nophonetotal += $line['nophone'];
+									 $malepctg = round(($line['male']/$line['totalfarmers'])*100,1);
+									 $femalepctg = round(($line['female']/$line['totalfarmers'])*100,1);
+									 $phonepctg = round(($line['withphone']/$line['totalfarmers'])*100,1);
+									 $nophonepctg = round(($line['nophone']/$line['totalfarmers'])*100, 1);
+                            ?>
+                            <tr>
+                                <td><span class="nullifempty"><?php echo $counter; ?></span></td>
+                                <td><span class="nullifempty"><?php echo $line['district']; ?></span></td>
+                                <td class="bolded"><span class="nullifempty"><?php echo $line['totalfarmers']; ?></span></td>
+                                <td><span class="nullifempty"><?php echo $line['male']; ?></span></td>
+                                <td><span class="nullifempty"><?php echo $malepctg.'%'; ?></span></td>
+                                <td><span class="nullifempty"><?php echo $line['female']; ?></span></td>
+                                <td><span class="nullifempty"><?php echo $femalepctg.'%'; ?></span></td>
+                                <td><span class="nullifempty"><?php echo $line['withphone']; ?></span></td>
+                                <td><span class="nullifempty"><?php echo $phonepctg.'%'; ?></span></td>
+                                <td><span class="nullifempty"><?php echo $line['nophone']; ?></span></td>
+                                <td><span class="nullifempty"><?php echo $nophonepctg.'%'; ?></span></td>
+                            </tr>
+                            <?php $counter++; } ?>
+                            <tr>
+                            	<td></td>
+                                <td></td>
+                                <td class="bolded"><?php echo $total; ?></td>
+                                <td class="bolded"><?php echo $maletotal; ?></td>
+                                <td class="bolded"><?php echo round(($maletotal/$total)*100,1).'%'; ?></td>
+                                <td class="bolded"><?php echo $femaletotal; ?></td>
+                                <td class="bolded"><?php echo round(($femaletotal/$total)*100,1).'%'; ?></td>
+                                <td class="bolded"><?php echo $phonetotal; ?></td>
+                                <td class="bolded"><?php echo round(($phonetotal/$total)*100,1).'%'; ?></td>
+                                <td class="bolded"><?php echo $nophonetotal; ?></td>
+                                <td class="bolded"><?php echo round(($nophonetotal/$total)*100,1).'%'; ?></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            <?php } ?>
+		</div>
+  	</div>
+</div>
+</div>
+</form>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

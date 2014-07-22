@@ -1,0 +1,18 @@
+<?php include(APPLICATION_PATH.'/views/scripts/email/emailheader.phtml'); ?>
+
+Dear <?php echo $this->firstname; ?>,<br /><br />
+
+Your Payment for FARMIS membership has been successfully received. Below are your subscription details<br /><br />
+
+<b>Payment Date:</b> <?php echo $this->paymentdate; ?><br />
+<b>Amount:</b> <?php echo $this->amount; ?><br /> 
+<b>Payment Ref:</b> <?php echo $this->paymentref; ?><br /> 
+<b>Status:</b> <?php echo $this->status; ?><br /> 
+<b>Subscription Start Date:</b> <?php echo $this->startdate; ?><br />
+<b>Subscription End Date:</b> <?php echo $this->enddate; ?><br /><br />
+
+Thank you for being apart of the FARMIS program and we are looking forward to working with you.<br /><br />
+
+If you need any further assistance or have any question, please feel free to <a href="<?php echo $this->serverUrl($this->baseUrl('contactus')); ?>" title="Contact us">Contact us</a><br /><br />
+
+<?php include(APPLICATION_PATH.'/views/scripts/email/emailfooter.phtml'); ?>

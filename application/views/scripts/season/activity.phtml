@@ -7,7 +7,7 @@
 	if(!isEmptyString($request->sid)){
 		$season->populate(decode($request->sid));
 		$activity->setSeasonID($season->getID());
-		$activity->setFarmID($season->getFarmID());
+		$activity->setUserID($season->getUserID());
 		$activity->setStartDate(date('Y-m-d'));
 		$activity->setStatus('3');
 		$acounter = $activity->getNextReferencePointer();
@@ -29,7 +29,8 @@
 		$acounter = substr($activity->getRef(), -3);
 		$successurl = encode($this->baseUrl("season/activity/id/".$request->id));
 	}
-	$thefarmid = $activity->getSeason()->getFarmID();
+	$request->setParam('tab', 'seasons');
+	$user = $activity->getUser();
 	$loan = $activity->getCreditDetails();
 		
 	#in case of errors in session, populate the fields from session
@@ -37,10 +38,9 @@
 		$activity->processPost($session->getVar(FORM_VALUES));	
 	}
 	
-	// $activitytypes = getAllTillageTypes();
-		
-	$this->headTitle($title);  
-	$farmtitle = isFarmer() ? "Manage Farm" : "Manage Farm: ".$activity->getFarm()->getName();
+	$title = 'Manage Season: '.$activity->getActivityName();
+	$farmtitle = $activity->getUser()->getName();
+	$this->headTitle($title.$browserappend);  
 ?>
 <script>
 	$(document).ready(function() {
@@ -146,9 +146,9 @@
 </style>
 <h1><?php echo $farmtitle; ?></h1>
 <div id="tabs">
-    <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
+    <?php require APPLICATION_PATH."/views/scripts/profile/profileleftcolumn.phtml"; ?>
     <div class="span9 tab-content" id="center">
-    	<?php require APPLICATION_PATH."/views/scripts/farm/tabstop.phtml"; ?>
+    	<?php require APPLICATION_PATH."/views/scripts/profile/tabstop.phtml"; ?>
 		<div id="seasons">
             <form id="indexform" class="form-horizontal seasons" action="<?php echo $posturl; ?>" method="post">
             <?php if($request->tab == 'seasons'){ ?>
@@ -206,8 +206,7 @@
                                             <input type="hidden" name="entityname" value="SeasonActivity" />
                                             <input type="hidden" id="id" name="id" value="<?php echo encode($activity->getID()); ?>" />
                                             <input type="hidden" id="seasonid" name="seasonid" value="<?php echo $activity->getSeasonID(); ?>" />
-                                            <input type="hidden" id="farmid" name="farmid" value="<?php echo $activity->getFarmID(); ?>" />
-                                            <input type="hidden" id="farmerid" name="farmerid" value="<?php echo $activity->getFarm()->getFarmerID(); ?>" />
+                                            <input type="hidden" id="userid" name="userid" value="<?php echo $activity->getSeason()->getUserID(); ?>" />
                                             <input type="hidden" id="stage" name="stage" value="9" />
                                             <input type="hidden" name="sourcetype" id="sourcetype" value="<?php echo $loan->getSourceType(); ?>" />
                                             <input type="hidden" name="clienttype" id="clienttype" value="<?php echo $loan->getClientType(); ?>" />
@@ -328,7 +327,7 @@
             <?php } ?>    
             </form>
 		</div>
-		<?php require APPLICATION_PATH."/views/scripts/farm/tabsbottom.phtml"; ?> 
+		<?php require APPLICATION_PATH."/views/scripts/profile/tabsbottom.phtml"; ?>  
     </div>
 </div>    
 <?php

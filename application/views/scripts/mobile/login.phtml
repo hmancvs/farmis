@@ -1,0 +1,95 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+
+	$title = sprintf($this->translate("useraccount_pagetitle_login"), $this->translate('appname'));
+	$this->headTitle($title);  
+	
+	$useraccount = new UserAccount();
+	if ($sessionhaserror) {
+	    $useraccount->processPost($session->getVar(FORM_VALUES)); 
+	}
+	
+?>
+<?php require APPLICATION_PATH."/views/scripts/mobile/mobileincludes.phtml"; ?>
+<script>
+$(document).ready(function() {
+		$("#email").focus();
+		$("#loginform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				email: {
+					"required": true
+				},
+				password: "required"
+			}, 
+			messages: {
+				email: {
+					"required": "<?php echo $this->translate("useraccount_credential_error"); ?>"
+				},
+				password: "<?php echo $this->translate("useraccount_password_error"); ?>"
+			}
+		}); 
+		$("#headeractions #loginheader #headersignin").css({'display':'none'});
+}); 
+</script>
+<body>
+<div class="container-fluid viewpage" id="view_farmer">
+  <div class="row-fluid">
+   <h4><?php echo $title; ?></h4>
+  </div>
+  <div class="control-group">
+        <div class="controls">
+            <?php // if($isme || isFarmGroupAdmin() || isAdmin()){ ?>
+                
+                
+                
+            <?php // } ?>
+        </div>
+    </div>
+	<?php if($sessionhaserror) { ?>
+        <div class="row-fluid">
+        	<div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+        </div>
+    <?php } ?>
+    <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+        <div class="row-fluid">
+            <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+        </div>
+    <?php } ?>
+  <?php if(!isEmptyString($session->getVar("custommessage")) ){ ?>
+  	<div class="row-fluid">
+      	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar("custommessage"); ?></div>
+	</div>
+  <?php } ?>
+  <div class="row-fluid">
+      <form class="form-horizontal well clearfix" id="loginform" action="<?php echo $this->baseUrl('user/checklogin'); ?>" method="post">	
+        	<div class="control-group">
+                <label class="control-label" for="email">Identity: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                <div class="controls">
+                    <input name="email" id="email" placeholder="Enter Email or Username or Phone" class="span4" style="min-height:40px; border:none; border:1px solid #CCCCCC; padding:4px; -webkit-border-radius: 3px; -moz-border-radius: 3px; border-radius: 3px; color:#808080; font-size:13px;" />
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="email">Password: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                <div class="controls">
+                	<input name="password" id="password" type="password" placeholder="Enter Password" class="span4" style="min-height:40px;" />
+                </div>
+			</div> 
+            <div class="control-group">
+                <div class="controls">
+                	<button id="login" class="btn btn-primary xbtn-large" type="submit" title="Login"><i class="icon-lock icon-white"></i> Login</button> &nbsp;&nbsp;&nbsp;or &nbsp;&nbsp;<a href="<?php echo $this->baseUrl('mobile/signup'); ?>" title="Have no Account? Click here to get started.">Signup</a>
+                    <input name="redirecturl" type="hidden" value="<?php echo $request->redirecturl;  ?>" />
+                    <input name="mobilelogin" type="hidden" value="1" />
+                    <input name="country" id="country" type="hidden" value="<?php echo $session->getVar('country');  ?>" />
+                    <input name="<?php echo URL_FAILURE; ?>" id="<?php echo URL_FAILURE; ?>" type="hidden" value="<?php echo encode($this->baseUrl('mobile/login')); ?>" />
+                    <label style="margin-top:10px;"><a href="<?php echo $this->baseUrl("user/recoverpassword")?>">Forgot your password?</a></label>
+                </div>
+			</div>                
+      </form>
+  </div>
+</div>
+</body>
+</html>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

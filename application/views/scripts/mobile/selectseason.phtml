@@ -1,0 +1,61 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$user = new UserAccount();
+	$user->populate(decode($request->userid));
+	// debugMessage($user->toArray());
+	$defaultseason = '';
+	if($user->hasSeason() && $user->getSeasons()->count() == 1){
+		$defaultseason = $user->getSeasons()->get(0)->getID();
+	}
+?>
+<script>
+	$(document).ready(function() {		
+		$('#continue').click(function(){
+			var sid = $(".popupdiv #seasonid").val();
+			var stage = '<?php echo $request->stage; ?>';
+			url = '';
+			if(stage == 'input'){
+				url = '<?php echo $this->baseUrl('mobile/addseasonevent/stage/input/type/2/sid/'); ?>'+base64_encode(sid);
+			}
+			if(stage == 'sale'){
+				url = '<?php echo $this->baseUrl('mobile/addseasonevent/stage/sale/sid/'); ?>'+base64_encode(sid);
+			}
+			if(isEmptyString(sid)){
+				bootbox.alert('Please select a Season to Continue');
+				return false;
+			} else {
+				window.location.href = url;
+			}
+		});
+	}); 
+</script>
+<div class="popupdiv">
+    <fieldset class="fieldsetcontainer well">
+        <legend>Select a Season to Continue</legend>
+        <div class="control-group">
+            <div class="controls">
+				<?php
+					$allseasons = getAllSeasons($user->getID());
+					$seasondropdown = new Zend_Form_Element_Select('seasonid',
+										array(
+											'multiOptions' => array_merge_maintain_keys(array('' => 'All Seasons'), $allseasons),
+											'view' => new Zend_View(),
+											'decorators' => array('ViewHelper'),
+											'class' => array('span4')	
+										)
+					);  
+					$seasondropdown->setValue($defaultseason);
+					echo $seasondropdown->render(); 
+				  ?>&nbsp;&nbsp;
+            </div>
+        </div>
+    </fieldset>
+    <div class="control-group well actions" id="topactions">
+        <a class="btn btn-primary" id="continue"><i class="icon-arrow-right icon-white"></i> Continue</a>
+    </div>
+</div>
+<?php
+	$clearsessionformvalues = true; 
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

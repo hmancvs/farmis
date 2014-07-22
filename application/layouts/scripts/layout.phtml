@@ -51,6 +51,7 @@
 	  $groupid = $session->getVar("farmergroupid");
 	} 
 ?>
+
 <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
 <!--[if lt IE 9]>
 <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
@@ -84,7 +85,11 @@ $(document).ready(function() {
 	// make the datefields readonly
 	$(".datefield").attr('readOnly', 'true');
 	$(".readonly").each(function(){
-		$(this).attr('readonly','readonly');
+		$(this).attr('readonly', true);
+	});
+	
+	$(".disabledfield").each(function(){
+		$(this).attr('disabled', true);
 	});
 		
 	// turn select controls to chosen type selects
@@ -153,7 +158,7 @@ $(document).ready(function() {
 	});	
 	
 	// auto submit for list filters with the specified class, and all selects in a container with class filter 
-	$(".autosubmitsearchform, .filtercontainer select, #itemcountperpage, select.autofilter").not(".autosubmitsearchform").each(function(){
+	$(".autosubmitsearchform, .filtercontainer select, #itemcountperpage, select.autofilter, input.autofilter").not(".autosubmitsearchform").each(function(){
 		$(this).change(function(){
 			// clear the values in the search field
 			clearValue("searchterm"); 
@@ -243,7 +248,7 @@ $(document).ready(function() {
 		var posturl = $(this).attr('action');
 		var successurl = $(this).attr('successurl');
 		var submittext = $(this).attr('submittext'); 
-		// alert(posturl);
+		// alert(href);
 		// popup title
 		$(".modal-header h3").html(title);
 		// load content
@@ -332,6 +337,13 @@ $(document).ready(function() {
 		}
 		return true;
 	}, "Invalid Number");
+	// add the validation for wholesale price to be less than retail price
+	$.validator.addMethod("validnumber", function(value, element, params) { 
+		if (IsValidAmount(value)) {
+			return true; 
+		}
+		return false;        
+	}, "Please enter a valid Phone Number");
 	
 	$.validator.addClassRules("isdecimal", {
 		validate_decimal: true				
@@ -387,6 +399,34 @@ $(document).ready(function() {
 		enddateafterstartdate: true				
 	});
 	
+	$.validator.addMethod("validate_ug", function(value, element, params) { 
+		if(isEmptyString(value)) {
+			return true; 
+		}
+		if(!isEmptyString(value) && !isUgNumber(value)) {
+			return false; 
+		}
+		return true;        
+	}, "<?php echo $this->translate("globale_phonenumber_format"); ?>");
+	$.validator.addMethod("validate_ke", function(value, element, params) { 
+		if(isEmptyString(value)) {
+			return true; 
+		}
+		if(!isEmptyString(value) && !isKeNumber(value)) {
+			return false; 
+		}
+		return true;        
+	}, "<?php echo $this->translate("globale_phonenumber_format_ke"); ?>");
+	
+	// validate captcha
+	$.validator.addMethod("validatecode", function(value, element, params) {
+		//alert('code is '+value); //alert('valid is '+$("#validcode").val());
+		if ($("#code").val().toLowerCase() == $("#validcode").val().toLowerCase()) {
+			return true; 
+		}
+		return false;        
+	}, "Captcha Invalid! <br />Re-enter code or refresh for a new one");
+	
 	// function to validate the enddate being greater than the start date
 	$.validator.addMethod("enddateafterstartdate", function(value, element) {            
 		var startDate = $(".startdate").val();  
@@ -420,6 +460,28 @@ $(document).ready(function() {
 		});
 	}
 	
+	$("a.confirm-dialog").click(function(e) {
+		e.preventDefault();
+		var message = '<label class="blockcontainer">Are you sure? <br /><br /> Click <b>OK</b> to confirm, and <b>Cancel</b> to ignore</label>';
+		var custom_msg = $(this).attr('message');
+		if(!isEmptyString(custom_msg) && custom_msg != 'undefined'){
+			var message = '<label class="blockcontainer">'+custom_msg+' <br /><br /> Click <b>OK</b> to confirm, and <b>Cancel</b> to ignore</label>';
+		}
+		var url = $(this).attr('href');
+		confirmDialog(message, url);
+	});
+	
+	function confirmDialog(message, url) {
+		bootbox.confirm(message, function(confirmed) {
+			if(confirmed){
+				window.location.href = url;					
+			} else {
+				bootbox.hideAll();
+				return false;
+			}
+		});
+	}
+	
 	// hover and unhover upload icon
 	$("#profileinfo, .profileinfo").hover(function(){
 		$("#uploadlink").show();
@@ -439,40 +501,40 @@ $(document).ready(function() {
 	// invite one person
 	$("a.invitetrigger").click(function(){
 		var id = $(this).attr('id');
-		var farmerid = $("label."+id).html();
+		var userid = $("label."+id).html();
 		var email = $("input."+id).val();
 		var invitedby = $("label."+id).attr('title');
 		if(isEmptyString(email)) {
-			$("div#invite_"+farmerid+"_error").html('<div class="alert alert-error">Please enter email to invite</div>');
+			$("div#invite_"+userid+"_error").html('<div class="alert alert-error">Please enter email to invite</div>');
 			$("div.alert-error").css({'background': 'url("<?php echo $this->baseUrl('images/cross.png'); ?>") no-repeat #EDDBE3 5px 8px'});
 		}
 		if(!isEmptyString(email) && !validateEmail(email)) {
-			$("div#invite_"+farmerid+"_error").html('<div class="alert alert-error">Please enter a valid email</div>');
+			$("div#invite_"+userid+"_error").html('<div class="alert alert-error">Please enter a valid email</div>');
 			$("div.alert-error").css({'background': 'url("<?php echo $this->baseUrl('images/cross.png'); ?>") no-repeat #EDDBE3 5px 8px'});
 		}
 		
 		// check that email is provided
 		if(!isEmptyString(email) && validateEmail(email)) {
-			$("div#invite_"+farmerid+"_error").html('');
-			$("span#inv_before_"+farmerid).hide(); 
-			$("span#inv_after_"+farmerid).html($('#loading_'+farmerid).html()); 
+			$("div#invite_"+userid+"_error").html('');
+			$("span#inv_before_"+userid).hide(); 
+			$("span#inv_after_"+userid).html($('#loading_'+userid).html()); 
 			// post 
 			$.post(  
-				"<?php echo $this->baseUrl("farmer/inviteone"); ?>", {id: farmerid, email: email},  
+				"<?php echo $this->baseUrl("profile/inviteone"); ?>", {id: userid, email: email},  
 				function(data){
 					// alert(data); exit();
 					if(data.search("Success") != -1){								
 						// reload parent on close				
-						$("span#inv_after_"+farmerid).html(data);	
-						$("span#inv_hide_"+farmerid).hide(); 			
+						$("span#inv_after_"+userid).html(data);	
+						$("span#inv_hide_"+userid).hide(); 			
 					} else {
 						var err = 'An error occured while inviting user. Try again later';
-						$("span#inv_after_"+farmerid).html(data);
-						$("#inv_before_"+farmerid).show();
+						$("span#inv_after_"+userid).html(data);
+						$("#inv_before_"+userid).show();
 						
 					}
 					// location.reload(true);
-					$("span#inv_after_"+farmerid+" a").hide(); 
+					$("span#inv_after_"+userid+" a").hide(); 
 					$("div.alert-success").css({'background': 'url("<?php echo $this->baseUrl('images/tick.png'); ?>") no-repeat #FEF0B6 5px 8px'});
 				}  
 			); // close the $.post
@@ -482,49 +544,49 @@ $(document).ready(function() {
 	// invite farmer via phone
 	$("a.pinvitetrigger").click(function(){
 		var id = $(this).attr('id');
-		var farmerid = $("label."+id).html();
+		var userid = $("label."+id).html();
 		var phone = $("input."+id).val();
 		var invitedby = $("label."+id).attr('title');
 		if(isEmptyString(phone)) {
-			$("div#pinvite_"+farmerid+"_error").html('<div class="alert alert-error">Please enter phone to invite</div>');
+			$("div#pinvite_"+userid+"_error").html('<div class="alert alert-error">Please enter phone to invite</div>');
 			$("div.alert-error").css({'background': 'url("<?php echo $this->baseUrl('images/cross.png'); ?>") no-repeat #EDDBE3 5px 8px'});
 		}
 		if(!isEmptyString(phone) && !IsValidAmount(phone)) {
-			$("div#pinvite_"+farmerid+"_error").html('<div class="alert alert-error">Please enter a valid Phone</div>');
+			$("div#pinvite_"+userid+"_error").html('<div class="alert alert-error">Please enter a valid Phone</div>');
 			$("div.alert-error").css({'background': 'url("<?php echo $this->baseUrl('images/cross.png'); ?>") no-repeat #EDDBE3 5px 8px'});
 		}
 		if(!isEmptyString(phone) && IsValidAmount(phone) && parseInt(phone.length) != 10) {
-			$("div#pinvite_"+farmerid+"_error").html('<div class="alert alert-error">Please enter 10 Digits</div>');
+			$("div#pinvite_"+userid+"_error").html('<div class="alert alert-error">Please enter 10 Digits</div>');
 			$("div.alert-error").css({'background': 'url("<?php echo $this->baseUrl('images/cross.png'); ?>") no-repeat #EDDBE3 5px 8px'});
 		}
 		if(!isEmptyString(phone) && IsValidAmount(phone) && parseInt(phone.length) == 10 && !isUgNumber(phone)) {
-			$("div#pinvite_"+farmerid+"_error").html('<div class="alert alert-error"><?php echo $this->translate("globale_phonenumber_format"); ?></div>');
+			$("div#pinvite_"+userid+"_error").html('<div class="alert alert-error"><?php echo $this->translate("globale_phonenumber_format"); ?></div>');
 			$("div.alert-error").css({'background': 'url("<?php echo $this->baseUrl('images/cross.png'); ?>") no-repeat #EDDBE3 5px 8px'});
 		}
 		
 		// check that email is provided
 		if(!isEmptyString(phone) && IsValidAmount(phone) && isUgNumber(phone)) {
-			$("div#pinvite_"+farmerid+"_error").html('');
-			$("span#pinv_before_"+farmerid).hide(); 
-			$("span#pinv_after_"+farmerid).html($('#loading_'+farmerid).html()); 
+			$("div#pinvite_"+userid+"_error").html('');
+			$("span#pinv_before_"+userid).hide(); 
+			$("span#pinv_after_"+userid).html($('#loading_'+userid).html()); 
 			
 			// post 
 			$.post(  
-				"<?php echo $this->baseUrl("farmer/inviteonebyphone"); ?>", {id: farmerid, phone: phone},  
+				"<?php echo $this->baseUrl("profile/inviteonebyphone"); ?>", {id: userid, phone: phone},  
 				function(data){
 					// alert(data); return false;
 					if(data.search("Success") != -1){								
 						// reload parent on close				
-						$("span#pinv_after_"+farmerid).html(data);	
-						$("span#pinv_hide_"+farmerid).hide(); 			
+						$("span#pinv_after_"+userid).html(data);	
+						$("span#pinv_hide_"+userid).hide(); 			
 					} else {
 						var err = 'An error occured while inviting user. Try again later';
-						$("span#pinv_after_"+farmerid).html(data);
-						$("#pinv_before_"+farmerid).show();
+						$("span#pinv_after_"+userid).html(data);
+						$("#pinv_before_"+userid).show();
 						
 					}
 					// location.reload(true);
-					$("span#pinv_after_"+farmerid+" a").hide(); 
+					$("span#pinv_after_"+userid+" a").hide(); 
 					$("div.alert-success").css({'background': 'url("<?php echo $this->baseUrl('images/tick.png'); ?>") no-repeat #FEF0B6 5px 8px'});
 				}  
 			); // close the $.post
@@ -535,26 +597,33 @@ $(document).ready(function() {
 	// validate phone number on file
 	$("a.validatetrigger").click(function(){
 		var id = $(this).attr('id');
-		var userphoneid = $("label."+id).html();
+		var userid = $("label."+id).html();
 		var code = $("input."+id).val();
 		var successurl = $(this).attr('successurl');
 		
 		var validcode = true;
 		var clength = code.length;
 		if(isEmptyString(code) || (!isEmptyString(code) && clength < 6)) {
-			$("div#validate_"+userphoneid+"_error").html('<div class="alert alert-error">Please enter 6 digit code</div>');
+			$("div#validate_"+userid+"_error").html('<div class="alert alert-error">Please enter 6 digit code</div>');
 			$("div.alert-error").css({'background': 'url("<?php echo $this->baseUrl('images/cross.png'); ?>") no-repeat #EDDBE3 5px 8px'});
 			validcode = false;
 		}
 		
 		// check that email is provided
 		if(validcode) {
-			$("div#validate_"+userphoneid+"_error").html('');
-			$("span#phone_before_"+userphoneid).hide(); 
-			$("span#phone_after_"+userphoneid+" a").show(); 
-			var url = '<?php echo $this->baseUrl("farmer/verifyphone"); ?>/userphoneid/'+userphoneid+'/code/'+code+'/successurl/'+successurl;
+			$("div#validate_"+userid+"_error").html('');
+			$("span#phone_before_"+userid).hide(); 
+			$("span#phone_after_"+userid+" a").show(); 
+			var url = '<?php echo $this->baseUrl("profile/verifyphone"); ?>/userid/'+userid+'/code/'+code+'/successurl/'+successurl;
 			// alert(confirmurl);
 			window.location.href = url;
+		}
+	});
+	
+	$('.validate').keydown(function (event) {
+	   var keycode = (event.keyCode ? event.keyCode : event.which);
+		if (keycode == '13') {
+			$('.validatetrigger').click();
 		}
 	});
 	
@@ -690,9 +759,10 @@ $(document).ready(function() {
 				var inputSearch = $(this).val();
 				var type = '<?php echo $usertype; ?>';
 				var grp = '<?php echo $groupid; ?>';
+				var country = '<?php echo $session->getVar('country'); ?>';
 				// alert(grp);
 				// var dataString = 'searchword='+ inputSearch;
-				var searchurl = '<?php echo $this->baseUrl('resource/search'); ?>/searchword/'+inputSearch+'/type/'+type+'/grp/'+grp;
+				var searchurl = '<?php echo $this->baseUrl('resource/search'); ?>/searchword/'+inputSearch+'/type/'+type+'/grp/'+grp+'/country/'+country;
 				if(!isEmptyString(inputSearch) && inputSearch.length > 2){
 					$.ajax({
 						type: "POST",
@@ -817,6 +887,76 @@ $(document).ready(function() {
 	var screenwidth = window.screen.availWidth;
 	var screenheight = window.screen.availHeight;
 	// alert(screenwidth+' - '+screenheight);
+	
+	$('div.controls, .nullifempty').each(function() {
+		var html = $(this).html();
+		if(isEmptyString(html)){
+			$(this).html('--');
+		}
+	});
+	
+	$("a.gonowhere").each(function(){
+		$(this).attr('href', 'javascript: void(0)');
+	});
+	
+	$("#confirmemail").click(function(){
+		var code = $("#code").val();
+		var id = $(this).attr('userid');
+		var ref = $(this).attr('ref');
+		
+		var validcode = true;
+		var clength = code.length;
+		if(isEmptyString(code) || (!isEmptyString(code) && clength < 6)) {
+			$("div#code_email_error").html('<div class="alert alert-error">Please enter 6 digit code</div>');
+			$("div.alert-error").css({'background': 'url("<?php echo $this->baseUrl('images/cross.png'); ?>") no-repeat #EDDBE3 5px 8px'});
+			validcode = false;
+		}
+		// check that email is provided
+		if(validcode) {
+			$("div#code_email_error").html('');
+			var url = '<?php echo $this->baseUrl("profile/changeemail"); ?>/id/'+id+'/actkey/'+code+'/ref/'+ref;
+			// alert(url);
+			window.location.href = url;
+		}
+	});
+	
+	$("#confirmphone").click(function(){
+		var code = $("#code").val();
+		var id = $(this).attr('userid');
+		var ref = $(this).attr('ref');
+		
+		var validcode = true;
+		var clength = code.length;
+		if(isEmptyString(code) || (!isEmptyString(code) && clength < 6)) {
+			$("div#code_phone_error").html('<div class="alert alert-error">Please enter 6 digit code</div>');
+			$("div.alert-error").css({'background': 'url("<?php echo $this->baseUrl('images/cross.png'); ?>") no-repeat #EDDBE3 5px 8px'});
+			validcode = false;
+		}
+		// check that email is provided
+		if(validcode) {
+			$("div#code_phone_error").html('');
+			var url = '<?php echo $this->baseUrl("profile/changephone"); ?>/id/'+id+'/actkey/'+code+'/ref/'+ref;
+			// alert(url);
+			window.location.href = url;
+		}
+	});
+	
+	$('.changesetting').click(function(){
+		var userid = $(this).attr('userid');
+		var field = $(this).attr('field');
+		var value = $(this).val();
+		// alert(userid+' - '+field+' - '+value);
+		var url = '<?php echo $this->baseUrl("profile/changesettings"); ?>/userid/'+userid+'/field/'+field+'/value/'+value; 
+		// alert(url);
+		$.post( 
+			url,  
+			function(data){
+				// alert(data); return false;
+				$("#"+field+"_wait").addClass('hidden');
+			}  
+		); // close the $.post
+		$("#"+field+"_wait").removeClass('hidden');								
+	});
 }); 
 //Use window.load and not document.ready for effective equal heights
 $(window).load(function() {
@@ -847,6 +987,18 @@ $(window).load(function() {
 	}
 ?>
 <body data-spy="scroll" data-target=".subnav" data-offset="50"<?php echo $bodyclass; ?>>
+<?php if(isUganda()){ ?>
+	<?php if(!$isloggedin){ ?>
+    <span class="flag leftflag"><img src="<?php echo $this->baseUrl('images/uganda_left.png'); ?>" /></span>
+    <?php } ?>
+    <span class="flag rightflag"><img src="<?php echo $this->baseUrl('images/uganda_right.png'); ?>" /></span>
+<?php } ?>
+<?php if(isKenya()){ ?>
+	<?php if(!$isloggedin){ ?>
+    	<span class="flag leftflag"><img src="<?php echo $this->baseUrl('images/kenya_left.png'); ?>" /></span>
+    <?php } ?>   
+    <span class="flag rightflag"><img src="<?php echo $this->baseUrl('images/kenya_right.png'); ?>" /></span>
+<?php } ?>
 <!--Header Container-->
 <div class="navbar navbar-fixed-top" id="headercontainer">
     <div class="navbar-inner" id="headertop">
@@ -886,3 +1038,51 @@ $(window).load(function() {
 <div class="hidden" id="printer_page_action_buttons"><a title="Close Window" onClick="window.close()" > <img src="<?php echo $this->baseUrl('images/close.png'); ?>" width="16" height="16" alt="Close Window"> </a> &nbsp;&nbsp; <a title="Print" onClick="window.print()" > <img src="<?php echo $this->baseUrl('images/printer.png'); ?>" width="16" height="16" alt="Print"> </a> </div>
 </body>
 </html>
+<?php if(false){ ?>
+<!-- Start of StatCounter Code for Default Guide -->
+<script type="text/javascript">
+var sc_project=9269846; 
+var sc_invisible=1; 
+var sc_security="5ab010d0"; 
+var scJsHost = (("https:" == document.location.protocol) ?
+"https://secure." : "http://www.");
+document.write("<sc"+"ript type='text/javascript' src='" +
+scJsHost+
+"statcounter.com/counter/counter.js'></"+"script>");
+</script>
+<noscript><div class="statcounter"><a title="hits counter"
+href="http://statcounter.com/free-hit-counter/"
+target="_blank"><img class="statcounter"
+src="http://c.statcounter.com/9269846/0/5ab010d0/1/"
+alt="hits counter"></a></div></noscript>-->
+<!-- End of StatCounter Code for Default Guide -->
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-44275519-2', 'farmis.ug');
+  ga('send', 'pageview');
+
+</script>
+
+<!-- Start of StatCounter Code for Default Guide -->
+<script type="text/javascript">
+var sc_project=9269846; 
+var sc_invisible=1; 
+var sc_security="5ab010d0"; 
+var scJsHost = (("https:" == document.location.protocol) ?
+"https://secure." : "http://www.");
+document.write("<sc"+"ript type='text/javascript' src='" +
+scJsHost+
+"statcounter.com/counter/counter.js'></"+"script>");
+</script>
+<noscript><div class="statcounter"><a title="web analytics"
+href="http://statcounter.com/" target="_blank"><img
+class="statcounter"
+src="http://c.statcounter.com/9269846/0/5ab010d0/1/"
+alt="web analytics"></a></div></noscript>
+<!-- End of StatCounter Code for Default Guide -->
+<?php } ?>

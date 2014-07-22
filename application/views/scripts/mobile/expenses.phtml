@@ -1,0 +1,182 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$title = "My Expenses";	
+	$this->headTitle($title);
+	$listurl = $this->baseUrl('mobile/seasons');
+	$addurl = $this->baseUrl('mobile/addseason');
+	
+	$loggedinuser = new UserAccount();
+	$loggedinuser->populate($userid);
+	
+	$country = 'UG';
+	$location_label = 'District';
+	$locations_label = 'Districts';
+	if(isKenya()){
+		$country = 'KE';
+		$location_label = 'County';
+		$locations_label = 'Counties';
+	}
+	$countryreq = strtolower($request->country);
+	
+	$isgrouplist = false; $isdna = false; $isme = true;
+	if(!isFarmer()){
+		$title = "Manage Expenses";	
+		$isme = false;
+		if(isFarmGroupAdmin()){
+			$isdna = true; 
+			$dnaid = $loggedinuser->getFarmGroupID();
+		}
+	}
+	
+	$paginate = new Pagination();	
+	$paginate->setView($this);
+	# set the search columns to be used on this list
+	$paginate->setSearchColumns(array("u.firstname", "u.firstname"));
+	$paginate->setFilterColumns(array());
+	$paginate->setDefaultSortBy("e.datecreated");	
+	$paginate->setDefaultSortOrder("DESC");
+	$paginate->setItemCountPerPage("10");
+	
+	# define the letter to be clicked to ease navigation 
+	$where_query = " WHERE e.id <> '' ";
+	
+	$theuserid = $request->userid;
+	if(isEmptyString($request->userid)){
+		$theuserid = $userid;
+	}
+	if(!isEmptyString($theuserid)){
+		$where_query .= " AND e.userid = '".$theuserid."' ";
+	}
+	
+	$order = trim($request->order);
+	$order_query = " ";
+	if(isEmptyString($order)){
+		$order = 1;
+	}
+	if($order == 1){
+		$order_query = " ORDER BY e.datecreated DESC ";
+	}
+	if($order == 4){
+		$order_query = " ORDER BY e.datecreated ASC ";
+	}
+	
+	$paginate->processPost($request->getParams());
+	$all_results_query = "SELECT e.id FROM seasoninput e INNER JOIN seasoninputdetail d ON (d.inputid = e.id) INNER JOIN useraccount u on (e.userid = u.id)  ".$where_query." ".$paginate->getSearchAndFilterSQL()." GROUP BY d.inputid ".$order_query;
+	
+//	debugMessage($all_results_query); exit;
+	$paginate->setItemCountFromSQLQuery($all_results_query);
+	$current_results_query = $all_results_query." ".$paginate->getSQLLimit();
+	
+	$conn = Doctrine_Manager::connection(); 
+	$result = $conn->fetchAll($current_results_query);
+	$has_no_data = (count($result) == 0) ? true : false; 
+	
+?>
+<?php require APPLICATION_PATH."/views/scripts/mobile/mobileincludes.phtml"; ?>
+<body>
+<div class="container-fluid viewpage" id="list_farmer">
+  <h4><?php echo $title; ?></h4>
+  <form action="<?php echo $this->baseUrl("mobile/seasonssearch"); ?>" method="get" id="listform" class="form-search">
+	  <?php if($sessionhaserror) { ?>
+      <div class="row-fluid">
+        <div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+      </div>
+      <?php } ?>
+      <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+      <div class="row-fluid">
+        <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+      </div>
+      <?php } ?>
+      <?php if(!isEmptyString($session->getVar("custommessage")) ){ ?>
+      <div class="row-fluid">
+        <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar("custommessage"); ?></div>
+      </div>
+      <?php } ?>
+      <ul class="peoplegroup">
+            <li><a class="btn noimgbutton" href="<?php echo $this->baseUrl('mobile/home'); ?>" style="padding:6px 10px;"><i class="icon-home"></i></a></li>
+           	<li><a class="btn btn-primary selectseason" id="selectseason" rel="Browse Season" title="Select Season" href="<?php echo $this->baseUrl('mobile/selectseason/pgc/true/stage/input/type/2/userid/'.encode($theuserid)); ?>" submittext="Continue"><i class="icon-plus icon-white"></i> New Expense</a></li>
+            <li>
+               
+            </li>
+            <li><span class="visible-phone lineblocked">Search: &nbsp;</span><input name="searchterm" id="searchterm" value="<?php echo $request->searchterm; ?>" type="text" class="span2 minwidth100" style="margin-bottom:5px; height:20px;" placeholder="Search...">
+                <button type="submit" id="searchbutton" class="btn" style="padding:6px 10px; vertical-align:top; margin-left:-2px;"><i class="icon-search"></i></button>
+                <input type="hidden" name="userid" id="userid" value="<?php echo $theuserid; ?>" />
+                <a href="<?php echo $listurl; ?>"> &nbsp;Reset list</a>
+            </li>
+        </ul>
+        <?php if (!$has_no_data) { ?>
+            	<div class="paginatecustom"><?php echo sprintf($this->translate("global_list_counter"), $paginate->getItemCounterText()); ?></div>
+            <?php } ?>
+        <?php if($has_no_data) { ?>
+            <div style="clear:both;" class="alert alert-info margin5"><?php echo $this->translate("global_list_norecords_error"); ?></div>
+        <?php } else { ?>
+              <div class="peoplelist">
+                <?php
+                    $counter = 1;		
+                    foreach($result as $line){
+                        $input = new SeasonInput();
+                        $input->populate($line['id']);
+                        $season = $input->getSeason();
+						$crop = $season->getCrop();
+						$details = $input->getinputdetails();
+						$type = $input->getType();
+						$count_items = $details->count();
+						// debugMessage($count_items);
+                ?>
+                    <?php if($counter % 2 == 1){ ?>
+                    <div class="row-fluid">
+                    <?php } ?>
+                      <div class="span6">
+                        <div class="peoplewrapper well">
+                          <div class="thumbwrapper" style="width:120px;">
+                              <div class="thumb">
+                                <div id="thumbinfo" style="width:100%;"> 
+                                    <a href="<?php echo $this->baseUrl("mobile/viewseasonevent/id/".encode($line['id']).'/stage/input/type/'.$type); ?>"><img class="profileimage" src="<?php echo $crop->getImagePath(); ?>" style="width:100px;" /></a>
+                                </div>
+                                <div class="blocked bolded" style="font-size:9px; width:98%;"></div>
+                              </div>
+                          </div>
+                          <div class="peopleinfo">
+                            <h4><a href="<?php echo $this->baseUrl("mobile/viewseasonevent/id/".encode($line['id']).'/stage/input/type/'.$type); ?>"><?php echo changeMySQLDateToPageFormat($input->getStartDate()); ?> <?php echo !isEmptyString($input->getActivityName()) ? '- '.$input->getActivityName() : ''; ?></a></h4>
+                            <ul>
+                                <?php if(isAdmin() || isManagement() || isDataClerk() || isFarmGroupAdmin()){ ?>
+                                  <li><span>Farmer:</span> <a href="<?php echo $this->baseUrl('mobile/view/id/'.encode($season->getUserID())); ?>"><?php echo $season->getUser()->getName(); ?></a></li>
+                                <?php } ?>
+                                <?php if($count_items == 1){ ?>
+                                    <li><span>Item:</span> <?php echo $details->get(0)->getName(); ?></li>
+                                    <li><span>Amount:</span> <?php echo formatNumber($input->getTotalAmount()).' '.getCurrencySymbol(); ?></li>
+                                    <li style="margin-top:10px;"><span>&nbsp;</span></li>
+                                <?php } else { ?>
+                                    	<li><span class="bolded">Expense Items:</span> (<?php echo $count_items; ?>)</li>
+											<?php 
+												$i = 1;
+												foreach($details as $inputdetail){ 
+											?>
+												<span class="blocked" style="font-weight:normal;"><?php echo $inputdetail->getName().' ('.formatNumber($inputdetail->getAmount()).')'; ?></span>
+                                            <?php $i++; } ?>
+                                        </li>
+                                        <li style="margin-top:10px;"><span>Amount:</span> <b><?php echo formatNumber($input->getTotalAmount()).' '.getCurrencySymbol(); ?></b></li>
+                                    
+                              	<?php } ?>
+                            </ul>
+                          </div>
+                          <!--peopleinfo--> 
+                        </div>
+                        <!--peoplewrapper--> 
+                      <?php if($counter % 2 == 0){ ?>
+                      </div>
+                      <?php } ?>
+                    </div>
+                <?php $counter++; } ?>
+              </div>
+              <!--peoplelist-->
+              <?php echo $paginate->getPaginationLinks(); ?>  
+		<?php } ?>              
+  </form>
+</div>
+<?php require APPLICATION_PATH."/views/scripts/mobile/dialog.phtml"; ?>
+</body>
+</html><?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

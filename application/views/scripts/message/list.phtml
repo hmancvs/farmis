@@ -22,7 +22,7 @@
 	}
 	
 	$paginate->processPost($request->getParams());
-	$all_results_query = "SELECT m.id as id, m.senderid as senderid, mr.recipientid as recipientid, mr.id as messagerecipientid, m.commentid as commentid, c.userid as userid, concat(us.firstname, ' ', us.lastname) as `Sender`, concat(ur.firstname, ' ', ur.lastname) as `Recipient`, m.subject as `Subject`, m.contents as 'Contents', mr.isread as `Is Read`, m.datecreated as `Message Date`, c.content as `Comment`, c.type as `Type`, c.communityforumid as communityforumid FROM message m inner join messagerecipient mr on (m.id = mr.messageid) inner join useraccount ur on (mr.recipientid = ur.id) inner join useraccount us on (m.senderid = us.id) left join comment as c on (m.commentid = c.id) WHERE mr.recipientid = '".$userid."' ".$paginate->getSearchAndFilterSQL()." ".$read_custom_query."".$paginate->getSortSQL();
+	$all_results_query = "SELECT m.id as id, m.senderid as senderid, m.sendername, m.senderemail, m.country as supportcountry, mr.recipientid as recipientid, mr.id as messagerecipientid, m.commentid as commentid, c.userid as userid, concat(us.firstname, ' ', us.lastname) as `Sender`, concat(ur.firstname, ' ', ur.lastname) as `Recipient`, m.subject as `Subject`, m.contents as 'Contents', mr.isread as `Is Read`, m.datecreated as `Message Date`, c.content as `Comment`, c.type as `Type`, c.communityforumid as communityforumid FROM message m inner join messagerecipient mr on (m.id = mr.messageid) left join useraccount ur on (mr.recipientid = ur.id) left join useraccount us on (m.senderid = us.id) left join comment as c on (m.commentid = c.id) WHERE mr.recipientid = '".$userid."' ".$paginate->getSearchAndFilterSQL()." ".$read_custom_query."".$paginate->getSortSQL();
 	// debugMessage($all_results_query);
 	
 	$paginate->setItemCountFromSQLQuery($all_results_query);
@@ -362,7 +362,7 @@ ul#datalist > li.unread, ul#datalist > li:nth-child(2n+1).unread, ul#datalist > 
                         <td style="width:25px;"><img id="wait" class="hidden" style=" width:20px;" src="<?php echo $this->baseUrl('images/loader.gif'); ?>" /></td>
                         <td>
                         	<?php if(!$has_no_data) { ?>
-                        	<div class="paginatecustom"><?php echo sprintf($this->translate("message_list_counter"), $paginate->getItemCounterText()); ?></div>
+                        	<div class="paginatecustom" style="float:right; position:relative;"><?php echo sprintf($this->translate("message_list_counter"), $paginate->getItemCounterText()); ?></div>
                             <?php } ?>
                         </td>
                     </tr>
@@ -398,7 +398,7 @@ ul#datalist > li.unread, ul#datalist > li:nth-child(2n+1).unread, ul#datalist > 
                         	<tr>
                             	<td class="selector"><input type="checkbox" name="checkor" class="isread" id="message_<?php echo $line['id']; ?>" value="<?php echo $line['messagerecipientid']; ?>" /></td>
                             	<td class="thumbnail">
-									<?php if($line['senderid'] == 1){ ?>
+									<?php if($line['senderid'] == 1 || $line['senderid'] == 0 || $line['senderid'] == 3131){ ?>
                                         <img src="<?php echo $this->baseUrl('images/flag.png'); ?>" />
                                     <?php } else { ?>
                                         <div class="thumbinfo new_pic"> 
@@ -407,17 +407,29 @@ ul#datalist > li.unread, ul#datalist > li:nth-child(2n+1).unread, ul#datalist > 
                                     <?php } ?> 
 								</td>
                                 <td class="message" style="padding-top:0; width:95%;">
-                                	<?php if($line['senderid'] == 1){ ?>
+                                	<?php if($line['senderid'] == 1 || $line['senderid'] == 3131){ ?>
                                         <h2 class="sender"><a><?php echo $this->translate("company_signoff"); ?></a></h2>
                                     <?php } else { ?>
-                                        <h2 class="sender" title="<?php echo $line['Sender']; ?>"><a class="profilepopup"><?php echo $line['Sender']; ?></a></h2>
+                                    	<?php if($line['senderid'] == 0){ ?>
+                                        	<h2 class="sender"><a class="profilepopup"><?php echo $line['Sender']; ?></a></h2>
+                                        <?php } else { ?>
+                                        	<h2 class="sender"><a class="profilepopup"><?php echo $line['sendername'].'['.$line['senderemail'].']'; ?></a></h2>
+                                        <?php } ?>
                                     <?php } ?>    
                                     <div class="summary">   
                                         <?php if(!isEmptyString($line['commentid'])){ ?> 
                                             <span><?php echo $line['Contents']; ?>:<br /><a href="<?php echo $reply_path; ?>" id="link_<?php echo $line['id']; ?>" class="comment_link" title="<?php echo $message_title; ?>"><?php echo snippet($line['Comment'], 100, '...' ); ?></a></span>        	
                                         <?php } else { ?>
-                                            <?php if($line['senderid'] == 1){ ?>
-                                                <span><a href="<?php echo $this->baseUrl("message/reply/id/".encode($line['id'])); ?>" id="link_<?php echo $line['id']; ?>" class="comment_link" title="<?php echo $message_title; ?>"><?php echo isEmptyString($line['Subject']) ? snippet($line['Contents'], 100, '...' ) : $line['Subject']; ?></a></span>
+                                            <?php if($line['senderid'] == 1 || $line['senderid'] == 0 || $line['senderid'] == 3131){ 
+												$subjcontact = '';
+												if($line['senderid'] == 0){
+													$subjcontact = ' - '.$line['sendername'].'['.$line['senderemail'].']';
+												}
+												if(strtolower($line['supportcountry']) == strtolower('KE') && isUganda()){
+													$subjcontact .= ' (Kenya)';
+												}
+											?>
+                                                <span><a href="<?php echo $this->baseUrl("message/reply/id/".encode($line['id'])); ?>" id="link_<?php echo $line['id']; ?>" class="comment_link" title="<?php echo $message_title; ?>"><?php echo isEmptyString($line['Subject']) ? snippet($line['Contents'], 100, '...' ) : '<b>'.$line['Subject'].$subjcontact.'</b>'; ?></a></span>
                                             <?php } else { ?> 
                                                 <span><a href="<?php echo $reply_path; ?>" title="<?php echo $message_title; ?>"><?php echo snippet($line['Contents'], 100, '...' ); ?></a></span>
                                             <?php } ?>    

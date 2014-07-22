@@ -58,7 +58,10 @@ define("PAGE_TITLE", "ttl");
 
 define('COUNTRY_CODE_UG', '256');
 define('FARMER_REG_PREFIX', 'UGF');
-define('FARMGROUP_REG_PREFIX', 'UGG');
+define('FARMGROUP_REG_PREFIX', 'UD');
+define('COUNTRY_CODE_KE', '254');
+define('FARMER_REG_PREFIX_KE', 'KF');
+define('FARMGROUP_REG_PREFIX_KE', 'KD');
 define('FARM_REG_PREFIX', 'F');
 define('SEASON_PREFIX', 'S/');
 define('MAX_NO_FARMS_LANDS', '4');
@@ -71,20 +74,34 @@ define('ACTIVITY_HARVESTING_PREFIX', 'Act/HAV/');
 define('ACTIVITY_EXPENSE_PREFIX', 'Act/EXP/');
 define('ACTIVITY_SALES_PREFIX', 'Act/SAL/');
 define("COUNTRY_UG_CURRENCY", "(UGX)");
+define("COUNTRY_UG_CURRENCY_KENYA", "(KSHS)");
 define("BILLING_SERVER", "http://localhost.com/test.php");
-// define("SMS_SERVER", "http://sms1.infotradeuganda.com/remote.php");
-// define("SMS_SERVER", "http://121.241.242.114:8080/bulksms/bulksms?type=0&dlr=0&source=FARMIS");
-define("SMS_SERVER", "http://121.241.242.114:8080/bulksms/bulksms");
-// define("SMS_USERNAME", 'agmis');
-define("SMS_USERNAME", 'fti-farmis');
-// define("SMS_PASSWORD", 'aregm1s');
-define("SMS_PASSWORD", 'infotrad');
 
-// define("SMS_PORT", "9123");
+define("SMS_SERVER", "http://121.241.242.114:8080/bulksms/bulksms");
+define("SMS_USERNAME", 'fti-farmis');
+define("SMS_PASSWORD", 'farmis');
 define("SMS_PORT", "8080");
 define("SMS_TEST_NUMBER", "256776595279");
 
-/**
+define("SMS_SERVER_KENYA", "http://41.220.239.178:65015/sokopepe/farmis.jsp");
+define("SMS_USERNAME_KENYA", 'farmis');
+define("SMS_PASSWORD_KENYA", 'p@ssw079');
+define("SMS_TEST_NUMBER_KENYA", "254720529868");
+
+// define("PESAPAL_MERCHANT_KEY", "ZdISXxXFTvNxHHJmvl6rc4Cxc9Y3DmYm"); // hman inc
+define("PESAPAL_MERCHANT_KEY", "dvGq7zrxIws7dqmgiaYZFQfKDWFydaP1"); // infotrade live
+// define("PESAPAL_MERCHANT_KEY", "fU6H1/vnyquxtW/LG6xA8cGzIKDVBP9f"); // test merchant globalsys/hmusiitwa@outlook.com
+
+// define("PESAPAL_MERCHANT_SECRET", "taiHm02VrvM+ZM8W/sp0rkLUGBc="); // hman inc
+define("PESAPAL_MERCHANT_SECRET", "d0gvUhPIkahHKRVScjgk/pq7Pe8="); // infotrade live
+// define("PESAPAL_MERCHANT_SECRET", "/HyjbEBAm6bVv7c1+1loxIxq4J4="); // test merchant globalsys/hmusiitwa@outlook.com
+
+define("PESAPAL_POST_URL", 'https://www.pesapal.com/API/PostPesapalDirectOrderV4'); // live
+// define("PESAPAL_POST_URL", 'http://demo.pesapal.com/api/PostPesapalDirectOrderV4'); // demo sunbox
+
+define("PESAPAL_STATUS_URL", 'https://www.pesapal.com/api/querypaymentstatus'); // live
+// define("PESAPAL_STATUS_URL", 'http://demo.pesapal.com/api/querypaymentstatus'); // demo sunbox
+/*
  * Change a date from MySQL database Format (yyyy-mm-dd) to the format displayed on pages(mm/dd/yyyy)
  * 
  * If the date from the database is NULL, it is transformed to an empty string for display on the pages 
@@ -117,7 +134,18 @@ function changeDateFromPageToMySQLFormat($pagedate) {
 		return date("Y-m-d H:i:s", strtotime($pagedate));
 	}
 }
-
+function formatDateAndTime($mysqldate, $ignoretime = true){
+	if(isEmptyString($mysqldate)){
+		return '--';
+	}
+	$timestr = '';
+	if($ignoretime === true){
+		$timestr = ' g:i A';
+	}
+	$oDate = new DateTime($mysqldate);
+	$sDate = $oDate->format("d/m/Y".$timestr);
+	return $sDate;
+}
 
 /**
  * Check whether or not the string is empty. The string is emptied
@@ -170,7 +198,7 @@ function isNotAnEmptyString($str) {
  *
  * @param Object $obj The object to be printed
  */
-function debugMessage($obj) {
+function debugMessage ($obj) {
 	echo "<br />";
 	print_r($obj);
 	echo "<br /><br />";
@@ -246,14 +274,16 @@ function array_remove_empty($arr) {
  */
 function sendTestMessage($subject = "", $message = "") {
 	$mailer = getMailInstance(); 
-	
 	# get an instance of the PHP Mailer
-	$from_email = $mailer->getDefaultFrom(); 
+	$from_email = $mailer->getDefaultFrom();
+	// debugMessage($from_email);
 	// $mailer->AddTo($from_email['email']);
 	$mailer->AddTo("hmanmstw@gmail.com");
+	// $mailer->AddTo("admin@devmail.infomacorp.com");
 	
 	$mailer->setSubject($subject);
-	$mailer->setBodyHTML($message);
+	$mailer->setBodyHTML($message); 
+	// debugMessage($mailer); exit();
 	try {
 		$result = $mailer->send();
 		// debugMessage("The email sending result is ".$result);
@@ -266,6 +296,197 @@ function sendTestMessage($subject = "", $message = "") {
 	} catch ( Exception $e ) {
 		debugMessage("Error sending email ".$e);
 	}
+}
+# send sms message to phone number
+function sendSMSMessage($to, $txt, $returnresult = false, $country = 'ug', $source = 'FARMIS') {
+	$phone = $to;
+    // $port = SMS_PORT;
+    $message = $txt;
+	$sendsms = true;
+	$server = SMS_SERVER;
+	$username = SMS_USERNAME;
+    $password = SMS_PASSWORD;
+	if(isKenya()){
+		$server = SMS_SERVER_KENYA;
+		$username = SMS_USERNAME_KENYA;
+    	$password = SMS_PASSWORD_KENYA;
+	}
+	return sendSMS($to, $txt, $source);
+	    
+    $client = new Zend_Http_Client($server);
+    // the GET Parameters
+	
+    if(isUganda()){
+		$client->setParameterGet(array(
+			'username'  => $username,
+			'password'  => $password,
+			'type'	=>	0,
+			'dlr'	=>	0,
+			'source'=>	$source,
+			'destination' => $phone,
+			'message' => $message
+		));
+    }
+    if(isKenya()){
+    	$client->setParameterGet(array(
+			'userName&'  => $username,
+			'password'  => $password,
+			'msisdn' => $phone,
+			// 'msg' => urlencode(addslashes($message))
+    		'msg' => $message
+		));
+    }
+    
+	/*debugMessage($client); 
+	debugMessage(getClientUrl($client));*/
+	// exit();
+	if($sendsms){
+		try {
+			$response = $client->request();
+			$body = $response->getBody();
+			// debugMessage($body);
+			
+			if($returnresult){
+				return $body;
+			}
+			// debugMessage($client->getLastRequest());
+			 
+		} catch (Exception $e) {
+			# error handling
+			$message = "Error in sending Message: ".$e->getMessage();
+			if($returnresult){
+				// debugMessage($message);
+				return $message;
+			}
+		}
+	}
+	
+	if(!$returnresult){
+		return true;
+	}
+}
+function sendSMS($to, $txt, $returnresult = false, $source = 'FARMIS') {
+	$phone = $to;
+    $message = $txt;
+	$sendsms = true;
+	
+	if(isUganda()){
+		$server = SMS_SERVER;
+		$username = SMS_USERNAME;
+	    $password = SMS_PASSWORD;
+		$parameters = array(
+			'username'  => $username,
+			'password'  => $password,
+			'type'	=>	0,
+			'dlr'	=>	0,
+			'source'=>	$source,
+			'destination' => $phone,
+			'message' => $message
+		);
+	}
+	if(isKenya()){
+		$server = SMS_SERVER_KENYA;
+		$username = SMS_USERNAME_KENYA;
+    	$password = SMS_PASSWORD_KENYA;
+    	$parameters = array(
+			'userName&'  => $username,
+			'password'  => $password,
+			'msisdn' => $phone,
+    		'msg' => $message
+		);
+	}
+	$result = curlContents($server, 'GET', $parameters, false, false);
+	$resultcode = substr($result, 0, 4);
+	debugMessage($result);
+	if($resultcode == 1701){
+		debugMessage('Success');
+	} else {
+		debugMessage('Error with code: '.$resultcode);
+		$str = "1701 - Success<br>
+				1702 - Invalid Url<br>
+				1703 - Invalid Username or password<br>
+				1704 - invalid type<br>
+				1705 - invalid message<br>
+				1706 - invalid destination<br>
+				1707 - invalid source<br>
+				1708 - invalid 'dlr' field<br>
+				1709 - user validation failed<br>
+				1710 - internal serve error<br>
+				1025 - insufficient credit<br>
+				1715 - Response timeout";
+		
+		debugMessage($str);
+	}
+	return true;
+}
+function curlContents($url, $method = 'GET', $data = false, $headers = false, $returnInfo = false) {    
+    $ch = curl_init();
+    
+    if($method == 'POST') {
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        if($data !== false) {
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+        }
+    } else {
+        if($data !== false) {
+            if(is_array($data)) {
+                $dataTokens = array();
+                foreach($data as $key => $value) {
+                    array_push($dataTokens, urlencode($key).'='.urlencode($value));
+                }
+                $data = implode('&', $dataTokens);
+            }
+            curl_setopt($ch, CURLOPT_URL, $url.'?'.$data);
+        } else {
+            curl_setopt($ch, CURLOPT_URL, $url);
+        }
+    }
+    curl_setopt($ch, CURLOPT_HEADER, false);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    if($headers !== false) {
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    }
+
+    $contents = curl_exec($ch);
+    
+    if($returnInfo) {
+        $info = curl_getinfo($ch);
+    }
+	debugMessage(curl_getinfo($ch, CURLINFO_EFFECTIVE_URL));
+    curl_close($ch);
+
+    if($returnInfo) {
+        return array('contents' => $contents, 'info' => $info);
+    } else {
+        return $contents;
+    }
+}
+function getClientUrl (Zend_Http_Client $client)
+{
+    try
+    {
+        $c = clone $client;
+        /*
+         * Assume there is nothing on 80 port.
+         */
+        $c->setUri ('http://127.0.0.1');
+
+        $c->getAdapter ()
+            ->setConfig (array (
+            'timeout' => 0
+        ));
+
+        $c->request ();
+    }
+    catch (Exception $e)
+    {
+        $string = $c->getLastRequest ();
+        $string = substr ($string, 4, strpos ($string, "HTTP/1.1\r\n") - 5);
+    }
+    return $client->getUri (true) . $string;
 }
 /**
  * Wrapper function for the encoding of the urls using base64_encode 
@@ -295,7 +516,8 @@ function decode($str) {
  * 
  * @return the JSON string containing the select options
  */
-function generateJSONStringForSelectChain($data, $default_option_value = "", $default_option_text = "<Select One>") {
+function generateJSONStringForSelectChain($data, $default_option_value = "", $default_option_text = "<Select One>", $freetexthtml ='') {
+	// debugMessage($data);
 	$values = array(); 
 	//debugMessage($data);
 	if (!isEmptyString($default_option_value)) {
@@ -314,6 +536,7 @@ function generateJSONStringForSelectChain($data, $default_option_value = "", $de
 	}
 	# remove the first comma at the end
 	return '[' . implode("," , $values). "]";
+	// return $data;
 }
 /**
  * Format a number to two decimal places and a comma separator between thousands. Empty Strings are considered to be numeric
@@ -661,40 +884,6 @@ function isMale($gender){
 function isFemale($gender){
 	return $gender == '2' ? true : false; 
 }
-# send sms message to phone number
-function sendSMSMessage($to, $txt) {
-	$phone = $to;
-    $username = SMS_USERNAME;
-    $password = SMS_PASSWORD;
-    // $port = SMS_PORT;
-    $message = $txt;
-	    
-    $client = new Zend_Http_Client(SMS_SERVER);
-    // the GET Parameters
-	
-	$client->setParameterGet(array(
-		'username'  => $username,
-		'password'  => $password,
-		'type'	=>	0,
-		'dlr'	=>	0,
-		'source'=>	'FARMIS',
-		'destination' => $phone,
-		'message' => $message
-	));
-	
-	// debugMessage($client); // exit();
-	/*try {
-		$response = $client->request();
-		$body = $response->getBody();
-		// debugMessage($body);
-    	    
-	} catch (Exception $e) {
-		# error handling
-		debugMessage("Error is ".$e->getMessage());
-	}*/
-	// return $digitcode;
-	return true;
-}
 # determine if loggedin user is admin
 function isAdmin() {
 	$session = SessionWrapper::getInstance(); 
@@ -702,12 +891,59 @@ function isAdmin() {
 	if($session->getVar('type') == '1'){
 		$return = true;
 	}
-	
+	/*
 	$acl = getACLInstance();
 	if($acl->checkPermission("Is Admin", ACTION_VIEW)){
 		$return = true;
-	}
+	}*/
 	return $return;
+}
+# determine the country name
+function getCountry() {
+	$session = SessionWrapper::getInstance();
+	return $session->getVar('country');
+}
+# get domain 
+function getDomain(){
+	$domain = 'farmis.ug';
+	if(isKenya()){
+		$domain = 'farmis.co.ke';
+	}
+	return $domain;
+}
+# determine if browsing uganda
+function isUganda() {
+	$session = SessionWrapper::getInstance();
+	return $session->getVar('country') == 'ug' ? true : false;
+}
+# determine the country name
+function getCountryName($country = '') {
+	$session = SessionWrapper::getInstance();
+	if(!isEmptyString($country)){
+		return $country == 'ug' ? 'Uganda' : 'Kenya';
+	}
+	return $session->getVar('country') == 'ug' ? 'Uganda' : 'Kenya';
+}
+function getCurrencyCode() {
+	$session = SessionWrapper::getInstance();
+	return isUganda() ? COUNTRY_CODE_UG : COUNTRY_CODE_KE;
+}
+function getCurrencySymbol() {
+	$session = SessionWrapper::getInstance();
+	return isUganda() ? 'Shs' : 'KShs';
+}
+function getServiceAmountFormatted() {
+	$session = SessionWrapper::getInstance();
+	return $session->getVar('country') == 'ug' ? 'Ugx 20,000' : 'KShs 850';
+}
+function getServiceAmount() {
+	$session = SessionWrapper::getInstance();
+	return $session->getVar('country') == 'ug' ? '20000' : '850';
+}
+# determine if browsing kenya
+function isKenya() {
+	$session = SessionWrapper::getInstance(); 
+	return $session->getVar('country') == 'ke' ? true : false;
 }
 # determine if loggedin user is subscriber
 function isFarmer() {
@@ -723,6 +959,16 @@ function isFarmGroupAdmin() {
 function isDataClerk() {
 	$session = SessionWrapper::getInstance(); 
 	return $session->getVar('type') == '4' ? true : false;
+}
+# determine if loggedin user is data clerk
+function isPIA() {
+	$session = SessionWrapper::getInstance(); 
+	return $session->getVar('type') == '4' ? true : false;
+}
+# determine if loggedin user is management
+function isManagement() {
+	$session = SessionWrapper::getInstance(); 
+	return $session->getVar('type') == '5' ? true : false;
 }
 # determine current status label
 function getStatusText($status) {
@@ -806,13 +1052,21 @@ function getShortPhone($phone){
 	if(isEmptyString($phone)){
 		return '';
 	}
-	return str_pad(ltrim($phone, '256'), 10, '0', STR_PAD_LEFT); 
+	$phone = str_pad(ltrim($phone, '256'), 10, '0', STR_PAD_LEFT);
+	if(isKenya()){
+		$phone = str_pad(ltrim($phone, '254'), 10, '0', STR_PAD_LEFT);
+	}
+	return $phone; 
 } 
 function getFullPhone($phone){
 	if(isEmptyString($phone)){
 		return '';
 	}
-	return str_pad(ltrim($phone, '0'), 12, COUNTRY_CODE_UG, STR_PAD_LEFT);
+	$phone = str_pad(ltrim($phone, '0'), 12, COUNTRY_CODE_UG, STR_PAD_LEFT);
+	if(isKenya()){
+		$phone = str_pad(ltrim($phone, '0'), 12, COUNTRY_CODE_KE, STR_PAD_LEFT);
+	}
+	return $phone;
 }
 function _is_curl_installed() {
     if  (in_array  ('curl', get_loaded_extensions())) {
@@ -916,13 +1170,227 @@ function isUgNumber($number){
 	}
 	return $valid;
 }
-function getPhoneProvider($number){
-	$allowed = array("077","078","070","071","075","079");
-	$allowed_names = array("077"=>"MTN Uganda", "078"=>"MTN Uganda", "070"=>"Warid Telcom", "071"=>"Uganda Telecom", "075"=>"Airtel", "079"=>"Orange");
+function isKeNumber($number){
+	$valid=true;
 	$first3chars = substr($number, 0, 3);
+	$allowed = array("070","071","072","073","075","077","078");
 	if(!in_array($first3chars, $allowed)) {
-		return 'Unknown';
+		$valid = false;
 	}
-	return $allowed_names[$first3chars];
+	if(!is_numeric($number)){
+		$valid = false;
+	}
+	if(substr($number, 0, 1) != 0 && substr($number, 0, 3) != 254){
+		$valid = false;
+	}
+	if(substr($number, 0, 1) == 0 && strlen($number) != 10){
+		$valid = false;
+	}
+	if(substr($number, 0, 3) == 254 && strlen($number) != 12){
+		$valid = false;
+	}
+	return $valid;
+}
+function getPhoneProvider($number, $country = 'UG'){
+	$first3chars = substr($number, 0, 3);
+	if(strtoupper($country) == 'UG'){
+		$allowed = array("077","078","070","071","075","079");
+		$allowed_names = array("077"=>"MTN Uganda", "078"=>"MTN Uganda", "070"=>"Warid Telcom", "071"=>"Uganda Telecom", "075"=>"Airtel", "079"=>"Orange");
+		if(!in_array($first3chars, $allowed)) {
+			return 'Unknown';
+		}
+		return $allowed_names[$first3chars];
+	}
+	if(strtoupper($country) == 'KE'){
+		$allowed = array("070","071","072","073","075","077","078");
+		$allowed_names = array("070"=>"Safaricom", "071"=>"Safaricom", "072"=>"Safaricom", "073"=>"Airtel", "075"=>"Essar Telecom", "077"=>"Orange", "078"=>"Airtel");
+		if(!in_array($first3chars, $allowed)) {
+			return 'Unknown';
+		}
+		return $allowed_names[$first3chars];
+	}
+}
+function getAgent(){
+	$tablet_browser = 0;
+	$mobile_browser = 0;
+	 
+	if (preg_match('/(tablet|ipad|playbook)|(android(?!.*(mobi|opera mini)))/i', strtolower($_SERVER['HTTP_USER_AGENT']))) {
+	    $tablet_browser++;
+	}
+	 
+	if (preg_match('/(up.browser|up.link|mmp|symbian|smartphone|midp|wap|phone|android|iemobile)/i', strtolower($_SERVER['HTTP_USER_AGENT']))) {
+	    $mobile_browser++;
+	}
+	 
+	if ((strpos(strtolower($_SERVER['HTTP_ACCEPT']),'application/vnd.wap.xhtml+xml') > 0) or ((isset($_SERVER['HTTP_X_WAP_PROFILE']) or isset($_SERVER['HTTP_PROFILE'])))) {
+	    $mobile_browser++;
+	}
+	 
+	$mobile_ua = strtolower(substr($_SERVER['HTTP_USER_AGENT'], 0, 4));
+	$mobile_agents = array(
+	    'w3c ','acs-','alav','alca','amoi','audi','avan','benq','bird','blac',
+	    'blaz','brew','cell','cldc','cmd-','dang','doco','eric','hipt','inno',
+	    'ipaq','java','jigs','kddi','keji','leno','lg-c','lg-d','lg-g','lge-',
+	    'maui','maxo','midp','mits','mmef','mobi','mot-','moto','mwbp','nec-',
+	    'newt','noki','palm','pana','pant','phil','play','port','prox',
+	    'qwap','sage','sams','sany','sch-','sec-','send','seri','sgh-','shar',
+	    'sie-','siem','smal','smar','sony','sph-','symb','t-mo','teli','tim-',
+	    'tosh','tsm-','upg1','upsi','vk-v','voda','wap-','wapa','wapi','wapp',
+	    'wapr','webc','winw','winw','xda ','xda-');
+	 
+	if (in_array($mobile_ua,$mobile_agents)) {
+	    $mobile_browser++;
+	}
+	 
+	if (strpos(strtolower($_SERVER['HTTP_USER_AGENT']),'opera mini') > 0) {
+	    $mobile_browser++;
+	    //Check for tablets on opera mini alternative headers
+	    $stock_ua = strtolower(isset($_SERVER['HTTP_X_OPERAMINI_PHONE_UA'])?$_SERVER['HTTP_X_OPERAMINI_PHONE_UA']:(isset($_SERVER['HTTP_DEVICE_STOCK_UA'])?$_SERVER['HTTP_DEVICE_STOCK_UA']:''));
+	    if (preg_match('/(tablet|ipad|playbook)|(android(?!.*mobile))/i', $stock_ua)) {
+	      $tablet_browser++;
+	    }
+	}
+	 
+	if ($tablet_browser > 0) {
+	   // do something for tablet devices
+	   return 'tablet';
+	}
+	else if ($mobile_browser > 0) {
+	   // do something for mobile devices
+	   return 'mobile';
+	}
+	else {
+	   // do something for everything else
+	   return 'desktop';
+	}
+}
+function isMobile() {
+    return preg_match("/(android|avantgo|blackberry|bolt|boost|cricket|docomo|fone|hiptop|mini|mobi|palm|phone|pie|tablet|up\.browser|up\.link|webos|wos)/i", $_SERVER["HTTP_USER_AGENT"]);
+}
+function calcutateAge($dob){
+	$dob = date("Y-m-d",strtotime($dob));
+
+	$dobObject = new DateTime($dob);
+	$nowObject = new DateTime();
+
+	$diff = $dobObject->diff($nowObject);
+
+	return $diff->y;
+
+}
+function stringContains($substr, $str){
+	if(strpos($str, $substr) !== false) {
+		return true;
+	}
+	return false;
+}
+/**
+ * 
+ * Check whether the transaction ID has already been used, then it is a duplicate transaction
+ * 
+ * @param String $txn_idFromPaypal The Transaction ID from Paypal 
+ * 
+ * @return bool TRUE if the transaction ID does not exist in the database, and FALSE if the transaction ID already exists
+ */
+function isTransactionIDValid($txn_idFromPaypal) {
+	$conn = Doctrine_Manager::connection(); 
+	$query = "SELECT txn_id from payment WHERE txn_id = '".$txn_idFromPaypal."'";
+	$result = $conn->fetchOne($query); 
+	
+	if(!isEmptyString($result)){ 
+		// an error occured while processing the query
+		sendTestMessage("Paypal Transaction ID ".$txn_idFromPaypal." already exists!!", "Query: ".$query.", <br>Error: ");
+		return false;
+	} else {
+		// if there are no rows returned then txn_id has not been used before and is therefore valid.	
+		return true;
+	}
+}
+/**
+ * 
+ * Update the expiry date once an author has completed payment
+ * @param unknown_type $custom
+ * @param unknown_type $paymentid
+ * @param unknown_type $item_number
+ */
+function executeCustomLogic($custom, $paymentid, $item_number) {
+	//sendTestMessage("Params: ".$custom." - ".$paymentid." - ".$item_number);
+	// update the author's profile to indicate a new expiry date
+	$user = new UserAccount();
+	$user->populate($custom);
+	
+	//sendTestMessage("Old Expiry Date: ".$user->getExpiryDate(), "");		
+	if(isEmptyString($user->getExpiryDate())){
+		$startdate =  new DateTime();
+		$expdate = new DateTime();
+		$expdate->modify("+1 month"); 
+		$user->setExpiryDate($expdate->format('Y-m-d'));
+	} else {
+		$expdate = new DateTime($user->getExpiryDate());
+		$startdate = new DateTime($user->getExpiryDate());
+		
+		// $startdate = $user->getExpiryDate();
+		// if the expiry date is before today, then use today as the timestamp
+		// DateTime::getTimestamp() only works for PHP > 5.3 which is not supported by the hosting providers
+		if ($expdate->format('U') < time()) {
+			$expdate = new DateTime(); 
+			$startdate = new DateTime();
+		}
+		$expdate->modify("+1 month"); 
+		// update the expiry date for the user
+		$user->setExpiryDate($expdate->format('Y-m-d'));
+	}
+	// save the updates to the user account and payments record
+	try {	
+		// update the record in the DB
+		$user->save();
+		// clear the variable inactive in session
+		$session = SessionWrapper::getInstance(); 
+		$session->setVar("accountinactive", "");
+		$session->setVar("accountexpired", "");
+		
+		//sendTestMessage("Start Date: ", $startdate->format('Y-m-d'));
+		//sendTestMessage("Enddate: ", $expdate->format('Y-m-d'));
+		$paymentsupdate_query = "UPDATE payment SET startdate = '".$startdate->format('Y-m-d')."', enddate = '".$expdate->format('Y-m-d')."' WHERE id = '".$paymentid."'";
+		//sendTestMessage("Query: ", $paymentsupdate_query);
+		$conn = Doctrine_Manager::connection(); 
+		$result = $conn->execute($paymentsupdate_query); 
+		if (!$result) {
+			sendTestMessage("Failed to update the payment table: ".$paymentid, "");
+			# an error occured, log it and send a message
+			//$this->_logger->err("Error Updating Payment Dates in Database. Query :".$paymentsupdate_query." - error ".mysql_error()); 
+		}
+		// TODO send an email confirming the payment
+		$user->sendSubscriptionRenewalNotification();
+	} catch (Exception $e){
+		sendTestMessage("Failed to update the user details".$custom, "");
+		//$this->_logger->err("An error occured while updating the subscription period for ".$company->getName()." ".$company->getErrorStackAsString());
+	}
+}
+function greatUser($name){
+	$b = time();
+
+	$hour = date("g",$b);
+	$m = date ("A", $b);
+
+	$txt = '';
+	if ($m == "AM"){
+		if ($hour == 12){
+			$txt = "Good Evening";
+		} else if ($hour < 4){
+			$txt = "Good Evening";
+		} elseif ($hour > 3){
+			$txt = "Good Morning";
+		}
+	} elseif ($m == "PM") {
+		if ($hour == 12){
+			$txt = "Good Afternoon";
+		} elseif ($hour < 7){
+			$txt = "Good Afternoon";
+		} elseif ($hour > 6) {
+			$txt = "Good Evening";
+		}
+	}
+	return $txt.', '.$name;
 }
 ?>

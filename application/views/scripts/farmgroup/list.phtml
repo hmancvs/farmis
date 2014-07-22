@@ -1,34 +1,71 @@
 <?php
 	require_once APPLICATION_PATH.'/includes/header.php';
 	
-	$title = "DNA Profiles";	
-	$this->headTitle($title);
+	$title = "DNA Profiles";
 	
+	$loggedinuser = new UserAccount();
+	$loggedinuser->populate($userid);
+	
+	$country = 'UG';
+	$location_label = 'District';
+	$locations_label = 'Districts';
+	if(isKenya()){
+		$country = 'KE';
+		$location_label = 'County';
+		$locations_label = 'Counties';
+	}
+	$countryreq = strtolower($request->country);
+		
+	$listurl = $this->baseUrl('farmgroup/list');
+	$addurl = $this->baseUrl('farmgroup/add/pgc/true/country/'.$country);
 	$searchnames = '';
-	if(!isEmptyString($request->firstname)){
-		$searchnames .= $request->firstname;
-	}
-	if(!isEmptyString($request->lastname)){
-		$searchnames .= " ".$request->lastname;
-	}
-	if(!isEmptyString($request->clanname)){
-		$searchnames .= " ".$request->clanname;
-	}
 	if (!isEmptyString($request->letter)){
 		$searchnames .= "Browse By: <b>".strtoupper($request->letter)."</b>";
+	}
+	
+	$isdna = true;
+	if($request->type == 6){
+		$isdna = false;
+		$title = "Farm Groups";	
+		$listurl = $this->baseUrl('farmgroup/list/type/6');
+		$addurl = $this->baseUrl('farmgroup/add/pgc/true/type/6/country/'.$country);
 	}
 	
 	$paginate = new Pagination();	
 	$paginate->setView($this);
 	# set the search columns to be used on this list
 	$paginate->setSearchColumns(array("f.orgname","f.shortname","f.regno","f.phone","f.email","l.name"));
-	$paginate->setFilterColumns(array("f.type","a.districtid"));
+	$paginate->setFilterColumns(array("f.type","f.districtid"));
 	$paginate->setDefaultSortBy("f.orgname");	
 	$paginate->setDefaultSortOrder("ASC");
-	$paginate->setItemCountPerPage("25");
+	$paginate->setItemCountPerPage("15");
+	
+	$ugcustom_query ='';
+	if(strtolower($country) == 'ug'){
+		$ugcustom_query = " OR f.country is null ";
+	}
 	
 	# define the letter to be clicked to ease navigation 
-	$where_query = " WHERE f.id <> '' AND f.parentid IS NULL ";
+	$where_query = " WHERE f.id <> '' AND f.parentid IS NULL AND (f.country = UPPER('".$country."') ".$ugcustom_query.") ";
+	
+	if(!$isdna){
+		$where_query = " WHERE f.id <> '' AND f.parentid IS NOT NULL AND (f.country = UPPER('".$country."') ".$ugcustom_query.") ";
+	}
+	
+	$locationstring = '';
+	$locationid = $request->locationid;
+	if(!isEmptyString($locationid)){
+		$where_query .= " AND (l.`id` = '".$locationid."') ";
+		$district = new Location();
+		$district->populate($locationid);
+		$locationstring = ' [from '.$district->getName().']';
+	}
+	
+	$groupid = trim($request->farmgroupid);
+	if(!isEmptyString($groupid)){
+		$where_query .= " AND (f.`parentid` = '".$groupid."') ";
+		$addurl = $this->baseUrl('farmgroup/add/pgc/true/type/6/subgroupid/'.$groupid.'/country/'.$country);
+	}
 	
 	if (!isEmptyString($request->letter)){
 		$where_query .= " AND (f.`orgname` LIKE '".$request->letter."%') ";
@@ -53,16 +90,22 @@
 	}
 	
 	$paginate->processPost($request->getParams());
-	$all_results_query = "SELECT f.id FROM farmgroup f LEFT JOIN farmer m ON (f.managerid = m.id) LEFT JOIN address a ON (f.id = a.farmgroupid) LEFT JOIN location as l ON (a.districtid = l.id AND l.locationtype = 2) ".$where_query." ".$paginate->getSearchAndFilterSQL()." GROUP BY f.id ".$order_query;
-	
+	$all_results_query = "SELECT f.id FROM farmgroup f LEFT JOIN useraccount u ON (f.managerid = u.id) LEFT JOIN location as l ON (f.districtid = l.id AND l.locationtype = 2) ".$where_query." ".$paginate->getSearchAndFilterSQL()." GROUP BY f.id ".$order_query;
 	// debugMessage($all_results_query);
-	$paginate->setItemCountFromSQLQuery($all_results_query);
-	$current_results_query = $all_results_query." ".$paginate->getSQLLimit();
 	
+	// determine total number of records found
 	$conn = Doctrine_Manager::connection(); 
-	$result = $conn->fetchAll($current_results_query);
+	$count_query = "SELECT count(f.id) as total FROM farmgroup f LEFT JOIN useraccount u ON (f.managerid = u.id) LEFT JOIN location as l ON (f.districtid = l.id AND l.locationtype = 2) ".$where_query." ".$paginate->getSearchAndFilterSQL();
+	$result = $conn->fetchOne($count_query);
+	$paginate->setItemCount($result);
+		
+	// $paginate->setItemCountFromSQLQuery($all_results_query);
+	$current_results_query = $all_results_query." ".$paginate->getSQLLimit();
+	$conn = Doctrine_Manager::connection(); 
+	$result = $conn->fetchAll($current_results_query); // debugMessage($result);
 	$has_no_data = (count($result) == 0) ? true : false; 
 	
+	$this->headTitle($title);
 ?>
 <script>
 $(document).ready(function() {
@@ -96,83 +139,108 @@ $(document).ready(function() {
     	<h1><?php echo $title; ?></h1>
         <div class="wellcontent" style=" margin-top:-10px;">
             <div class=" blocked clear" style="position:relative; margin-top:25px;">
-            	<div class="advsearch" style="display:block; float:right; text-align:right; position:absolute; right:20px; top:10px; width:195px;">
-                    <a href="javascript: void(0)" id="advanced" class="btn btn-primary btn-mini pull-right" title="Advanced Search">Advanced Search <span class="caret"></span></a>&nbsp;&nbsp;
-                    <a href="<?php echo $this->baseUrl('farmgroup/list'); ?>" id="reset" class="btn btn-primary btn-mini pull-left" title="Reset list or clear all filters">Reset</a>&nbsp;&nbsp;
+            	<div class="advsearch" style="display:block; float:right; text-align:right; position:absolute; right:0; top:10px; width:60px;">
+                    <a href="<?php echo $listurl; ?>" id="reset" class="btn btn-primary btn-mini pull-left" title="Reset list or clear all filters">Reset</a>&nbsp;&nbsp;
                     
             	</div>
-                <ul id="searchbox">
-                    <li>
-                        <a style="padding-left:0; padding-right:0; width:100%;">
-                            <table id="directorysearchtable" class="table noborder margin0">
-                                <tr>
-                                    <td style="width:60px;">                                    
-                                       <?php if(isAdmin()){ ?>
-                                       		<a href="<?php echo $this->baseUrl('farmgroup/add/pgc/true'); ?>" class="addpopup addcontact btn btn-primary btn-mini" title="New Group" rel="New Group" id="newfarmgroup" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmgroup/list'); ?>" action="<?php echo $this->baseUrl("farmgroup/create"); ?>"><i class="icon-plus icon-white"></i> New</a>
-                                       <?php } ?>
-                                    </td>
-                                    <td style="width:100px; padding-left:2px; padding-right:2px;">
-                                        <label class="control-label">Group Types:</label>
-                                        <?php
-                                            $alltypes = getFarmGroupTypes();
-                                            $typedropdown = new Zend_Form_Element_Select('f'.HTML_TABLE_COLUMN_SEPARATOR.'type',
-                                                                array(
-                                                                    'multiOptions' => array_merge_maintain_keys(array('' => 'All'), $alltypes),
-                                                                    'view' => new Zend_View(),
-                                                                    'decorators' => array('ViewHelper'),
-                                                                    'class' => array('lifestatus','span2','autofilter'),
-                                                                    'title' => 'Filter Groups By Type'		
-                                                                )
-                                            );  
-                                            $typedropdown->setValue($request->getParam('f'.HTML_TABLE_COLUMN_SEPARATOR.'type')); 
-                                            echo $typedropdown->render();
-                                        ?>
-                                    </td>
-                                    <td style="width:185px; padding-left:2px; padding-right:2px;">
-                                        <label class="control-label">District:</label>
-                                        <?php
-                                            $districtlist = new LookupType(); 
-                                            $districtlist->setName("ALL_DISTRICTS");
-                                            $districtdropdown = new Zend_Form_Element_Select('a'.HTML_TABLE_COLUMN_SEPARATOR.'districtid',
-                                                                array(
-                                                                    'multiOptions' => array_merge_maintain_keys(array('' => 'All'), $districtlist->getOptionValuesFromQuery()),								'view' => new Zend_View(),
-                                                                    'decorators' => array('ViewHelper'),
-                                                                    'class' => array('autofilter', 'width180','country')
-                                                                )
-                                                            );
-                                            $districtdropdown->setValue($request->getParam('a'.HTML_TABLE_COLUMN_SEPARATOR.'districtid')); 
-                                            echo $districtdropdown->render(); 
-                                          ?>
-                                    </td>
-                                    <td style="width:100px; padding-left:2px; padding-right:2px;">
-                                    	<label class="control-label">Ordering:</label>
-                                        <?php
-                                            $allorders = array('1' => 'Latest First', '2'=>'Alphabetical Ascending','3'=>'Alphabetical Descending', '4'=>'Earliest First');
-                                            $ordersdropdown = new Zend_Form_Element_Select('order',
-                                                                array(
-                                                                    'multiOptions' => $allorders,
-                                                                    'view' => new Zend_View(),
-                                                                    'decorators' => array('ViewHelper'),
-                                                                    'class' => array('gender','span2','autofilter'),
-                                                                    'title' => 'Order list by'		
-                                                                )
-                                            );  
-                                            $ordersdropdown->setValue($request->getParam('order')); 
-                                            echo $ordersdropdown->render();
-                                        ?>
-                                    </td>    
-                                    <td style="padding:31px 3px 8px 0; text-align:right;">
-                                        <input type="hidden" name="advanced" id="advanced" value="<?php echo $request->getParam('advanced'); ?>" />
-                                        <input style="width:150px;" name="searchterm" id="searchterm" value="<?php echo $request->searchterm; ?>" type="text" class="input-medium xsearch-query span2 pull-right" placeholder="Search farm groups" /></td>
-                                    <td style="padding:31px 3px 8px 0; text-align:left;">
-                                        <button type="submit" id="searchbutton" class="btn" style="padding:6px 10px;"><i class="icon-search"></i></button>
-                                        <input type="hidden" name="letter" id="letter" value="<?php echo $request->getParam('letter'); ?>" />
-                                    </td>
-                                </tr>
-                            </table>
-                        </a>
+                <ul class="peoplegroup" style="border:1px solid #DDDDDD; padding:5px;">
+                    <li style="width:203px;">
+                    	<?php if($isdna){ ?>                                    
+						   <?php if(isAdmin() || isManagement()){ ?>
+                                <a href="<?php echo $addurl; ?>" class="addpopup addcontact btn btn-primary" title="New DNA" rel="New DNA" id="newdna" formtitle="indexform" successurl="<?php echo $listurl; ?>" action="<?php echo $this->baseUrl("farmgroup/create/country/".$country); ?>">New DNA</a>
+                           <?php } ?>
+                           <?php if(isAdmin() || isManagement() || isDataClerk() || isFarmGroupAdmin()){ ?>
+                                <a href="<?php echo $this->baseUrl('farmgroup/list/type/6'); ?>" class="btn btn-primary margin5" title="Farm Group">Farm Groups</a>
+                           <?php } ?>
+                        <?php } else { ?>
+                            <?php if(isAdmin() || isManagement() || isDataClerk() || isFarmGroupAdmin()){ ?>
+                                <a href="<?php echo $addurl; ?>" class="addpopup addcontact btn" title="New Group" rel="New Group" id="newgroup" formtitle="indexform" successurl="<?php echo $listurl; ?>" action="<?php echo $this->baseUrl("farmgroup/create/country/".$country); ?>">New Group</a>
+                           <?php } ?>
+                           <?php if(isAdmin() || isManagement() || isDataClerk() || isFarmGroupAdmin()){ ?>
+                                <a href="<?php echo $this->baseUrl('farmgroup/list'); ?>" class="btn margin5" title="DNA Profile">DNA Profiles</a>
+                           <?php } ?>
+                        <?php } ?>
+                        <?php if($loggedinuser->isUgandan() && isUganda() && (isAdmin() || isManagement())){ ?>
+                        	<?php if(isEmptyString($request->country) || $countryreq == 'ug'){ ?>
+                                <a style="margin-top: 10px; display:block; width:60%; text-align:center;" class="btn btn-mini" href="<?php echo $this->baseUrl('farmgroup/list/country/ke'); ?>" title="Browse Kenya"><i class="icon-list"></i> Browse Kenya</a>
+                            <?php } ?>
+                		<?php } ?>
+                        <?php if($loggedinuser->isUgandan() && isKenya() && (isAdmin() || isManagement())){ ?>
+                            <?php if(!isEmptyString($request->country) && strtolower($countryreq) == 'ke'){ ?>
+                                <a style="margin-top: 10px; display:block; width:60%; text-align:center;" class="btn btn-mini" href="<?php echo $this->baseUrl('farmgroup/list/country/ug'); ?>" title="Browse Uganda"><i class="icon-list"></i> Browse Uganda</a>
+                            <?php } ?>
+                		<?php } ?>
                     </li>
-			</ul>
+                    <li>
+                    	 <?php if($isdna){ ?>
+                         	<?php
+								$alltypes = getFarmGroupTypes(array(6,5));
+								$typedropdown = new Zend_Form_Element_Select('f'.HTML_TABLE_COLUMN_SEPARATOR.'type',
+													array(
+														'multiOptions' => array_merge_maintain_keys(array('' => 'All'), $alltypes),
+														'view' => new Zend_View(),
+														'decorators' => array('ViewHelper'),
+														'class' => array('lifestatus','span2','autofilter'),
+														'title' => 'Filter Groups By Type'		
+													)
+								);  
+								$typedropdown->setValue($request->getParam('f'.HTML_TABLE_COLUMN_SEPARATOR.'type')); 
+								echo $typedropdown->render();
+							?>
+                         <?php } else { ?>
+                         	<input type="hidden" name="type" id="type" value="<?php echo $request->type; ?>" />
+                         <?php } ?>
+                    </li>
+                    <li>
+                    	<?php
+							$districts = getDistricts($session->getVar('country'));
+							$districtdropdown = new Zend_Form_Element_Select('locationid',
+												array(
+													'multiOptions' => array_merge_maintain_keys(array('' => 'All '.$locations_label), $districts),								'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+													'class' => array('span2','autofilter')
+												)
+											);
+							$districtdropdown->setValue($request->getParam('locationid')); 
+							echo $districtdropdown->render(); 
+						  ?>
+                    </li>
+                    <?php if(!$isdna){ ?> 
+                        <li>
+                             <?php
+                                $groupdropdown = new Zend_Form_Element_Select('farmgroupid',
+                                                    array(
+                                                        'multiOptions' => array_merge_maintain_keys(array('' => 'All DNAs'.$locationstring), getAllFarmGroups($locationid,$session->getVar('country'))),								
+                                                        'view' => new Zend_View(),
+                                                        'decorators' => array('ViewHelper'),
+                                                        'class' => array('span3','autofilter')
+                                                    )
+                                                );
+                                $groupdropdown->setValue($request->getParam('farmgroupid')); 
+                                echo $groupdropdown->render(); 
+                           ?>
+                        </li>
+                    <?php } ?>
+                    <li><?php
+							$allorders = array('1' => 'Latest First', '2'=>'Alphabetical Ascending','3'=>'Alphabetical Descending', '4'=>'Earliest First');
+							$ordersdropdown = new Zend_Form_Element_Select('order',
+												array(
+													'multiOptions' => $allorders,
+													'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+													'class' => array('gender','span2','autofilter'),
+													'title' => 'Order list by'		
+												)
+							);  
+							$ordersdropdown->setValue($request->getParam('order')); 
+							echo $ordersdropdown->render();
+						?>
+                    </li>
+                    <li style="float:right;"><input name="searchterm" id="searchterm" value="<?php echo $request->searchterm; ?>" type="text" class="input-medium span3" style="margin-bottom:5px;" placeholder="Search...">
+                        <button type="submit" id="searchbutton" class="btn btn-primary" style="vertical-align:top; margin-left:-2px;"><i class="icon-search icon-white"></i> Search or Filter</button>
+                        <input type="hidden" name="letter" id="letter" value="<?php echo $request->getParam('letter'); ?>" />
+                    </li>
+                </ul>
             </div>
             <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE))){ ?>
                 <div class="alert alert-success clear"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
@@ -180,12 +248,8 @@ $(document).ready(function() {
             <?php if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ ?>
                 <div class="alert alert-error clear"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
             <?php } ?>
-            <div class="alphabetlist pull-left"><a href="<?php echo $this->baseUrl("farmgroup/list/"); ?>" title="All Groups">All</a>&nbsp;&nbsp;|&nbsp;&nbsp;<?php echo $paginate->getAlphabetString(); ?></div>
+            <div class="alphabetlist pull-left"><a href="<?php echo $listurl; ?>" title="All">All</a>&nbsp;&nbsp;|&nbsp;&nbsp;<?php echo $paginate->getAlphabetString(); ?></div>
             <label class="searchedterm control-label pull-left leftalign" style="text-align:left"><?php echo $searchnames; ?></label>
-            <?php if (!$has_no_data) { ?>
-            	<div class="paginatecustom"><?php echo sprintf($this->translate("farmgroup_list_counter"), $paginate->getItemCounterText()); ?></div>
-            <?php } ?>
-            
 			<?php if ($has_no_data) { ?>
             	<div style="clear:both;" class="alert alert-info margin5"><?php echo $this->translate("farmgroup_list_norecords"); ?></div>
             <?php } else { ?>
@@ -196,54 +260,68 @@ $(document).ready(function() {
                             $farmgroup->populate($line['id']);	
                     ?>
                     <li>
+                    	<div class="makeabsolute" style="position:absolute; bottom:5px; right:10px;">
+                            <label class="control-label" style="font-size:10px; display:block;">Profile By: <span class="lineblocked" style="font-weight:normal; font-size:10px;"><?php echo $farmgroup->getCreator()->getName(); ?></span></label>
+                            <label class="control-label" style="font-size:10px; display:block;">Date: <span class="lineblocked" style="font-weight:normal; font-size:10px;"><?php echo formatDateAndTime($farmgroup->getDateCreated(), true); ?></span></label>
+                        </div>
                         <table class="table noborder margin0">
                             <tr>                                
                                 <td width="85">
-                                        <div class="thumbinfo logo" style="width:80px;"> 
-                                            <a href="<?php echo $this->baseUrl("farmgroup/view/id/".encode($line['id'])); ?>" title="<?php echo $this->translate("person_button_view_profile"); ?>"><img src="<?php echo $farmgroup->getThumbnailLogoPath(); ?>" /></a>
-                                        </div>
-                                    </td>
-                                    <td class="padding0">
-                                        <div style="position:relative;">
-                                        <table class="itemlist table noborder margin0">
-                                            <tr>
-                                            	<td colspan="5"><h2><a href="<?php echo $this->baseUrl("farmgroup/view/id/".encode($line['id'])); ?>"><?php echo $farmgroup->getName(); ?></a></h2>
-                                                </td>
-                                                <td class="actionbuttons" style="padding-top:5px;">
-                                                	<a class="btn btn-primary btn-mini" style="position:absolute; top:5px; right:20px;" href="<?php echo $this->baseUrl("farmgroup/view/id/".encode($farmgroup->getID())); ?>">View Profile</a>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td width="100"><label class="control-label">District:</label></td>
-                                                <td width="120" class="nowrapping"><span><?php echo isEmptyString($farmgroup->getAddress()->getDistrictID()) ? '--' : $farmgroup->getAddress()->getDistrict()->getName(); ?></span></td>
-                                                <td width="80"><label class="control-label">Reg No#:</label></td>
-                                                <td class="nowrapping" width="25%"><span><?php echo isEmptyString($farmgroup->getRegNo()) ? '--' : $farmgroup->getRegNo(); ?></span></td>
-                                                <td width="100"><label class="control-label">Total Farmers:</label></td>
-                                                <td><span><?php echo $farmgroup->getCountFarmers(); ?></span></td>
-                                            </tr>
-                                            <tr>
-                                            	<td><label class="control-label">Date Registered: </label></td>
-                                                <td class="nowrapping"><span><?php echo $farmgroup->getRegDateFormatted(); ?></span></td>
+                                    <div class="thumbinfo logo" style="width:80px;"> 
+                                        <a href="<?php echo $this->baseUrl("farmgroup/view/id/".encode($line['id'])); ?>" title="<?php echo $this->translate("person_button_view_profile"); ?>"><img src="<?php echo $farmgroup->getThumbnailLogoPath(); ?>" /></a>
+                                    </div>
+                                </td>
+                                <td class="padding0">
+                                    <div style="position:relative;">
+                                    <table class="itemlist table noborder margin0">
+                                        <tr>
+                                            <td colspan="5"><h2><a href="<?php echo $this->baseUrl("farmgroup/view/id/".encode($line['id'])); ?>"><?php echo $farmgroup->getName(); ?></a></h2>
+                                            </td>
+                                            <td class="actionbuttons" style="padding-top:5px;">
+                                                <a class="btn btn-primary btn-mini" style="position:absolute; top:5px; right:20px;" href="<?php echo $this->baseUrl("farmgroup/view/id/".encode($farmgroup->getID())); ?>">View Profile</a>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td width="100"><label class="control-label"><?php echo $location_label; ?>:</label></td>
+                                            <td width="120" class="nowrapping"><span><?php echo isEmptyString($farmgroup->getDistrictID()) ? '--' : $farmgroup->getDistrict()->getName(); ?></span></td>
+                                            <td width="80"><label class="control-label">Reg No#:</label></td>
+                                            <td class="nowrapping" width="25%"><span><?php echo isEmptyString($farmgroup->getRegNo()) ? '--' : $farmgroup->getRegNo(); ?></span></td>
+                                            <td width="100"><label class="control-label">Total Farmers:</label></td>
+                                            <td><span><?php echo $farmgroup->getCountFarmers(); ?></span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><label class="control-label">Date Registered: </label></td>
+                                            <td class="nowrapping"><span><?php echo $farmgroup->getRegDateFormatted(); ?></span></td>
+                                            <?php if($farmgroup->isSubGroup()){ ?>
+                                                <td><label class="control-label">DNA:</label></td>
+                                                <td class="nowrapping"><span><?php echo $farmgroup->getParent()->getName(); ?></span></td>
+                                            <?php } else { ?>
                                                 <td><label class="control-label">Group Type:</label></td>
                                                 <td class="nowrapping"><span><?php echo $farmgroup->getTypeLabel(); ?></span></td>
-                                                <td><label class="control-label">Active Farmers:</label></td>
-                                                <td><span><?php echo $farmgroup->getCountFarmers(); ?></span></td>
-                                            </tr>
-                                            <tr>
-                                                <td><label class="control-label">Contact Phone:</label></td>
-                                                <td class="nowrapping"><span><?php echo isEmptyString($farmgroup->getPhone()) ? '--' : $farmgroup->getPhone(); ?></span></td>
-                                                <td><label class="control-label">Email:</label></td>
-                                                <td class="nowrapping" colspan="3"><span><?php echo isEmptyString($farmgroup->getEmail()) ? '--' : $farmgroup->getEmail(); ?></span></td>
-                                            </tr>
-                                        </table>
-                                        </div>
-                                    </td>
+                                            <?php } ?>
+                                            <td><label class="control-label">Active Farmers:</label></td>
+                                            <td><span><?php echo $farmgroup->getCountRegisteredFarmers(); ?></span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><label class="control-label">Contact Phone:</label></td>
+                                            <td class="nowrapping"><span><?php echo isEmptyString($farmgroup->getPhone()) ? '--' : getShortPhone($farmgroup->getPhone()); ?></span></td>
+                                            <td><label class="control-label">Email:</label></td>
+                                            <td class="nowrapping" colspan="3"><span><?php echo isEmptyString($farmgroup->getEmail()) ? '--' : $farmgroup->getEmail(); ?></span></td>
+                                        </tr>
+                                    </table>
+                                    </div>
+                                </td>
                             </tr>
                         </table>
                     </li>
                 <?php } ?>    
             </ul>
-            <?php echo $paginate->getPaginationLinks(); ?>  
+            <div style="display:block; position:relative;">
+                <?php echo $paginate->getPaginationLinks(); ?>  
+                <?php if (!$has_no_data) { ?>
+                    <div class="paginatecustom"><?php echo sprintf($this->translate("farmgroup_list_counter"), $paginate->getItemCounterText()); ?></div>
+                <?php } ?>
+            </div>
             <?php } ?>
 		</div>  
         </form>        

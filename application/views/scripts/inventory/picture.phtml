@@ -5,7 +5,6 @@
 	
 	$inventory = new Inventory();
 	$inventory->populate($id);
-	$thefarmid = $inventory->getFarmID();
 	
 	//$inventory->sendInviteNotification();
 	$title = "Upload Image"; 
@@ -14,7 +13,12 @@
 	}
 	
 	$posturl = $this->baseUrl("inventory/processpicture");
-	$this->headTitle($title);
+	
+	$request->setParam('tab', 'inventory');
+	$user = $inventory->getUser();	
+	
+	$farmtitle = $inventory->getUser()->getName();
+	$this->headTitle($title.$browserappend);  
 	
 ?>
 <script>
@@ -60,11 +64,6 @@ $(document).ready(function() {
         }
 	});
 	
-	// remove box style if has no profile picture
-	<?php //if($inventory->hasProfileImage()){ ?>
-		//$("#profileinfo").addClass('new_pic');
-	<?php //} ?>
-	
 }); 
 </script>
 <style>
@@ -77,15 +76,11 @@ h3.well-legend {
 	min-height:0;
 }
 </style>
-<h1><?php echo $this->translate('farm_title'); ?></h1>
+<h1><?php echo $farmtitle; ?></h1>
 <div id="tabs">
-    <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
+    <?php require APPLICATION_PATH."/views/scripts/profile/profileleftcolumn.phtml"; ?>
     <div class="span9 tab-content" id="center">  
-		<div id="summary"><form class="form-horizontal summary"></form></div> 
-        <div id="land"><form class="form-horizontal land"></form></div>  
-        <div id="seasons"><form class="form-horizontal seasons"></form></div> 
-        <div id="calendar"><form class="form-horizontal calendar"></form></div>
-        <div id="commodities"><form class="form-horizontal commodities"></form></div>
+		<?php require APPLICATION_PATH."/views/scripts/profile/tabstop.phtml"; ?>
         <div id="inventory">
             <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
                 <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>

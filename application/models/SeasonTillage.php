@@ -13,13 +13,13 @@ class SeasonTillage extends BaseEntity  {
 		
 		// set the table
 		$this->setTableName('seasontillage');
-		$this->hasColumn('seasonid', 'integer', null, array('notnull' => true, 'notblank' => true));	
-		$this->hasColumn('farmid', 'integer', null, array( 'notnull' => true, 'notblank' => true));
+		$this->hasColumn('seasonid', 'integer', null, array('notblank' => true));	
+		$this->hasColumn('userid', 'integer', null, array('default' => NULL));
 		$this->hasColumn('ref', 'string', 50);
 		$this->hasColumn('activityname', 'string', 255);
-		$this->hasColumn('startdate','date', null, array( 'notnull' => true, 'notblank' => true));
+		$this->hasColumn('startdate','date', null, array('notblank' => true));
 		$this->hasColumn('enddate','date', null);
-		$this->hasColumn('method', 'integer', null, array( 'notnull' => true, 'notblank' => true));
+		$this->hasColumn('method', 'integer', null, array('notblank' => true));
 		$this->hasColumn('primaryimplements', 'string', 500); 
 		$this->hasColumn('secondaryimplements', 'string', 500); 
 		$this->hasColumn('status', 'integer', null, array('default' => '3'));
@@ -44,7 +44,6 @@ class SeasonTillage extends BaseEntity  {
 		
 		// set the custom error messages
        	$this->addCustomErrorMessages(array(
-       									"farmid.notblank" => $this->translate->_("seasontillage_farmid_error"),
        									"seasonid.notblank" => $this->translate->_("seasontillage_seasonid_error"),
        									"startdate.notblank" => $this->translate->_("seasontillage_activitydate_error"),
        									"method.notblank" => $this->translate->_("seasontillage_method_error")
@@ -58,8 +57,8 @@ class SeasonTillage extends BaseEntity  {
 									'foreign' => 'id'
 							)
 						);
-		$this->hasOne('Farm as farm',
-							array('local' => 'farmid',
+		$this->hasOne('UserAccount as user',
+							array('local' => 'userid',
 									'foreign' => 'id'
 							)
 						);
@@ -83,6 +82,9 @@ class SeasonTillage extends BaseEntity  {
 		// trim spaces from the name field
 		if(isArrayKeyAnEmptyString('status', $formvalues)){
 			unset($formvalues['status']); 
+		}
+		if(isArrayKeyAnEmptyString('userid', $formvalues)){
+			unset($formvalues['userid']); 
 		}
 		if(isArrayKeyAnEmptyString('enddate', $formvalues)){
 			unset($formvalues['enddate']); 
@@ -130,8 +132,7 @@ class SeasonTillage extends BaseEntity  {
 		if(!isArrayKeyAnEmptyString('financetype', $formvalues)){
 			if($formvalues['financetype'] == 3 || $formvalues['financetype'] == 4 || $formvalues['financetype'] == 5){
 				$formvalues['activitycredit'][0]['financetype'] = $formvalues['financetype'];
-				$formvalues['activitycredit'][0]['farmerid'] = $formvalues['farmerid'];
-				$formvalues['activitycredit'][0]['farmid'] = $formvalues['farmid'];
+				$formvalues['activitycredit'][0]['userid'] = $formvalues['userid'];
 				$formvalues['activitycredit'][0]['stage'] = $formvalues['stage'];
 				$formvalues['activitycredit'][0]['type'] = $formvalues['type'];
 				isArrayKeyAnEmptyString('principal', $formvalues) ? $formvalues['activitycredit'][0]['principal'] = NULL : $formvalues['activitycredit'][0]['principal'] = $formvalues['principal'];
@@ -177,8 +178,7 @@ class SeasonTillage extends BaseEntity  {
 					if(!isArrayKeyAnEmptyString('id', $value)){
 						$detailsarray[$key]['id'] = $value['id'];
 					}
-					$detailsarray[$key]['farmerid'] = $formvalues['farmerid'];
-					$detailsarray[$key]['farmid'] = $formvalues['farmid'];
+					$detailsarray[$key]['userid'] = $formvalues['userid'];
 					$detailsarray[$key]['seasonid'] = $formvalues['seasonid'];
 					if(!isArrayKeyAnEmptyString('labourdetails_fieldsizeunit_'.$key, $formvalues)){
 						$detailsarray[$key]['fieldsizeunit'] = $formvalues['labourdetails_fieldsizeunit_'.$key];
@@ -194,7 +194,7 @@ class SeasonTillage extends BaseEntity  {
 		} else {
 			$formvalues['labourdetails'] = array();
 		}
-		// debugMessage($formvalues); exit();
+		// debugMessage($formvalues); // exit();
 		parent::processPost($formvalues);
 	}
 	# after save custom logic
@@ -315,7 +315,7 @@ class SeasonTillage extends BaseEntity  {
     function getNextReferencePointer() {
     	$conn = Doctrine_Manager::connection();
     	$session = SessionWrapper::getInstance();
-    	$farmerid = $session->getVar('farmerid');
+    	$userid = $session->getVar('userid');
 		$sql = "SELECT COUNT(id) FROM seasontillage WHERE seasonid = ".$this->getSeasonID()." "; 
 		$result = $conn->fetchOne($sql);
 		return str_pad(($result+1), 3, "0", STR_PAD_LEFT);

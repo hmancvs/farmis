@@ -10,77 +10,52 @@ class ContactusController extends IndexController  {
      	$this->_helper->layout->disableLayout();
 		$this->_helper->viewRenderer->setNoRender(TRUE);
 		
-		$formvalues = $this->_getAllParams();
-		// debugMessage($formvalues);
+		$formvalues = $this->_getAllParams(); // debugMessage($formvalues); // exit();
+		$fail = false; $error = '';
+		if(isEmptyString($this->_getParam('name'))){
+			$fail = true;
+			$error .= 'Error: Please enter Name<br>';
+		}
+		if(isEmptyString($this->_getParam('email'))){
+			$fail = true;
+			$error .= 'Error: Please enter Email<br>';
+		}
+		if(isEmptyString($this->_getParam('subject'))){
+			$fail = true;
+			$error .= 'Error: Please enter Subject<br>';
+		}
+		if(isEmptyString($this->_getParam('message'))){
+			$fail = true;
+			$error .= 'Error: Please enter Message<br>';
+		}
+		if(stringContains('jackkr', strtolower($this->_getParam('email'))) || 
+		   stringContains('brightwah', strtolower($this->_getParam('email'))) || 
+		   !isEmptyString($this->_getParam('spamcheck')) ||
+		   isEmptyString($this->_getParam('code'))  
+		){
+			$fail = true;
+			$error .= 'Error: Spam detected. Please try again<br>';
+		}
+		if((isUganda() && !stringContains('farmis.ug', strtolower($_SERVER['HTTP_REFERER']))) || 
+			(isKenya() && !stringContains('farmis.co.ke', strtolower($_SERVER['HTTP_REFERER'])))
+		){
+			$fail = true;
+			$error .= 'Error: Spam detected. Domain "'.strtolower($_SERVER['HTTP_REFERER']).'" error!!!<br>';
+		}
 		
-		$farmer = new Farmer();
-		// $farmer->tellFriendsNotification($data);
-		if($farmer->sendContactNotification($formvalues)){
-			// after send events
+		if($fail){
+			$session->setVar(ERROR_MESSAGE, $error);
+			$this->_redirect($this->view->baseUrl('contactus/index/result/error'));
+		}
+		
+		$user = new UserAccount();
+		if($user->sendContactNotification($formvalues)){
 			$session->setVar(SUCCESS_MESSAGE, "Thank you for your interest in the FARMIS program. We shall be getting back to you shortly.");
-			
 			$this->_redirect($this->view->baseUrl('contactus/index/result/success'));
 		} else {
 			$session->setVar(ERROR_MESSAGE, 'Sorry! An error occured in sending the message. Please try again later ');
-			
-			$this->_redirect($this->view->baseUrl('contactus/index/result/error'));
+			$this->_redirect($this->view->baseUrl('contactus/index/result/error'));	
 		}
-		// exit();
-	}
-	public function tellfriendAction() {
-		
-	}
-	public function processtellfriendAction() {
-		$session = SessionWrapper::getInstance(); 
-     	$this->_helper->layout->disableLayout();
-		$this->_helper->viewRenderer->setNoRender(TRUE);
-		
-		$formvalues = $this->_getAllParams();
-		// debugMessage($formvalues);
-		
-		/*$formvalues['name'] = "jojo hman";
-		$formvalues['youremail'] = "hmanmstw@devmail.infomacorp.com";
-		$formvalues['intromsg'] = "This is the test message";*/
-		// debugMessage($formvalues);
-		$dataarray = array(
-			"name" => $formvalues['name'],
-			"youremail" => $formvalues['youremail'],
-			"message" => $formvalues['message'],
-			"subject" => $formvalues['subject']
-		);
-		
-		// $mails = "test1@devmail.infomacorp.com,test2@devmail.infomacorp.com";
-		$mails = $formvalues['email'];
-		$emailsarray = explode(",", str_replace(" ", "", $mails));
-		
-		$data = array();
-		foreach ($emailsarray as $key => $value){
-			$data[$key]['sendername'] = $dataarray['name'];
-			$data[$key]['senderemail'] = $dataarray['youremail'];
-			$data[$key]['email'] = $value;
-			$data[$key]['message'] = $dataarray['message'];
-			$data[$key]['subject'] = $dataarray['subject'];
-		}
-		// debugMessage($data);
-		$farmer = new Farmer();
-		// $farmer->tellFriendsNotification($data);
-		if($farmer->tellFriendsNotification($data)){
-			// save event
-			$tellfriend = new TellFriend();
-			$tellfriend->setFromName($formvalues['name']);
-			$tellfriend->setFromEmail($formvalues['youremail']);
-			$tellfriend->setEmails($formvalues['email']);
-			$tellfriend->setMessage($formvalues['subject']."<br /><br />".$formvalues['message']);
-			$tellfriend->save();
-			
-			$session->setVar(SUCCESS_MESSAGE, "Thank you for your interest in the FARMIS program.");
-			$this->_redirect($this->view->baseUrl('contactus/tellfriend/result/success'));
-			
-		} else {
-			$session->setVar(ERROR_MESSAGE, 'Sorry! An error occured in sending the message. Please try again later ');
-			$this->_redirect($this->view->baseUrl('contactus/tellfriend/result/error'));
-		}
-		// exit();
 	}
 }
 

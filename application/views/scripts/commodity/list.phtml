@@ -49,7 +49,7 @@
 	}
 		
 	$paginate->processPost($request->getParams());
-	$all_results_query = "SELECT c.id, c.name as `Commodity`, cat.name as Category, c.description as Description, u.`name` as `Unit` FROM commodity c INNER JOIN commoditycategory cat ON c.categoryid = cat.id LEFT JOIN commodity p ON c.parentid = p.id LEFT JOIN commodityunit as u ON(c.unitid = u.id) WHERE c.name <> '' ".$where_query."".$paginate->getSearchAndFilterSQL()." GROUP BY c.id ".$paginate->getSortSQL();
+	$all_results_query = "SELECT c.id, c.name as `Commodity`, cat.name as Category, c.description as Description, u.`name` as `Unit` FROM commodity c INNER JOIN commoditycategory cat ON c.categoryid = cat.id LEFT JOIN commodity p ON c.parentid = p.id LEFT JOIN commodityunit as u ON(c.unitid = u.id) WHERE c.name <> ''  ".$where_query."".$paginate->getSearchAndFilterSQL()." GROUP BY c.id ".$paginate->getSortSQL();
 	
 	// debugMessage($all_results_query);
 	$paginate->setItemCountFromSQLQuery($all_results_query);
@@ -166,9 +166,6 @@
             <?php } ?>
             <div class="paginatelisttop maxwidth blocked clear">
             	<label class="listlabel pull-left control-label 30width lineblocked" style="text-align:left;"><?php echo $list_title; ?></label>
-                <?php if (!$has_no_data) { ?>
-            	<div class="paginatecustom pull-right lineblocked"><?php echo sprintf($this->translate("commodity_list_counter"), $paginate->getItemCounterText()); ?><?php echo $this->listcountdropdown; ?></div>
-                <?php } ?>
             </div>
             <?php if ($has_no_data) { ?>
             	<div style="clear:both;" class="alert alert-info margin0 blocked clear"><?php echo $this->translate("contact_list_norecords"); ?></div>
@@ -183,7 +180,7 @@
                     <li>
                         <table class="table noborder margin0">
                             <tr>                                
-                                <td width="30%" style="padding-right:25px;">
+                                <td width="25%" style="padding-right:25px;">
                                 	<a href="<?php echo $this->baseUrl("commodity/view/id/".encode($line['id'])); ?>" title="Details">
                                         <div class="imagecontainer" style="width:100%; min-height:100px; padding:2px;">
                                         <img style="width:100%;" src="<?php echo $commodity->getImagePath(); ?>" />
@@ -214,7 +211,12 @@
                     </li>
                 	<?php } ?>    
             	</ul>
-            <?php echo $paginate->getPaginationLinks(); ?>  
+            	<div style="display:block; position:relative;">
+					<?php echo $paginate->getPaginationLinks(); ?>  
+					<?php if (!$has_no_data) { ?>
+                        <div class="paginatecustom"><?php echo sprintf($this->translate("farmgroup_list_counter"), $paginate->getItemCounterText()); ?></div>
+                    <?php } ?>
+                </div>
             <?php } ?>
 		</div>
         </form>

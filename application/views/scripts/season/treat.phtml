@@ -8,7 +8,7 @@
 	if(!isEmptyString($request->sid)){
 		$season->populate(decode($request->sid));
 		$treat->setSeasonID($season->getID());
-		$treat->setFarmID($season->getFarmID());
+		$treat->setUserID($season->getUserID());
 		$treat->setStartDate(date('Y-m-d'));
 		$treat->setStatus('3');
 		$treat->setType("");
@@ -32,7 +32,8 @@
 		$tcounter = substr($treat->getRef(), -3);
 		$successurl = encode($this->baseUrl("season/treat/id/".$request->id));
 	}
-	$thefarmid = $treat->getSeason()->getFarmID();
+	$request->setParam('tab', 'seasons');
+	$user = $treat->getUser();
 	$loan = $treat->getCreditDetails();
 	
 	#in case of errors in session, populate the fields from session
@@ -40,10 +41,9 @@
 		$treat->processPost($session->getVar(FORM_VALUES));	
 	}
 	
-	// $treattypes = getAllTillageTypes();
-		
-	$this->headTitle($title);  
-	$farmtitle = isFarmer() ? "Manage Farm" : "Manage Farm: ".$treat->getFarm()->getName();
+	$title = 'Manage Season: '.$treat->getActivityName();
+	$farmtitle = $treat->getUser()->getName();
+	$this->headTitle($title.$browserappend);  
 ?>
 <script>
 	$(document).ready(function() {
@@ -166,9 +166,9 @@
 </style>
 <h1><?php echo $farmtitle; ?></h1>
 <div id="tabs">
-    <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
+    <?php require APPLICATION_PATH."/views/scripts/profile/profileleftcolumn.phtml"; ?>
     <div class="span9 tab-content" id="center">
-    	<?php require APPLICATION_PATH."/views/scripts/farm/tabstop.phtml"; ?>
+    	<?php require APPLICATION_PATH."/views/scripts/profile/tabstop.phtml"; ?>
 		<div id="seasons">
             <form id="indexform" class="form-horizontal seasons" action="<?php echo $posturl; ?>" method="post">
             <?php if($request->tab == 'seasons'){ ?>
@@ -178,7 +178,7 @@
                 <?php if($sessionhaserror) { ?>
                     <div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
                 <?php } ?>
-                                <div class="row margin0" style="padding:2px; margin-bottom:10px;">
+                <div class="row margin0" style="padding:2px; margin-bottom:10px;">
                     <span class="pull-left well lighter margin0" style="width:72%; min-height:160px;">
                         <h3 class="well-legend"><?php echo $title; ?></h3>
                         <table class="table margin0" style="margin-top:15px;">
@@ -245,8 +245,7 @@
                                             <input type="hidden" name="entityname" value="SeasonTracking" />
                                             <input type="hidden" id="id" name="id" value="<?php echo encode($treat->getID()); ?>" />
                                             <input type="hidden" id="seasonid" name="seasonid" value="<?php echo $treat->getSeasonID(); ?>" />
-                                            <input type="hidden" id="farmid" name="farmid" value="<?php echo $treat->getFarmID(); ?>" />
-                                            <input type="hidden" id="farmerid" name="farmerid" value="<?php echo $treat->getFarm()->getFarmerID(); ?>" />
+                                            <input type="hidden" id="userid" name="userid" value="<?php echo $treat->getUserID(); ?>" />
                                             <input type="hidden" id="cropid" name="cropid" value="<?php echo $treat->getSeason()->getCropID(); ?>" />
                                             <input type="hidden" id="stage" name="stage" value="8" />
                                             <input type="hidden" name="sourcetype" id="sourcetype" value="<?php echo $loan->getSourceType(); ?>" />
@@ -368,7 +367,7 @@
             <?php } ?>    
             </form>
 		</div>
-		<?php require APPLICATION_PATH."/views/scripts/farm/tabsbottom.phtml"; ?> 
+		<?php require APPLICATION_PATH."/views/scripts/profile/tabsbottom.phtml"; ?>  
     </div>
 </div>    
 <?php

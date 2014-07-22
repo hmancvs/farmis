@@ -108,7 +108,7 @@
         </tr>
         <tr>
             <td><label class="control-label"><?php echo $this->translate("inventory_servicecost_label"); ?>: </label></td>
-            <td><div class="input-prepend"><span class="add-on"><?php echo $config->currency->default; ?></span><input type="text" name="cost" id="cost" class="width100 hastooltip isamount" value="<?php echo $inventoryservice->getCost(); ?>" title="<?php echo $this->translate("inventory_servicecost_tooltip"); ?>" /></div><div id="cost_error"></div></td>
+            <td><div class="input-prepend"><span class="add-on"><?php echo getCurrencySymbol(); ?></span><input type="text" name="cost" id="cost" class="width100 hastooltip isamount" value="<?php echo $inventoryservice->getCost(); ?>" title="<?php echo $this->translate("inventory_servicecost_tooltip"); ?>" /></div><div id="cost_error"></div></td>
         </tr>
   </table>
 </form>

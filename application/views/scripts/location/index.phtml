@@ -1,0 +1,310 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$location = new Location();
+	
+	if (isEmptyString($request->id)) {
+		$posturl = $this->baseUrl("location/create");
+		$button_title = $this->translate("global_button_save"); 
+		$successmessage = $this->translate('global_save_success');
+		$type = $request->type;
+		$location->setLocationType($type);
+	} else {
+		$location->populate(decode($request->id));
+		$posturl = $this->baseUrl("location/edit"); 
+		$button_title = $this->translate("global_button_save_changes"); 
+		$successmessage = $this->translate('global_update_success');
+	}
+	
+	switch($location->getLocationType()){
+		case 1:
+			$moduleitem = "Region";
+			$plural = "Regions";
+			$title = isEmptyString($location->getID()) ? $this->translate("region_pagetitle_new") : $this->translate("region_pagetitle_edit"); 
+			break;
+		case 2:
+			$moduleitem = "District";
+			$plural = "Districts";
+			$title = isEmptyString($location->getID()) ? $this->translate("district_pagetitle_new") : $this->translate("district_pagetitle_edit"); 
+			break;
+		case 3:
+			$moduleitem = "County";
+			$plural = "Counties";
+			$title = isEmptyString($location->getID()) ? $this->translate("county_pagetitle_new") : $this->translate("county_pagetitle_edit"); 
+			break;
+		case 4:
+			$moduleitem = "Subcounty";
+			$plural = "Subcounties";
+			$title = isEmptyString($location->getID()) ? $this->translate("subcounty_pagetitle_new") : $this->translate("subcounty_pagetitle_edit"); 
+			break;
+		case 5:
+			$moduleitem = "Parish";
+			$plural = "Parishes";
+			$title = isEmptyString($location->getID()) ? $this->translate("parish_pagetitle_new") : $this->translate("parish_pagetitle_edit"); 
+			break;
+		case 6:
+			$moduleitem = "Village";
+			$plural = "Villages";
+			$title = isEmptyString($location->getID()) ? $this->translate("village_pagetitle_new") : $this->translate("village_pagetitle_edit"); 
+			break;
+		default:
+			$moduleitem = "Location";
+			$plural = "Locations";
+			$title = isEmptyString($location->getID()) ? $this->translate("location_pagetitle_new") : $this->translate("location_pagetitle_edit"); 
+			break;
+	}
+	
+	if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
+		$formvalues = $session->getVar(FORM_VALUES);		
+		$location->processPost($formvalues);
+	}
+
+	$moduleitem_lower = strtolower($moduleitem);
+	$listurl = $this->baseUrl("location/list");
+	$this->headTitle($title.$browserappend); 
+?>
+<script>
+$(document).ready(function() {
+	// breadcrumb config
+	$("#levelone_icon").addClass('icon-globe');
+	$("#levelone_link").attr('href', '<?php echo $listurl; ?>').html('Locations');
+	$("#leveltwo_link").attr('href', '<?php echo $listurl.'/type/'.$location->getLocationType(); ?>').html('<?php echo $plural; ?>');
+	$("#levelthree_link").html('<?php echo $title; ?>');
+	
+	$("#indexform").validate({		
+		// define the validation rules one field at a time
+		rules: {
+			name: "required",
+			locationtype: "required",
+			regionid: "required",
+			districtid: "required",
+			countyid: "required",
+			subcountyid: "required",
+			parishid: "required"
+		}, 
+		// the messages for each of the fields being validated
+		messages: {		
+			name: "<?php echo $this->translate("global_name_error"); ?>",
+			locationtype: "<?php echo $this->translate("global_type_error"); ?>",
+			regionid: "<?php echo $this->translate("global_region_error"); ?>",
+			districtid: "<?php echo $this->translate("global_district_error"); ?>",
+			countyid: "<?php echo $this->translate("global_country_error"); ?>",
+			subcountyid: "<?php echo $this->translate("global_subcountry_error"); ?>",
+			parishid: "<?php echo $this->translate("global_parish_error"); ?>"
+		},
+		// custom error positions
+		errorPlacement: function(error, element) {
+			switch(element.attr("name")){					
+				default:
+					if(element.hasClass("useid_error")){
+						error.appendTo("#"+element.attr("id")+"_error");
+					} else {
+						error.appendTo("#"+element.attr("name")+"_error");
+					}
+					break;
+			}			
+		},
+		ignore: ":hidden:not(select)"
+	});
+	
+	disableContainerByClass('locationspecific');
+	var locationtype = '<?php echo $location->getLocationType(); ?>';
+	enableContainerByClass('<?php echo $moduleitem_lower; ?>');
+	
+	$('#regionid').change(function() {
+		autoPopulateSelectChain('regionid', 'districtid', '<?php echo $this->baseUrl('index/selectchaincustom/select_chain_type/region_districts/regionid/'); ?>', '<?php echo $location->getDistrictID(); ?>');
+	});
+	$('#regionid').trigger('change');
+	
+	$('#districtid').change(function() {
+		autoPopulateSelectChain('districtid', 'countyid', '<?php echo $this->baseUrl('index/selectchaincustom/select_chain_type/district_counties/districtid/'); ?>', '<?php echo $location->getCountyID(); ?>');
+	});
+	$('#districtid').trigger('change');
+	
+	$('#countyid').change(function() {
+		autoPopulateSelectChain('countyid', 'subcountyid', '<?php echo $this->baseUrl('index/selectchaincustom/select_chain_type/county_subcounties/countyid/'); ?>', '<?php echo $location->getSubCountyID(); ?>');
+	});
+	$('#countyid').trigger('change');
+	
+	$('#subcountyid').change(function() {
+		autoPopulateSelectChain('subcountyid', 'parishid', '<?php echo $this->baseUrl('index/selectchaincustom/select_chain_type/subcounty_parishes/subcountyid/'); ?>', '<?php echo $location->getParishID(); ?>');
+	});
+	$('#subcountyid').trigger('change');
+	
+	$(".lock select").attr("disabled", "disabled").trigger("chosen:updated");
+	$('#locationtype').change(function() {
+		var type = $(this).val();
+		var text = $("option:selected", this).text();
+		enableContainerByClass(text.toLowerCase());
+	});
+});
+</script>
+<!--=== Page Header ===-->
+<div class="page-header">
+    <div class="page-title">
+        <h3><?php echo $title; ?></h3>
+        <span><?php echo isEmptyString($location->getID()) ? 'Submit new' : 'Edit'; ?> location of type <?php echo $moduleitem; ?></span>
+    </div>
+</div>
+<form id="indexform" class="form-horizontal row-border" action="<?php echo $posturl; ?>" method="post">
+<input type="hidden" name="entityname" value="Location" />
+<input type="hidden" id="id" name="id" value="<?php echo encode($location->getID()); ?>" />
+<?php if(!isEmptyString($location->getLocationType())){ ?>
+   <input type="hidden" id="locationtype" name="locationtype" value="<?php echo $location->getLocationType(); ?>" />
+<?php } ?>
+<input type="hidden" id="<?php echo SUCCESS_MESSAGE; ?>" name="<?php echo SUCCESS_MESSAGE; ?>" value="<?php echo $successmessage; ?>" />
+<?php if ($sessionhaserror) { ?>
+    <div class="alert alert-danger fade in"><i class="icon-remove close" data-dismiss="alert"></i><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+<?php } ?>
+<?php if (!isEmptyString($session->getVar(SUCCESS_MESSAGE))) { ?>
+    <div class="alert alert-success fade in"><i class="icon-remove close" data-dismiss="alert"></i><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+<?php } ?>
+<!--=== Page Content ===-->
+<div class="form-actions fluid" id="topactions">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="xcol-md-offset-2 xcol-md-10 pull-left">
+                <a class="btn button-previous" href="<?php echo $this->referer; ?>"><i class="icon-remove"></i> <?php echo $this->translate('global_button_cancel'); ?></a>
+                <button type="submit" class="btn btn-primary button-submit save" name="save"><i class="icon-ok icon-white"></i> <?php echo $button_title; ?></button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12">
+        <div class="widget box" style="margin-bottom:5px;">
+            <div class="widget-header">
+                <h4><i class="icon-reorder"></i> Profile Info</h4>
+            </div>
+            <div class="widget-content">
+                <div class="form-group">
+                    <label class="col-md-2 control-label"><?php echo $this->translate("global_type_label"); ?>: <?php echo $this->translate("required_field_marker"); ?></label>
+                    <div class="col-md-3 <?php echo !isEmptyString($location->getLocationType()) ? 'lock' : ''; ?>">
+                        <?php
+                            $values = array('1'=>'Region','2'=>'District','3'=>'County','4'=>'Subcounty','5'=>'Parish','6'=>'Village');
+                            $dropdown = new Zend_Form_Element_Select('locationtype',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $values),								
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array('form-control','chosen-select','col-md-2')
+                                                )
+                                            );
+                            $dropdown->setValue($location->getLocationType()); 
+                            echo $dropdown->render(); 
+                        ?><div id="locationtype_error"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-md-2 control-label"><?php echo $this->translate("global_name_label"); ?>: <?php echo $this->translate("required_field_marker"); ?></label>
+                    <div class="col-md-3 lock">
+                        <input type="text" name="name" id="name" class="form-control" value="<?php echo $location->getName(); ?>" /><div id="name_error"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-md-2 control-label">Description:</label>
+                    <div class="col-md-3 lock">
+                        <textarea class="expanding form-control" id="description" name="description"><?php echo $location->getDescription(); ?></textarea><div id="name_error"></div>
+                    </div>
+                </div>
+                <div class="form-group locationspecific district county subcounty parish village municipality">
+                    <label class="col-md-2 control-label"><?php echo $this->translate("global_region_label"); ?>: <?php echo $this->translate("required_field_marker"); ?></label>
+                    <div class="col-md-3">
+                        <?php
+                            $list = new LookupType(); 
+							$list->setName("ALL_REGIONS");
+							$dropdown = new Zend_Form_Element_Select('regionid',
+												array(
+													'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $list->getOptionValuesFromQuery()),								'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+                                                    'class' => array('form-control','chosen-select','col-md-2')
+												)
+											);
+							$dropdown->setValue($location->getRegionID()); 
+							echo $dropdown->render(); 
+                       	?><div id="regionid_error"></div>
+                    </div>
+                </div>
+                <div class="form-group locationspecific county subcounty parish village municipality">
+                    <label class="col-md-2 control-label"><?php echo $this->translate("global_district_label"); ?>: <?php echo $this->translate("required_field_marker"); ?></label>
+                    <div class="col-md-3">
+                        <?php
+                            $list = new LookupType(); 
+							$list->setName("ALL_DISTRICTS");
+							$dropdown = new Zend_Form_Element_Select('districtid',
+												array(
+													'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $list->getOptionValuesFromQuery()),								'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+                                                    'class' => array('form-control','chosen-select','col-md-2')
+												)
+											);
+							$dropdown->setValue($location->getDistrictID()); 
+							echo $dropdown->render(); 
+                       	?><div id="districtid_error"></div>
+                    </div>
+                </div>
+                <div class="form-group locationspecific subcounty parish village municipality">
+                    <label class="col-md-2 control-label"><?php echo $this->translate("global_county_label"); ?>: <?php echo $this->translate("required_field_marker"); ?></label>
+                    <div class="col-md-3">
+                        <?php
+                            $values = array();
+							$dropdown = new Zend_Form_Element_Select('countyid',
+												array(
+													'multiOptions' => array_merge_maintain_keys(array('' => '<Select District First>'), $values),								'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+                                                    'class' => array('form-control','chosen-select','col-md-2')
+												)
+											);
+							$dropdown->setValue($location->getCountyID()); 
+							echo $dropdown->render(); 
+                       	?><div id="countyid_error"></div>
+                    </div>
+                </div>
+                <div class="form-group locationspecific parish village municipality">
+                    <label class="col-md-2 control-label"><?php echo $this->translate("global_subcounty_label"); ?>: <?php echo $this->translate("required_field_marker"); ?></label>
+                    <div class="col-md-3">
+                        <?php
+                            $values = array();
+							$dropdown = new Zend_Form_Element_Select('subcountyid',
+												array(
+													'multiOptions' => array_merge_maintain_keys(array('' => '<Select County First>'), $values),								'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+                                                    'class' => array('form-control','chosen-select','col-md-2')
+												)
+											);
+							$dropdown->setValue($location->getSubCountyID()); 
+							echo $dropdown->render(); 
+                       	?><div id="subcountyid_error"></div>
+                    </div>
+                </div>
+                <div class="form-group locationspecific village municipality">
+                    <label class="col-md-2 control-label"><?php echo $this->translate("global_parish_label"); ?>: <?php echo $this->translate("required_field_marker"); ?></label>
+                    <div class="col-md-3">
+                        <?php
+                            $values = array();
+							$dropdown = new Zend_Form_Element_Select('parishid',
+												array(
+													'multiOptions' => array_merge_maintain_keys(array('' => '<Select Parish First>'), $values),								'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+                                                    'class' => array('form-control','chosen-select','col-md-2')
+												)
+											);
+							$dropdown->setValue($location->getParishID()); 
+							echo $dropdown->render(); 
+                       	?><div id="parishid_error"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> 
+</div>
+<div class="row">
+    <div class="col-md-12">
+        <div class="form-actions fluid" id="bottomactions"></div>
+	</div>
+</div>                                
+</form>     
+<?php
+	$clearsessionformvalues = true; 
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

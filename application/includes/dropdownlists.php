@@ -206,7 +206,14 @@
 	function getLastDayOfLastMonth($month,$year) {
 		return date("Y-m-d", mktime(0,0,0, $month-1,0,$year));
 	}
-	
+	# get the first day of the current year and month
+	function getFirstDayOfCurrentMonth(){
+		return date("Y-m-d", mktime (0,0,0, date("n"),1, date("Y")));
+	}
+	# get the last day of the last month
+	function getLastDayOfCurrentMonth() {
+		return date("Y-m-d", mktime(0,0,0, date("n")+1,0, date("Y")));
+	}
 	/**
 	 * Return an array containing the 2 digit US state codes and names of the states
 	 *
@@ -599,6 +606,21 @@
 		
 		return $country_list; 
 	}
+	# return districts in country
+	function getDistricts($country = 'UG', $region = '') {
+		$custom_query = '';
+		if(!isEmptyString($region)){
+			$custom_query = " AND l.regionid = '".$region."' ";
+		}
+		$query = "SELECT l.name AS optiontext, l.id AS optionvalue FROM location AS l WHERE l.locationtype = '2' AND l.country = UPPER('".$country."') ".$custom_query." ORDER BY optiontext";
+		// debugMessage($query); 
+		return getOptionValuesFromDatabaseQuery($query);
+	}
+	function getRegions($country = 'UG') {
+		$query = "SELECT l.name AS optiontext, l.id AS optionvalue FROM location AS l WHERE l.locationtype = '1' AND l.country = UPPER('".$country."') ORDER BY optiontext";
+		// debugMessage($query); 
+		return getOptionValuesFromDatabaseQuery($query);
+	}
 	/**
 	 * Get the districts in the specified region 
 	 * 
@@ -612,6 +634,13 @@
 		}
 		$query = "SELECT id as optionvalue, name as optiontext FROM location WHERE regionid = '".$regionid."' AND locationtype = 2 ORDER BY optiontext"; 
 		return getOptionValuesFromDatabaseQuery($query);
+	}
+	function getRegionForDistrict($districtid) {
+		$conn = Doctrine_Manager::connection(); 
+		$query = "select l.regionid from location l where l.id = '".$districtid."' ";
+		$result = $conn->fetchOne($query);
+		// debugMessage($result);
+		return $result;
 	}
 	/**
 	 * Get the Counties in the specified region 
@@ -640,6 +669,7 @@
 			return array(); 
 		}
 		$query = "SELECT id as optionvalue, name as optiontext FROM location WHERE countyid = '".$countyid."' AND locationtype = 4 ORDER BY optiontext";
+		// debugMessage($query);
 		return getOptionValuesFromDatabaseQuery($query);
 	}
 	/**
@@ -699,11 +729,19 @@
 	    return getOptionValuesFromDatabaseQuery($query);
 	}
 	# determine the subgroups in a farmgroup
-	function getSubGroups($farmgroupid) {
+	function getSubGroups($farmgroupid, $country = 'UG') {
 	    if(isEmptyString($farmgroupid)) {
 	        return array();
 	    }
-	    $query = "SELECT id as optionvalue, orgname as optiontext FROM farmgroup WHERE parentid = '".$farmgroupid."' ORDER BY optiontext";
+		$ugcustom_query ='';
+		if(strtolower($country) == 'ug'){
+			$ugcustom_query = " OR f.country is null ";
+		}
+	    $query = "SELECT f.id as optionvalue, f.orgname as optiontext FROM farmgroup f
+	    WHERE f.parentid = '".$farmgroupid."' AND 
+	    (f.country = UPPER('".$country."') ".$ugcustom_query.")  
+	    ORDER BY optiontext";
+	    // debugMessage($query);
 	    return getOptionValuesFromDatabaseQuery($query);
 	}
 	# determine the education levels 
@@ -713,24 +751,105 @@
 	}
 	# determine the marital statuses 
 	function getAllMaritalStatuses(){
-		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'MARITAL_STATUS_VALUES'";
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name = 'MARITAL_STATUS_VALUES'";
 		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# determine the list of farm group types
-	function getFarmGroupTypes(){
-		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'FARM_GROUP_TYPES' order by optiontext";
-		// debugMessage($all_values);
+	function getFarmGroupTypes($ignore_list = array()){
+		$customquery = '';
+		if(is_array($ignore_list) && count($ignore_list) > 0){
+			$list = implode("','", $ignore_list);
+			$customquery = " AND l.lookuptypevalue NOT IN('".$list."') ";
+		}
+		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'FARM_GROUP_TYPES' ".$customquery." order by optiontext";
+		// debugMessage($query);
 		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# determine the available farm groups
-	function getAllFarmGroups() {
-		$query = "SELECT id as optionvalue, orgname as optiontext FROM farmgroup WHERE id <> '' AND parentid is null ORDER BY optiontext";
+	function getAllFarmGroups($locationid = '', $country = 'UG') {
+		$district_query = ""; $custom_query = "";
+		if(!isEmptyString($locationid)){
+			$district_query = " AND (f.districtid = '".$locationid."' ";
+			
+			$district = new Location();
+			$district->populate($locationid);
+			if(strtoupper($country) == 'UG' && $district->getRegionID() == 3 || $district->getRegionID() == 5 || $district->getRegionID() == 6){
+				$district_query .= " OR (f.shortname = 'APSEDEC' OR f.shortname = 'FGO') )";
+			} else {
+				$district_query .= " ) ";
+			}
+		}
+		$ugcustom_query ='';
+		if(strtolower($country) == 'ug'){
+			// $ugcustom_query = " OR f.country is null ";
+		}
+		$query = "SELECT f.id as optionvalue, f.orgname as optiontext FROM farmgroup f 
+		WHERE f.parentid IS NULL ".$district_query." AND 
+		(f.country = UPPER('".$country."') ".$ugcustom_query.$custom_query.")  
+		GROUP BY f.id 
+		ORDER BY optiontext";
+		// debugMessage($query);
+		return getOptionValuesFromDatabaseQuery($query);
+	}
+	function getAllFarmGroupsInDNA($dna = '', $country = 'UG') {
+		$dna_query = "";
+		if(!isEmptyString($dna)){
+			$dna_query = " AND f.parentid = '".$dna."' ";
+		}
+		$ugcustom_query ='';
+		if(strtolower($country) == 'ug'){
+			$ugcustom_query = " OR f.country is null ";
+		}
+		$query = "SELECT f.id as optionvalue, f.orgname as optiontext FROM farmgroup f 
+		WHERE f.parentid IS NOT NULL ".$dna_query." AND 
+		(f.country = UPPER('".$country."') ".$ugcustom_query.")
+		GROUP BY f.id 
+		ORDER BY optiontext";
+		// debugMessage($query);
 		return getOptionValuesFromDatabaseQuery($query);
 	}
 	# determine the available farm groups
-	function getFarmGroupsInDistrict($districtid) {
-		$query = "SELECT f.id as optionvalue, f.orgname as optiontext FROM farmgroup f left join address a on (a.farmgroupid = f.id) WHERE a.districtid = '".$districtid."' GROUP BY f.id ORDER BY optiontext";
+	function getFarmGroupsInDistrict($districtid, $country = 'UG') {
+		$ugcustom_query ='';
+		if(strtolower($country) == 'ug'){
+			$ugcustom_query = " OR f.country is null ";
+		}
+		$custom_query = '';
+		/*$district = new Location();
+		$district->populate($districtid);
+		if($district->getRegionID() == 3 || $district->getRegionID() == 5 || $district->getRegionID() == 6){
+			$custom_query = " (OR f.shortname = 'APSEDEC' OR f.shortname = 'FGO') ";
+		}*/
+		
+		$query = "SELECT f.id as optionvalue, f.orgname as optiontext FROM farmgroup f 
+		WHERE f.districtid = '".$districtid."' AND 
+		f.parentid IS NULL AND 
+		(f.country = UPPER('".$country."') ".$ugcustom_query.")
+		GROUP BY f.id ORDER BY optiontext";
 		return getOptionValuesFromDatabaseQuery($query);
+	}
+	# determine the available dna profiles
+	function getDNAsInDistrict($districtid) {
+		$aspedec_query = "";
+		if(!isEmptyString($districtid)){
+			$district = new Location();
+			$district->populate($districtid);
+			$regionid = $district->getRegionID();
+			$custom_query = '';
+			if($regionid == 3 || $regionid == 5 || $regionid == 6){
+				$custom_query = " OR (f.shortname = 'APSEDEC' OR f.shortname = 'FGO') ";
+			}
+			// UPDATE useraccount set farmgroupid = 111 where farmgroupid IN(117,95,90,116);
+			// DELETE from farmgroup where id IN(117,95,90,116);
+		}
+		$query = "SELECT f.id as optionvalue, f.orgname as optiontext FROM farmgroup f WHERE 
+		f.districtid = '".$districtid."' AND f.parentid IS NULL ".$custom_query." 
+		GROUP BY f.id ORDER BY optiontext";
+		// debugMessage($query);
+		return getOptionValuesFromDatabaseQuery($query);
+		// SELECT fg.id, fg.orgname as DNA, count(f.id) as `Total Farmers`, sum(if(f.phone <> '',1, 0)) as `Farmers with Phone`, l.name as District, fg.regno as `Reg No`, fg.regdate as `Regn Date`  FROM `farmgroup` as fg left join useraccount as f on (f.farmgroupid = fg.id) left join location as l on (fg.districtid = l.id) WHERE fg.`type` <> '6' AND fg.`country` LIKE '%ug%' group by fg.id ORDER BY count(f.id) desc
+		// update aclusergroup a inner join useraccount u on (a.userid = u.id AND a.groupid = 5) set a.groupid = 2, u.type = 2 where u.createdby = 5459;
+		// update aclusergroup a inner join useraccount u on (a.userid = u.id AND a.groupid = 5) set a.groupid = 2, u.type = 2 where u.createdby = 5464;
 	}
 	/**
 	* Return the statistics 
@@ -815,13 +934,20 @@
 			$list = implode("','", $ignore_list);
 			$customquery = " AND c.id NOT IN('".$list."') ";
 		}
-		$valuesquery = "SELECT c.id AS optionvalue, c.`name` as optiontext FROM commodity as c WHERE c.allowfarmer = 1 ".$customquery." ORDER BY optiontext";
+		$valuesquery = "SELECT c.id AS optionvalue, c.`name` as optiontext FROM commodity as c WHERE c.allowfarmer = 1 AND c.categoryid <> 27 ".$customquery." ORDER BY optiontext";
+		// debugMessage($valuesquery);
+		return getOptionValuesFromDatabaseQuery($valuesquery);
+	}
+	# commodities configured for farmis 
+	function getOtherEnterprises(){
+		$customquery = '';
+		$valuesquery = "SELECT c.id AS optionvalue, c.`name` as optiontext FROM commodity as c WHERE c.allowfarmer = 1 AND c.categoryid = 27 ".$customquery." ORDER BY optiontext";
 		// debugMessage($valuesquery);
 		return getOptionValuesFromDatabaseQuery($valuesquery);
 	}
 	# commodities configured for a farmer 
-	function getCommoditiesForFarmer($farmerid){
-		$valuesquery = "SELECT fc.cropid AS optionvalue, c.`name` as optiontext FROM farmcrop fc inner join commodity c on (fc.cropid = c.id) WHERE fc.farmerid = '".$farmerid."' GROUP BY fc.cropid ORDER BY optiontext";
+	function getCommoditiesForFarmer($userid){
+		$valuesquery = "SELECT fc.cropid AS optionvalue, c.`name` as optiontext FROM farmcrop fc inner join commodity c on (fc.cropid = c.id AND c.unitid <> 16) WHERE fc.userid = '".$userid."' GROUP BY fc.cropid ORDER BY optiontext";
 		// debugMessage($valuesquery);
 		return getOptionValuesFromDatabaseQuery($valuesquery);
 	}
@@ -1017,12 +1143,24 @@
 		$query = "SELECT l.lookuptypevalue as optionvalue, l.lookupvaluedescription as optiontext FROM lookuptypevalue AS l INNER JOIN lookuptype AS v ON l.lookuptypeid = v.id WHERE v.name =  'ALL_CLIENTS' order by optiontext ";
 		return getOptionValuesFromDatabaseQuery($query);
 	}
-	function getAllSeasons($farmid){
+	function getAllSeasons($userid = ''){
 		$custom_query = '';
-		if(!isEmptyString($farmid)){
-			$custom_query = " AND s.farmid = '".$farmid."' ";
+		if(!isEmptyString($userid)){
+			$custom_query .= " AND s.userid= '".$userid."' ";
 		}
 		$valuesquery = "SELECT s.id AS optionvalue, concat(s.ref, ' - ', s.activityname) as optiontext FROM season as s WHERE s.id <> '' ".$custom_query." ORDER BY optiontext";
+		// debugMessage($valuesquery);
+		return getOptionValuesFromDatabaseQuery($valuesquery);
+	}
+	function getSeasonActivities($seasonid){
+		$custom_query = '';
+		$valuesquery = "(SELECT concat('2', ',', a.id) AS optionvalue, concat(a.activityname, ' - ', a.ref) as optiontext FROM seasontillage as a WHERE a.seasonid = '".$seasonid."' ".$custom_query." ORDER BY optiontext) 
+			UNION (SELECT concat('3', ',', a.id) AS optionvalue, concat(a.activityname, ' - ', a.ref) as optiontext FROM seasonplanting as a WHERE a.seasonid = '".$seasonid."' ".$custom_query." ORDER BY optiontext)
+			UNION (SELECT concat('4', ',', a.id) AS optionvalue, concat(a.activityname, ' - ', a.ref) as optiontext FROM seasontracking as a WHERE a.seasonid = '".$seasonid."' ".$custom_query." ORDER BY optiontext)
+			UNION (SELECT concat('6', ',', a.id) AS optionvalue, concat(a.activityname, ' - ', a.ref) as optiontext FROM seasonharvest as a WHERE a.seasonid = '".$seasonid."' ".$custom_query." ORDER BY optiontext)
+			UNION (SELECT concat('7', ',', a.id) AS optionvalue, concat(a.activityname, ' - ', a.ref) as optiontext FROM sales as a WHERE a.seasonid = '".$seasonid."' ".$custom_query." ORDER BY optiontext)  
+		";
+		// debugMessage($valuesquery);
 		return getOptionValuesFromDatabaseQuery($valuesquery);
 	}
 	# determine signup contact categories
@@ -1035,93 +1173,111 @@
 		return getOptionValuesFromDatabaseQuery($query);
 	}
 	
-	function getFarmers($farmgroupid = '', $hasemail = false, $ignorelist = ''){
+	function getFarmers($farmgroupid = '', $hasphone = true, $is_subgroup = false, $hasemail = false, $ignorelist = '', $country = 'UG'){
 		$custom_query = '';
+		$hasphoneq1 = ""; $hasphoneq2 = ""; $withemail = "";
 		if(!isEmptyString($farmgroupid)){
-			$farmgroup = new FarmGroup(); 
-			$farmgroup->populate($farmgroupid);
-			$manegerid = $farmgroup->getManagerID();
-			$custom_query = " AND f.farmgroupid = '".$farmgroupid."' AND f.id <> '".$manegerid."'";
+			$custom_query = " AND u.farmgroupid = '".$farmgroupid."' ";
+			if($is_subgroup){
+				$custom_query = " AND u.subgroupid = '".$farmgroupid."' ";
+			}
+			if($farmgroupid == 0){
+				$custom_query = " AND (u.`farmgroupid` IS NULL) ";
+			}
+		} else {
+			$custom_query = " ";
 		}
+		
 		if($hasemail){
 			$custom_query .= " AND u.email <> '' ";
+			$hasphoneq1 = ", ' [',u.email,']'";
+		}
+		if($hasphone){
+			$hasphoneq1 = ", ' [',u.phone,']' ";
+			$hasphoneq2 = " AND u.phone <> '' ";
 		}
 		if(!isEmptyString($ignorelist)){
 			$custom_query .= " AND u.id <> '".$ignorelist."' ";
 		}
-		$valuesquery = "SELECT f.id AS optionvalue, concat(f.firstname, ' ', f.lastname) as optiontext FROM farmer as f inner join useraccount as u on (f.userid = u.id) WHERE f.id <> '' AND u.type = 2 ".$custom_query." ORDER BY optiontext";
+		$valuesquery = "SELECT u.id AS optionvalue, concat(u.firstname, ' ', u.lastname".$hasphoneq1.") as optiontext FROM useraccount as u  WHERE u.id <> '' AND u.type = 2 AND u.country = UPPER('".$country."') ".$hasphoneq2." ".$custom_query." GROUP BY u.id ORDER BY optiontext ASC";
+		// debugMessage($valuesquery);
+		return getOptionValuesFromDatabaseQuery($valuesquery);
+	}
+	function getAllFarmers($country = 'UG'){
+		$custom_query = '';
+		$valuesquery = "SELECT u.id AS optionvalue, concat(u.firstname, ' ', u.lastname) as optiontext FROM useraccount as u WHERE u.id <> '' AND u.type = 2  AND u.country = UPPER('".$country."') ".$custom_query." GROUP BY u.id ORDER BY optiontext ASC";
 		// debugMessage($valuesquery);
 		return getOptionValuesFromDatabaseQuery($valuesquery);
 	}
 	// count all farmers available
-	function countAllFarmers() {
+	function countAllFarmers($country = 'UG') {
 		$conn = Doctrine_Manager::connection(); 
-		$valuesquery = "SELECT count(f.id) AS total FROM farmer as f inner join useraccount as u on (f.userid = u.id) WHERE u.type = 2 ";
+		$valuesquery = "SELECT count(u.id) AS total FROM useraccount as u WHERE u.type = 2 AND u.country = UPPER('".$country."') ";
 		$result = $conn->fetchOne($valuesquery);
 		// debugMessage($result);
 		return $result;
 	}
 	// count all farmers under farm groups
-	function countAllFarmersInGroups() {
+	function countAllFarmersInGroups($country = 'UG') {
 		$conn = Doctrine_Manager::connection(); 
-		$valuesquery = "SELECT count(f.id) AS total FROM farmer as f inner join useraccount as u on (f.userid = u.id) WHERE u.type = 2 AND f.farmgroupid <> '' ";
+		$valuesquery = "SELECT count(u.id) AS total FROM useraccount as u WHERE u.type = 2 AND u.country = UPPER('".$country."') AND u.farmgroupid <> '' ";
 		$result = $conn->fetchOne($valuesquery);
 		// debugMessage($result);
 		return $result;
 	}
 	// count all individual farmers
-	function countAllIndividualFarmers() {
+	function countAllIndividualFarmers($country = 'UG') {
 		$conn = Doctrine_Manager::connection(); 
-		$valuesquery = "SELECT count(f.id) AS total FROM farmer as f inner join useraccount as u on (f.userid = u.id) WHERE u.type = 2 AND f.farmgroupid IS NULL ";
+		$valuesquery = "SELECT count(u.id) AS total FROM useraccount as u WHERE u.type = 2 AND u.country = UPPER('".$country."') AND u.farmgroupid IS NULL ";
 		$result = $conn->fetchOne($valuesquery);
 		// debugMessage($result);
 		return $result;
 	}
 	// count all male farmers
-	function countMaleFarmers() {
+	function countMaleFarmers($country = 'UG') {
 		$conn = Doctrine_Manager::connection(); 
-		$valuesquery = "SELECT count(f.id) AS total FROM farmer as f inner join useraccount as u on (f.userid = u.id) WHERE u.type = 2 AND u.gender = '1' ";
+		$valuesquery = "SELECT count(u.id) AS total FROM useraccount as u WHERE u.type = 2 AND u.country = UPPER('".$country."') AND u.gender = '1' ";
 		$result = $conn->fetchOne($valuesquery);
 		// debugMessage($result);
 		return $result;
 	}
 	// count all female farmers
-	function countFemaleFarmers() {
+	function countFemaleFarmers($country = 'UG') {
 		$conn = Doctrine_Manager::connection(); 
-		$valuesquery = "SELECT count(f.id) AS total FROM farmer as f inner join useraccount as u on (f.userid = u.id) WHERE u.type = 2 AND u.gender = '2' ";
+		$valuesquery = "SELECT count(u.id) AS total FROM useraccount as u WHERE u.type = 2 AND u.country = UPPER('".$country."') AND u.gender = '2' ";
 		$result = $conn->fetchOne($valuesquery);
 		// debugMessage($result);
 		return $result;
 	}
 	// count farmers registered in period
-	function countFarmersInRange($start, $end, $type = ''){
+	function countFarmersInRange($country = 'UG', $start, $end, $type = ''){
 		$conn = Doctrine_Manager::connection(); 
 		$custom_query = " ";
 		if(!isEmptyString($type)){
 			if($type == 'G'){
-				$custom_query = " AND f.farmgroupid <> '' ";
+				$custom_query = " AND u.farmgroupid <> '' ";
 			}
 			if($type == 'I'){
-				$custom_query = " AND f.farmgroupid IS NULL ";
+				$custom_query = " AND u.farmgroupid IS NULL ";
 			}
 		}
-		$valuesquery = "SELECT count(f.id) AS total FROM farmer as f inner join useraccount as u on (f.userid = u.id) WHERE u.type = 2 AND (f.datecreated >= '".$start."' AND f.datecreated <= '".$end."') ".$custom_query." ";
+		$valuesquery = "SELECT count(u.id) AS total FROM useraccount as u WHERE u.type = 2 AND u.country = UPPER('".$country."') AND (TO_DAYS(u.datecreated) >= TO_DAYS('".$start."')) AND (TO_DAYS(u.datecreated) <= TO_DAYS('".$end."')) ".$custom_query." ";
 		$result = $conn->fetchOne($valuesquery);
 		// debugMessage($valuesquery);
 		return $result;
 	}
 	// count all farm groups available
-	function countAllGroups() {
+	function countAllGroups($country = 'UG') {
 		$conn = Doctrine_Manager::connection(); 
-		$valuesquery = "SELECT count(g.id) as total FROM farmgroup AS g WHERE g.id <> '' AND g.parentid IS NULL ";
+		$valuesquery = "SELECT count(g.id) as total FROM farmgroup AS g WHERE g.country = UPPER('".$country."') AND g.parentid IS NULL ";
 		$result = $conn->fetchOne($valuesquery);
 		// debugMessage($result);
 		return $result;
 	}
 	// count farm groups registered in period
-	function countGroupsInRange($start, $end){
+	function countGroupsInRange($country = 'UG', $start, $end){
 		$conn = Doctrine_Manager::connection(); 
-		$valuesquery = "SELECT count(g.id) as total FROM farmgroup AS g WHERE g.id <> '' AND g.parentid IS NULL AND (g.regdate >= '".$start."' AND g.datecreated <= '".$end."')";
+		$valuesquery = "SELECT count(g.id) as total FROM farmgroup AS g WHERE g.country = UPPER('".$country."') AND g.parentid IS NULL AND (TO_DAYS(g.regdate) >= TO_DAYS('".$start."') AND TO_DAYS(g.datecreated) <= TO_DAYS('".$end."'))";
 		$result = $conn->fetchOne($valuesquery);
 		// debugMessage($valuesquery);
 		return $result;
@@ -1185,15 +1341,15 @@
 	}
 	# payment status values
 	function getPaymentStatuses(){
-		return array(3=>'Completed',2=>'Cancelled',1=>'Pending');
+		return array(3=>'Received',2=>'Cancelled',1=>'Pending');
 	}
 	# subscription periods available
 	function getSubscriptionPeriods(){
-		return array('15'=>'15 Days','30'=>'30 Days', '180'=>'6 Months', '365'=>'1 Year');
+		return array('365'=>'1 Year');
 	}
 	# subscription subjects
 	function getPaymentSubjects(){
-		return array(1=>'Basic Farmer Subscription', 2=>'Premium Farmer Subscription', 3=>'DNA Basic', 4=>'DNA Premium', 5=>'Other');
+		return array(2=>'Farmer Subscription', 4=>'DNA Subscription');
 	}
 	# all listable variable groupings
 	function getAllists(){
@@ -1202,15 +1358,19 @@
 		return $all_lists;
 	}
 	# latest system user farmers
-	function getLatestUsers($limit){
+	function getLatestUsers($limit, $country = 'UG'){
 		$conn = Doctrine_Manager::connection();
-		$all_users = $conn->fetchAll("SELECT u.id as id, concat(u.firstname, ' ', u.lastname, ' ', u.othernames) as name FROM useraccount AS u inner join farmer f on (u.farmerid = f.id) WHERE u.type = '2' order by u.activationdate DESC limit ".$limit);
+		$all_users = $conn->fetchAll("SELECT u.id as id, concat(u.firstname, ' ', u.lastname, ' ', u.othernames) as name FROM useraccount AS u WHERE u.type = '2' AND u.country = UPPER('".$country."') order by u.datecreated DESC limit ".$limit);
 		return $all_users;
 	}
+	function getProfilingUsers($country = 'UG'){
+		$query = "SELECT u.id as optionvalue, concat(u.firstname, ' ', u.lastname) as optiontext FROM useraccount AS u WHERE (u.type = '1' OR u.type = '4' OR u.type = '3') AND u.country = UPPER('".$country."') order by optiontext asc ";
+		return getOptionValuesFromDatabaseQuery($query);
+	}
 	# latest farm groups activated
-	function getLatestGroups($limit){
+	function getLatestGroups($limit, $country = 'UG'){
 		$conn = Doctrine_Manager::connection();
-		$all_grps = $conn->fetchAll("SELECT g.id as id, g.orgname as name FROM farmgroup AS g WHERE g.id <> '' order by g.regdate DESC limit ".$limit);
+		$all_grps = $conn->fetchAll("SELECT g.id as id, g.orgname as name FROM farmgroup AS g WHERE g.id <> '' AND g.country = UPPER('".$country."') order by g.regdate DESC limit ".$limit);
 		return $all_grps;
 	}
 	# subscription subjects
@@ -1218,27 +1378,25 @@
 		return array(1=>'Cooling', 2=>'Cleaning', 3=>'Drying', 4=>'Sorting', 5=>'Packing', 6=>'Processing', 7=>'Packaging');
 	}
 	# history of farmers
-	function getFarmersHistory(){
+	function getFarmersHistory($country = 'UG'){
 		$conn = Doctrine_Manager::connection();
 		$query = "SELECT
-					month(f.regdate) as monthid,
-					monthname(f.regdate) as name,
-					date_format(f.regdate, '%b') as shortmonthname, 
-					year(f.regdate) as yearid,
-					concat(year(f.regdate),  '', month(f.regdate) ) as yearmonth, 
-					count(f.id) as total,
+					month(u.regdate) as monthid,
+					monthname(u.regdate) as name,
+					date_format(u.regdate, '%b') as shortmonthname, 
+					year(u.regdate) as yearid,
+					concat(year(u.regdate),  '', month(u.regdate) ) as yearmonth, 
+					count(u.id) as total,
 					SUM(IF(u.gender = 1, 1, 0)) as total_male,
 					SUM(IF(u.gender = 2, 1, 0)) as total_female,
-					round((SUM(IF(u.gender = 1, 1, 0)) /  count(f.id)) * 100)  as perc_male,
-					round((SUM(IF(u.gender = 2, 1, 0)) /  count(f.id)) * 100)  as perc_female,
-					SUM(IF(f.farmgroupid is null, 1, 0)) as total_indv,
-					SUM(IF(f.farmgroupid is not null, 1, 0)) as total_grps,
-					round((SUM(IF(f.farmgroupid is null, 1, 0)) /  count(f.id)) * 100)  as perc_indv,
-					round((SUM(IF(f.farmgroupid is not null, 1, 0)) /  count(f.id)) * 100)  as perc_grps
-					FROM
-					farmer AS f
-					inner join useraccount u on (f.userid = u.id)
-					where u.type = 2 AND (f.regdate >= date_sub(now(), interval 6 month))
+					round((SUM(IF(u.gender = 1, 1, 0)) /  count(u.id)) * 100)  as perc_male,
+					round((SUM(IF(u.gender = 2, 1, 0)) /  count(u.id)) * 100)  as perc_female,
+					SUM(IF(u.farmgroupid is null, 1, 0)) as total_indv,
+					SUM(IF(u.farmgroupid is not null, 1, 0)) as total_grps,
+					round((SUM(IF(u.farmgroupid is null, 1, 0)) /  count(u.id)) * 100)  as perc_indv,
+					round((SUM(IF(u.farmgroupid is not null, 1, 0)) /  count(u.id)) * 100)  as perc_grps
+					FROM useraccount u 
+					where u.type = 2 AND u.country = UPPER('".$country."') AND (u.regdate >= date_sub(now(), interval 6 month))
 					group by yearid, monthid
 					order by yearmonth asc";
 		// debugMessage($query);
@@ -1246,7 +1404,7 @@
 		return $result;
 	}
 	# history of farmgroups
-	function getFarmGroupHistory(){
+	function getFarmGroupHistory($country = 'UG'){
 		$conn = Doctrine_Manager::connection();
 		$query = "SELECT
 					month(f.regdate) as monthid,
@@ -1257,11 +1415,59 @@
 					count(f.id) as total
 					FROM
 					farmgroup AS f
-					where f.id <> '' AND (f.regdate >= date_sub(now(), interval 6 month))
+					where f.id <> '' AND f.country = UPPER('".$country."')  
 					group by yearid, monthid
-					order by yearmonth asc";
+					order by yearmonth asc LIMIT 6";
 		// debugMessage($query);
 		$result = $conn->fetchAll($query);
 		return $result;
 	}
+	# user status
+	function getUserStatus($value = ''){
+		$array = array(0 =>'Pending Activation', 1 => 'Active', 2=>'Deactivated');
+		if(!isEmptyString($value)){
+			return $array[$value];
+		}
+		return $array;
+	}
+	# product status values
+	function getActiveStatus($value = ''){
+		$array = array('1' => 'Enabled', '0' =>'Disabled');
+		if(!isEmptyString($value)){
+			return $array[$value];
+		}
+		return $array;
+	}
+	# user types
+	function getUserType($value = '', $ignorelist =''){
+		$custom_query = "";
+		if(!isEmptyString($ignorelist)){
+			$custom_query .= " AND a.id NOT IN(".$ignorelist.") ";
+		}
+		
+		$query = "SELECT a.id as optionvalue, a.name as optiontext FROM aclgroup a where a.id <> '' ".$custom_query." order by optiontext ";
+		$array = getOptionValuesFromDatabaseQuery($query);
+		if(!isEmptyString($value)){
+			return $array[$value];
+		}
+		return $array;
+	}
+	function getLookupValueDescription($lookuptype, $lookuptypevalue) {
+		$sql = "SELECT lv.lookupvaluedescription FROM lookuptypevalue lv INNER JOIN lookuptype l ON (lv.lookuptypeid = l.id AND l.`name` = '".$lookuptype."' AND lv.lookuptypevalue = '".$lookuptypevalue."')";
+		$conn = Doctrine_Manager::connection(); 
+		
+		return $conn->fetchOne($sql); 
+	}
+	/**
+     * Determine the person's life status label
+     * @return String the life status 
+     */
+    function getSalutationLabel($str){
+    	$salution = '';
+    	if(!isEmptyString($str) && $str != 0){
+    		$lab = LookupType::getLookupValueDescription("SALUTATION", $str);
+    		$salution = ', '.$lab;
+    	}
+    	return $salution; 
+    }
 ?>

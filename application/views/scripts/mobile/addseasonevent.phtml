@@ -1,0 +1,2136 @@
+<?php
+	include APPLICATION_PATH.'/includes/header.php';
+	
+	$title = ''; $posturl = '';
+	$stage = $request->stage;
+	$isinputs = false;
+	$showfinanceandlabour = true;
+	if($stage == 'input'){
+		$isinputs = true;
+		$showfinanceandlabour = false;
+		$input = new SeasonInput();
+		$season = new Season(); 
+		$acounter = "";
+		$type = "";
+		if(!isEmptyString($request->sid)){
+			$season->populate(decode($request->sid));
+			$type = $request->type;
+			$input->setType($type);
+			$input->setSeasonID($season->getID());
+			$input->setUserID($season->getUserID());
+			$input->setStartDate(date('Y-m-d'));
+			$input->setActivityName('Season Inputs');
+			$acounter = $input->getNextReferencePointer();
+			$successurl = encode($this->baseUrl("mobile/viewseasonevent/stage/input"));
+			$failureurl = encode($this->baseUrl("mobile/addseasonevent/stage/input/sid/".$request->sid."/type/".$type));
+		}
+		
+		// default title is to enable adding any payee
+		
+		$posturl = $this->baseUrl("season/inputcreate");
+		$button_title = $this->translate("global_button_save");
+		$title = $this->translate("season_input_pagetitle_new"); 
+		if($type == 2){
+			$title = $this->translate("season_expense_pagetitle_new"); 
+		}
+		
+		// set the payee if provided in the url 
+		if (!isEmptyString($request->id)) {
+			$input->populate(decode($request->id));
+			$type = $input->getType();
+			$button_title = $this->translate("global_button_save_changes");
+			$title = $this->translate("season_input_pagetitle_edit"); 
+			$acounter = substr($input->getRef(), -3);
+			$successurl = encode($this->baseUrl("mobile/viewseasonevent/stage/input"));
+			$failureurl = encode($this->baseUrl("mobile/addseasonevent/stage/input/id/".$input->getID()));
+			if($type == 2){
+				$title = $this->translate("season_expense_pagetitle_edit"); 
+			}
+		}
+		
+		$loan = $input->getCreditDetails();
+		 
+		$prefix = ACTIVITY_INPUT_PREFIX; 
+		$isinput = true;
+		$isgeneral = false;
+		$detailstitle = "Season Input Details";
+		$activityref = $this->translate("season_activityref_label");
+		$activitydate = $this->translate("season_activitystart_label");
+		if($type == 2){
+			$prefix = ACTIVITY_EXPENSE_PREFIX; 
+			$isinput = false;
+			$isgeneral = true;
+			$detailstitle = "Expense Details";
+			$activityref = $this->translate("season_expenseref_label");
+			$activitydate = $this->translate("season_expensestart_label");
+		}
+		
+		#in case of errors in session, populate the fields from session
+		if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
+			$input->processPost($session->getVar(FORM_VALUES));	
+		}
+		
+		$inputtypes = getAllInputTypes();
+	}
+	
+	$istillage = false;
+	if($stage == 'tillage'){
+		$istillage = true;
+		$tillage = new SeasonTillage();
+		$season = new Season(); 
+		$tcounter = "";
+		if(!isEmptyString($request->sid)){
+			$season->populate(decode($request->sid));
+			$tillage->setSeasonID($season->getID());
+			$tillage->setUserID($season->getUserID());
+			$tillage->setStartDate(date('Y-m-d'));
+			$tillage->setfieldsizeunit(1); 
+			$tillage->setdepthunit(1);
+			$tcounter = $tillage->getNextReferencePointer();
+			$tillage->setActivityName('Tillage');
+			$successurl = encode($this->baseUrl("mobile/viewseasonevent/stage/tillage"));
+			$failureurl = encode($this->baseUrl("mobile/addseasonevent/stage/tillage/sid/".$request->sid."/type/".$type));
+		}
+		
+		// default title is to enable adding any payee
+		$title = $this->translate("season_tillage_pagetitle_new"); 
+		$posturl = $this->baseUrl("season/tillagecreate");
+		$button_title = $this->translate("global_button_save"); 
+		
+		// set the payee if provided in the url 
+		if (!isEmptyString($request->id)) {
+			$tillage->populate(decode($request->id));
+			$title = $this->translate("season_tillage_pagetitle_edit"); 
+			$button_title = $this->translate("global_button_save_changes");
+			$tcounter = substr($tillage->getRef(), -3);
+			$successurl = encode($this->baseUrl("mobile/viewseasonevent/stage/tillage"));
+			$failureurl = encode($this->baseUrl("mobile/addseasonevent/stage/tillage/id/".$tillage->getID()));
+		}
+		$loan = $tillage->getCreditDetails();
+
+		#in case of errors in session, populate the fields from session
+		if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
+			$tillage->processPost($session->getVar(FORM_VALUES));	
+		}
+		
+	}
+	
+	$isplant = false;
+	if($stage == 'plant'){
+		$isplant = true;
+		$plant = new SeasonPlanting();
+		$season = new Season(); 
+		$pcounter = "";
+		if(!isEmptyString($request->sid)){
+			$season->populate(decode($request->sid));
+			$plant->setSeasonID($season->getID());
+			$plant->setUserID($season->getUserID());
+			$plant->setStartDate(date('Y-m-d'));
+			$pcounter = $plant->getNextReferencePointer();
+			$plant->setSeedingRateUnit('2');
+			$plant->setFieldSizeUnit('1');
+			$plant->setStatus('2');
+			$plant->setTotalPlantedUnit(1);
+			$plant->setActivityName('Planting');
+			$successurl = encode($this->baseUrl("mobile/viewseasonevent/stage/plant"));
+			$failureurl = encode($this->baseUrl("mobile/addseasonevent/stage/plant/sid/".$request->sid."/type/".$type));
+		}
+		
+		// default title is to enable adding any payee
+		$title = $this->translate("season_plant_pagetitle_new"); 
+		$posturl = $this->baseUrl("season/plantcreate");
+		$button_title = $this->translate("global_button_save"); 
+		
+		// set the payee if provided in the url 
+		if (!isEmptyString($request->id)) {
+			$plant->populate(decode($request->id));
+			$title = $this->translate("season_plant_pagetitle_edit"); 
+			$button_title = $this->translate("global_button_save_changes");
+			$pcounter = substr($plant->getRef(), -3);
+			$successurl = encode($this->baseUrl("mobile/viewseasonevent/stage/plant"));
+			$failureurl = encode($this->baseUrl("mobile/addseasonevent/stage/plant/id/".$plant->getID()));
+		}
+		$loan = $plant->getCreditDetails();
+		
+		#in case of errors in session, populate the fields from session
+		if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
+			$plant->processPost($session->getVar(FORM_VALUES));	
+		}
+	}
+	
+	$istreat = false;
+	if($stage == 'treat'){
+		$istreat = true;
+		$treat = new SeasonTracking();
+	
+		$season = new Season(); 
+		$tcounter = "";
+		if(!isEmptyString($request->sid)){
+			$season->populate(decode($request->sid));
+			$treat->setSeasonID($season->getID());
+			$treat->setUserID($season->getUserID());
+			$treat->setStartDate(date('Y-m-d'));
+			$treat->setStatus('3');
+			$treat->setType("");
+			$tcounter = $treat->getNextReferencePointer();
+			$treat->setActivityName('Treatment');
+			$successurl = encode($this->baseUrl("mobile/viewseasonevent/stage/treat"));
+			$failureurl = encode($this->baseUrl("mobile/addseasonevent/stage/treat/sid/".$request->sid."/type/".$type));
+		}
+		
+		// debugMessage($treat->toArray());
+		$typename = "Item";
+		// default title is to enable adding any payee
+		$title = $this->translate("season_treat_pagetitle_new"); 
+		$posturl = $this->baseUrl("season/treatcreate");
+		$button_title = $this->translate("global_button_save"); 
+		
+		// set the payee if provided in the url 
+		if (!isEmptyString($request->id)) {
+			$treat->populate(decode($request->id));
+			$title = $this->translate("season_treat_pagetitle_edit"); 
+			$button_title = $this->translate("global_button_save_changes");
+			$tcounter = substr($treat->getRef(), -3);
+			$successurl = encode($this->baseUrl("mobile/viewseasonevent/stage/treat"));
+			$failureurl = encode($this->baseUrl("mobile/addseasonevent/stage/treat/id/".$treat->getID()));
+		}
+		$loan = $treat->getCreditDetails();
+		
+		#in case of errors in session, populate the fields from session
+		if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
+			$treat->processPost($session->getVar(FORM_VALUES));	
+		}
+		
+	}
+	
+	$isharvest = false;
+	if($stage == 'harvest'){
+		$isharvest = true;
+		$harvest = new SeasonHarvest();
+		$season = new Season(); 
+		$hcounter = "";
+		if(!isEmptyString($request->sid)){
+			$season->populate(decode($request->sid));
+			$harvest->setSeasonID($season->getID());
+			$harvest->setUserID($season->getUserID());
+			$harvest->setStartDate(date('Y-m-d'));
+			$harvest->setStatus(3);
+			$hcounter = $harvest->getNextReferencePointer();
+			$harvest->setYieldUnit('1');
+			$harvest->setTotalHarvestUnit('1');
+			$harvest->setFieldSizeUnit('1');
+			$harvest->setActivityName('Harvesting');
+			$successurl = encode($this->baseUrl("mobile/viewseasonevent/stage/harvest"));
+			$failureurl = encode($this->baseUrl("mobile/addseasonevent/stage/harvest/sid/".$request->sid."/type/".$type));
+		}
+		
+		// default title is to enable adding any payee
+		$title = $this->translate("season_harvest_pagetitle_new"); 
+		$posturl = $this->baseUrl("season/harvestcreate");
+		$button_title = $this->translate("global_button_save"); 
+		
+		// set the payee if provided in the url 
+		if (!isEmptyString($request->id)) {
+			$harvest->populate(decode($request->id));
+			$title = $this->translate("season_harvest_pagetitle_edit"); 
+			$button_title = $this->translate("global_button_save_changes");
+			$hcounter = substr($harvest->getRef(), -3);
+			$successurl = encode($this->baseUrl("mobile/viewseasonevent/stage/harvest"));
+			$failureurl = encode($this->baseUrl("mobile/addseasonevent/stage/harvest/id/".$harvest->getID()));
+		}
+		$loan = $harvest->getCreditDetails();
+		
+		#in case of errors in session, populate the fields from session
+		if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
+			$harvest->processPost($session->getVar(FORM_VALUES));	
+		}
+		
+	}
+	
+	$issale = false;
+	if($stage == 'sale'){
+		$issale = true;
+		$sale = new Sales();
+		$season = new Season(); 
+		$scounter = "";
+		if(!isEmptyString($request->sid)){
+			$season->populate(decode($request->sid));
+			$sale->setSeasonID($season->getID());
+			$sale->setUserID($season->getUserID());
+			$sale->setType(1);
+			$sale->setStartDate(date('Y-m-d'));
+			$sale->setStatus(3);
+			$scounter = $sale->getNextReferencePointer();
+			$sale->setQuantityUnit('1');
+			$sale->setActivityName('Season Sales');
+			$successurl = encode($this->baseUrl("mobile/viewseasonevent/stage/sale"));
+			$failureurl = encode($this->baseUrl("mobile/addseasonevent/stage/sale/sid/".$request->sid."/type/".$type));
+		}
+		
+		// default title is to enable adding any payee
+		$title = $this->translate("season_sale_pagetitle_new"); 
+		$posturl = $this->baseUrl("season/salecreate");
+		$button_title = $this->translate("global_button_save"); 
+		
+		// set the payee if provided in the url 
+		if (!isEmptyString($request->id)) {
+			$sale->populate(decode($request->id));
+			$title = $this->translate("season_sale_pagetitle_edit"); 
+			$button_title = $this->translate("global_button_save_changes");
+			$scounter = substr($sale->getRef(), -3);
+			$successurl = encode($this->baseUrl("mobile/viewseasonevent/stage/sale"));
+			$failureurl = encode($this->baseUrl("mobile/addseasonevent/stage/sale/id/".$sale->getID()));
+		}
+		$loan = $sale->getCreditDetails();
+		
+		#in case of errors in session, populate the fields from session
+		if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
+			$sale->processPost($session->getVar(FORM_VALUES));	
+		}
+	}
+	
+	$this->headTitle('Manage Season '.$browserappend);  
+?>
+<?php include APPLICATION_PATH."/views/scripts/mobile/mobileincludes.phtml"; ?>
+<script>
+$(document).ready(function() {
+	$("#bottomactions").html($("#topactions").html());
+	
+	<?php if($isinputs){ ?>
+		$("#indexform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				activityname: {
+					required: true,
+					maxlength: 25,
+					minlength: 4
+				},
+				ref: "required",
+				startdate: "required"
+			}, 
+			// the messages for each of the fields being validated
+			messages: {
+				activityname: {
+					required: "Please specify activity name",
+					maxlength: "Maximum of 25 character needed",
+					minlength: "Minimum of 4 characters needed"
+				},
+				ref: "Reference not specified",		
+				startdate: "<?php echo $this->translate("season_startdate_error"); ?>"
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						if(element.hasClass("useid_error")){
+							error.appendTo("#"+element.attr("id")+"_error");
+						} else {
+							error.appendTo("#"+element.attr("name")+"_error");
+						}
+						break;
+				}			
+			}
+		});
+					
+		// custom validation for details
+		<?php 
+			for($v = 0; $v < 5; $v++) { 
+		?>
+			// function to validate the item name
+			$.validator.addClassRules("item_validate_<?php echo $v; ?>", {
+				item_valid_<?php echo $v; ?>: true
+			});
+			
+			$.validator.addMethod("item_valid_<?php echo $v; ?>", function(value, element) {
+				var unitcost = $("#inputdetails_unitcost_<?php echo $v; ?>").val();
+				var qty = $("#inputdetails_quantity_<?php echo $v; ?>").val();
+				var type = $("#inputdetails_type_<?php echo md5($v); ?>").val();
+				var source = $("#inputdetails_source_<?php echo $v; ?>").val();
+				var desc = $("#inputdetails_description_<?php echo $v; ?>").val();
+				var amount = $("#inputdetails_amount_<?php echo $v; ?>").val();
+				if(isEmptyString(value) && (unitcost > 0 || !isEmptyString(type) || !isEmptyString(source) || !isEmptyString(desc) )){
+					return false; 
+				} 			
+				return true;	
+			}, "Required");
+			
+			// function to validate the item name
+			$.validator.addClassRules("type_validate_<?php echo $v; ?>", {
+				type_valid_<?php echo $v; ?>: true
+			});
+			$.validator.addMethod("type_valid_<?php echo $v; ?>", function(value, element) {
+				var unitcost = $("#inputdetails_unitcost_<?php echo $v; ?>").val();
+				var qty = $("#inputdetails_quantity_<?php echo $v; ?>").val();
+				var name = $("#inputdetails_name_<?php echo $v; ?>").val();
+				var source = $("#inputdetails_source_<?php echo $v; ?>").val();
+				var amount = $("#inputdetails_amount_<?php echo $v; ?>").val();
+				if(isEmptyString(value) && (unitcost > 0 || !isEmptyString(name) || !isEmptyString(source) )){
+					return false; 
+				} 			
+				return true;	
+			}, "Required");
+			
+		<?php } ?>
+		
+		// function to validate atleast one line
+		$.validator.addClassRules("item_validate_0", {
+			item_minimum: true
+		});
+		$.validator.addMethod("item_minimum", function(value, element) {
+			// alert($("input.hasvalue").size());            
+			return $("input.hasvalue").size() > 0;        
+			// return false;
+		}, "Atleast one expense item required");
+		
+		// datepickerOpts = new Date();   
+		$("#startdate").datepicker(datepickerOpts); 	
+		
+		// compute activity reference
+		$("#startdate").change(function(){
+			var label = '';
+			var counter = '<?php echo $acounter; ?>';
+			var date = new Date($(this).val());
+			var year = date.getFullYear();
+			var month = date.getShortMonthName();
+			var label = "<?php echo $prefix; ?>"+month+"/"+year+"/"+counter;
+			$("#reflabel").html(label);
+			$("#ref").val(label);
+		});
+		$("#startdate").change();
+		
+		// when a user clicks add new display the first hidden firm which is not shown
+		$(".addrow").click(function() {
+			showNewLine($(this).attr('id'));
+		});		
+		function showNewLine(type) {
+			$(".hidden_row_"+type+":first").removeClass("hidden_row_"+type).addClass("visible_row_"+type);	
+			
+			// remove disabled attr from the fields
+			$(".visible_row_"+type+" input").attr("disabled", false);
+			$(".visible_row_"+type+" select").attr("disabled", false);	
+				
+			//if the maximum no of rows is added, hide the link to add another row
+			if ($(".visible_row_"+type+"").size() == 10) {
+				$("#"+type).hide();	
+			} else {
+				$("#"+type).show();	
+			}				
+		}
+		
+		// delete rules
+		$(".removerow").click(function() {
+			removeLine($(this).attr('id'), $(this).attr('rel'));
+		});
+		function removeLine(lineid, type) {
+			var row_to_hide = lineid;
+			// confirm popup
+			bootbox.confirm("Are you sure you want to delete this entry? <br /><br /> Click <b>'OK'</b> to confirm, and <b>'Cancel'</b> to ignore", function(confirmed) {
+				if(confirmed){
+					$(".visible_row_"+type).has('a#'+row_to_hide).addClass("hidden_row_"+type).removeClass("visible_row_"+type);
+					// $("input, select").attr("disabled", true);	
+					$("."+row_to_hide+" input").val('').attr("disabled", true);
+					$("."+row_to_hide+" select").val('').attr("disabled", true);	
+					//if the maximum no of rows is added, hide the link to add another row
+					if ($("tr.visible_row_"+type).size() == 10) {
+						$("#"+type).hide();		
+					} else {
+						$("#"+type).show();	
+					}	
+					$(".units, .qty").trigger('keyup');
+				} else {
+					return false;
+				}
+			});
+		}
+		
+		$(".units, .qty").keyup(function(){
+			var lineid = $(this).attr('rowid');
+			var cost = $("#inputdetails_unitcost_"+lineid).val();
+			var qty = $("#inputdetails_quantity_"+lineid).val();
+		
+			linetotal = 0;
+			if(!isEmptyString(cost) && parseInt(cost)>0 && parseInt(qty)>0){
+				var linetotal = qty * cost;
+				// alert(linetotal);
+			}
+			
+			$("#amount_"+lineid).html(addCommas(linetotal));
+			$("#inputdetails_amount_"+lineid).val(linetotal);
+			computeTotalAmount();
+		});
+		$(".units, .qty").trigger('keyup');
+		
+		// add class to each name input so as to determine if atleast one entry has been entered
+		$(".names").each(function(){
+			$(this).keyup(function(){
+				if(!isEmptyString($(this).val())){
+					$(this).addClass("hasvalue");
+				} else {
+					$(this).removeClass("hasvalue");
+				}
+			});
+		});
+		$(".names").trigger("keyup");
+			
+		function computeTotalAmount(){
+			$(".computed").sum("keyup", "#totalamount");
+			$("#summation").html(addCommas($("#totalamount").val()));
+		}
+		
+		$("#creditdate").datepicker(datepickerOpts);
+
+		$("#sourcetype").val("");
+		$("#clienttype").val("");
+		$("#financetype-1, #financetype-2").click(function(){
+			multipleDisableContainerByID('hasloan,bankrow,softrow,cropfinancing');
+		});
+		$("#financetype-3").click(function(){
+			multipleEnableContainerByID('hasloan,softrow');
+			multipleDisableContainerByID('bankrow','cropfinancing');
+			$("#sourcetype").val(2);
+		});
+		$("#financetype-4").click(function(){
+			enableContainerByID('hasloan');
+			enableContainerByID('bankrow');
+			multipleDisableContainerByID('cropfinancing,softrow');
+			$("#sourcetype").val(1);
+		});
+		$("#financetype-5").click(function(){
+			enableContainerByID('cropfinancing');
+			multipleDisableContainerByID('hasloan,bankrow,softrow');
+			$("#clienttype").val(1);
+		});
+		<?php if(!isEmptyString($input->getFinanceType())){ ?>
+			var currentval = '<?php echo $input->getFinanceType(); ?>';
+			$("#financetype-"+currentval).click();
+		<?php } ?>
+	<?php } ?>
+	
+	<?php if($istillage){ ?>
+		$("#indexform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				activityname: {
+					required: true,
+					maxlength: 25,
+					minlength: 4
+				},
+				ref: "required",
+				startdate: "required",
+				enddate: {
+					required: true
+				},
+				method: "required",
+				status: "required",
+				fieldsize: {
+					required: true
+				}
+			}, 
+			// the messages for each of the fields being validated
+			messages: {	
+				activityname: {
+					required: "Please specify activity name",
+					maxlength: "Maximum of 25 character needed",
+					minlength: "Minimum of 4 characters needed"
+				},
+				ref: "Reference not specified",		
+				startdate: "<?php echo $this->translate("season_activity_startdate_error"); ?>",
+				enddate: {
+					required: "<?php echo $this->translate("season_activity_enddate_error"); ?>"
+				},
+				method: "<?php echo $this->translate("season_method_error"); ?>",
+				status: "<?php echo $this->translate("season_status_error"); ?>",
+				fieldsize: {
+					required: "<?php echo $this->translate("season_fieldsize_error"); ?>"
+				}
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						if(element.hasClass("useid_error")){
+							error.appendTo("#"+element.attr("id")+"_error");
+						} else {
+							error.appendTo("#"+element.attr("name")+"_error");
+						}
+						break;
+				}			
+			}
+		});
+		
+		// datepickerOpts = new Date();   
+		$("#startdate, #enddate").datepicker(datepickerOpts);
+		
+		// compute activity reference
+		$("#startdate").change(function(){
+			var label = '';
+			var counter = '<?php echo $tcounter; ?>';
+			var date = new Date($(this).val());
+			var year = date.getFullYear();
+			var month = date.getShortMonthName();
+			var label = "<?php echo ACTIVITY_TILLAGE_PREFIX; ?>"+month+"/"+year+"/"+counter;
+			$("#reflabel").html(label);
+			$("#ref").val(label);
+		});
+		$("#startdate").change();
+		
+		$("#creditdate").datepicker(datepickerOpts);
+		$("#sourcetype").val("");
+		$("#clienttype").val("");
+		$("#financetype-1, #financetype-2").click(function(){
+			multipleDisableContainerByID('hasloan,bankrow,softrow,cropfinancing');
+		});
+		$("#financetype-3").click(function(){
+			multipleEnableContainerByID('hasloan,softrow');
+			multipleDisableContainerByID('bankrow','cropfinancing');
+			$("#sourcetype").val(2);
+		});
+		$("#financetype-4").click(function(){
+			enableContainerByID('hasloan');
+			enableContainerByID('bankrow');
+			multipleDisableContainerByID('cropfinancing,softrow');
+			$("#sourcetype").val(1);
+		});
+		$("#financetype-5").click(function(){
+			enableContainerByID('cropfinancing');
+			multipleDisableContainerByID('hasloan,bankrow,softrow');
+			$("#clienttype").val(1);
+		});
+		<?php if(!isEmptyString($tillage->getFinanceType())){ ?>
+			var currentval = '<?php echo $tillage->getFinanceType(); ?>';
+			$("#financetype-"+currentval).click();
+		<?php } ?>
+		
+		$('.chzn-container#primaryimplements_chzn, .chzn-container#secondaryimplements_chzn').css({'width':'85%'});
+		
+	<?php } ?>
+	
+	<?php if($isplant){ ?>
+		$("#indexform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				activityname: {
+					required: true,
+					maxlength: 25,
+					minlength: 4
+				},
+				ref: "required",
+				startdate: "required",
+				enddate: {
+					required: true
+				},
+				method: "required",
+				status: "required",
+				totalplanted: {
+					required: true
+				},
+				cropid: "required"
+			}, 
+			// the messages for each of the fields being validated
+			messages: {
+				activityname: {
+					required: "Please specify activity name",
+					maxlength: "Maximum of 25 character needed",
+					minlength: "Minimum of 4 characters needed"
+				},
+				ref: "Reference not specified",		
+				startdate: "<?php echo $this->translate("season_activity_startdate_error"); ?>",
+				enddate: {
+					required: "<?php echo $this->translate("season_activity_enddate_error"); ?>"
+				},
+				method: "<?php echo $this->translate("season_method_error"); ?>",
+				status: "<?php echo $this->translate("season_status_error"); ?>",
+				totalplanted: {
+					required: "<?php echo $this->translate("season_plant_totalplanted_error"); ?>"
+				},
+				cropid: "<?php echo $this->translate("season_cropid_error"); ?>"
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						if(element.hasClass("useid_error")){
+							error.appendTo("#"+element.attr("id")+"_error");
+						} else {
+							error.appendTo("#"+element.attr("name")+"_error");
+						}
+						break;
+				}			
+			}
+		});
+		
+		// datepickerOpts = new Date();   
+		$("#startdate, #enddate").datepicker(datepickerOpts);
+		
+		// compute activity reference
+		$("#startdate").change(function(){
+			var label = '';
+			var counter = '<?php echo $pcounter; ?>';
+			var date = new Date($(this).val());
+			var year = date.getFullYear();
+			var month = date.getShortMonthName();
+			var label = "<?php echo ACTIVITY_PLANTING_PREFIX; ?>"+month+"/"+year+"/"+counter;
+			$("#reflabel").html(label);
+			$("#ref").val(label);
+		});
+		$("#startdate").change();
+		
+		$("#creditdate").datepicker(datepickerOpts);
+		$("#sourcetype").val("");
+		$("#clienttype").val("");
+		$("#financetype-1, #financetype-2").click(function(){
+			multipleDisableContainerByID('hasloan,bankrow,softrow,cropfinancing');
+		});
+		$("#financetype-3").click(function(){
+			multipleEnableContainerByID('hasloan,softrow');
+			multipleDisableContainerByID('bankrow','cropfinancing');
+			$("#sourcetype").val(2);
+		});
+		$("#financetype-4").click(function(){
+			enableContainerByID('hasloan');
+			enableContainerByID('bankrow');
+			multipleDisableContainerByID('cropfinancing,softrow');
+			$("#sourcetype").val(1);
+		});
+		$("#financetype-5").click(function(){
+			enableContainerByID('cropfinancing');
+			multipleDisableContainerByID('hasloan,bankrow,softrow');
+			$("#clienttype").val(1);
+		});
+		<?php if(!isEmptyString($plant->getFinanceType())){ ?>
+			var currentval = '<?php echo $plant->getFinanceType(); ?>';
+			$("#financetype-"+currentval).click();
+		<?php } ?>
+	<?php } ?>
+	
+	<?php if($istreat){ ?>
+		$("#indexform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				activityname: {
+					required: true,
+					maxlength: 25,
+					minlength: 4
+				},
+				ref: "required",
+				startdate: "required",
+				enddate: {
+					required: true
+				},
+				method: "required",
+				status: "required",
+				totalapplied: {
+					required: true
+				},
+				cropid: "required",
+				type: "required",
+				itemname: "required"
+			}, 
+			// the messages for each of the fields being validated
+			messages: {		
+				activityname: {
+					required: "Please specify activity name",
+					maxlength: "Maximum of 25 character needed",
+					minlength: "Minimum of 4 characters needed"
+				},
+				ref: "Reference not specified",		
+				startdate: "<?php echo $this->translate("season_activity_startdate_error"); ?>",
+				enddate: {
+					required: "<?php echo $this->translate("season_activity_enddate_error"); ?>"
+				},
+				method: "<?php echo $this->translate("season_treat_method_error"); ?>",
+				status: "<?php echo $this->translate("season_status_error"); ?>",
+				totalapplied: {
+					required: "<?php echo $this->translate("season_plant_totalplanted_error"); ?>"
+				},
+				cropid: "<?php echo $this->translate("season_cropid_error"); ?>",
+				type: "<?php echo $this->translate("season_treat_type_error"); ?>",
+				itemname: "<?php echo $this->translate("global_name_error"); ?>"
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						if(element.hasClass("useid_error")){
+							error.appendTo("#"+element.attr("id")+"_error");
+						} else {
+							error.appendTo("#"+element.attr("name")+"_error");
+						}
+						break;
+				}			
+			}
+		});
+		
+		// datepickerOpts = new Date();   
+		$("#startdate, #enddate").datepicker(datepickerOpts);
+		
+		// compute activity reference
+		$("#startdate").change(function(){
+			var label = '';
+			var counter = '<?php echo $tcounter; ?>';
+			var date = new Date($(this).val());
+			var year = date.getFullYear();
+			var month = date.getShortMonthName();
+			var label = "<?php echo ACTIVITY_TREATMENT_PREFIX; ?>"+month+"/"+year+"/"+counter;
+			$("#reflabel").html(label);
+			$("#ref").val(label);
+		});
+		$("#startdate").change();
+		
+		$("#type").change(function(){
+			var id = $(this).val();
+			var label = $("option:selected", this).text();
+			if(!isEmptyString(id)){
+				// alert(id+' '+label);
+				$(".typename").html(label);
+			}
+		});
+		$("#type").change();
+		
+		$("#creditdate").datepicker(datepickerOpts);
+		
+		$("#sourcetype").val("");
+		$("#clienttype").val("");
+		$("#financetype-1, #financetype-2").click(function(){
+			multipleDisableContainerByID('hasloan,bankrow,softrow,cropfinancing');
+		});
+		$("#financetype-3").click(function(){
+			multipleEnableContainerByID('hasloan,softrow');
+			multipleDisableContainerByID('bankrow','cropfinancing');
+			$("#sourcetype").val(2);
+		});
+		$("#financetype-4").click(function(){
+			enableContainerByID('hasloan');
+			enableContainerByID('bankrow');
+			multipleDisableContainerByID('cropfinancing,softrow');
+			$("#sourcetype").val(1);
+		});
+		$("#financetype-5").click(function(){
+			enableContainerByID('cropfinancing');
+			multipleDisableContainerByID('hasloan,bankrow,softrow');
+			$("#clienttype").val(1);
+		});
+		<?php if(!isEmptyString($treat->getFinanceType())){ ?>
+			var currentval = '<?php echo $treat->getFinanceType(); ?>';
+			$("#financetype-"+currentval).click();
+		<?php } ?>
+	<?php } ?>
+	
+	<?php if($isharvest){ ?>
+		$("#indexform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				activityname: {
+					required: true,
+					maxlength: 25,
+					minlength: 4
+				},
+				ref: "required",
+				startdate: "required",
+				enddate: {
+					required: true
+				},
+				method: "required",
+				status: "required",
+				totalharvest: {
+					required: true
+				},
+				fieldsize: {
+					required: true
+				},
+				yield: {
+					required: true
+				}
+			}, 
+			// the messages for each of the fields being validated
+			messages: {		
+				activityname: {
+					required: "Please specify activity name",
+					maxlength: "Maximum of 25 character needed",
+					minlength: "Minimum of 4 characters needed"
+				},
+				ref: "Reference not specified",		
+				startdate: "<?php echo $this->translate("season_activity_startdate_error"); ?>",
+				enddate: {
+					required: "<?php echo $this->translate("season_activity_enddate_error"); ?>"
+				},
+				method: "<?php echo $this->translate("season_method_error"); ?>",
+				status: "<?php echo $this->translate("season_status_error"); ?>",
+				totalharvest: {
+					required: "<?php echo $this->translate("season_harvest_totalharvest_error"); ?>"
+				},
+				fieldsize: {
+					required: "<?php echo $this->translate("season_harvest_fieldsize_error"); ?>"
+				},
+				yield: {
+					required: "<?php echo $this->translate("season_harvest_yield_error"); ?>"
+				}
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						if(element.hasClass("useid_error")){
+							error.appendTo("#"+element.attr("id")+"_error");
+						} else {
+							error.appendTo("#"+element.attr("name")+"_error");
+						}
+						break;
+				}			
+			}
+		});
+		
+		// datepickerOpts = new Date();   
+		$("#startdate, #enddate").datepicker(datepickerOpts);
+		
+		// compute activity reference
+		$("#startdate").change(function(){
+			var label = '';
+			var counter = '<?php echo $hcounter; ?>';
+			var date = new Date($(this).val());
+			var year = date.getFullYear();
+			var month = date.getShortMonthName();
+			var label = "<?php echo ACTIVITY_HARVESTING_PREFIX; ?>"+month+"/"+year+"/"+counter;
+			$("#reflabel").html(label);
+			$("#ref").val(label);
+		});
+		$("#startdate").change();
+		
+		$("#creditdate").datepicker(datepickerOpts);
+		$("#sourcetype").val("");
+		$("#clienttype").val("");
+		$("#financetype-1, #financetype-2").click(function(){
+			multipleDisableContainerByID('hasloan,bankrow,softrow,cropfinancing');
+		});
+		$("#financetype-3").click(function(){
+			multipleEnableContainerByID('hasloan,softrow');
+			multipleDisableContainerByID('bankrow','cropfinancing');
+			$("#sourcetype").val(2);
+		});
+		$("#financetype-4").click(function(){
+			enableContainerByID('hasloan');
+			enableContainerByID('bankrow');
+			multipleDisableContainerByID('cropfinancing,softrow');
+			$("#sourcetype").val(1);
+		});
+		$("#financetype-5").click(function(){
+			enableContainerByID('cropfinancing');
+			multipleDisableContainerByID('hasloan,bankrow,softrow');
+			$("#clienttype").val(1);
+		});
+		<?php if(!isEmptyString($harvest->getFinanceType())){ ?>
+			var currentval = '<?php echo $harvest->getFinanceType(); ?>';
+			$("#financetype-"+currentval).click();
+		<?php } ?>
+		
+		$("#fieldsize, #totalharvest").keyup(function(){
+			var size = $("#fieldsize").val();
+			var harv = $("#totalharvest").val();
+		
+			computed = 0;
+			if(!isEmptyString(size) && parseInt(size)> 0 && !isEmptyString(harv) && parseInt(harv)>0){
+				var computed = harv / size;
+			}
+			
+			$("#yield").val(computed.toFixed(2));
+		});
+	<?php } ?>
+	
+	<?php if($issale){ ?>
+		$("#indexform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				activityname: {
+					required: true,
+					maxlength: 25,
+					minlength: 4
+				},
+				ref: "required",
+				startdate: "required",
+				status: "required",
+				quantity: {
+					required: true
+				},
+				totalamount: {
+					required: true
+				},
+				cropid: "required"
+			}, 
+			// the messages for each of the fields being validated
+			messages: {		
+				activityname: {
+					required: "Please specify activity name",
+					maxlength: "Maximum of 25 character needed",
+					minlength: "Minimum of 4 characters needed"
+				},
+				ref: "Reference not specified",		
+				startdate: "<?php echo $this->translate("season_activity_startdate_error"); ?>",
+				status: "<?php echo $this->translate("season_status_error"); ?>",
+				quantity:  {
+					required: "<?php echo $this->translate("season_quantity_error"); ?>"
+				},
+				totalamount: {
+					required: "<?php echo $this->translate("season_totalamount_error"); ?>"
+				},
+				cropid: "<?php echo $this->translate("season_cropid_error"); ?>"
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						if(element.hasClass("useid_error")){
+							error.appendTo("#"+element.attr("id")+"_error");
+						} else {
+							error.appendTo("#"+element.attr("name")+"_error");
+						}
+						break;
+				}			
+			}
+		});
+		
+		// datepickerOpts = new Date();   
+		$("#startdate, #enddate").datepicker(datepickerOpts);
+		
+		// compute activity reference
+		$("#startdate").change(function(){
+			var label = '';
+			var counter = '<?php echo $scounter; ?>';
+			var date = new Date($(this).val());
+			var year = date.getFullYear();
+			var month = date.getShortMonthName();
+			var label = "<?php echo ACTIVITY_SALES_PREFIX; ?>"+month+"/"+year+"/"+counter;
+			$("#reflabel").html(label);
+			$("#ref").val(label);
+		});
+		$("#startdate").change();
+		
+		$("#creditdate").datepicker(datepickerOpts);
+		$("#sourcetype").val("");
+		$("#clienttype").val("");
+		$("#financetype-1, #financetype-2").click(function(){
+			multipleDisableContainerByID('hasloan,bankrow,softrow,cropfinancing');
+		});
+		$("#financetype-3").click(function(){
+			multipleEnableContainerByID('hasloan,softrow');
+			multipleDisableContainerByID('bankrow','cropfinancing');
+			$("#sourcetype").val(2);
+		});
+		$("#financetype-4").click(function(){
+			enableContainerByID('hasloan');
+			enableContainerByID('bankrow');
+			multipleDisableContainerByID('cropfinancing,softrow');
+			$("#sourcetype").val(1);
+		});
+		$("#financetype-5").click(function(){
+			enableContainerByID('cropfinancing');
+			multipleDisableContainerByID('hasloan,bankrow,softrow');
+			$("#clienttype").val(1);
+		});
+		<?php if(!isEmptyString($sale->getFinanceType())){ ?>
+			var currentval = '<?php echo $sale->getFinanceType(); ?>';
+			$("#financetype-"+currentval).click();
+		<?php } ?>
+		
+		$("#unitprice, #quantity").keyup(function(){
+			var price = $("#unitprice").val();
+			var qty = $("#quantity").val();
+			linetotal = 0;
+			if(!isEmptyString(price) && !isEmptyString(qty) && parseInt(price)>0 && parseInt(qty)>0){
+				var linetotal = qty * price;
+			}
+			$("#totalamount").val(linetotal.toFixed(0));
+		});
+		$("#unitprice, #quantity").trigger('keyup');
+	<?php } ?>
+}); 
+</script>
+<body>
+<div class="container-fluid">
+  <h4><?php echo $title; ?></h4>
+  <?php if(!isEmptyString($session->getVar(ERROR_MESSAGE)) ){ ?>
+      <div class="row-fluid">
+      	<div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+      </div>
+  <?php } ?>
+  <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+  	<div class="row-fluid">
+      	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+	</div>
+  <?php } ?>
+  <div class="row-fluid">
+      <form class="form-horizontal clearfix" id="indexform" action="<?php echo $posturl; ?>" method="post" style="padding-bottom:25px;">
+        <div class="control-group well actions" id="topactions">
+            <a href="<?php echo $this->referer; ?>" class="btn"><i class="icon-remove"></i> <?php echo $this->translate('global_button_cancel'); ?></a>
+            <button type="submit" class="btn btn-primary"><i class="icon-ok icon-white"></i> <?php echo $this->translate('global_button_save'); ?></button>
+        </div>
+        <?php if($isinputs){ ?>
+        <fieldset class="fieldsetcontainer well">
+            <legend>Summary</legend>
+            	<input type="hidden" name="entityname" value="SeasonInput" />
+                <input type="hidden" id="id" name="id" value="<?php echo encode($input->getID()); ?>" />
+                <input type="hidden" id="userid" name="userid" value="<?php echo $input->getUserID(); ?>" />
+                <input type="hidden" id="stage" name="stage" value="5" />
+                <input type="hidden" id="type" name="type" value="<?php echo $input->getType(); ?>" />
+                <input type="hidden" name="sourcetype" id="sourcetype" value="<?php echo $loan->getSourceType(); ?>" />
+                <input type="hidden" name="clienttype" id="clienttype" value="<?php echo $loan->getClientType(); ?>" />
+                <input type="hidden" id="<?php echo SUCCESS_MESSAGE; ?>" name="<?php echo SUCCESS_MESSAGE; ?>" value="<?php echo $this->translate("global_save_success"); ?>" /> 
+                <input type="hidden" id="<?php echo URL_SUCCESS; ?>" name="<?php echo URL_SUCCESS; ?>" value="<?php echo $successurl; ?>" /> 
+                <input type="hidden" id="<?php echo URL_FAILURE; ?>" name="<?php echo URL_FAILURE; ?>" value="<?php echo $failureurl; ?>" />
+               	<div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_season_label"); ?>:</label>
+                    <div class="controls"><?php echo $input->getSeason()->getName(); ?><input type="hidden" id="seasonid" name="seasonid" value="<?php echo $input->getSeasonID(); ?>" /></div>
+                </div>
+                <?php if($input->getType() == 1){ ?>
+                    <div class="control-group">
+                        <label class="control-label"><?php echo $this->translate("season_activity_name_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                        <div class="controls">
+                            <input type="text" name="activityname" id="activityname" class="span3" value="<?php echo $input->getActivityName(); ?>" /><div id="activityname_error"></div>
+                        </div>
+                    </div>
+                <?php } ?>
+                <?php if($input->getType() == 2){ ?>
+                	<div class="control-group">
+                        <label class="control-label"><?php echo $this->translate("season_activity_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                        <div class="controls">
+                        	<?php
+								$currentactivityid = $input->getExpenseActivityType().','.$input->getExpenseActivityID();
+								$dropdown = new Zend_Form_Element_Select('activityid',
+													array(
+														'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), getSeasonActivities($input->getSeasonID())),								
+														'view' => new Zend_View(),
+														'decorators' => array('ViewHelper'),
+														'class' => array('span3')
+													)
+												);
+								$dropdown->setValue($currentactivityid); 
+								echo $dropdown->render();
+						   ?>
+                            <div id="activityid_error"></div>
+                        </div>
+                    </div>
+                <?php } ?>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activity_ref_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                        <span id="reflabel"></span><input type="hidden" id="ref" name="ref" value="<?php echo $input->getRef(); ?>" /><div id="ref_error"></div>
+                    </div>
+                </div>
+				<div class="control-group">
+                    <label class="control-label"><?php echo $activitydate; ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                       <input type="text" name="startdate" id="startdate" class="datefield width100" value="<?php echo changeMySQLDateToPageFormat($input->getStartDate()); ?>" /><div id="startdate_error"></div>
+                    </div>
+                </div>
+        </fieldset>
+		<?php 
+            $inputdetails = $input->getinputdetails();
+            $nooflines = $inputdetails->count();
+            $e = 0; $x = 0;
+            foreach($inputdetails as $expense){
+                $class = "visible_row_input";
+        ?>
+            <div class="<?php echo $class; ?> row_input_<?php echo $e; ?>" id="row_input_<?php echo $e; ?>" style="position:relative;">
+            	<a href="javascript: doNothing();" title="<?php echo $this->translate("global_button_remove"); ?>" id="row_input_<?php echo $e; ?>" class="removerow close button btn btn-danger" style="position:absolute; right:10px; top:20px;" rel="input">&times;</a>
+                <fieldset class="fieldsetcontainer well">
+                    <legend><?php echo 'Line Item '.($e+1); ?></legend>
+                    <?php if($isgeneral){ ?>
+                        <div class="control-group">
+                            <label class="control-label"><?php echo $this->translate("season_input_type_label"); ?></label>
+                            <div class="controls">
+                                <input type="text" name="inputdetails[<?php echo md5($e); ?>][name]" id="inputdetails_name_<?php echo $e; ?>" class="span3 names item_validate_<?php echo $e; ?> useid_error" value="<?php echo $expense->getName(); ?>" />
+                                <div id="inputdetails_name_<?php echo $e; ?>_error"></div>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label"><?php echo $this->translate("season_input_name_label"); ?></label>
+                            <div class="controls">
+                                <input type="text" name="inputdetails[<?php echo md5($e); ?>][description]" id="inputdetails_description_<?php echo $e; ?>" class="span3 descriptions desc_validate_<?php echo $e; ?> useid_error" value="<?php echo $expense->getDescription(); ?>" />
+                                <div id="inputdetails_description_<?php echo $e; ?>_error"></div>
+                            </div>
+                        </div>
+                    <?php } ?>
+                    <?php if($isinput){ ?>  
+                        <div class="control-group">
+                            <label class="control-label"><?php echo $this->translate("season_input_type_label"); ?></label>
+                            <div class="controls">
+                                <?php
+                                    $typedropdown = new Zend_Form_Element_Select('inputdetails_type_'.md5($e),
+                                    array(
+                                        'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $inputtypes),								
+                                        'view' => new Zend_View(),
+                                        'decorators' => array('ViewHelper'),
+                                        'class' => array('width100', 'types_'.$e, 'type_validate_'.$e)
+                                    )
+                                );
+                                $typedropdown->setValue($expense->getType()); 
+                                echo $typedropdown->render(); 
+                                ?><div id="inputdetails_type_<?php echo md5($e); ?>_error"></div>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label"><?php echo $this->translate("season_input_name_label"); ?></label>
+                            <div class="controls">
+                                <input type="text" name="inputdetails[<?php echo md5($e); ?>][name]" id="inputdetails_name_<?php echo $e; ?>" class="span3 names item_validate_<?php echo $e; ?> useid_error" value="<?php echo $expense->getName(); ?>" />
+                                <div id="inputdetails_name_<?php echo $e; ?>_error"></div>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label"><?php echo $this->translate("season_input_source_label"); ?></label>
+                            <div class="controls">
+                                <input type="text" name="inputdetails[<?php echo md5($e); ?>][source]" id="inputdetails_source_<?php echo $e; ?>" class="span3" value="<?php echo $expense->getSource(); ?>" />
+                            </div>
+                        </div>
+                    <?php } ?> 
+                    <div class="control-group">
+                        <label class="control-label"><?php echo $this->translate("season_input_quantity_label"); ?></label>
+                        <div class="controls">
+                            <input type="text" name="inputdetails[<?php echo md5($e); ?>][quantity]" id="inputdetails_quantity_<?php echo $e; ?>" class="width100 rightalign qty isnumber quantity_validate_<?php echo $e; ?> useid_error" rowid="<?php echo $e; ?>" value="<?php echo $expense->getQuantity(); ?>" />
+                            <div id="inputdetails_quantity_<?php echo $e; ?>_error"></div>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label"><?php echo $this->translate("season_input_unitcost_label"); ?> (<?php echo getCurrencySymbol(); ?>)</label>
+                        <div class="controls">
+                            <input type="text" name="inputdetails[<?php echo md5($e); ?>][unitcost]" id="inputdetails_unitcost_<?php echo $e; ?>" class="width100 rightalign units isamount unit_validate_<?php echo $e; ?> useid_error" rowid="<?php echo $e; ?>" value="<?php echo $expense->getUnitCost(); ?>" />
+                            <div id="inputdetails_unitcost_<?php echo $e; ?>_error"></div>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label"><?php echo $this->translate("season_input_amount_label"); ?> (<?php echo getCurrencySymbol(); ?>)</label>
+                        <div class="controls">
+                            <label id="amount_<?php echo $e; ?>" class="amount_label">0</label>
+                            <input type="hidden" name="inputdetails[<?php echo md5($e); ?>][amount]" id="inputdetails_amount_<?php echo $e; ?>" class="computed" rowid="<?php echo $e; ?>" value="<?php echo $expense->getAmount(); ?>" />
+                        </div>
+                    </div>
+                 </fieldset>
+            </div>    
+            <?php $e++; $x++; } ?>
+               
+			<?php 
+                $defaultlines = 1;
+                if($nooflines >= 1){
+                    $defaultlines = $nooflines + 1;
+                }
+                for($i = $e; $i<10; $i++){
+                    // debugMessage($i);
+                    $class = "visible_row_input";
+                    if($i >= $defaultlines){
+                        $class = "hidden_row_input";
+                    }
+                
+            ?>
+            <div class="<?php echo $class; ?> row_input_<?php echo $i; ?>" id="row_input_<?php echo $i; ?>" style="position:relative;">
+            	<a href="javascript: doNothing();" title="<?php echo $this->translate("global_button_remove"); ?>" id="row_input_<?php echo $i; ?>" class="removerow close button btn btn-danger" style="position:absolute; right:10px; top:20px;" rel="input">&times;</a>
+                <fieldset class="fieldsetcontainer well">
+                    <legend><?php echo 'Line Item '.($i+1); ?></legend>
+                    <?php if($isgeneral){ ?>
+                        <div class="control-group">
+                            <label class="control-label"><?php echo $this->translate("season_input_type_label"); ?></label>
+                            <div class="controls">
+                                <input type="text" name="inputdetails[<?php echo md5($i); ?>][name]" id="inputdetails_name_<?php echo $i; ?>" class="span3 names item_validate_<?php echo $i; ?> useid_error" value="" /><div id="inputdetails_name_<?php echo $i; ?>_error"></div>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label"><?php echo $this->translate("season_input_name_label"); ?></label>
+                            <div class="controls">
+                                <input type="text" name="inputdetails[<?php echo md5($i); ?>][description]" id="inputdetails_description_<?php echo $i; ?>" class="span3 descriptions desc_validate_<?php echo $i; ?> useid_error" value="" /><div id="inputdetails_description_<?php echo $i; ?>_error"></div>
+                            </div>
+                        </div>
+                    <?php } ?>
+                    <?php if($isinput){ ?>  
+                        <div class="control-group">
+                            <label class="control-label"><?php echo $this->translate("season_input_type_label"); ?></label>
+                            <div class="controls">
+                                <?php
+                                $typedropdown = new Zend_Form_Element_Select('inputdetails_type_'.md5($i),
+                                    array(
+                                        'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $inputtypes),								
+                                        'view' => new Zend_View(),
+                                        'decorators' => array('ViewHelper'),
+                                        'class' => array('width100', 'types_'.$i, 'type_validate_'.$i)
+                                    )
+                                );
+                                $typedropdown->setValue(''); 
+                                echo $typedropdown->render(); 
+                                ?><div id="inputdetails_type_<?php echo md5($i); ?>_error"></div>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label"><?php echo $this->translate("season_input_name_label"); ?></label>
+                            <div class="controls">
+                                <input type="text" name="inputdetails[<?php echo md5($i); ?>][name]" id="inputdetails_name_<?php echo $i; ?>" class="span3 names item_validate_<?php echo $i; ?> useid_error" value="" />
+                                <div id="inputdetails_name_<?php echo $i; ?>_error"></div>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label"><?php echo $this->translate("season_input_source_label"); ?></label>
+                            <div class="controls">
+                                <input type="text" name="inputdetails[<?php echo md5($i); ?>][source]" id="inputdetails_source_<?php echo $i; ?>" class="span3" value="" />
+                            </div>
+                        </div>
+                    <?php } ?>
+                    <div class="control-group">
+                        <label class="control-label"><?php echo $this->translate("season_input_quantity_label"); ?></label>
+                        <div class="controls">
+                            <input type="text" name="inputdetails[<?php echo md5($i); ?>][quantity]" id="inputdetails_quantity_<?php echo $i; ?>" class="width100 rightalign qty isnumber quantity_validate_<?php echo $i; ?> useid_error" rowid="<?php echo $i; ?>" value="1" />
+                            <div id="inputdetails_quantity_<?php echo $i; ?>_error"></div>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label"><?php echo $this->translate("season_input_unitcost_label"); ?> (<?php echo getCurrencySymbol(); ?>)</label>
+                        <div class="controls">
+                            <input type="text" name="inputdetails[<?php echo md5($i); ?>][unitcost]" id="inputdetails_unitcost_<?php echo $i; ?>" class="width100 rightalign units isamount unit_validate_<?php echo $i; ?> useid_error" rowid="<?php echo $i; ?>" value="0" />
+                            <div id="inputdetails_unitcost_<?php echo $i; ?>_error"></div>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label"><?php echo $this->translate("season_input_amount_label"); ?> (<?php echo getCurrencySymbol(); ?>)</label>
+                        <div class="controls">
+                            <label id="amount_<?php echo $i; ?>" class="amount_label">0</label>
+                            <input type="hidden" name="inputdetails[<?php echo md5($i); ?>][amount]" id="inputdetails_amount_<?php echo $i; ?>" class="computed" rowid="<?php echo $i; ?>" value="0" />
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+            <?php $x++; } ?>
+            <a href="javascript: void(0)" title="Add another" class="addrow btn" id="input">Add Line Item</a>
+        <?php } ?> 
+        <?php if($istillage){ ?>
+            <fieldset class="fieldsetcontainer well">
+                <legend>Summary</legend>
+                <input type="hidden" name="entityname" value="SeasonTillage" />
+                <input type="hidden" id="id" name="id" value="<?php echo encode($tillage->getID()); ?>" />
+                <input type="hidden" id="userid" name="userid" value="<?php echo $tillage->getSeason()->getUserID(); ?>" />
+                <input type="hidden" id="stage" name="stage" value="6" />
+                <input type="hidden" name="sourcetype" id="sourcetype" value="<?php echo $loan->getSourceType(); ?>" />
+                <input type="hidden" name="clienttype" id="clienttype" value="<?php echo $loan->getClientType(); ?>" />
+                <input type="hidden" id="<?php echo SUCCESS_MESSAGE; ?>" name="<?php echo SUCCESS_MESSAGE; ?>" value="<?php echo $this->translate("global_save_success"); ?>" /> 
+                <input type="hidden" id="<?php echo URL_SUCCESS; ?>" name="<?php echo URL_SUCCESS; ?>" value="<?php echo $successurl; ?>" /> 
+                <input type="hidden" id="<?php echo URL_FAILURE; ?>" name="<?php echo URL_FAILURE; ?>" value="<?php echo $failureurl; ?>" /> 
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_season_label"); ?>:</label>
+                    <div class="controls"><?php echo $tillage->getSeason()->getName(); ?><input type="hidden" id="seasonid" name="seasonid" value="<?php echo $tillage->getSeasonID(); ?>" /></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activity_name_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                        <input type="text" name="activityname" id="activityname" class="span3" value="<?php echo $tillage->getActivityName(); ?>" /><div id="activityname_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activity_ref_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                        <span id="reflabel"></span><input type="hidden" id="ref" name="ref" value="<?php echo $tillage->getRef(); ?>" /><div id="ref_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activitystartdate_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                       <input type="text" name="startdate" id="startdate" class="datefield width100 startdate" value="<?php echo changeMySQLDateToPageFormat($tillage->getStartDate()); ?>" /><div id="startdate_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activityenddate_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                       <input type="text" name="enddate" id="enddate" class="datefield width100 endafterstart" value="<?php echo changeMySQLDateToPageFormat($tillage->getEndDate()); ?>" /><div id="enddate_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_status_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                       <?php
+							$allstatuses = getStatusValues();
+							$statusesdropdown = new Zend_Form_Element_Select('status',
+												array(
+													'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $allstatuses),								
+													'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+													'class' => array('span2')
+												)
+											);
+							$statusesdropdown->setValue($tillage->getStatus()); 
+							echo $statusesdropdown->render(); 
+					   ?><div id="status_error"></div>
+                    </div>
+                </div>    
+            </fieldset>
+            <fieldset class="fieldsetcontainer well">
+            	<legend>Tillage Details</legend>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_tillage_method_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                     	<?php
+							$alltypes = getTillageMethods();
+							$methoddropdown = new Zend_Form_Element_Select('method',
+												array(
+													'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $alltypes),								
+													'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+													'class' => array('span2')
+												)
+											);
+							
+							$methoddropdown->setValue($tillage->getMethod());
+							echo $methoddropdown->render();
+					   ?><div id="method_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_tillage_area_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                    	<input style="width:50px;" type="text" name="fieldsize" id="fieldsize" class="centeralign isdecimal greaterthanzero" value="<?php echo clean_num($tillage->getFieldSize()); ?>" />
+                        &nbsp;
+                        <?php
+                            $areavalues = getAreaUnits();
+                            $unitdropdown = new Zend_Form_Element_Select('fieldsizeunit',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $areavalues),								
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array('width80','selectrequired'),
+													'style' => "width:80px;"
+                                                )
+                                            );
+                            $unitdropdown->setValue($tillage->getFieldSizeUnit()); 
+                            echo $unitdropdown->render(); 
+                       ?><div id="fieldsize_error"></div><div id="fieldsizeunit_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_tillage_depth_label"); ?>:</label>
+                    <div class="controls">
+                    	<input style="width:50px;" type="text" name="depth" id="depth" class="centeralign isdecimal" value="<?php echo clean_num($tillage->getDepth()); ?>" />
+                        &nbsp;
+                        <?php
+                            $depthvalues = getDepthUnits();
+                            $unitdropdown = new Zend_Form_Element_Select('depthunit',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $depthvalues),								
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array('width80','selectrequired')
+                                                )
+                                            );
+                            $unitdropdown->setValue($tillage->getDepthUnit()); 
+                            echo $unitdropdown->render(); 
+                       ?><div id="depth_error"></div><div id="depthunit_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                	<label class="control-label"><?php echo $this->translate("season_tillage_primaryimplements_label"); ?>: </label>
+                    <div class="controls">
+                    	<?php
+							  $primarydropdown = new Zend_Form_Element_Multiselect('primaryimplements',
+												  array(
+													  'multiOptions' => getPrimaryTillageMethods(),
+													  'view' => new Zend_View(),
+													  'decorators' => array(array('ViewHelper')),
+													  'class' => array('chzn-select','multipleselect','span3')
+												  )
+												);
+							  
+							  $primarydropdown->setValue($tillage->getPrimaryImplementsArray());
+							  $primarydropdown->setAttrib("data-placeholder", 'Select all in category');
+							  echo $primarydropdown->render();
+						  ?><span id="tooltip_primaryimplements"></span>
+                    </div>
+                </div>
+                <div class="control-group">
+                	<label class="control-label"><?php echo $this->translate("season_tillage_secondaryimplements_label"); ?>: </label>
+                    <div class="controls">
+                    	<?php
+							  $secdropdown = new Zend_Form_Element_Multiselect('secondaryimplements',
+												  array(
+													  'multiOptions' => getSecondaryTillageMethods(),
+													  'view' => new Zend_View(),
+													  'decorators' => array(array('ViewHelper')),
+													  'class' => array('chzn-select','multipleselect','span3')
+												  )
+												);
+							  
+							  $secdropdown->setValue($tillage->getSecondaryImplementsArray());
+							  $secdropdown->setAttrib("data-placeholder", 'Select all in category');
+							  echo $secdropdown->render();
+						  ?><span id="tooltip_secondaryimplements"></span>
+                    </div>
+                </div>  
+            </fieldset>
+        <?php } ?>   
+        
+        <?php if($isplant){ ?>
+        	<fieldset class="fieldsetcontainer well">
+                <legend>Summary</legend>
+                <input type="hidden" name="entityname" value="SeasonPlanting" />
+                <input type="hidden" id="id" name="id" value="<?php echo encode($plant->getID()); ?>" />
+                <input type="hidden" id="userid" name="userid" value="<?php echo $plant->getSeason()->getUserID(); ?>" />
+                <input type="hidden" id="stage" name="stage" value="7" />
+                <input type="hidden" id="type" name="type" value="1" />
+                <input type="hidden" name="sourcetype" id="sourcetype" value="<?php echo $loan->getSourceType(); ?>" />
+                <input type="hidden" name="clienttype" id="clienttype" value="<?php echo $loan->getClientType(); ?>" />
+                <input type="hidden" id="<?php echo SUCCESS_MESSAGE; ?>" name="<?php echo SUCCESS_MESSAGE; ?>" value="<?php echo $this->translate("global_save_success"); ?>" /> 
+                <input type="hidden" id="<?php echo URL_SUCCESS; ?>" name="<?php echo URL_SUCCESS; ?>" value="<?php echo $successurl; ?>" /> 
+                <input type="hidden" id="<?php echo URL_FAILURE; ?>" name="<?php echo URL_FAILURE; ?>" value="<?php echo $failureurl; ?>" /> 
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_season_label"); ?>:</label>
+                    <div class="controls"><?php echo $plant->getSeason()->getName(); ?><input type="hidden" id="seasonid" name="seasonid" value="<?php echo $plant->getSeasonID(); ?>" /></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activity_name_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                        <input type="text" name="activityname" id="activityname" class="span3" value="<?php echo $plant->getActivityName(); ?>" /><div id="activityname_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activity_ref_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                        <span id="reflabel"></span><input type="hidden" id="ref" name="ref" value="<?php echo $plant->getRef(); ?>" /><div id="ref_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activitystartdate_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                       <input type="text" name="startdate" id="startdate" class="datefield width100 startdate" value="<?php echo changeMySQLDateToPageFormat($plant->getStartDate()); ?>" /><div id="startdate_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activityenddate_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                       <input type="text" name="enddate" id="enddate" class="datefield width100 endafterstart" value="<?php echo changeMySQLDateToPageFormat($plant->getEndDate()); ?>" /><div id="enddate_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_status_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                       <?php
+							$allstatuses = getStatusValues();
+							$statusesdropdown = new Zend_Form_Element_Select('status',
+												array(
+													'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $allstatuses),								
+													'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+													'class' => array('span2')
+												)
+											);
+							$statusesdropdown->setValue($plant->getStatus()); 
+							echo $statusesdropdown->render(); 
+					   ?><div id="status_error"></div>
+                    </div>
+                </div> 
+            </fieldset>
+            <fieldset class="fieldsetcontainer well">
+            	<legend>Planting Details</legend>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_commodity_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                     	<?php
+							$availablecrops = array($plant->getSeason()->getCropID() => $plant->getSeason()->getCrop()->getName());
+							$cropdropdown = new Zend_Form_Element_Select('cropid',
+												array(
+													'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $availablecrops),								
+													'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+													'class' => array('width150')
+												)
+											);
+							$cropdropdown->setValue($plant->getSeason()->getCropID()); 
+							echo $cropdropdown->render();
+					   ?><div id="cropid_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_plant_method_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                     	<?php
+							$alltypes = getPlantingMethods();
+							$methoddropdown = new Zend_Form_Element_Select('method',
+												array(
+													'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $alltypes),								
+													'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+													'class' => array('span2')
+												)
+											);
+							
+							$methoddropdown->setValue($plant->getMethod());
+							echo $methoddropdown->render();
+					   ?><div id="method_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_plant_area_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                     	<input style="width:50px;" type="text" name="fieldsize" id="fieldsize" class="centeralign isdecimal inputrequired" value="<?php echo clean_num($plant->getFieldSize()); ?>" />
+                        &nbsp;
+                        <?php
+                            $areavalues = getAreaUnits();
+                            $unitdropdown = new Zend_Form_Element_Select('fieldsizeunit',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $areavalues),								
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array('span2','selectrequired'),
+													'style' => "width:80px;"
+                                                )
+                                            );
+                            $unitdropdown->setValue($plant->getFieldSizeUnit()); 
+                            echo $unitdropdown->render(); 
+                       ?><div id="fieldsize_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_plant_quantity_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                     	<input type="text" name="totalplanted" id="totalplanted" class="centeralign isdecimal" style="width:50px;" value="<?php echo clean_num($plant->getTotalPlanted()); ?>" />&nbsp;
+						<?php
+                            $univalues = getHarvestQuantityUnits();
+                            $unitdropdown = new Zend_Form_Element_Select('totalplantedunit',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array('span2','width100', 'selectrequired'),
+													'style' => "width:80px;"
+                                                )
+                                            );
+                            $unitdropdown->setValue($plant->getTotalPlantedUnit()); 
+                            echo $unitdropdown->render(); 
+                        ?>
+                        <div id="totalplanted_error"></div><div id="totalplantedunit_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_plant_rate_label"); ?>:</label>
+                    <div class="controls">
+                     	<input style="width:50px;" type="text" name="seedingrate" id="seedingrate" class="centeralign isdecimal" value="<?php echo clean_num($plant->getSeedingRate()); ?>" />&nbsp;
+						<?php
+                            $ratevalues = getSeedingUnits();
+                            $unitdropdown = new Zend_Form_Element_Select('seedingrateunit',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $ratevalues),								
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array('span2'),
+													'style' => "width:80px;"
+                                                )
+                                            );
+                            $unitdropdown->setValue($plant->getSeedingRateUnit()); 
+                            echo $unitdropdown->render(); 
+                       ?><div id="seedingrate_error"></div>
+                    </div>
+                </div>
+          	</fieldset>
+        <?php } ?>
+        <?php if($istreat){ ?>
+        	<fieldset class="fieldsetcontainer well">
+                <legend>Summary</legend>
+                <input type="hidden" name="entityname" value="SeasonTracking" />
+                <input type="hidden" id="id" name="id" value="<?php echo encode($treat->getID()); ?>" />
+                <input type="hidden" id="seasonid" name="seasonid" value="<?php echo $treat->getSeasonID(); ?>" />
+                <input type="hidden" id="userid" name="userid" value="<?php echo $treat->getUserID(); ?>" />
+                <input type="hidden" id="cropid" name="cropid" value="<?php echo $treat->getSeason()->getCropID(); ?>" />
+                <input type="hidden" id="stage" name="stage" value="8" />
+                <input type="hidden" name="sourcetype" id="sourcetype" value="<?php echo $loan->getSourceType(); ?>" />
+                <input type="hidden" name="clienttype" id="clienttype" value="<?php echo $loan->getClientType(); ?>" />
+                <input type="hidden" id="<?php echo SUCCESS_MESSAGE; ?>" name="<?php echo SUCCESS_MESSAGE; ?>" value="<?php echo $this->translate("global_save_success"); ?>" /> 
+                <input type="hidden" id="<?php echo URL_SUCCESS; ?>" name="<?php echo URL_SUCCESS; ?>" value="<?php echo $successurl; ?>" /> 
+                <input type="hidden" id="<?php echo URL_FAILURE; ?>" name="<?php echo URL_FAILURE; ?>" value="<?php echo $failureurl; ?>" /> 
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_season_label"); ?>:</label>
+                    <div class="controls"><?php echo $treat->getSeason()->getName(); ?><input type="hidden" id="seasonid" name="seasonid" value="<?php echo $treat->getSeasonID(); ?>" /></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activity_name_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                        <input type="text" name="activityname" id="activityname" class="span3" value="<?php echo $treat->getActivityName(); ?>" /><div id="activityname_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activity_ref_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                        <span id="reflabel"></span><input type="hidden" id="ref" name="ref" value="<?php echo $treat->getRef(); ?>" /><div id="ref_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activitytype_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                    	<?php
+							$alltypes = getTreatmentTypes();
+							$typedropdown = new Zend_Form_Element_Select('type',
+												array(
+													'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $alltypes),								
+													'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+													'class' => array('span2')
+												)
+											);
+							
+							$typedropdown->setValue($treat->getType());
+							echo $typedropdown->render();
+					   ?><div id="type_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activitystartdate_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                       <input type="text" name="startdate" id="startdate" class="datefield width100 startdate" value="<?php echo changeMySQLDateToPageFormat($treat->getStartDate()); ?>" /><div id="startdate_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activityenddate_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                       <input type="text" name="enddate" id="enddate" class="datefield width100 endafterstart" value="<?php echo changeMySQLDateToPageFormat($treat->getEndDate()); ?>" /><div id="enddate_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_status_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                       <?php
+							$allstatuses = getStatusValues();
+							$statusesdropdown = new Zend_Form_Element_Select('status',
+												array(
+													'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $allstatuses),								
+													'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+													'class' => array('span2')
+												)
+											);
+							$statusesdropdown->setValue($treat->getStatus()); 
+							echo $statusesdropdown->render(); 
+					   ?><div id="status_error"></div>
+                    </div>
+                </div> 
+            </fieldset>
+            <fieldset class="fieldsetcontainer well">
+            	<legend><span class="typename"><?php echo $typename; ?></span> Details</legend>
+                <div class="control-group">
+                    <label class="control-label"><?php echo "Name of "; ?><span class="typename"><?php echo $typename; ?></span>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                       <input type="text" name="itemname" id="itemname" class="span3" value="<?php echo $treat->getitemname(); ?>" /><div id="itemname_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Method Used<?php //echo $this->translate("season_treat_method_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                       <?php
+							$alltypes = getTreatmentMethods();
+							$methoddropdown = new Zend_Form_Element_Select('method',
+												array(
+													'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $alltypes),								
+													'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+													'class' => array('span2')
+												)
+											);
+							
+							$methoddropdown->setValue($treat->getMethod());
+							echo $methoddropdown->render();
+					   ?><div id="method_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_treat_timing_label"); ?>: </label>
+                    <div class="controls">
+                       <?php
+							$alltypes = getTimingValues();
+							$timedropdown = new Zend_Form_Element_Select('timing',
+												array(
+													'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $alltypes),								
+													'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+													'class' => array('span2')
+												)
+											);
+							
+							$timedropdown->setValue($treat->getTiming());
+							echo $timedropdown->render();
+					   ?>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_treat_quantity_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                    	<input style="width:50px;" type="text" name="totalapplied" id="totalapplied" class="centeralign isdecimal width80" value="<?php echo clean_num($treat->getTotalApplied()); ?>" />&nbsp;
+						<?php
+                                $ratevalues = getTreatmentTotalUnits();
+                                $unitdropdown = new Zend_Form_Element_Select('totalappliedunit',
+                                                    array(
+                                                        'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $ratevalues),								
+                                                        'view' => new Zend_View(),
+                                                        'decorators' => array('ViewHelper'),
+                                                        'class' => array('span2'),
+														'style' => 'width:85px;'
+                                                    )
+                                                );
+                                $unitdropdown->setValue($treat->getTotalAppliedUnit()); 
+                                echo $unitdropdown->render(); 
+                           ?>
+                        <div id="totalapplied_error"></div>
+                    </div>
+               	</div>
+                <div class="control-group">
+                    <label class="control-label"><span class="typename"><?php echo $typename; ?></span><?php echo " Rate"; ?>:</label>
+                    <div class="controls">
+                    	<input style="width:50px;" type="text" name="itemrate" id="itemrate" class="centeralign isdecimal" value="<?php echo clean_num($treat->getItemRate()); ?>" />
+                        &nbsp;
+                        <?php
+                            $ratevalues = getTreatmentMeasureUnits();
+                            $unitdropdown = new Zend_Form_Element_Select('itemrateunit',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $ratevalues),								
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array('span2'),
+													'style' => 'width:85px;'
+                                                )
+                                            );
+                            $unitdropdown->setValue($treat->getItemRateUnit()); 
+                            echo $unitdropdown->render(); 
+                       ?><div id="itemrate_error"></div>
+                    </div>
+               	</div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_treat_target_label"); ?>: </label>
+                    <div class="controls">
+                    	<input type="text" name="target" id="target" class="span2" style="width:175px;" value="<?php echo $treat->getTarget(); ?>" />
+                    </div>
+               	</div>
+            </fieldset>
+        <?php } ?>
+        <?php if($isharvest){ ?>
+        	<fieldset class="fieldsetcontainer well">
+                <legend>Summary</legend>
+                <input type="hidden" name="entityname" value="SeasonHarvest" />
+                <input type="hidden" id="id" name="id" value="<?php echo encode($harvest->getID()); ?>" />
+                <input type="hidden" id="seasonid" name="seasonid" value="<?php echo $harvest->getSeasonID(); ?>" />
+                <input type="hidden" id="userid" name="userid" value="<?php echo $harvest->getUserID(); ?>" />
+                <input type="hidden" id="stage" name="stage" value="9" />
+                <input type="hidden" name="sourcetype" id="sourcetype" value="<?php echo $loan->getSourceType(); ?>" />
+                <input type="hidden" name="clienttype" id="clienttype" value="<?php echo $loan->getClientType(); ?>" />
+                <input type="hidden" id="<?php echo SUCCESS_MESSAGE; ?>" name="<?php echo SUCCESS_MESSAGE; ?>" value="<?php echo $this->translate("global_save_success"); ?>" /> 
+                <input type="hidden" id="<?php echo URL_SUCCESS; ?>" name="<?php echo URL_SUCCESS; ?>" value="<?php echo $successurl; ?>" /> 
+                <input type="hidden" id="<?php echo URL_FAILURE; ?>" name="<?php echo URL_FAILURE; ?>" value="<?php echo $failureurl; ?>" /> 
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_season_label"); ?>:</label>
+                    <div class="controls"><?php echo $harvest->getSeason()->getName(); ?><input type="hidden" id="seasonid" name="seasonid" value="<?php echo $harvest->getSeasonID(); ?>" /></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activity_name_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                        <input type="text" name="activityname" id="activityname" class="span3" value="<?php echo $harvest->getActivityName(); ?>" /><div id="activityname_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activity_ref_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                        <span id="reflabel"></span><input type="hidden" id="ref" name="ref" value="<?php echo $harvest->getRef(); ?>" /><div id="ref_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activitystartdate_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                       <input type="text" name="startdate" id="startdate" class="datefield width100 startdate" value="<?php echo changeMySQLDateToPageFormat($harvest->getStartDate()); ?>" /><div id="startdate_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activityenddate_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                       <input type="text" name="enddate" id="enddate" class="datefield width100 endafterstart" value="<?php echo changeMySQLDateToPageFormat($harvest->getEndDate()); ?>" /><div id="enddate_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_status_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                       <?php
+							$allstatuses = getStatusValues();
+							$statusesdropdown = new Zend_Form_Element_Select('status',
+												array(
+													'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $allstatuses),								
+													'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+													'class' => array('span2')
+												)
+											);
+							$statusesdropdown->setValue($harvest->getStatus()); 
+							echo $statusesdropdown->render(); 
+					   ?><div id="status_error"></div>
+                    </div>
+                </div> 
+            </fieldset>
+            <fieldset class="fieldsetcontainer well">
+                <legend>Harvest Details</legend>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_commodity_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                    	<?php
+							$availablecrops = array($harvest->getSeason()->getCropID() => $harvest->getSeason()->getCrop()->getName());
+							$cropdropdown = new Zend_Form_Element_Select('cropid',
+												array(
+													'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $availablecrops),								
+													'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+													'class' => array('span2','width150')
+												)
+											);
+							$cropdropdown->setValue($harvest->getSeason()->getCropID()); 
+							echo $cropdropdown->render();
+					   ?><div id="cropid_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_methodused_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                    	<?php
+							$alltypes = getHarvestMethods();
+							$methoddropdown = new Zend_Form_Element_Select('method',
+												array(
+													'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $alltypes),								
+													'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+													'class' => array('span2', 'width150')
+												)
+											);
+							
+							$methoddropdown->setValue($harvest->getMethod());
+							echo $methoddropdown->render();
+					   ?><div id="method_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_harvest_area_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                    	<input style="width:50px;" type="text" name="fieldsize" id="fieldsize" class="centeralign isdecimal" value="<?php echo clean_num($harvest->getFieldSize()); ?>" />&nbsp;
+						<?php
+                            $areavalues = getAreaUnits();
+                            $unitdropdown = new Zend_Form_Element_Select('fieldsizeunit',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $areavalues),								
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array('span2','width100', 'selectrequired'),
+													'style' => 'width:85px;'
+                                                )
+                                            );
+                            $unitdropdown->setValue($harvest->getFieldSizeUnit()); 
+                            echo $unitdropdown->render(); 
+                       ?><div id="fieldsize_error"></div><div id="fieldsizeunit_error"></div> 
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_harvest_quantity_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                    	<input style="width:50px;" type="text" name="totalharvest" id="totalharvest" class="centeralign isdecimal" value="<?php echo clean_num($harvest->getTotalHarvest()); ?>" />&nbsp;
+						<?php
+                            $univalues = getHarvestQuantityUnits();
+                            $unitdropdown = new Zend_Form_Element_Select('totalharvestunit',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array('span2','width100', 'selectrequired'),
+													'style' => 'width:85px;'
+                                                )
+                                            );
+                            $unitdropdown->setValue($harvest->getTotalHarvestUnit()); 
+                            echo $unitdropdown->render(); 
+                        ?>
+                        <div id="totalharvest_error"></div><div id="totalharvestunit_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_harvest_yield_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                    	<input style="width:50px;" type="text" name="yield" id="yield" class="centeralign isdecimal" value="<?php echo clean_num($harvest->getYield()); ?>" />&nbsp;
+						<?php
+                            $yieldvalues = getHarvestYieldUnits();
+                            $unitdropdown = new Zend_Form_Element_Select('yieldunit',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $yieldvalues),								
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array('span2','width100', 'selectrequired'),
+													'style' => 'width:85px;'
+                                                )
+                                            );
+                            $unitdropdown->setValue($harvest->getYieldUnit()); 
+                            echo $unitdropdown->render(); 
+                       ?><div id="yield_error"></div><div id="yieldunit_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activity_damage_label"); ?>:</label>
+                    <div class="controls">
+                    	<input style="width:50px;" type="text" name="damaged" id="damaged" class="centeralign isdecimal" value="<?php echo clean_num($harvest->getDamaged()); ?>" />&nbsp;
+						<?php
+                            $damagevalues = getHarvestQuantityUnits();
+                            $unitdropdown = new Zend_Form_Element_Select('damagedunit',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $damagevalues),								
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array('span2','width100'),
+													'style' => 'width:85px;'
+                                                )
+                                            );
+                            $unitdropdown->setValue($harvest->getDamagedUnit()); 
+                            echo $unitdropdown->render(); 
+                       ?><div id="damageunit_error"></div><div id="damage_error"></div>
+                    </div>
+                </div>
+            </fieldset>
+        <?php } ?>
+        <?php if($issale){ ?>
+        	<fieldset class="fieldsetcontainer well">
+                <legend>Summary</legend>
+                <input type="hidden" name="entityname" value="Sales" />
+                <input type="hidden" id="id" name="id" value="<?php echo encode($sale->getID()); ?>" />
+                <input type="hidden" id="seasonid" name="seasonid" value="<?php echo $sale->getSeasonID(); ?>" />
+                <input type="hidden" id="userid" name="userid" value="<?php echo $sale->getUserID(); ?>" />
+                <input type="hidden" id="stage" name="stage" value="10" />
+                <input type="hidden" id="type" name="type" value="<?php echo $sale->getType(); ?>" />
+                <input type="hidden" id="<?php echo SUCCESS_MESSAGE; ?>" name="<?php echo SUCCESS_MESSAGE; ?>" value="<?php echo $this->translate("global_save_success"); ?>" /> 
+                <input type="hidden" id="<?php echo URL_SUCCESS; ?>" name="<?php echo URL_SUCCESS; ?>" value="<?php echo $successurl; ?>" /> 
+                <input type="hidden" id="<?php echo URL_FAILURE; ?>" name="<?php echo URL_FAILURE; ?>" value="<?php echo $failureurl; ?>" /> 
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_season_label"); ?>:</label>
+                    <div class="controls"><?php echo $sale->getSeason()->getName(); ?><input type="hidden" id="seasonid" name="seasonid" value="<?php echo $sale->getSeasonID(); ?>" /></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activity_name_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                        <input type="text" name="activityname" id="activityname" class="span3" value="<?php echo $sale->getActivityName(); ?>" /><div id="activityname_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_activity_ref_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                        <span id="reflabel"></span><input type="hidden" id="ref" name="ref" value="<?php echo $sale->getRef(); ?>" /><div id="ref_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_sale_startdate_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                       <input type="text" name="startdate" id="startdate" class="datefield width100 startdate" value="<?php echo changeMySQLDateToPageFormat($sale->getStartDate()); ?>" /><div id="startdate_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_status_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                       <?php
+							$allstatuses = getStatusValues();
+							$statusesdropdown = new Zend_Form_Element_Select('status',
+												array(
+													'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $allstatuses),								
+													'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+													'class' => array('span2')
+												)
+											);
+							$statusesdropdown->setValue($sale->getStatus()); 
+							echo $statusesdropdown->render(); 
+					   ?><div id="status_error"></div>
+                    </div>
+                </div> 
+            </fieldset>
+            <fieldset class="fieldsetcontainer well">
+            	<legend>Sale Details</legend>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_commodity_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+						<?php
+							$availablecrops = array($sale->getSeason()->getCropID() => $sale->getSeason()->getCrop()->getName());
+							$cropdropdown = new Zend_Form_Element_Select('cropid',
+												array(
+													'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $availablecrops),								
+													'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+													'class' => array('hastooltip', 'width150'),
+													'title' => $this->translate("season_commodity_tooltip")
+												)
+											);
+							$cropdropdown->setValue($sale->getSeason()->getCropID()); 
+							echo $cropdropdown->render();
+					   ?><div id="cropid_error"></div></div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_sale_quantity_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+						<input style="width:50px;" type="text" name="quantity" id="quantity" class="centeralign isdecimal" value="<?php echo clean_num($sale->getQuantity()); ?>" />&nbsp;
+						<?php
+                            $univalues = getHarvestQuantityUnits();
+                            $unitdropdown = new Zend_Form_Element_Select('quantityunit',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array('hastooltip', 'span2', 'selectrequired'),
+                                                    'title' => $this->translate("season_sale_quantity_tooltip"),
+                                                    'style' => 'width: 80px;'
+                                                )
+                                            );
+                            $unitdropdown->setValue($sale->getQuantityUnit()); 
+                            echo $unitdropdown->render(); 
+                        ?>
+                        <div id="quantity_error"></div><div id="quantityunit_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                   <label class="control-label"><?php echo $this->translate("season_sale_unitprice_label"); ?>:</label>
+                   <div class="controls"><div class="input-prepend"><span class="add-on"><?php echo getCurrencySymbol(); ?></span><input type="text" name="unitprice" id="unitprice" class="width100 hastooltip isamount rightalign inputrequired" value="<?php echo clean_num($sale->getUnitPrice()); ?>" title="<?php echo $this->translate("season_sale_unitprice_tooltip"); ?>" /></div><div id="unitprice_error"></div></div>
+                </div>
+                <div class="control-group">
+                   <label class="control-label"><?php echo $this->translate("season_sale_amount_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                   <div class="controls"><div class="input-prepend"><span class="add-on"><?php echo getCurrencySymbol(); ?></span><input type="text" name="totalamount" id="totalamount" class="width100 hastooltip isamount rightalign inputrequired" value="<?php echo clean_num($sale->getTotalAmount()); ?>" title="<?php echo $this->translate("season_sale_totalamount_tooltip"); ?>" /></div><div id="totalamount_error"></div>
+                </div>
+            </fieldset>
+            <fieldset class="fieldsetcontainer well">
+            	<legend>Client Details</legend>
+                <div class="control-group">
+                   <label class="control-label"><?php echo $this->translate("season_sale_clientname_label"); ?>:</label>
+                   <div class="controls"><input type="text" name="clientname" id="clientname" class="span2 width150 hastooltip" value="<?php echo $sale->getClientName(); ?>" title="<?php echo $this->translate("season_sale_clientname_tooltip"); ?>" /></div>
+                </div>
+                <div class="control-group">
+                   <label class="control-label"><?php echo $this->translate("season_sale_clienttype_label"); ?>:</label>
+                   <div class="controls">
+				   		<?php
+							$alltypes = getSaleToTypes();
+							$saletodropdown = new Zend_Form_Element_Select('clienttype',
+												array(
+													'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $alltypes),								
+													'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+													'class' => array('hastooltip','width150'),
+													'title' => $this->translate("season_sale_clienttype_tooltip")
+												)
+											);
+							
+							$saletodropdown->setValue($sale->getClientType());
+							echo $saletodropdown->render();
+					   ?></div>
+                </div>
+                <div class="control-group">
+                   <label class="control-label"><?php echo $this->translate("season_sale_clientphone_label"); ?>:</label>
+                   <div class="controls"><div class="input-prepend">
+                        <span class="add-on"><?php echo '+'.getCurrencyCode(); ?></span><input name="clientphone" id="clientphone" type="text" maxlength="10" class="span2  isnumber" style="width:110px;" value="<?php echo $sale->getClientPhone(); ?>" placeholder="e.g 0712123456" />
+                    </div>
+                    <div id="phone_error"></div></div>
+                </div>
+                <div class="control-group">
+                   <label class="control-label"><?php echo $this->translate("season_sale_contract_label"); ?>: <span class='pagedescription'>(if any)</span></label>
+                   <div class="controls"><textarea name="contract" id="contract" class="span3 expanding" style="min-height:60px;"><?php echo $sale->getContract(); ?></textarea></div>
+                </div>
+                
+			</fieldset>
+        <?php } ?>
+        <?php if($showfinanceandlabour){ ?>
+        	<?php require APPLICATION_PATH."/views/scripts/mobile/finance.phtml"; ?>    
+        	<?php require APPLICATION_PATH."/views/scripts/mobile/labour.phtml"; ?>    
+        <?php } ?>
+        <div class="control-group well actions" id="bottomactions"></div>
+      </form>
+  </div>
+</div>
+</body>
+</html>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

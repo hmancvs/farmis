@@ -75,7 +75,7 @@
                 <?php 
                     $x = 1;
                     foreach($notelines as $note){
-                        $farmer = $note->getNotedBy()->getFarmer();
+                        $user = $note->getNotedBy();
                 ?>
                     <li>
                         <table class="table noborder margin0">
@@ -84,8 +84,8 @@
                                     <table class="itemlist table noborder margin0">
                                         <tr>
                                             <td style="width:75px; padding-top:10px;">
-                                                <div id="thumbinfo" class="<?php echo $farmer->hasProfileImage() ? 'new_pic': ''; ?>"> 
-                                                    <a href="<?php //echo $this->baseUrl("farmer/view/id/".encode($line['id'])); ?>" title="<?php echo $this->translate("person_button_view_profile"); ?>"><img src="<?php echo $farmer->getUser()->getThumbnailPicturePath(); ?>" /></a>
+                                                <div id="thumbinfo" class="<?php echo $user->hasProfileImage() ? 'new_pic': ''; ?>"> 
+                                                    <a href="<?php //echo $this->baseUrl("farmer/view/id/".encode($line['id'])); ?>" title="<?php echo $this->translate("person_button_view_profile"); ?>"><img src="<?php echo $user->getThumbnailPicturePath(); ?>" /></a>
                                                 </div>
                                             </td>
                                             <td style="padding-left:15px;"><label class="control-label"><?php echo date('M j, Y g:i A', strtotime($note->getDateNoted())); ?></label><span><?php echo nl2br($note->getDescription()); ?></span>

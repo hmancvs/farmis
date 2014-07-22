@@ -1,27 +1,64 @@
 <?php
 	require_once APPLICATION_PATH.'/includes/header.php';
 	
+	
+	$districtlabel = $this->translate("farmer_district_label");
+	$countrycode = COUNTRY_CODE_UG;
+	$locationerror = $this->translate("farmer_district_error");
 	$title = "About ".$this->translate("appname");
+	if(isKenya()){
+		$districtlabel = 'County';
+		$countrycode = COUNTRY_CODE_KE;
+		$locationerror = $this->translate("farmer_county_error");
+		$title = "About FARMIS Kenya";
+	}
+	
 	$this->headTitle($this->translate("appname")." | About"); 
-
+	
 ?>
 <div class="row marginleft0">
     <div class="span8 pull-left marginleft0 public_leftcolumn">
         <div class="content">
-        	<h1><?php echo $title; ?></h1>
+        	<h1 style="padding-left:0; margin-left:0;"><?php echo $title; ?></h1>
             <h2>Mission</h2>
             <p class="themedlabel bolded">To reinvent the way Farmers carry out record keeping.</p>
             
             <h2>Vision</h2>
             <p class="themedlabel bolded">To be the leading provider of ICT business solutions for Farmers in East Africa.</p>
             
-            <h2>History and Project Background</h2>
-            <p>Agriculture plays a major role in the livelihood of over 70% of Uganda's population and we continuously design innovative solutions to make farming activities as easy to manage as possible.</p>
-			<p>Farmis is designed and managed by a team of creative and passionate people offering a solution that will help farmers not only store records for their own planning and forecasting purposes, but by referring to the records, they can profit from all the benefits that come with proper record keeping in agriculture.</p> 
+            <?php if(isUganda()){ ?>
+	            <h2>Background FARMIS Uganda</h2>
+                
+                <p>Agriculture plays a major role in the livelihood of over 70% of Uganda's population and we continuously design innovative solutions to make farming activities as easy to manage as possible.</p>
+                <p>Farmis is designed and managed by a team of creative and passionate people offering a solution that will help farmers not only store records for their own planning and forecasting purposes, but by referring to the records, they can profit from all the benefits that come with proper record keeping in agriculture.</p> 
+                
+                <h2>The Business</h2>
+                <p>As a business, we deal with both Farmers and Farm Groups in extending different programs geared to assist the farmer automate their business processes. We avail the different stakeholders with market information that relates to specific areas of specialty. These include commodity market prices, marketing offers and opportunities, advisory services, credit and financial tracking mechanisms, etc.</p>
+                <p>Currently with more than 2,000 farmers distributed throughout Uganda, FARMIS as a product has grown tremendously with a self sustaining business model and is continuously improving from the great feedback that we receive from the different clients and stakeholders. Farmers and Farm Groups have different subscription plans that have been studied carefully to ensure that the end FARMIS user receives value for their money.</p>
+            <?php } ?>
             
-            <h2>The Business</h2>
-            <p>As a business, we deal with both Farmers and Farm Groups in extending different programs geared to assist the farmer automate their business processes. We avail the different stakeholders with market information that relates to specific areas of specialty. These include commodity market prices, marketing offers and opportunities, advisory services, credit and financial tracking mechanisms, etc.</p>
-            <p>Currently with more than 2,000 farmers distributed throughout Uganda, FARMIS as a product has grown tremendously with a self sustaining business model and is continuously improving from the great feedback that we receive from the different clients and stakeholders. Farmers and Farm Groups have different subscription plans that have been studied carefully to ensure that the end FARMIS user receives value for their money.</p>
+            <?php if(isKenya()){ ?>
+	            <h2>Background of FARMIS Kenya</h2><br />
+
+                <p>•	Agriculture supports about 80% of entire Kenyan population</p>
+                <p>•	It contributes 25% of GDP</p>
+                <p>•	Source of almost 90% of all food needs </p>
+                <p>•	Single biggest livelihood option</p>
+                <p>•	Mainly rain-fed and is entirely dependent on the bimodal rainfall</p>
+                <p>•	Predominantly small-scale farming (averaging 0.2–3 ha)</p>
+                <p>•	Frequent droughts, crops fail in 1 out of 3 seasons.</p>
+                <p>•	60% of farmers make less that $1.5 p.d.</p>
+                <p>•	Fertilizer use is about 1.7 kg/acre (global average is 60 kg/acre)</p>
+                <p>•	In 1971, 1 tractor for every 1700 farmers (1 in 4000 in Brazil). Now, 1 tractor for every 42000 farmers (in Brazil 1 tractor for 4 farmers)</p>
+                <p>•	Allegory of the plough vs hoe</p>
+                <p>•	Farmers are victims of inappropriate policies and project interventions</p>
+                <p>•	Wrong assumptions about resilience of the farming systems</p>
+                <p>•	Limited understanding of the linkages between the assets possessed, livelihood strategies pursued and the livelihood outcomes achieved</p>
+                <p>•	Climatic variability creates uncertainty about the  future sustainability of farming system</p>
+                <p>•	No accurate data about what is produced, where it is, how much it is, etc</p>
+                
+            <?php } ?>
+            
             <p>For more information on how FARMIS works, <a href="<?php echo $this->baseUrl('howitworks'); ?>">click here...</a>
           
         </div>

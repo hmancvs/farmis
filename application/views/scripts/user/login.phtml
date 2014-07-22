@@ -9,6 +9,8 @@
 	    $useraccount->processPost($session->getVar(FORM_VALUES)); 
 	}
 	
+	// sendTestMessage('test msg', 'test body');
+	
 ?>
 <script>
 $(document).ready(function() {
@@ -104,6 +106,7 @@ body.publicbody #contentcolumn {
                                        <td style="padding:15px 0 10px 0;">
                                        		<button id="login" class="btn btn-primary xbtn-large" type="submit" title="Login"><i class="icon-lock icon-white"></i> Login</button> &nbsp;&nbsp;&nbsp;or &nbsp;&nbsp;<a href="<?php echo $this->baseUrl('signup'); ?>" title="Have no Account? Click here to get started.">Signup</a>
                                             <input name="redirecturl" type="hidden" value="<?php echo $request->redirecturl;  ?>" />
+                                            <input name="country" id="country" type="hidden" value="<?php echo $session->getVar('country');  ?>" />
                                            	<label style="margin-top:10px;"><a href="<?php echo $this->baseUrl("user/recoverpassword")?>">Forgot your password?</a></label>
                                        </td>
                                    </tr>                    

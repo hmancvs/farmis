@@ -19,8 +19,6 @@ class Document extends BaseRecord {
         $this->hasColumn('notes', 'string', 500);
         
         $this->hasColumn('uploadedbyid', 'integer', null);
-        $this->hasColumn('farmerid', 'integer', null);
-		$this->hasColumn('farmid', 'integer', null);
 		$this->hasColumn('seasonid', 'integer', null);	
 		$this->hasColumn('inventoryid', 'integer', null);
 		
@@ -49,17 +47,6 @@ class Document extends BaseRecord {
 									'foreign' => 'id'
 							)
 						);
-		$this->hasOne('Farm as farm',
-							array('local' => 'farmid',
-									'foreign' => 'id'
-							)
-						);
-		$this->hasOne('Farmer as farmer', 
-							array(
-								'local' => 'farmerid',
-								'foreign' => 'id'
-							)
-						);
 		$this->hasOne('UserAccount as uploadedby', 
 								array(
 									'local' => 'uploadedbyid',
@@ -82,12 +69,6 @@ class Document extends BaseRecord {
 		}
 		if(isArrayKeyAnEmptyString('filesize', $formvalues)){
 			unset($formvalues['filesize']); 
-		}
-		if(isArrayKeyAnEmptyString('farmerid', $formvalues)){
-			unset($formvalues['farmerid']); 
-		}
-		if(isArrayKeyAnEmptyString('farmid', $formvalues)){
-			unset($formvalues['farmid']); 
 		}
 		if(isArrayKeyAnEmptyString('seasonid', $formvalues)){
 			unset($formvalues['seasonid']); 

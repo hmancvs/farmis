@@ -1,0 +1,26 @@
+<?php 
+	require_once APPLICATION_PATH.'/includes/header.php';
+?>
+<div class="modal hide" id="dialog">
+    <div class="modal-header">
+    	<button type="button btn" class="close" data-dismiss="modal">&times;</button>
+    	<h3 style="font-size:12px;"><?php echo $this->translate("person_pagetitle_newrelative"); ?></h3>
+    </div>
+	<div class='modal-body' id="dialogbody">
+        <a id="loading" class="hidden"><img style="margin-left:250px;" src="<?php echo $this->baseUrl('images/loader.gif'); ?>" /></a>
+        <div id="dialogcontent"></div>
+	</div>
+	<div class="modal-footer">
+    	<div id="new">
+		<a href="javascript:doNothing();" class="btn modelcancel" data-dismiss="modal" title="<?php echo $this->translate('global_button_cancel'); ?>"><i class="icon-remove"></i> <?php echo $this->translate('global_button_cancel'); ?></a>
+		<button type="submit" class="btn btn-primary" id="save" onClick="javascript:doNothing();"><i class="icon-ok icon-white"></i> <?php echo $this->translate('global_button_save'); ?></button>
+        </div>
+        <div id="view" class="hide">
+            <a href="javascript:doNothing();" class="btn modelcancel" data-dismiss="modal" title="<?php echo $this->translate('global_button_close'); ?>"><i class="icon-remove"></i> <?php echo $this->translate('global_button_close'); ?></a>
+            <button type="submit" class="btn btn-primary" id="save" onClick="javascript:doNothing();"><i class="icon-pencil icon-white"></i> <?php echo $this->translate('global_button_edit'); ?></button>
+        </div>
+	</div>
+</div>
+<a id="loading" class="hidden"><img style="margin-left:250px;" src="<?php echo $this->baseUrl('images/loader.gif'); ?>" /></a>
+<a id="wait" class="hidden blocked centeralign"><img src="<?php echo $this->baseUrl('images/loader.gif'); ?>" /></a>
+<div class="hidden" id="printer_page_action_buttons"><a title="Close Window" onClick="window.close()" > <img src="<?php echo $this->baseUrl('images/close.png'); ?>" width="16" height="16" alt="Close Window"> </a> &nbsp;&nbsp; <a title="Print" onClick="window.print()" > <img src="<?php echo $this->baseUrl('images/printer.png'); ?>" width="16" height="16" alt="Print"> </a> </div>

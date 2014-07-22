@@ -5,19 +5,23 @@
 	
 	$result = $this->prices;
 	$has_no_data = (count($result) == 0) ? true : false;
+	// debugMessage($result);
 	
 	if(!$has_no_data){
 		$processeddata = array();
 		$months = array(); 
-		foreach($result as $key => $line){			
-			$months[] = $line['Month'];
-			$processeddata[$line['Commodity']]['retailprices'][] = $line['RetailPrice'];
+		foreach($result as $key => $line){
+			// debugMessage($line);
+			if(is_numeric($line['RetailPrice'])){		
+				$months[] = $line['Month'];
+				$processeddata[$line['Commodity']]['retailprices'][] = $line['RetailPrice'];
+			}
 			//$processeddata[$line['Commodity']]['wholesaleprices'][] = $line['Wholesale Price'];
 		}
 		
 		// create list for periods
 		$periodlist = "'".implode("', '",$months)."'";
-		
+		// debugMessage($periodlist);
 		// generate the series data
 		$series_data = array(); 
 		foreach ($processeddata as $key => $value) {
@@ -25,9 +29,9 @@
 			//$series_data[] = "{name: 'Wholesale Price: ".$key."', data: [".implode(", ", $value['wholesaleprices'])."]}";
 		}
 	}
+	/*debugMessage($series_data);
+	exit();*/
 ?>
-<script src="<?php echo $this->baseUrl('javascript/chart/highcharts.js'); ?>"></script>
-<script src="<?php echo $this->baseUrl('javascript/chart/exporting.js'); ?>"></script>
 <script type="text/javascript">
 var chart;
 <?php 

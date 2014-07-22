@@ -1,0 +1,66 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$title = "Payment Test"; 
+	$this->headTitle($title);
+?>
+<?php require APPLICATION_PATH."/views/scripts/mobile/mobileincludes.phtml"; ?>
+<script>
+	$(document).ready(function() {
+		
+		
+	});
+</script>
+<body>
+	<div class="container-fluid viewpage" id="view_payment">
+		<div class="row-fluid">
+			<h4><?php echo $title; ?></h4>
+		</div>
+        
+    </div>
+    <div class="row-fluid">
+    <form action="<?php echo $this->baseUrl('payment/pesapaliframe'); ?>" method="post">
+	<table>
+		<tr>
+			<td>Amount:</td>
+			<td><input type="text" name="amount" value="100" />(in shs)</td>
+		</tr>
+		<tr>
+			<td>Type:</td>
+			<td><input type="text" name="type" value="MERCHANT" readonly="readonly" /></td>
+		</tr>
+		<tr>
+			<td>Description:</td>
+			<td><input type="text" name="description" value="Infotrade Test Payment" /></td>
+		</tr>
+		<tr>
+			<td>Reference:</td>
+			<td><input type="text" name="reference" value="0001" /></td>
+		</tr>
+		<tr>
+			<td>First Name:</td>
+			<td><input type="text" name="first_name" value="Herman" /></td>
+		</tr>
+		<tr>
+			<td>Last Name:</td>
+			<td><input type="text" name="last_name" value="Musiitwa" /></td>
+		</tr>
+		<tr>
+			<td>Email Address:</td>
+			<td><input type="text" name="email" value="m.herman@fituganda.com" /></td>
+		</tr>
+        <tr>
+			<td>Phone:</td>
+			<td><input type="text" name="phone" value="256776595279" /></td>
+		</tr>
+		<tr>
+			<td colspan="2"><input type="submit" value="Make Payment" /></td>
+		</tr>
+	</table>
+</form>
+    </div>
+</body>
+</html>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

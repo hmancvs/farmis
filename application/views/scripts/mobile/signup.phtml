@@ -1,0 +1,599 @@
+<?php
+	include APPLICATION_PATH.'/includes/header.php';
+	
+	$title = $pagetile = "Signup as a Farmer"; 
+	$posturl = $this->baseUrl("signup/processstep1"); 
+	$button_title = $this->translate("useraccount_button_signup"); 
+	
+	// set all fields to empty string as default
+	$firstname = ''; $lastname = ''; $gender = 1; $email = ''; $username = ''; $phone = ''; $dateofbirth = '';  $birthday = ''; $birthmonth = ''; $birthyear = ''; $type = 2; $agreedtoterms = ''; $membershipplanid = 1; $dob = ''; $locationid = ''; $refno = '';
+	$id = '';  $farmgroupid = ''; $createdby = 1; $userid = '';
+	$country = 'UG';
+	if(isKenya()){
+		$country = 'KE';
+	}
+	$dobarray = array();
+	
+	$isgroupclerk = false;
+	$isfarmer = true;
+		
+	$user = new UserAccount(); 	
+	$userid = decode($request->profile);
+	// debugMessage('farmer is '.$userid);
+	
+	if(!isEmptyString($userid)){
+		$user->populate($userid);
+		$firstname = $user->getFirstName();
+		$lastname = $user->getLastName();
+		$username = $user->getUserName(); 
+		$type = $user->getType();
+		$refno = $user->getRefNo();
+		$membershipplanid = $user->getMembershipPlanID();
+		// debugMessage($user->toArray());
+		$namestring = explode(' ', $firstname);
+		// debugMessage($namestring);
+		if(count($namestring) > 1){
+			$firstname = $namestring[0];
+			$lastname = $namestring[1];
+		}
+		
+		$email = $user->getEmail();
+		$userid = $user->getID();
+		$phone = $user->getFormattedPhone();
+		if($user->getID() == $user->getFarmGroup()->getManagerID() &&  !isEmptyString($user->getFarmGroup()->getPhone())){
+			$phone = getShortPhone($user->getFarmGroup()->getPhone());
+		}
+		
+		$locationid = $user->getLocationID();
+		if($user->getID() == $user->getFarmGroup()->getManagerID() &&  !isEmptyString($user->getFarmGroup()->getDistrictID())){
+			$locationid = $user->getFarmGroup()->getDistrictID();
+		}
+		if(!isEmptyString($user->getDateOfBirth())){
+			$birthday = date('d', strtotime($user->getDateOfBirth())); 
+			$birthyear = date('Y', strtotime($user->getDateOfBirth())); 
+			$birthmonth = date('m', strtotime($user->getDateOfBirth())); 
+		}
+				
+		$country = $user->getCountry();
+		# check if person is a farm group manager
+		if(!isEmptyString($user->getFarmGroupID())){
+			if($user->getFarmGroup()->getManagerID() == $user->getID()){
+				$isgroupclerk = true;
+				$isfarmer = false;
+			}
+			$farmgroupid = $user->getFarmGroupID();
+		}
+		if(!$user->isFarmer()){
+			$isfarmer = false;
+		}
+		$posturl = $this->baseUrl("signup/processinvite"); 
+	}
+	
+	// any errors occured in processing
+	if ($sessionhaserror) {
+		$formvalues = $session->getVar(FORM_VALUES);
+		// debugMessage($formvalues);
+		$firstname = $formvalues['firstname']; $lastname = $formvalues['lastname']; $gender = $formvalues['gender']; $email = $formvalues['email']; $username = $formvalues['username']; $userid = $formvalues['userid'];
+		$birthday = $formvalues['birthday']; $birthmonth = $formvalues['birthmonth']; $birthyear = $formvalues['birthyear']; $country = $formvalues['country']; $type = $formvalues['type']; $agreedtoterms = $formvalues['agreedtoterms']; $locationid = $formvalues['locationid']; $farmgroupid = $formvalues['farmgroupid']; $createdby = $formvalues['createdby']; $membershipplanid = $formvalues['membershipplanid'];
+		if(!isArrayKeyAnEmptyString('dateofbirth', $formvalues)){
+			// $dateofbirth = date('M d, Y', strtotime($formvalues['dateofbirth'])); 
+		}
+		$phone = $formvalues['phone'];
+		if(!isArrayKeyAnEmptyString('id', $formvalues)){
+			$id = $formvalues['id']; 
+		}
+	}
+	
+	$districtlabel = $this->translate("farmer_district_label");
+	$countrycode = COUNTRY_CODE_UG;
+	$locationerror = $this->translate("farmer_district_error");
+	if(isKenya()){
+		$districtlabel = 'County';
+		$countrycode = COUNTRY_CODE_KE;
+		$locationerror = $this->translate("farmer_county_error");
+	}
+	
+	$this->headTitle($pagetile); 
+	
+?>
+<?php include APPLICATION_PATH."/views/scripts/mobile/mobileincludes.phtml"; ?>
+<script>
+	$(document).ready(function() {
+		// define the validation rules
+		$("#signupform").validate({		
+			rules: {
+				gender: "required",
+				firstname: {
+					required: true
+				},
+				lastname: {
+					required: true
+				},
+				country: "required",
+				email: {
+					required: true, 
+					email: true
+				},
+				username: {
+					required: true, 
+					minlength: 4,
+					maxlength: 15
+				},
+				refno: {
+					required: true, 					
+					minlength: 6,
+					maxlength: 10					
+				},
+				phone: {
+					required: true, 					
+					validnumber: true,
+					maxlength: 10,
+					minlength: 10,
+					<?php if(isUganda()){ ?>
+						validate_ug: true
+					<?php } ?>
+					<?php if(isKenya()){ ?>
+						validate_ke: true
+					<?php } ?>
+				},
+				password: {
+					required: true,
+					maxlength: <?php echo $config->password->maxlength; ?>,
+					minlength: <?php echo $config->password->minlength; ?>
+				},			
+				confirmpassword: {
+					required: true,
+					equalTo: "#password"
+				},
+				agreedtoterms: "required",
+				locationid: {
+					required: true
+				},
+				code: {
+					required: true,
+					validatecode: true					
+				},
+				birthyear: {
+					validbirth: true
+				}
+			}, 
+			// the messages for each of the fields being validated
+			messages: {	
+				gender: "<?php echo $this->translate("farmer_gender_error"); ?>",
+				firstname: {
+					"required": "<?php echo $this->translate("farmer_firstname_error"); ?>"
+				},
+				lastname: {
+					"required": "<?php echo $this->translate("farmer_lastname_error"); ?>"
+				},
+				country: "<?php echo $this->translate("farmer_country_error"); ?>",
+				email: {
+					"required": "<?php echo $this->translate("useraccount_email_error"); ?>", 
+					"email": "<?php echo $this->translate("useraccount_email_invalid_error"); ?>"
+				},
+				username: {
+					required: "<?php echo $this->translate("useraccount_username_error"); ?>", 					
+					minlength: "Username must have atleast 4 characters",
+					maxlength: "Username must not exceed 15 characters"
+				},
+				refno: {
+					required: "Please enter ID Number", 					
+					minlength: "ID must have more than 6 Digits",
+					maxlength: "ID must not exceed 10 Digits"
+				},
+				phone: {
+					required: "<?php echo $this->translate("useraccount_phonenumber_error"); ?>", 					
+					maxlength: "Phone Number must have 10 Digits",
+					minlength: "Phone Number must have 10 Digits",
+					<?php if(isUganda()){ ?>
+						validate_ug: "<?php echo $this->translate("globale_phonenumber_format"); ?>"
+					<?php } ?>
+					<?php if(isKenya()){ ?>
+						validate_ke: "<?php echo $this->translate("globale_phonenumber_format_ke"); ?>"
+					<?php } ?>
+				},
+				password: {
+					required: "<?php echo $this->translate("useraccount_password_error"); ?>",
+					maxlength: "<?php echo sprintf($this->translate("useraccount_password_error_maxlength"), $config->password->maxlength); ?>",
+					minlength: "<?php echo sprintf($this->translate("useraccount_password_error_minlength"), $config->password->minlength); ?>"					
+				},
+				confirmpassword: {
+					required: "<?php echo $this->translate("useraccount_confirmpassword_error"); ?>",
+					equalTo: "<?php echo $this->translate("useraccount_confirmpassword_error_equalto"); ?>"
+				},
+				agreedtoterms: "<?php echo $this->translate("useraccount_agreetoterms_error"); ?>",
+				locationid: {
+					required: "<?php echo $locationerror; ?>"
+				},
+				code: {
+					required: "Enter the letters you see above"
+				},
+				birthyear: {
+					validbirth: "Please select full Date of Birth"
+				}
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						error.appendTo("#"+element.attr("name")+"_error")
+						break;
+				}			
+			}
+		});
+		
+		$.validator.addMethod("validbirth", function(value, element, params) { 
+			var day = $("#birthday").val();
+			var month = $("#birthmonth").val();
+			var year = value;
+			if ((!isEmptyString(day) && (isEmptyString(month) || isEmptyString(year))) || 
+				(!isEmptyString(month) && (isEmptyString(day) || isEmptyString(year)))  || 
+				(!isEmptyString(year) && (isEmptyString(day) || isEmptyString(month))) ){
+				return false; 
+			}
+			return true;        
+		}, "Please select full Date of Birth");
+		
+		$(".hastooltip").change();
+		$("#dateofbirth").change();
+		
+		// prevent copy and paste in password fields
+		$('input.password').bind('copy paste', function (e) {
+	       e.preventDefault();
+	    });
+		
+		//when button is clicked  
+        $('#check_username_availability').click(function(){ 
+			check_user_availability();  
+        });
+		$('#username').change(function(){ 
+			check_user_availability();  
+        });  
+		$('#username').keyup(function(){
+			this.value = this.value.toLowerCase();
+		});
+		
+		//when button is clicked  
+        $('#check_email_availability').click(function(){ 
+			check_email_availability();  
+        });
+		$('#email').change(function(){ 
+			check_email_availability();  
+        });  
+		$('#email').keyup(function(){
+			this.value = this.value.toLowerCase();
+		});  
+		
+		//when button is clicked  
+        $('#check_phone_availability').click(function(){ 
+			check_phone_availability();  
+        });
+		$('#phone').change(function(){ 
+			check_phone_availability();  
+        });
+		
+		//when button is clicked  
+        $('#check_refno_availability').click(function(){ 
+			check_refno_availability();  
+        });
+		$('#refno').change(function(){ 
+			check_refno_availability();  
+        });
+		
+		//function to check username availability  
+		function check_user_availability(){  
+			//get the username
+			var checking_html = 'Checking availability...';   
+			var username = $('#username').val();  
+			if(!isEmptyString(username) && username.length >= 4 && username.length <= 15 && isAlpha(username)){
+				// alert('passed');
+				$('#username_availability_result').html(checking_html); 
+				var userid = '<?php echo $user->getID(); ?>';
+				//use ajax to run the check  
+				$.post("<?php echo $this->baseUrl('signup/checkusername'); ?>", { username: username, userid: userid },  
+					function(result){  
+						//if the result is 1  
+						// alert(result); // return false;
+						if(result == 1){  
+							//show that the username is available
+							$('#username_availability_result').html(username + ' is already taken!').addClass('alert').addClass('alert-error').removeClass('alert-success'); 
+						} else {  
+							//show that the username is NOT available  
+							$('#username_availability_result').html(username + ' is available').addClass('alert').addClass('alert-success').removeClass('alert-error');
+						}  
+				});   
+			}
+		}  
+		
+		//function to check email availability  
+		function check_email_availability(){  
+			//get the username
+			var checking_html = 'Checking availability...';   
+			var email = $('#email').val();  
+			if(!isEmptyString(email) && validateEmail(email)){
+				$('#email_availability_result').html(checking_html);  
+				
+				//use ajax to run the check  
+				$.post("<?php echo $this->baseUrl('signup/checkemail'); ?>", { email: email },  
+					function(result){  
+						//if the result is 1  
+						// alert(result); // return false;
+						if(result == 1){  
+							//show that the email is available
+							$('#email_availability_result').html(email + ' is already taken!').addClass('alert').addClass('alert-error').removeClass('alert-success'); 
+						} else {  
+							//show that the email is NOT available  
+							$('#email_availability_result').html(email + ' is available').addClass('alert').addClass('alert-success').removeClass('alert-error');
+						}  
+				});  
+			}
+		}  
+		
+		//function to check phone availability  
+		function check_phone_availability(){  
+			//get the username
+			var checking_html = 'Checking availability...';   
+			var phone = $('#phone').val();  
+			var country = '<?php echo $session->getVar('country'); ?>';
+			if(!isEmptyString(phone) && isValidPhone(phone, country)){
+				$('#phone_availability_result').html(checking_html);  
+				var userid = '<?php echo $user->getID(); ?>';
+				//use ajax to run the check  
+				$.post("<?php echo $this->baseUrl('signup/checkphone'); ?>", { phone: phone, userid: userid, country: country },  
+					function(result){  
+						//if the result is 1  
+						// alert(result); return false;
+						if(result == 1){  
+							//show that the phone is available
+							$('#phone_availability_result').html(phone + ' is already taken!').addClass('alert').addClass('alert-error').removeClass('alert-success'); 
+						} else {  
+							//show that the phone is NOT available  
+							$('#phone_availability_result').html(phone + ' is available').addClass('alert').addClass('alert-success').removeClass('alert-error');
+						}  
+				});  
+			}
+		}
+		
+		//function to check username availability  
+		function check_refno_availability(){  
+			//get the refno
+			var checking_html = 'Checking availability...';   
+			var refno = $('#refno').val();  
+			if(!isEmptyString(refno) && refno.length >= 6 && refno.length <= 10){
+				// alert('passed');
+				$('#refno_availability_result').html(checking_html); 
+				var userid = '<?php echo $user->getID(); ?>';
+				var country = '<?php echo $session->getVar('country'); ?>';
+				//use ajax to run the check  
+				$.post("<?php echo $this->baseUrl('signup/checkrefno'); ?>", { refno: refno, userid: userid, country: country},  
+					function(result){  
+						//if the result is 1  
+						// alert(result); // return false;
+						if(result == 1){  
+							//show that the username is available
+							$('#refno_availability_result').html(refno + ' is already taken!').addClass('alert').addClass('alert-error').removeClass('alert-success'); 
+						} else {  
+							//show that the username is NOT available  
+							$('#refno_availability_result').html(refno + ' is available').addClass('alert').addClass('alert-success').removeClass('alert-error');
+						}  
+				});   
+			}
+		}  
+		
+		$("#headeractions #loginheader #headersignup").css({'display':'none'});
+		
+		// $("#membershipplanid_2").attr('disabled', true);
+		$("#membershipplanid_2").click(function(){
+			bootbox.alert("<b>Premium Farmis</b> will be available after 30 days of your Basic Subscription.");
+			$("#membershipplanid_1").click();
+		});
+		
+		$("#firstname").focus();
+		
+	}); 
+</script>
+<body>
+<div class="container-fluid">
+  <h4><?php echo $title; ?></h4>
+  <?php if($sessionhaserror) { ?>
+      <div class="row-fluid">
+      	<div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+      </div>
+  <?php } ?>
+  <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+  	<div class="row-fluid">
+      	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+	</div>
+  <?php } ?>
+  <div class="row-fluid">
+      <form class="form-horizontal well clearfix" id="signupform" action="<?php echo $posturl; ?>" method="post" style="padding-bottom:25px;">
+        <div class="control-group">
+          <label class="control-label" for="firstname"><?php echo $this->translate("farmer_firstname_label"); ?>:<?php echo $this->translate("global_required_field_marker"); ?></label>
+          <div class="controls">
+            <input type="text" name="firstname" id="firstname" class="span3" value="<?php echo $firstname; ?>" /><div id="firstname_error"></div>
+            <input type="hidden" name="usecustomsave" id="usecustomsave" value="true" />
+            <input type="hidden" id="regsource" name="regsource" value="1" />
+            <input type="hidden" name="id" id="id" value="<?php echo $id; ?>" />
+            <input type="hidden" name="userid" id="userid" value="<?php echo $userid; ?>" />
+            <input type="hidden" name="createdby" id="createdby" value="<?php echo $createdby; ?>" />
+            <input type="hidden" name="type" id="type" value="<?php echo $type; ?>" />
+            <input type="hidden" id="farmgroupid" name="farmgroupid" value="<?php echo $farmgroupid; ?>" />
+            <input type="hidden" name="membershipplanid" id="membershipplanid" value="<?php echo $membershipplanid; ?>" />
+          </div>
+        </div>
+        <div class="control-group">
+          <label class="control-label" for="lastname"><?php echo $this->translate("farmer_lastname_label"); ?>:<?php echo $this->translate("global_required_field_marker"); ?></label>
+          <div class="controls">
+            <input type="text" name="lastname" id="lastname" class="span3" value="<?php echo $lastname; ?>" /><div id="lastname_error"></div>
+          </div>
+        </div>
+        <div class="control-group">
+          <label class="control-label"><?php echo $this->translate("farmer_gender_label"); ?>:<?php echo $this->translate("global_required_field_marker"); ?></label>
+          <div class="controls">
+             <?php						  
+				  $genderradio = new Zend_Form_Element_Radio('gender',
+						  array(
+								  'multiOptions' => array('1' => 'Male', '2' => 'Female'), 
+								  'view' => new Zend_View(),
+								  'disableLoadDefaultDecorators' => true,
+								  'separator' => '&nbsp;&nbsp;&nbsp;&nbsp;',
+								  'decorators' => array('ViewHelper',
+													  array('HtmlTag', array('tag' => 'div', 'class' => array('inline', 'radio', 'zendradio'))) // use a sorrounding DIV with classes which are copied to the label by JQuery
+												  )
+						  )
+				  );
+				  $genderradio->setValue($gender);
+				  echo $genderradio->render();
+			  ?>
+			  <div id="gender_error"></div>
+          </div>
+        </div>
+        <div class="control-group">
+          <label class="control-label"><?php echo $this->translate("farmer_dateofbirth_label"); ?>:</label>
+          <div class="controls">
+             	<?php
+					$daydp = new Zend_Form_Element_Select('birthday',
+										array(
+											'multiOptions' => array_merge_maintain_keys(array('' => 'Day'), getMonthDays()),	
+											'view' => new Zend_View(),
+											'decorators' => array('ViewHelper'),
+											'class' => array('birth'),
+											'title' => 'Select Day'		
+										)
+									);
+					$daydp->setValue($birthday); 
+					echo $daydp->render(); 
+				?>
+				<?php
+					$monthdp = new Zend_Form_Element_Select('birthmonth',
+										array(
+											'multiOptions' => array_merge_maintain_keys(array('' => 'Month'), getAllMonthsAsShortNames()),	
+											'view' => new Zend_View(),
+											'decorators' => array('ViewHelper'),
+											'class' => array('birth'),
+											'title' => 'Select Month'		
+										)
+									);
+					$monthdp->setValue($birthmonth); 
+					echo $monthdp->render(); 
+				?>
+				<?php
+					$years = getSubscribeBirthYears();
+					$yeardp = new Zend_Form_Element_Select('birthyear',
+										array(
+											'multiOptions' => array_merge_maintain_keys(array('' => 'Year'), $years),	
+											'view' => new Zend_View(),
+											'decorators' => array('ViewHelper'),
+											'class' => array('birth'),
+											'title' => 'Select Year'		
+										)
+									);
+					$yeardp->setValue($birthyear); 
+					echo $yeardp->render(); 
+				?>
+			  	<div id="birthday_error"></div><div id="birthmonth_error"></div><div id="birthyear_error"></div>
+          </div>
+        </div>
+        <div class="control-group">
+          <label class="control-label country"><?php echo $this->translate("farmer_country_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+          <div class="controls">
+            <?php
+				$countries = getCountries();
+				$countrydropdown = new Zend_Form_Element_Select('country',
+									array(
+										'multiOptions' => array_merge_maintain_keys(array('' => "<Select One>", "UG"=>"Uganda"), $countries),
+										'view' => new Zend_View(), 
+										'decorators' => array('ViewHelper'),
+										'class' => array('span3', 'country', 'xchzn-select','disablefield')
+									)
+								);
+				$countrydropdown->setValue($country); 
+				echo $countrydropdown->render(); 
+		   ?><input type="hidden" name="country" id="country" value="<?php echo $country; ?>" /><div id="country_error"></div>
+          </div>
+        </div>
+        <div class="control-group">
+          <label class="control-label" for="districtid"><?php echo $districtlabel; ?>:<?php echo $this->translate("global_required_field_marker"); ?></label>
+          <div class="controls">
+            <?php
+				$districts = getDistricts($session->getVar('country'));
+				$districtdropdown = new Zend_Form_Element_Select('locationid',
+									array(
+										'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $districts),								
+										'view' => new Zend_View(),
+										'decorators' => array('ViewHelper'),
+										'class' => array('span3', ''),
+										'title' => $this->translate("farmer_district_tooltip")
+									)
+								);
+				$districtdropdown->setValue($locationid); 
+				echo $districtdropdown->render(); 
+		   ?><div id="locationid_error"></div>
+          </div>
+        </div>
+        <?php if(isKenya()){ ?>	
+            <div class="control-group">
+              <label class="control-label" for="refno">National ID No:<?php echo $this->translate("global_required_field_marker"); ?></label>
+              <div class="controls">
+              		<input maxlength="10" class="span2 isnumber" name="refno" id="refno" type="text" value="<?php echo $refno; ?>" /><div id="refno_error"></div>
+              </div>
+            </div>
+        <?php } ?>
+        <div class="control-group">
+            <label class="control-label" for="phone"><?php echo $this->translate("farmer_phone_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+            <div class="controls">
+            	<div class="input-prepend">
+                	<span class="add-on"><?php echo '+'.$countrycode; ?></span><input type="text" name="phone" id="phone" maxlength="10" value="<?php echo getShortPhone($phone); ?>" class="span2 minwidth100" />
+               	</div>
+                <div id="phone_error"></div>
+            </div>
+        </div>
+        <div class="control-group">
+            <label class="control-label" for="email"><?php echo $this->translate("farmer_email_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+            <div class="controls">
+            	<input type="text" name="email" id="email" value="<?php echo $email; ?>" class="span3" />
+                <div id="email_error"></div>
+            </div>
+        </div>
+        <div class="control-group">
+            <label class="control-label" for="username"><?php echo $this->translate("farmer_username_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+            <div class="controls">
+            	<input type="text" name="username" id="username" value="<?php echo $username; ?>" class="span3" />
+                <div id="username_error"></div>
+            </div>
+        </div>
+        <div class="control-group">
+            <label class="control-label password"><?php echo $this->translate("useraccount_password_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+            <div class="controls">
+            	<input name="password" id="password" type="password" autocomplete="off" class="span2 password" onKeyUp="passwordStrength(this.value)" value="" />
+               <p style="display:inline-block; float:right;">
+                    <label for="passwordStrength" class="hidden">Password strength</label>
+                    <div id="passwordDescription" style="width:100px;">strength</div>
+                    <div id="passwordStrength" class="strength0"></div>
+                </p>
+               <div id="password_error"></div>
+            </div>
+        </div>
+        <div class="control-group">
+            <label class="control-label confirmpassword"><?php echo $this->translate("useraccount_password_confirm_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+            <div class="controls">
+            	 <input name="confirmpassword" id="confirmpassword" autocomplete="off" type="password" class="span2 password" value="" />
+                 <div id="confirmpassword_error"></div>
+            </div>
+        </div>
+        <div class="control-group">
+            <input type="checkbox" name="agreedtoterms" id="agreedtoterms" value="1" class="<?php echo $agreedtoterms; ?>" title="<?php echo $this->translate("person_agreedtoterms_tooltip"); ?>" />
+            <?php echo sprintf($this->translate("useraccount_terms_accept_label"), '#', '#'); ?><?php echo $this->translate("global_required_field_marker"); ?><div id="agreedtoterms_error"></div>
+        </div>
+        <div class="control-group">
+              <a href="<?php echo $this->referer; ?>" class="btn"><i class="icon-remove"></i> <?php echo $this->translate('global_button_cancel'); ?></a>
+              <button type="submit" class="btn btn-primary" id="save"><i class="icon-ok icon-white"></i> Register</button>
+        </div>
+      </form>
+  </div>
+</div>
+</body>
+</html>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

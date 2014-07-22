@@ -10,7 +10,6 @@ class Subscription extends BaseRecord  {
 		$this->setTableName('subscription');
 		
 		$this->hasColumn('userid', 'integer', null);
-		$this->hasColumn('farmerid', 'integer', null);
 		$this->hasColumn('farmgroupid', 'integer', null);
 		$this->hasColumn('planid', 'integer', null, array( 'notnull' => true, 'notblank' => true));
 		$this->hasColumn('startdate', 'date', null, array( 'notnull' => true, 'notblank' => true));
@@ -48,12 +47,6 @@ class Subscription extends BaseRecord  {
 									'foreign' => 'id'
 								)
 						);
-		$this->hasOne('Farmer as farmer', 
-								array(
-									'local' => 'farmerid',
-									'foreign' => 'id'
-								)
-						);
 		$this->hasOne('FarmGroup as farmgroup', 
 								array(
 									'local' => 'farmgroupid',
@@ -74,9 +67,6 @@ class Subscription extends BaseRecord  {
 		// trim spaces from the name field
 		if(isArrayKeyAnEmptyString('userid', $formvalues)){
 			unset($formvalues['userid']); 
-		}
-		if(isArrayKeyAnEmptyString('farmerid', $formvalues)){
-			unset($formvalues['farmerid']); 
 		}
 		if(isArrayKeyAnEmptyString('farmgroupid', $formvalues)){
 			unset($formvalues['farmgroupid']); 
@@ -117,7 +107,7 @@ class Subscription extends BaseRecord  {
     }
 	# find duplicates after save
 	function getDuplicates(){
-		$q = Doctrine_Query::create()->from('Subscription s')->where("s.farmgroupid = '".$this->getFarmGroupID()."' AND s.farmerid = '".$this->getFarmerID()."' AND s.userid = '".$this->getUserID()."' AND s.planid = '".$this->getPlanID()."' AND s.startdate = '".$this->getStartDate()."' AND s.enddate = '".$this->getEndDate()."' AND s.id <> '".$this->getID()."' ");
+		$q = Doctrine_Query::create()->from('Subscription s')->where("s.farmgroupid = '".$this->getFarmGroupID()."' AND s.userid = '".$this->getUserID()."' AND s.planid = '".$this->getPlanID()."' AND s.startdate = '".$this->getStartDate()."' AND s.enddate = '".$this->getEndDate()."' AND s.id <> '".$this->getID()."' ");
 		$result = $q->execute();
 		return $result;
 	}

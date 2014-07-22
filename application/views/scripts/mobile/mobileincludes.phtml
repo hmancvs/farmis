@@ -1,0 +1,685 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="<?php echo $this->baseUrl('favicon.ico'); ?>" rel="shortcut icon" type="image/x-icon" />
+<title><?php echo $title.$browserappend; ?></title>
+<link rel="stylesheet" href="<?php echo $this->serverUrl($this->baseUrl('assets/css/bootstrap.css')); ?>">
+<link rel="stylesheet" href="<?php echo $this->serverUrl($this->baseUrl('stylesheets/2.jquery.ui.1.8.14.css')); ?>">
+<link rel="stylesheet" href="<?php echo $this->serverUrl($this->baseUrl('assets/css/style.css')); ?>">
+<link rel="stylesheet" href="<?php echo $this->serverUrl($this->baseUrl('assets/css/5.chosen.0.9.css')); ?>">
+<script src="<?php echo $this->serverUrl($this->baseUrl('assets/js/2.jquery-1.7.1.min.js')); ?>"></script>
+<script src="<?php echo $this->serverUrl($this->baseUrl('assets/js/3.jquery-ui-1.8.14.custom.min.js')); ?>"></script>
+<script src="<?php echo $this->serverUrl($this->baseUrl('assets/js/5.jquery.validate.min.1.9.0.js')); ?>"></script>
+<script src="<?php echo $this->serverUrl($this->baseUrl('assets/js/5.jquery.elastic.source.1.6.11.js')); ?>"></script>
+<script src="<?php echo $this->serverUrl($this->baseUrl('assets/js/5.jquery.placeholder.min.js')); ?>"></script>
+<script src="<?php echo $this->serverUrl($this->baseUrl('assets/js/5.select-chain.js')); ?>"></script>
+<script src="<?php echo $this->serverUrl($this->baseUrl('assets/js/5.chosen.jquery.min.0.9.8.js')); ?>"></script>
+<script src="<?php echo $this->serverUrl($this->baseUrl('assets/js/5.jquery.calculation.min.js')); ?>"></script>
+<script src="<?php echo $this->serverUrl($this->baseUrl('assets/js/5.bootbox.min.js')); ?>"></script>
+<script src="<?php echo $this->serverUrl($this->baseUrl('assets/js/bootstrap.js')); ?>"></script>
+<script src="<?php echo $this->serverUrl($this->baseUrl('assets/js/9.farmis.js')); ?>"></script>
+<script>
+	var datepickerOpts = {
+		showOn: 'both', 
+		buttonImage: '<?php echo $this->baseUrl('images/calendar.png'); ?>', 
+		buttonImageOnly: true,
+		changeMonth: true,
+		changeYear: true,
+		minDate: '-<?php echo $config->dateandtime->mindate; ?>Y',
+		maxDate: '+<?php echo $config->dateandtime->maxdate; ?>Y',
+		dateFormat: '<?php echo $config->dateandtime->javascriptmediumformat; ?>',
+		hideIfNoPrevNext: true,
+		showButtonPanel: true, 
+		currentText: 'Now'		
+	}; 
+var dialogOpts = {
+		width: 400,
+		height: 300,
+		resizable: false,
+		modal: true,
+		autoOpen: false
+	};
+</script>
+<script>
+	$(document).ready(function() {
+		// auto grow textareaa with class expanding
+		$(".expanding").elastic();
+		$(".expanding").trigger('update');
+		
+		// make the datefields readonly
+		$(".datefield").attr('readOnly', 'true');
+		$(".readonly").each(function(){
+			$(this).attr('readonly','readonly');
+		});
+		$(".disabledfield").each(function(){
+			$(this).attr('disabled', true);
+		});
+			
+		$(".datefield").change(function(){
+			$("form").validate().element(this);
+		});
+		
+		$(".chzn-select").chosen();
+
+		// if a select field with chosen changes, revalidate the field 
+		$("select.chzn-select:not('.novalidate')").chosen().change(function(){
+			// $("form").validate().element(this);
+		});
+	
+		// UI tabs
+		$("#tabs").tabs();
+		
+		// initialise the accordion
+		$("#accordion").accordion();
+		
+		// custom accordion functionality to allow collapsing more than one container at a time
+		$("#notaccordion").addClass("ui-accordion ui-widget ui-helper-reset ui-accordion-icons")
+	.find("h3")
+			.addClass("ui-accordion-header ui-helper-reset ui-corner-all ui-state-default")
+			.prepend('<span class="ui-icon ui-icon-triangle-1-e"/>')
+			.click(function() {
+				$(this).toggleClass("ui-accordion-header-active").toggleClass("ui-state-active")
+							.toggleClass("ui-state-default").toggleClass("ui-corner-bottom")
+					.find("> .ui-icon").toggleClass("ui-icon-triangle-1-e").toggleClass("ui-icon-triangle-1-s")
+					.end().next().slideToggle(function() {
+							// resize content column height when toggle is completed
+							/*if($("#notaccordion").height() < 500 ){
+								$("#contentcolumn").css({'height': 1000});							
+							} else {
+								$("#contentcolumn").css({'height': $("#notaccordion").height() + 500});						
+							}*/
+						}).toggleClass("ui-accordion-content-active clicked");
+				return false;
+			})
+			.next().addClass("ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom").hide();
+			
+		// copy the classes to html radio labels from the containing div elements
+		// this is a work around since Zend_Form_Element_Radio generation does not support adding labels to the labels around the containing elements 
+		$('div.radio > label').each(function(){
+			$(this).addClass($(this).parent().attr('class')); 
+		});
+		// select all checkboxes with a class Y
+		$("input:checkbox.Y, input:checkbox.1, input:radio.Y, input:radio.1").attr('checked', true); 
+				
+		// If there are any errors in validating a form, make form height and content column equal
+		$(":submit").click(function(){
+			if(!($("form.form-horizontal, form.form-vertical").valid())){
+				resizeContentForm();
+			} 
+		});	
+		
+		// auto submit for list filters with the specified class, and all selects in a container with class filter 
+		$(".autosubmitsearchform, .filtercontainer select, #itemcountperpage, select.autofilter, input.autofilter").not(".autosubmitsearchform").each(function(){
+			$(this).change(function(){
+				// clear the values in the search field
+				clearValue("searchterm"); 
+				// submit the form containing the dropdown
+				$(this).parents("form:first").submit(); 
+			});
+		});
+		
+		$("div.alert-error").css({'background': 'url("<?php echo $this->baseUrl('images/cross.png'); ?>") no-repeat #EDDBE3 5px 8px'});
+		$("div.alert-success").css({'background': 'url("<?php echo $this->baseUrl('images/tick.png'); ?>") no-repeat #CCDDBB 5px 8px'});
+		
+		// return to previous page for cancel buttons
+		$('a.cancel').click(function(){
+			parent.history.back();
+			return false;
+		});
+	
+		// reset tab index
+		var tabindex = 1;
+		$('input,select,textarea').each(function() {
+			if (this.type != "hidden") {
+				var $input = $(this);
+				$input.attr("tabindex", tabindex);
+				tabindex++;
+			}
+		});
+	
+		$("img.ui-datepicker-trigger").attr('title','You may use calendar to select a date');
+		// set drop down date from date picker
+		$("#dateofbirth").change(function() {
+			var thedate = $(this).val();
+			if(!isEmptyString(thedate)){
+				var d = new Date(thedate);
+				// alert(d.getFullYear()+" - "+d.getMonth()+1+" - "+d.getDate());
+				$("#birthyear").val(d.getFullYear());
+				$("#birthmonth").val(d.getMonth()+1);
+				$("#birthday").val(d.getDate());
+			}
+		});
+	
+		$("img.ui-datepicker-trigger").each(function(){
+			var theid = $(this).attr('id');
+			var thepath = '<?php echo $this->baseUrl('images/questionmark.png'); ?>';
+			$('<a href="javascript: void(0);" class="qcontainer"><img src="'+thepath+'" /></a>').insertAfter(this);
+		});
+	
+		$('#dialog').modal({
+			keyboard: false,
+			backdrop: 'static'
+		});
+		$('#dialog').modal('hide');
+		
+		$(".disablefield").each(function(){
+			$(this).attr('readonly', true).attr('disabled', true);
+		});
+		
+		$("#viewadminprofile, #viewpersonprofile").hide();
+		
+		// add farmer to group
+		$('.addpopup').click(function(e){
+			// $("#"+idparam).qtip("hide");
+			e.preventDefault();
+			var title = $(this).attr('rel');
+			var href = $(this).attr('href');
+			var formid = $(this).attr('formtitle');
+			var posturl = $(this).attr('action');
+			var successurl = $(this).attr('successurl');
+			var submittext = $(this).attr('submittext'); 
+			// alert(posturl);
+			// popup title
+			$(".modal-header h3").html(title);
+			// load content
+			$("#dialogcontent").html($("#dialogbody #loading").html());
+			$("#dialogcontent").load(href);  	
+			// then show it after the changes have been made
+			$('#dialog').modal('toggle');
+			
+			// check for default submit button text
+			if(!isEmptyString(submittext)){
+				$("#new #save").html('<i class="icon-ok icon-white"></i> '+submittext);
+			}
+			
+			// save dialog
+			$('#save').on('click', function(e){
+				// $('#dialog').modal('hide');
+				if ($("#"+formid).valid() == true) {
+					// disable buttons
+					$(".modelcancel").hide();
+					$(this).hide();
+					// post form
+					$.post(  
+						posturl,  
+						$("#"+formid).serialize(),  
+						function(data){
+							// alert(data); return false;
+							var url = successurl;    
+							$(location).attr('href',url);
+						}  
+					); // close the $.post
+					$("#dialogcontent").hide(); 										
+					$("#dialogbody #loading").show();
+				}
+			});
+			// cancel model
+			$(".modelcancel").on('click', function(e){
+				$("#dialog").modal('hide');
+			});		
+			$('#dialog').on('hidden', function () {
+				// location.reload(true);
+				$(".dialog, body").css("overflow", "auto");
+			});
+			
+			$(".dialog, body").css("overflow", "hidden");
+			 
+			return false;
+		});
+		
+		$.validator.addClassRules("greaterthanzero", {
+			greaterthanzero: true				
+		});
+		
+		$.validator.addMethod("greaterthanzero", function(value, element) {				
+			if(!isEmptyString(value) && parseFloat(value) <=0){
+				return false;
+			}
+			return true;
+		}, "Should be greater than zero");
+		
+		$.validator.addClassRules("inputrequired", {
+			input_not_empty: true				
+		});
+		$.validator.addMethod("input_not_empty", function(value, element) {				
+			if(isEmptyString(value)){
+				return false;
+			}
+			return true;
+		}, "Please enter a value");
+		
+		$.validator.addClassRules("selectrequired", {
+			select_not_empty: true				
+		});
+		$.validator.addMethod("select_not_empty", function(value, element) {				
+			if(isEmptyString(value)){
+				return false;
+			}
+			return true;
+		}, "Please select");
+		
+		// Add validation rules for number fields on each line
+		$.validator.addClassRules("isnumber", {
+			validate_number: true				
+		});
+		$.validator.addMethod("validate_number", function(value, element) {				
+			if(!IsValidAmount(value)){
+				return false;
+			}
+			return true;
+		}, "Invalid Number");
+		// add the validation for wholesale price to be less than retail price
+		$.validator.addMethod("validnumber", function(value, element, params) { 
+			if (IsValidAmount(value)) {
+				return true; 
+			}
+			return false;        
+		}, "Please enter a valid Phone Number");
+		
+		$.validator.addClassRules("isdecimal", {
+			validate_decimal: true				
+		});
+		$.validator.addMethod("validate_decimal", function(value, element) {				
+			if(!IsValidDecimal(value)){
+				return false;
+			}
+			return true;
+		}, "Invalid Size");
+		
+		$.validator.addClassRules("isamount", {
+			validate_amount: true				
+		});
+		$.validator.addMethod("validate_amount", function(value, element) {				
+			if(!IsValidAmount(value)){
+				return false;
+			}
+			return true;
+		}, "Invalid Amount");
+		
+		// Add validation rules for maximum characters for content
+		$.validator.addClassRules("max50content", {
+			validate_50_string: true				
+		});
+		$.validator.addMethod("validate_50_string", function(value, element) {				
+			if(value.length > 50){
+				return false;
+			}
+			return true;
+		}, "Only a maximum of 50 Characters allowed!");
+		
+		$.validator.addClassRules("max255content", {
+			validate_255_string: true				
+		});
+		$.validator.addMethod("validate_255_string", function(value, element) {				
+			if(value.length > 255){
+				return false;
+			}
+			return true;
+		}, "Only a maximum of 255 Characters allowed!");
+		
+		// Add validation rules for maximum characters for content
+		$.validator.addClassRules("strictalpha", {
+			validate_strict_alpha: true				
+		});
+		$.validator.addMethod("validate_strict_alpha", function(value, element) {				
+			return this.optional(element) || /^[a-zA-Z0-9-_]*$/i.test(value);
+		}, "Only letters, digits, underscore and no space are allowed");
+		
+		// Add validation rules for maximum characters for content
+		$.validator.addClassRules("endafterstart", {
+			enddateafterstartdate: true				
+		});
+		
+		$.validator.addMethod("validate_ug", function(value, element, params) { 
+			if(isEmptyString(value)) {
+				return true; 
+			}
+			if(!isEmptyString(value) && !isUgNumber(value)) {
+				return false; 
+			}
+			return true;        
+		}, "<?php echo $this->translate("globale_phonenumber_format"); ?>");
+		$.validator.addMethod("validate_ke", function(value, element, params) { 
+			if(isEmptyString(value)) {
+				return true; 
+			}
+			if(!isEmptyString(value) && !isKeNumber(value)) {
+				return false; 
+			}
+			return true;        
+		}, "<?php echo $this->translate("globale_phonenumber_format_ke"); ?>");
+		
+		// validate captcha
+		$.validator.addMethod("validatecode", function(value, element, params) {
+			//alert('code is '+value); //alert('valid is '+$("#validcode").val());
+			if ($("#code").val().toLowerCase() == $("#validcode").val().toLowerCase()) {
+				return true; 
+			}
+			return false;        
+		}, "Captcha Invalid! <br />Re-enter code or refresh for a new one");
+		
+		// function to validate the enddate being greater than the start date
+		$.validator.addMethod("enddateafterstartdate", function(value, element) {            
+			var startDate = $(".startdate").val();  
+			if($.trim(value) == ""){
+				return true;
+			}
+			if($.trim(startDate) == ""){
+				return false;
+			}
+			return Date.parse(startDate) <= Date.parse(value);        
+		}, "Please select an End Date after the Start Date");
+		
+		// delete rules
+		$("#deleteline, .deleteline").click(function() {
+			var message = '<label class="blockcontainer">Are you sure you want to delete this entry? <br /><br /> Click <b>OK</b> to confirm, and <b>Cancel</b> to ignore</label>';
+			var custom_msg = $(this).attr('message');
+			if(!isEmptyString(custom_msg) && custom_msg != 'undefined'){
+				var message = '<label class="blockcontainer">'+custom_msg+' <br /><br /> Click <b>OK</b> to confirm, and <b>Cancel</b> to ignore</label>';
+			}
+			var url = $(this).attr('action');
+			// alert(url);
+			removeLine(message, url);
+		});
+		function removeLine(message, url) {
+			bootbox.confirm(message, function(confirmed) {
+				if(confirmed){
+					window.location.href = url;					
+				} else {
+					return false;
+				}
+			});
+		}
+		
+		// hover and unhover upload icon
+		$("#profileinfo, .profileinfo").hover(function(){
+			$("#uploadlink").show();
+		}, function() {
+			$("#uploadlink").hide();
+		});
+		
+		// hover and unhover upload icon
+		$("#signinfo").hover(function(){
+			$("#signlink").show();
+		}, function() {
+			$("#signlink").hide();
+		});
+		
+		$('input, textarea').placeholder();
+		
+		// invite one person
+		$("a.invitetrigger").click(function(){
+			var id = $(this).attr('id');
+			var farmerid = $("label."+id).html();
+			var email = $("input."+id).val();
+			var invitedby = $("label."+id).attr('title');
+			if(isEmptyString(email)) {
+				$("div#invite_"+farmerid+"_error").html('<div class="alert alert-error">Please enter email to invite</div>');
+				$("div.alert-error").css({'background': 'url("<?php echo $this->baseUrl('images/cross.png'); ?>") no-repeat #EDDBE3 5px 8px'});
+			}
+			if(!isEmptyString(email) && !validateEmail(email)) {
+				$("div#invite_"+farmerid+"_error").html('<div class="alert alert-error">Please enter a valid email</div>');
+				$("div.alert-error").css({'background': 'url("<?php echo $this->baseUrl('images/cross.png'); ?>") no-repeat #EDDBE3 5px 8px'});
+			}
+			
+			// check that email is provided
+			if(!isEmptyString(email) && validateEmail(email)) {
+				$("div#invite_"+farmerid+"_error").html('');
+				$("span#inv_before_"+farmerid).hide(); 
+				$("span#inv_after_"+farmerid).html($('#loading_'+farmerid).html()); 
+				// post 
+				$.post(  
+					"<?php echo $this->baseUrl("farmer/inviteone"); ?>", {id: farmerid, email: email},  
+					function(data){
+						// alert(data); exit();
+						if(data.search("Success") != -1){								
+							// reload parent on close				
+							$("span#inv_after_"+farmerid).html(data);	
+							$("span#inv_hide_"+farmerid).hide(); 			
+						} else {
+							var err = 'An error occured while inviting user. Try again later';
+							$("span#inv_after_"+farmerid).html(data);
+							$("#inv_before_"+farmerid).show();
+							
+						}
+						// location.reload(true);
+						$("span#inv_after_"+farmerid+" a").hide(); 
+						$("div.alert-success").css({'background': 'url("<?php echo $this->baseUrl('images/tick.png'); ?>") no-repeat #FEF0B6 5px 8px'});
+					}  
+				); // close the $.post
+			}
+		});
+		
+		// validate phone number on file
+		$("a.validatetrigger").click(function(){
+			var id = $(this).attr('id');
+			var userphoneid = $("label."+id).html();
+			var code = $("input."+id).val();
+			var successurl = $(this).attr('successurl');
+			
+			var validcode = true;
+			var clength = code.length;
+			if(isEmptyString(code) || (!isEmptyString(code) && clength < 6)) {
+				$("div#validate_"+userphoneid+"_error").html('<div class="alert alert-error">Please enter 6 digit code</div>');
+				$("div.alert-error").css({'background': 'url("<?php echo $this->baseUrl('images/cross.png'); ?>") no-repeat #EDDBE3 5px 8px'});
+				validcode = false;
+			}
+			
+			// check that email is provided
+			if(validcode) {
+				$("div#validate_"+userphoneid+"_error").html('');
+				$("span#phone_before_"+userphoneid).hide(); 
+				$("span#phone_after_"+userphoneid+" a").show(); 
+				var url = '<?php echo $this->baseUrl("farmer/verifyphone"); ?>/userphoneid/'+userphoneid+'/code/'+code+'/successurl/'+successurl;
+				// alert(confirmurl);
+				window.location.href = url;
+			}
+		});
+		
+		// refresh captcha
+		$('img#refresh').click(function() { 			
+			change_captcha();
+		});
+		
+		$('img#refresh').click();
+		function change_captcha(){
+			$("#code").val(''); 
+			$.get("<?php echo $this->baseUrl('signup/getcaptcha'); ?>", 
+				// parameters for the request along with a cachebuster to stop IE from caching the request
+				{cachebuster: new Date().getTime()}, 			   
+				function(data){			
+					//alert(data);
+					$("#validcode").val(data); 
+					$("#captcha").html(data).css({'font-size':'20px'});			
+				}
+			);
+		}
+		
+		
+		// change password
+		$('.changepassword').click(function(e){
+			// $("#"+idparam).qtip("hide");
+			e.preventDefault();
+			
+			// popup title
+			$(".modal-header h3").html($(this).attr('rel'));
+			// load content
+			$("#dialogcontent").html($("#dialogbody #loading").html());
+			$("#dialogcontent").load($(this).attr('href'));  	
+			// then show it after the changes have been made
+			$('#dialog').modal('toggle');
+	
+			// save dialog
+			$('#save').on('click', function(e){
+				// $('#dialog').modal('hide');
+				if ($("#indexform").valid() == true) {
+					bootbox.confirm('<label class="blockcontainer">Are you sure you want to change your Password? <br /><br />Click <b>OK</b> to proceed, and <b>Cancel</b> to ignore</label>', function(confirmed) {
+						if(confirmed){
+							// disable buttons
+							$(".modelcancel").hide();
+							$(this).hide();
+							// post form
+							$.post(  
+								"<?php echo $this->baseUrl("profile/processchangepassword"); ?>",  
+								$("#indexform").serialize(),  
+								function(data){
+									// alert(data);
+									location.reload(true);
+								}  
+							); // close the $.post
+							$("#dialogcontent").hide(); 										
+							$("#dialogbody #loading").show();
+						} else {
+							return false;
+						}
+					});
+				}
+			});
+			// cancel model
+			$(".modelcancel").on('click', function(e){
+				$("#dialog").modal('hide');
+			});		
+			$('#dialog').on('hidden', function () {
+				// location.reload(true);
+				$(".dialog, body").css("overflow", "auto");
+			});
+			$(".dialog, body").css("overflow", "hidden");
+			 
+			return false;
+		});
+		
+		$('.radio.btn-group label').addClass('btn');
+		$(".btn-group label:not(.active)").click(function() {
+			var label = $(this);
+			var input = $('#' + label.attr('for'));
+	
+			if (!input.prop('checked')) {
+				label.closest('.btn-group').find("label").removeClass('active btn-success btn-danger btn-primary');
+				if (input.val() == '') {
+					label.addClass('active btn-primary');
+				} else if (input.val() == 0) {
+					label.addClass('active btn-danger');
+				} else {
+					label.addClass('active btn-success');
+				}
+				input.prop('checked', true);
+			}
+		});
+		$(".btn-group input[checked=checked]").each(function() {
+			if ($(this).val() == '') {
+				$("label[for=" + $(this).attr('id') + "]").addClass('active btn-primary');
+			} else if ($(this).val() == 0) {
+				$("label[for=" + $(this).attr('id') + "]").addClass('active btn-danger');
+			} else {
+				$("label[for=" + $(this).attr('id') + "]").addClass('active btn-success');
+			}
+		});
+
+		// when a user clicks add new display the first hidden firm which is not shown
+		$(".addline").click(function() {
+			showNewLine($(this).attr('id'));
+		});		
+		function showNewLine(type) {
+			$(".hidden_row_"+type+":first").removeClass("hidden_row_"+type).addClass("visible_row_"+type);	
+			
+			// remove disabled attr from the fields
+			$("tr.visible_row_"+type+" input").attr("disabled", false);
+			$("tr.visible_row_"+type+" select").attr("disabled", false);	
+				
+			//if the maximum no of rows is added, hide the link to add another row
+			if ($("tr.visible_row_"+type+"").size() == 10) {
+				$("#"+type).hide();	
+			} else {
+				$("#"+type).show();	
+			}				
+		}
+		
+		// delete rules
+		$(".removeline").click(function() {
+			removeRow($(this).attr('id'), $(this).attr('rel'));
+		});
+		function removeRow(lineid, type) {
+			var row_to_hide = lineid;
+			// confirm popup
+			bootbox.confirm("Are you sure you want to delete this entry? <br /><br /> Click <b>'OK'</b> to confirm, and <b>'Cancel'</b> to ignore", function(confirmed) {
+				if(confirmed){
+					$("tr.visible_row_"+type).has('a#'+row_to_hide).addClass("hidden_row_"+type).removeClass("visible_row_"+type);
+					// $("input, select").attr("disabled", true);	
+					$("tr."+row_to_hide+" input").val('').attr("disabled", true);
+					$("tr."+row_to_hide+" select").val('').attr("disabled", true);	
+					//if the maximum no of rows is added, hide the link to add another row
+					if ($("tr.visible_row_"+type).size() == 10) {
+						$("#"+type).hide();		
+					} else {
+						$("#"+type).show();	
+					}	
+				} else {
+					return false;
+				}
+			});
+		}
+		
+		var screenwidth = window.screen.availWidth;
+		var screenheight = window.screen.availHeight;
+		
+		$('div.controls').each(function() {
+			var html = $(this).html();
+			if(isEmptyString(html)){
+				$(this).html('--');
+			}
+		});
+		
+		$("a.gonowhere").each(function(){
+			$(this).attr('href', 'javascript: void(0)');
+		});
+		
+		$('body').addClass('mobile');
+		
+		// change password
+		$('.selectseason').click(function(e){
+			// $("#"+idparam).qtip("hide");
+			e.preventDefault();
+			var title = $(this).attr('rel');
+			var href = $(this).attr('href');
+			var formid = $(this).attr('formtitle');
+			var posturl = $(this).attr('action');
+			var successurl = $(this).attr('successurl');
+			var submittext = $(this).attr('submittext'); 
+			// alert(posturl);
+			// popup title
+			$(".modal-header h3").html(title);
+			// load content
+			$("#dialogcontent").html($("#dialogbody #loading").html());
+			$("#dialogcontent").load(href);  	
+			// then show it after the changes have been made
+			$('#dialog').modal('toggle');
+			
+			// check for default submit button text
+			if(!isEmptyString(submittext)){
+				$("#new #save").html('<i class="icon-ok icon-white"></i> '+submittext).remove();
+			}
+			
+			// $(location).attr('href',url);
+			// cancel model
+			$(".modelcancel").on('click', function(e){
+				$("#dialog").modal('hide');
+			});		
+			$('#dialog').on('hidden', function () {
+				// location.reload(true);
+				$(".dialog, body").css("overflow", "auto");
+			});
+			
+			$(".dialog, body").css("overflow", "hidden");
+			 
+			return false;
+		});
+	}); 
+</script>
+<style>
+.mobile label, .mobile select, .mobile button, .mobile input[type="button"], .mobile input[type="reset"], .mobile input[type="submit"], .mobile input[type="radio"], .mobile input[type="checkbox"] {
+    cursor: inherit;
+}
+</style>
+</head>

@@ -3,9 +3,11 @@ Dear <?php echo $this->firstname; ?>,<br /><br />
 
 We would like to welcome you to <?php echo $this->appname; ?>.<br /><br />
 
-To activate your new <?php echo $this->appname; ?> account, click on the activation link below:<br />
+Your activation code is: <?php echo $this->actcode; ?> <br /><br />
 
-<?php echo $this->activationurl; ?><?php // echo $this->serverUrl($this->url($this->activationurl)); ?><br /><br />
+To activate your new <?php echo $this->appname; ?> account, enter the activation code above at the confirmation step or click on the activation link below:<br />
+
+<?php echo $this->activationurl; ?><br /><br />
 
 If the page fails to open, copy the activation link and paste it in the address window of the browser.<br />
 

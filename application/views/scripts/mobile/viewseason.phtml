@@ -1,0 +1,222 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$season = new Season(); 
+	$season->populate(decode($request->id));
+	/*$croplines = $season->getSeasonDetails();
+	$noofcrops = $croplines->count();*/
+	$plant = $season->getSeasonPlants()->get(0);
+	$hasplanted = false;
+	if(!isEmptyString($plant->getID())){
+		$hasplanted = true;
+	}
+	$crop = $season->getCrop();
+	$loan = $season->getLoans()->get(0);
+	
+	$isme = true;
+	if(!isFarmer()){
+		$isme = false;
+	}
+	
+	// default title is to enable adding any payee
+	$title = $season->getName()." - ".$season->getRef(); 
+		
+	$this->headTitle($title);  
+	$farmtitle = "Manage Seasons";
+	
+?>
+<?php require APPLICATION_PATH."/views/scripts/mobile/mobileincludes.phtml"; ?>
+
+<script>
+	$(document).ready(function() {
+		$("#bottomactions").html($("#topactions").html());
+		
+	});
+</script>
+<body>
+<div class="container-fluid viewpage" id="view_farmer">
+  <div class="row-fluid">
+   <h4><?php echo $title; ?></h4>
+  </div>
+    <div class="control-group well actions" id="topactions">
+        <a class="btn noimgbutton" href="<?php echo $this->baseUrl('mobile/home'); ?>"><i class="icon-home"></i></a>
+        <a class="btn noimgbutton" href="<?php echo $this->baseUrl('mobile/addseason/id/'.encode($season->getID())); ?>" title="Update Season" id="update"><i class="icon-pencil"></i></a>
+        <div class="btn-group">
+            <button class="btn btn-primary dropdown-toggle centeralign" data-toggle="dropdown" id="" href="javascript: void(0)" style="width:110px; padding-left:0;"><i class="icon-plus icon-white"></i> Log Activity</button>
+            <button class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="padding-bottom:12px;"><span class="caret"></span></button>
+            <ul class="dropdown-menu">
+                <li><a href="<?php echo $this->baseUrl('mobile/addseasonevent/stage/input/sid/'.encode($season->getID())."/type/1"); ?>"><i class="icon-plus"></i> Season Inputs</a></li>
+                <li><a href="<?php echo $this->baseUrl('mobile/addseasonevent/stage/tillage/sid/'.encode($season->getID())); ?>"><i class="icon-plus"></i> Tillage</a></li>
+                <li><a href="<?php echo $this->baseUrl('mobile/addseasonevent/stage/plant/sid/'.encode($season->getID())); ?>"><i class="icon-plus"></i> Planting</a></li>
+                <li><a href="<?php echo $this->baseUrl('mobile/addseasonevent/stage/treat/sid/'.encode($season->getID())); ?>"><i class="icon-plus"></i> Treatment & Pesticides</a></li>
+                <li><a href="<?php echo $this->baseUrl('mobile/addseasonevent/stage/harvest/sid/'.encode($season->getID())); ?>"><i class="icon-plus"></i> Harvesting</a></li>
+                <!--<li><a href="<?php //echo $this->baseUrl('mobile/addseasonevent/stage/activity/sid/'.encode($season->getID())); ?>"><i class="icon-plus"></i> Post Harvest</a></li>-->
+                <li><a href="<?php echo $this->baseUrl('mobile/addseasonevent/stage/sale/sid/'.encode($season->getID())); ?>"><i class="icon-plus"></i> Season Sales</a></li>
+            </ul>
+        </div>
+       	<a class="btn" href="<?php echo $this->baseUrl('mobile/seasons'); ?>"><i class="icon-list"></i> <?php echo $isme ? 'My' : 'Manage'; ?> Seasons</a>
+        <?php if($isme){ ?>
+        	<a class="btn" href="<?php echo $this->baseUrl('mobile/view/id/'.encode($season->getUserID())); ?>"><i class="icon-user"></i> My Profile</a>
+        <?php } else { ?>
+        	<a class="btn" href="<?php echo $this->baseUrl('mobile/view/id/'.encode($season->getUserID())); ?>"><i class="icon-user"></i> Farmer's Profile</a>
+        <?php } ?>
+    </div>
+  <?php if($sessionhaserror) { ?>
+      <div class="row-fluid">
+      	<div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+      </div>
+  <?php } ?>
+  <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+  	<div class="row-fluid">
+      	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+	</div>
+  <?php } ?>
+  <?php if(!isEmptyString($session->getVar("custommessage")) ){ ?>
+  	<div class="row-fluid">
+      	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar("custommessage"); ?></div>
+	</div>
+  <?php } ?>
+  <div class="row-fluid">
+      <form class="form-horizontal" id="viewform">
+      	<fieldset class="fieldsetcontainer well">
+        <legend>Season Details</legend>
+            <div class="control-group" style="margin-bottom:0;">
+                <label class="control-label" style="width:100%;"><?php echo $season->getActivityName(); ?></label>
+            </div>
+            <div class="control-group">
+                <div class="imagecontainer" style="width:200px; min-height:90px; padding:2px; margin-top:10px;">
+                    <img style="width:100%;" src="<?php echo $crop->getImagePath(); ?>" />
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label"><?php echo $this->translate("season_commodity_label"); ?>:</label>
+                <div class="controls"><?php echo $crop->getName(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label">Field Size:</label>
+                <div class="controls"><?php echo clean_num($season->getFieldSize())."&nbsp;<span class='pagedescription'>(".$season->getFieldSizeUnitText().")</span>"; ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label"><?php echo $this->translate("season_startdate_label"); ?>:</label>
+                <div class="controls"><?php echo $season->getFullStartDate(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label"><?php echo $this->translate("season_enddate_label"); ?>:</label>
+                <div class="controls"><?php echo $season->getFullEndDate(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label">Current Status:</label>
+                <div class="controls"><?php echo $season->getStatusText(); ?></div>
+            </div>
+        </fieldset>
+        <fieldset class="fieldsetcontainer well">
+            <legend><?php echo $this->translate("season_credit_finance_title"); ?></legend>
+            <div class="control-group">
+                <label class="control-label"><?php echo $this->translate("season_credit_type_label"); ?>:</label>
+                <div class="controls"><?php $data = getCapitalSources(); echo $data[$season->getFinanceType()]; ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label">Net Startup Capital:</label>
+                <div class="controls"><?php echo formatMoney($season->getNetCapital()); ?></div>
+            </div>
+            <?php if($season->getFinanceType() == 5){ ?>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_credit_client_label"); ?>:</label>
+                    <div class="controls"><?php echo isEmptyString($loan->getPrice()) ? '--' : nl2br($loan->getPrice()); ?></div>
+                </div>
+                <div class="control-group">
+                   	<label class="control-label"><?php echo $this->translate("season_credit_value_label"); ?>:</label>
+                    <div class="controls"><?php echo $loan->getTheClient(); ?></div>
+                </div>
+                <div class="control-group">
+                   	<label class="control-label"><?php echo $this->translate("season_credit_terms_label"); ?>:</label>
+                    <div class="controls"><?php echo isEmptyString($loan->getContract()) ? '--' : nl2br($loan->getContract()); ?></div>
+                </div>
+            <?php } ?>
+            <div id="hasloan">
+            	<?php if($season->getFinanceType() == 3 || $season->getFinanceType() == 4){ ?>
+                    <div class="control-group">
+                        <label class="control-label"><?php echo $this->translate("season_credit_principal_label"); ?>:</label>
+                        <div class="controls"><?php echo formatMoney($loan->getPrincipal()); ?></div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label"><?php echo $this->translate("season_credit_interestrate_label"); ?>:</label>
+                        <div class="controls"><?php echo $loan->getInterestRate().'&nbsp;<span class="pagedescription">(%)</span>'; ?>&nbsp;</div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label"><?php echo $this->translate("season_credit_payperiod_label"); ?>:</label>
+                        <div class="controls"><?php echo isEmptyString($loan->getPayBackPeriodText()) ? '--' : $loan->getPayBackPeriodText(); ?></div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label"><?php echo $this->translate("season_credit_repayment_label"); ?>:</label>
+                        <div class="controls"><?php echo formatMoney($loan->getPayBackAmount()); ?></div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label"><?php echo $this->translate("season_credit_regularpay_label"); ?>:</label>
+                        <div class="controls"><?php echo $loan->getInstallmentText(); ?></div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label"><?php echo $this->translate("season_credit_datereceived_label"); ?>:</label>
+                        <div class="controls"><?php echo isEmptyString($loan->getcreditdate()) ? '--' : changeMySQLDateToPageFormat($loan->getcreditdate()); ?></div>
+                    </div>
+                    <?php if($season->getFinanceType() == 4){ ?>
+                        <div class="control-group">
+                            <label class="control-label"><?php echo $this->translate("season_credit_source_label"); ?>:</label>
+                            <div class="controls"><?php echo $loan->getFinancialSourceValue(); ?></div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label"><?php echo $this->translate("season_credit_source_label"); ?>:</label>
+                            <div class="controls"><?php echo isEmptyString($loan->getFinanceSourceText()) ? '--' : $loan->getFinanceSourceText(); ?></div>
+                        </div>
+                    <?php } ?>
+                <?php } ?>
+            </div>
+        </fieldset>
+        <fieldset class="fieldsetcontainer">
+            <legend>Season Activity Timeline</legend>
+            <?php 
+				$timeline = sort_multi_array($season->getTimeLineDetails(true), 'order');
+				$acount = count($timeline);
+				if($acount == 0) { ?>
+				<div class="alert alert-info margin10">No activities have been logged. Click on 'Log Activity' to record activities.</div>
+			<?php } else { ?>
+				<?php 				  		
+					foreach($timeline as $activity){
+				?>
+                    <fieldset class="fieldsetcontainer well" style="margin:0 10px; width:94%">
+                        <legend style="font-size:14px;"><a href="<?php echo $activity['url']; ?>" style="color:#317EAC;"><?php echo $activity['date']; ?> - <?php echo $activity['activityname']; ?></a></legend>
+                        <div class="control-group" style="margin-bottom:5px; margin-top:5px">
+                            <label class="control-label" style="font-size:12px; display:inline;">Ref#:</label>
+                            <div class="controls" style="font-size:12px; display:inline;"><span><?php echo $activity['ref']; ?></span></div>
+                        </div>
+                        <div class="control-group" style="margin-bottom:5px;">
+                            <label class="control-label" style="font-size:12px;">Details </label>
+                            <div class="controls" style="font-size:12px;"><span><?php echo snippet($activity['description'], 300, '...'); ?></span></div>
+                        </div>
+                        <div class="control-group" style="margin-bottom:5px;">
+                            <label class="control-label" style="font-size:12px; display:inline;">Status</label>
+                            <div class="controls" style="font-size:12px; display:inline;"><span><?php echo $activity['status']; ?></span></div>
+                        </div>
+                        <div class="control-group" style="margin-bottom:5px;">
+                        	<?php if(in_array($activity['type'], array("1","2","3","4","5","6")) && $activity['expenses'] > 0){ ?>
+                                <label class="control-label" style="font-size:12px; display:inline;">Expenses</label>
+                                <div class="controls" style="font-size:12px; display:inline;"><span><?php echo formatNumber($activity['expenses']); ?></span></div>
+                            <?php } ?>
+                            <?php if($activity['type'] == "7" && $activity['sale'] > 0){ ?>
+                                <label class="control-label" style="font-size:12px; display:inline;">Revenue</label>
+                                <div class="controls" style="font-size:12px; display:inline;"><span><?php echo formatNumber($activity['sale']); ?></span></div>
+                            <?php } ?>
+                        </div>
+                    </fieldset>
+                <?php } ?>    
+            <?php } ?>
+        </fieldset>
+        <div class="control-group well actions" id="bottomactions"></div>       
+      </form>
+  </div>
+</div>
+</body>
+</html>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

@@ -33,13 +33,49 @@ class IndexController extends Zend_Controller_Action  {
 		$this->_translate = Zend_Registry::get("translate"); 
 		// set the redirector to ignore the baseurl for redirections
 		$this->_helper->redirector->setPrependBase(false); 
-		
+		$session = SessionWrapper::getInstance();
 		$this->_eventdispatcher = initializeSFEventDispatcher();
 		
 		// load the application configuration
 		loadConfig(); 
-		/*echo 'moved to <a href="http://www.farmis.ug">http://www.farmis.ug</a>';
-		exit();*/
+		
+		// determine country
+		$domain = strtolower($_SERVER['SERVER_NAME']);
+		$country = 'ug';
+		$iskenya = '';
+		$kenyaexists = false;
+		if(stringContains('farmis.co.ke', $domain)){
+			$kenyaexists = true;
+		}
+		if(strtolower(strtolower($this->_getParam('country'))) == 'ke' || $kenyaexists){
+			$country = 'ke';
+		}
+		
+		// $this->view->viewurl = $this->getRequest()->getrequestUri();
+		$this->view->viewurl = $_SERVER['REQUEST_URI'];
+		$this->view->referer = $this->getRequest()->getHeader('referer');
+		$this->view->domain = $_SERVER['SERVER_NAME'];
+		$this->view->country = $session->getVar('country');
+		$session->setVar('domain', $_SERVER['SERVER_NAME']);
+		$session->setVar('country', $country);
+		$controller = $this->_getParam('controller');
+		$action = $this->_getParam('action');
+			
+		if($controller != 'graph'){
+			$agent = getAgent();
+			$allowredirect = false;
+			
+			// determine if mobile
+			if(isMobile() || $agent == 'mobile'){
+				// debugMessage('is mobile');
+	    		if($controller != 'mobile' && $controller != 'user' && $controller != 'signup'){
+	    			$this->_helper->redirector->gotoUrl($this->view->baseUrl("mobile/home"));
+	    		}
+			}
+		}
+		// debugMessage($this->_getAllParams());
+		// debugMessage('FARMIS is Currently under scheduled maintenance. Check back at 1530Hrs 04/02/2014'); 
+		// exit();
     }
     
     /**
@@ -60,7 +96,7 @@ class IndexController extends Zend_Controller_Action  {
     }
     
    public function createAction() {
-    	// debugMessage($this->_getAllParams()); exit();	
+    	// debugMessage($this->_getAllParams()); // exit();	
    		$session = SessionWrapper::getInstance(); 
     	// the name of the class to be instantiated
     	$classname = $this->_getParam("entityname");
@@ -89,8 +125,8 @@ class IndexController extends Zend_Controller_Action  {
     	// to ensure that its wellformed 
     	$new_object->processPost($this->_getAllParams());
     	/*debugMessage($new_object->toArray());
-    	debugMessage('errors are '.$new_object->getErrorStackAsString());
-    	exit();*/
+    	debugMessage('errors are '.$new_object->getErrorStackAsString());*/
+    	// exit();
     	if ($new_object->hasError()) {
     		// there were errors - add them to the session
     		$this->_logger->info("Validation Error for ".$classname." - ".$new_object->getErrorStackAsString());
@@ -112,23 +148,21 @@ class IndexController extends Zend_Controller_Action  {
     		}
     	} // end check for whether errors occured during the population of the object instance from the submitted data
     	
-    	/*$new_object->save(); $new_object->afterSave();
-		debugMessage('errors are '.$new_object->getErrorStackAsString()); exit();*/
     	// save the object to the database
     	try {
     		switch ($this->_getParam('action')) {
 				case "" :
 				case ACTION_CREATE:
+					$new_object->beforeSave(); 
 					if(in_array($new_object->getTableName(), array('useraccount'))){
 						$new_object->transactionSave();
 					} else {
-						$new_object->beforeSave(); 
 						$new_object->save(); 
-						// there are no errors so call the afterSave() hook
-						$new_object->afterSave(); 
 					}
+					// there are no errors so call the afterSave() hook
+					$new_object->afterSave(); 
 					/*debugMessage($new_object->toArray());
-					debugMessage('errors are '.$new_object->getErrorStackAsString()); exit();*/
+					debugMessage('save errors are '.$new_object->getErrorStackAsString()); exit();*/
 					break;
 				case ACTION_EDIT:  
 					// update the entity 
@@ -152,7 +186,7 @@ class IndexController extends Zend_Controller_Action  {
 				default :
 					break;
     		}
-    		
+    		// exit();
     		// add a success message, if any, to the session for display
     		if (!isEmptyString($this->_getParam(SUCCESS_MESSAGE))) {
     			$session->setVar(SUCCESS_MESSAGE, $this->_translate->translate($this->_getParam(SUCCESS_MESSAGE)));
@@ -206,7 +240,33 @@ class IndexController extends Zend_Controller_Action  {
     
     public function deleteAction() {
     	$this->_setParam("action", ACTION_DELETE); 
-    	$this->createAction();
+		
+    	$session = SessionWrapper::getInstance(); 
+    	$this->_helper->layout->disableLayout();
+		$this->_helper->viewRenderer->setNoRender(TRUE);
+		
+		$formvalues = $this->_getAllParams();
+		$successurl = decode($formvalues[URL_SUCCESS]);
+		if(!isArrayKeyAnEmptyString(SUCCESS_MESSAGE, $formvalues)){
+			$successmessage = decode($formvalues[SUCCESS_MESSAGE]);
+		}
+		$classname = $formvalues['entityname'];
+		// debugMessage($successurl);
+		
+    	$obj = new $classname;
+    	$id = is_numeric($formvalues['id']) ? $formvalues['id'] : decode($formvalues['id']);
+    	$obj->populate($id);
+    	/*debugMessage($obj->toArray());
+    	exit();*/
+    	if($obj->delete()) {
+    		$session->setVar(SUCCESS_MESSAGE, $this->_translate->translate("global_delete_success"));
+    		if(!isEmptyString($successmessage)){
+    			$session->setVar(SUCCESS_MESSAGE, $successmessage);
+    		}
+    		$this->_helper->redirector->gotoUrl($successurl);
+    	}
+    	
+    	return false;
     }
     
 	public function approveAction() {
@@ -317,13 +377,33 @@ class IndexController extends Zend_Controller_Action  {
 				echo generateJSONStringForSelectChain(getSubcountiesInDistrict($this->_getParam('districtid')), $this->_getParam('currentvalue'));			
 				break;
 			case 'district_groups':
-				# get all the counties in a district			
+				# get all the farm groups in a district			
 				echo generateJSONStringForSelectChain(getFarmGroupsInDistrict($this->_getParam('districtid')), $this->_getParam('currentvalue'));			
 				break;
-			case 'farmgroup_children':
-				# get all the counties in a district			
-				echo generateJSONStringForSelectChain(getSubGroups($this->_getParam('farmgroupid')), $this->_getParam('currentvalue'));			
+			case 'district_dnaprofiles':
+				# get all the dna profiles in a district			
+				echo generateJSONStringForSelectChain(getDNAsInDistrict($this->_getParam('locationid2')), $this->_getParam('currentvalue'));			
 				break;
+			case 'farmgroup_children':
+				# get all the farmgroups in a DNA			
+				echo generateJSONStringForSelectChain(getSubGroups($this->_getParam('farmgroupid'), $this->_getParam('country')), $this->_getParam('currentvalue'));			
+				break;
+			case 'farmgroup_farmers': 
+				# get all farmers in a group	
+				echo generateJSONStringForSelectChain(getFarmers($this->_getParam('farmgroupid'), false, false, false, '', $this->_getParam('country')), $this->_getParam('currentvalue'));			
+				break;
+			case 'farmgroup_farmers_phoneonly': 
+				# get all farmers in a group	
+				echo generateJSONStringForSelectChain(getFarmers($this->_getParam('farmgroupid'), true, false, false, '', $this->_getParam('country')), $this->_getParam('currentvalue'));			
+				break;
+			case 'farmgroup_farmers_emailonly': 
+				# get all farmers in a group	
+				echo generateJSONStringForSelectChain(getFarmers($this->_getParam('farmgroupid'), false, false, true, '', $this->_getParam('country')), $this->_getParam('currentvalue'));			
+				break;
+			case 'subgroup_farmers':
+				# get all farmers in a group	
+				echo generateJSONStringForSelectChain(getFarmers($this->_getParam('subgroupid'), false, true), $this->_getParam('currentvalue'));			
+				break;	
 			default: 
 				# get all the villages in a parishes			
 				echo '';			
@@ -413,15 +493,33 @@ class IndexController extends Zend_Controller_Action  {
     	}
     }
     
+	public function addAction(){
+		
+    }
+    
     public function addsuccessAction(){
 		$session = SessionWrapper::getInstance(); 
      	$this->_helper->layout->disableLayout();
 		$this->_helper->viewRenderer->setNoRender(TRUE);
 		$formvalues = $this->_getAllParams();
+		$this->_setParam("action", ACTION_VIEW);
 		
-		$session->setVar(SUCCESS_MESSAGE, "Successfully added");
+		$session->setVar(SUCCESS_MESSAGE, "Successfully saved");
    		if(!isArrayKeyAnEmptyString('successmessage', $formvalues)){
 			$session->setVar(SUCCESS_MESSAGE, decode($formvalues['successmessage']));
+		}
+		
+    } 
+    
+	public function adderrorAction(){
+		$session = SessionWrapper::getInstance(); 
+     	$this->_helper->layout->disableLayout();
+		$this->_helper->viewRenderer->setNoRender(TRUE);
+		$formvalues = $this->_getAllParams();
+		
+		$currenterror = $session->getVar(ERROR_MESSAGE);
+		if(isEmptyString($currenterror)){
+			$session->setVar(ERROR_MESSAGE, "An error occured in updating database");
 		}
     } 
     
@@ -448,4 +546,9 @@ class IndexController extends Zend_Controller_Action  {
 			$session->setVar(SUCCESS_MESSAGE, decode($formvalues['successmessage']));
 		}
     } 
+    
+    public function index2Action(){
+    	
+    }
+    
 }

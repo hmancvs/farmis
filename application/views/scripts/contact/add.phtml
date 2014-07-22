@@ -1,10 +1,33 @@
 <?php
 	require_once APPLICATION_PATH.'/includes/header.php';
 	
+	$country = 'UG';
+	$location_label = 'District';
+	$locations_label = 'Districts';
+	$countrycode = COUNTRY_CODE_UG;
+	$locationerror = $this->translate("farmer_district_error");
+	$country_params_refno_placeholder = 'placeholder="Auto" maxlength="8" ';
+	$county_label = $this->translate("global_county_label");
+	$subcounty_label = $this->translate("global_subcounty_label");
+	
+	if(isKenya()){
+		$session->setVar('country', 'ke');
+		$country = 'KE';
+		$location_label = 'County';
+		$locations_label = 'Counties';
+		$countrycode = COUNTRY_CODE_KE;
+		$locationerror = $this->translate("farmer_county_error");
+		$country_params_refno_placeholder = 'placeholder="" maxlength="10" ';
+		$county_label = $this->translate("global_subcounty_label");
+		$subcounty_label = $this->translate("global_ward_label");
+	}
+	
 	$contact = new Contact(); 
 	if(!isEmptyString($request->farmerid)){
 		$contact->setFarmerID(decode($request->farmerid));
-	} 
+	} else {
+		$contact->setCountry($country);
+	}
 		
 	$contact->setContactType(1);
 	$contact->setVisibility(1);
@@ -179,8 +202,9 @@ body {
             ?>
             <input type="hidden" name="entityname" value="Contact" />
             <input type="hidden" id="id" name="id" value="<?php echo encode($contact->getID()); ?>" />
-            <?php if(!isEmptyString($contact->getFarmerID())) { ?>
-            <input type="hidden" id="farmerid" name="farmerid" value="<?php echo $contact->getFarmerID(); ?>" />
+            <input type="hidden" id="country" name="country" value="<?php echo $contact->getCountry(); ?>" />
+            <?php if(!isEmptyString($contact->getUserID())) { ?>
+            <input type="hidden" id="userid" name="userid" value="<?php echo $contact->getUserID(); ?>" />
             <?php } ?>
 			<?php if(!isEmptyString($contact->getFarmGroupID())) { ?>
             <input type="hidden" id="farmgroupid" name="farmgroupid" value="<?php echo $contact->getFarmGroupID(); ?>" />

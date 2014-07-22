@@ -1,0 +1,528 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$user = new UserAccount();
+	$theid = decode($request->id);
+	if(isEmptyString($theid)){
+		$theid = $userid;
+	}
+	$type = $request->type;
+	$isfarmer = true;
+	
+	$user->populate($theid);
+	
+	$country = 'UG';
+	$location_label = 'District';
+	$locations_label = 'Districts';
+	$countrycode = COUNTRY_CODE_UG;
+	$county_label = $this->translate("global_county_label");
+	$subcounty_label = $this->translate("global_subcounty_label");
+	
+	if(isKenya() || $user->isKenyan()){
+		$country = 'KE';
+		$session->setVar('country', 'ke');
+		$location_label = 'County';
+		$locations_label = 'Counties';
+		$countrycode = COUNTRY_CODE_KE;
+		$county_label = $this->translate("global_subcounty_label");
+		$subcounty_label = $this->translate("global_ward_label");
+		$addfarmerurl = $this->baseUrl('mobile/farmer/country/ke');
+		$adduserurl = $this->baseUrl('mobile/farmer/type/other/country/ke');
+	}
+	
+	
+	if($user->getType() != 2){
+		$isfarmer = false;
+	}
+	
+	// debugMessage($user->toArray()); exit();
+	$id = $user->getID();	
+	$name = $user->getName();
+	$firstname = $user->getFirstName();
+	
+	# profile for one viewing
+	$isme = false;
+	if($userid == $user->getID()){
+		$isme = true;
+	}
+	if($userid == $user->getID()){
+		$isme = true;
+	}
+	
+	$phone = getShortPhone($user->getPhone());
+	$validated = false;
+	$valid_text = '';
+	if(!isEmptyString($phone)){
+		$valid_text = '&nbsp; (Unconfirmed)';
+	}
+	$allowrevalidate = false;
+	if(!isEmptyString($phone) && $user->isPhoneValidated()){
+		$validated = true;
+		$valid_text = '&nbsp; <span class="pagedescription" style="color:#55A411;">(Validated)</span';
+	}
+	if($user->hasPendingActivation()){
+		$allowrevalidate = true;
+	}
+	
+	$altphone = getShortPhone($user->getPhone2());
+	$svalidated = false;
+	$svalid_text = '';
+	if(!isEmptyString($altphone)){
+		$svalid_text = '&nbsp; (Unconfirmed)';
+	}
+	$sallowrevalidate = false;
+	if($user->isPhone2Validated()){
+		$svalidated = true;
+		$svalid_text = '&nbsp; <span class="pagedescription" style="color:#55A411;">(Validated)</span';
+	}
+	if($user->hasPendingActivation(2)){
+		$sallowrevalidate = true;
+	}
+
+	$title = $user->getName();
+	$role = '';
+	if($isme){
+		$title = "My Profile";
+	}
+	
+	$userlisturl = $this->baseUrl('mobile/list');
+	$profilelisturl = $this->baseUrl('mobile/users');
+	$addfarmerurl = $this->baseUrl('mobile/farmer');
+	$adduserurl = $this->baseUrl('mobile/farmer/type/other');
+		
+	if(isFarmGroupAdmin() && $isme){
+		$role = ' Group Admin)';
+	}
+	
+	if(isAdmin()){
+		if($isme){
+			$role = ' (System Admin)';
+		}
+	}
+	if(isFarmGroupAdmin()){
+		$usergroup = new FarmGroup();
+		$usergroup->populate($user->getFarmGroupID());
+		$userlisturl = $this->baseUrl('mobile/list/farmgroupid/'.$user->getFarmGroupID());
+		$addfarmerurl = $this->baseUrl('mobile/farmer/farmgroupid/'.$user->getFarmGroupID()); 
+	}
+	
+	$loadgps = true;
+	
+?>
+<?php require APPLICATION_PATH."/views/scripts/mobile/mobileincludes.phtml"; ?>
+<?php if($user->hasGPSCoordinates()){ ?>
+	<script src="<?php echo $this->serverUrl($this->baseUrl('assets/js/geoPosition.js')); ?>"></script>
+    <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
+<?php } ?>
+<script type="text/javascript">
+		// initialise the google map
+		function initialiseMap(){
+			var myOptions = {
+				  zoom: 4,
+				  mapTypeControl: true,
+				  mapTypeControlOptions: {style: google.maps.MapTypeControlStyle.DROPDOWN_MENU},
+				  navigationControl: true,
+				  navigationControlOptions: {style: google.maps.NavigationControlStyle.SMALL},
+				  mapTypeId: google.maps.MapTypeId.ROADMAP      
+				}        
+			map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+		}
+		
+		function showPosition(){
+			var latitude = '<?php echo $user->getLat(); ?>';
+			var longitude = '<?php echo $user->getLng(); ?>';
+			var pos = new google.maps.LatLng(latitude, longitude);
+			map.setCenter(pos);
+			map.setZoom(14);
+	
+			var infowindow = new google.maps.InfoWindow({
+				content: "<b><?php echo $user->getName(); ?>'s Location</b> <br /><br /> Latitude = "+latitude+ " <br />Longitude = "+longitude
+			});
+	
+			var marker = new google.maps.Marker({
+				position: pos,
+				map: map,
+				title:"<?php echo $user->getName(); ?>'s Location"
+			});
+	
+			google.maps.event.addListener(marker, 'click', function() {
+			  infowindow.open(map,marker);
+			});
+		}
+</script>
+<script>
+	$(document).ready(function() {
+		$("#bottomactions").html($("#topactions").html());
+		// display map only when cordinates are specified
+		<?php if($user->hasGPSCoordinates()){ ?>
+			initialiseMap(); 
+			showPosition(); 
+		<?php } ?>
+		
+		<?php if(!$isfarmer){ ?>
+			disableContainerByClass('hideonsuper');
+		<?php } ?>
+		
+	});
+</script>
+<body>
+<div class="container-fluid viewpage" id="view_farmer">
+  <div class="row-fluid">
+   <h4><?php echo $title.$role; ?></h4>
+  </div>
+        <div class="control-group well actions" id="topactions">
+            <a class="btn noimgbutton" href="<?php echo $this->baseUrl('mobile/home'); ?>"><i class="icon-home"></i></a>
+			<?php if(isAdmin() || isManagement() || isDataClerk() || isFarmGroupAdmin() || $isme){ ?>
+                <a class="btn btn-primary" href="<?php echo $this->baseUrl('mobile/farmer/id/'.encode($id)); ?>"><i class="icon-pencil icon-white"></i> Update</a>
+            <?php } ?>
+            <?php if((isAdmin() || isManagement() || isDataClerk() || isFarmGroupAdmin()) && $user->isFarmer()){ ?>    
+                <a class="btn" href="<?php echo $userlisturl; ?>"><i class="icon-list"></i> Farmers</a>
+            <?php } ?>
+            <?php if((isAdmin() || isManagement()) && !$user->isFarmer()){ ?>    
+                <a class="btn" href="<?php echo $profilelisturl; ?>"><i class="icon-list"></i> Profiles</a>
+            <?php } ?> 
+            <div class="btn-group">
+                <button class="btn btn-primary dropdown-toggle centeralign" data-toggle="dropdown" id="" href="javascript: void(0)" style="width:110px; padding-left:0;"><i class="icon-plus icon-white"></i> Quick Links</button>
+                <button class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="padding-bottom:12px;"><span class="caret"></span></button>
+                <ul class="dropdown-menu">
+                    <?php if((isAdmin() || isManagement() || isDataClerk() || isFarmGroupAdmin() || isFarmer())  && $user->isFarmer()){  ?>  
+                        <li><a href="<?php echo $this->baseUrl('mobile/addseason/userid/'.encode($user->getID())); ?>"><i class="icon-plus"></i> Start new Season</a></li>
+                        <li><a href="<?php echo $this->baseUrl('mobile/seasons/userid/'.$user->getID()); ?>"><i class="icon-list"></i> View Seasons</a></li>
+                        <li><a class="selectseason" id="selectseason" rel="Browse Season" title="Select Season" href="<?php echo $this->baseUrl('mobile/selectseason/pgc/true/stage/input/type/2/userid/'.encode($user->getID())); ?>" submittext="Continue"><i class="icon-plus"></i> Record Expense</a></li>
+                        <li><a href="<?php echo $this->baseUrl('mobile/expenses/userid/'.$user->getID()); ?>"><i class="icon-list"></i> Manage Expenses</a></li>
+                        <li><a class="selectseason" id="selectseason" rel="Browse Season" title="Select Season" href="<?php echo $this->baseUrl('mobile/selectseason/pgc/true/stage/sale/userid/'.encode($user->getID())); ?>" submittext="Continue"><i class="icon-plus"></i> Record Sale</a></li>
+                        <li><a href="<?php echo $this->baseUrl('mobile/sales/userid/'.$user->getID()); ?>"><i class="icon-list"></i> Manage Sales</a></li>
+                    <?php } ?>    
+                    <li><a href="<?php echo $this->baseUrl('mobile/picture/id/'.encode($user->getID()).'/type/photo'); ?>"><i class="icon-pencil"></i> Upload Photo</a></li>
+                    <?php if((isAdmin() || isManagement() || isDataClerk() || isFarmGroupAdmin()) && $user->isFarmer()){ ?>    
+                        <li><a href="<?php echo $this->baseUrl('mobile/addpayment/userid/'.encode($user->getID())); ?>"><i class="icon-plus"></i> New Payment</a></li>
+                    <?php } ?>
+                    <?php if((isAdmin() || isManagement())){ ?>
+                        <li><a class="deleteline gonowhere" action="<?php echo $this->baseUrl('mobile/delete/id/'.$user->getID()."/entityname/UserAccount/successurl/".encode($this->baseUrl('mobile/list'))); ?>"><i class="icon-trash"></i> Delete</a></li>
+                    <?php } ?> 
+                    <?php if((isAdmin() || isManagement()) && !$isme && $user->isUserActive()){ ?>
+                        <li><a action="<?php echo $this->baseUrl('mobile/deactivate/id/'.$user->getID()."/entityname/UserAccount/successurl/".encode($this->baseUrl('mobile/list'))); ?>"><i class="icon-trash"></i> Deactivate</a></li>
+                    <?php } ?>
+                    <?php if($isme && $user->isUserActive()){ ?>
+                        <li><a class="changepassword" id="changepassword" rel="Change Password" href="<?php echo $this->baseUrl('profile/changepassword/pgc/true/source/1/id/'.encode($user->getID())); ?>"><i class="icon-lock"></i> Change Password</a></li>
+                    <?php } ?>
+                </ul>
+            </div>
+        </div>
+	<?php if($sessionhaserror) { ?>
+      <div class="row-fluid">
+      	<div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+      </div>
+  <?php } ?>
+  <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+  	<div class="row-fluid">
+      	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+	</div>
+  <?php } ?>
+  <?php if(!isEmptyString($session->getVar("custommessage")) ){ ?>
+  	<div class="row-fluid">
+      	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar("custommessage"); ?></div>
+	</div>
+  <?php } ?>
+  <?php if(!isEmptyString($session->getVar("emailinvitesuccess")) ){ ?>
+  	<div class="row-fluid">
+      	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar("emailinvitesuccess"); ?></div>
+	</div>
+  <?php } ?>
+  <?php if(!isEmptyString($session->getVar("phoneinvitesuccess")) ){ ?>
+  	<div class="row-fluid">
+      	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar("phoneinvitesuccess"); ?></div>
+	</div>
+  <?php } ?>
+  <div class="row-fluid">
+      <form class="form-horizontal" id="viewform">
+      	<fieldset class="fieldsetcontainer well">
+        <legend>Account</legend>
+            <div class="control-group" style="margin-bottom:0;">
+                <div class="well lighter clearfix padding2 nobg" id="profiletop">
+                    <div id="profileinfo"> 
+                        <?php if($isme || isFarmGroupAdmin() || isAdmin()){ ?>
+                            <a href="<?php echo $this->baseUrl('mobile/picture/id/'.encode($user->getID()).'/type/photo'); ?>"><img id="profileimage" src="<?php echo $user->getMediumPicturePath(); ?>" /><pre id="uploadlink" class="hide absoluteupload"><i class="icon-pencil"></i> Upload Photo</pre></a>
+                        <?php } else { ?>
+                            <img id="profileimage" src="<?php echo $user->getMediumPicturePath(); ?>" />
+                        <?php } ?>
+                    </div>
+                    <?php if($isme || isFarmGroupAdmin() || isAdmin()){ ?>
+                        <a style="display:block; width:155px; text-align:center;" href="<?php echo $this->baseUrl('mobile/picture/id/'.encode($user->getID()).'/type/photo'); ?>" class="btn btn-mini">Upload Photo</a>
+                    <?php } ?>
+                </div>
+            </div>
+            <?php if(!$user->isFarmer()){ ?>
+                <div class="control-group">
+                    <label class="control-label" for="type"><?php echo $this->translate("farmer_type_label"); ?>:</label>
+                    <div class="controls"><?php echo getUserType($user->getType()); ?></div>
+                </div>	
+            <?php } ?>
+            <?php if($user->isFarmer() && $user->isUgandan()){ ?>
+                <div class="control-group">
+                    <label class="control-label" for="refno"><?php echo $this->translate("farmer_regno_label"); ?>:</label>
+                    <div class="controls"><?php echo $user->getRefNo(); ?></div>
+                </div>
+            <?php } ?>
+            <?php if($user->isKenyan()){ ?>
+                <div class="control-group">
+                    <label class="control-label" for="refno">National ID#:</label>
+                    <div class="controls"><?php echo $user->getRefNo(); ?></div>
+                </div>
+            <?php } ?>   
+            <?php if($user->isPIA()){ ?>
+            	<div class="control-group">
+                    <label class="control-label" for="type">PID#:</label>
+                    <div class="controls"><?php echo $user->getID(); ?></div>
+                </div>	
+            <?php } ?>
+            <div class="control-group">
+              <label class="control-label" for="firstname"><?php echo $this->translate("farmer_names_label"); ?>:</label>
+              <div class="controls"><?php echo $user->getName(); ?></div>
+            </div>
+            <div class="control-group">
+              <label class="control-label"><?php echo $this->translate("farmer_gender_label"); ?>:</label>
+              <div class="controls"><?php echo $user->getGenderLabel(); ?></div>
+            </div>
+            <div class="control-group">
+              <label class="control-label"><?php echo $this->translate("farmer_dateofbirth_label"); ?>:</label>
+              <div class="controls"><?php echo $user->getBirthDateFormatted(); ?></div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="districtid"><?php echo $location_label; ?>:</label>
+              <div class="controls"><?php echo $user->getLocation()->getName(); ?></div>
+            </div>
+			<?php if($user->hasFarmGroup()){ ?>  
+                <div class="control-group">
+                  <label class="control-label" for="farmgroupid"><?php echo $this->translate("farmer_dna_label"); ?>:</label>
+                  <div class="controls"><?php echo $user->getFarmGroup()->getName(); ?></div>
+                </div>
+                <?php if($user->hasSubGroup()){ ?>  
+                    <div class="control-group">
+                      <label class="control-label" for="subgroupid"><?php echo $this->translate("farmer_subgroup_label"); ?>:</label>
+                      <div class="controls"><?php echo $user->getSubGroup()->getName(); ?></div>
+                    </div>
+                <?php } ?>
+            <?php } ?>    
+            <div class="control-group">
+                <label class="control-label" for="phone"><?php echo $this->translate("farmer_phone_label"); ?>:</label>
+                <div class="controls"><?php echo $phone; ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="email"><?php echo $this->translate("farmer_email_label"); ?>:</label>
+                <div class="controls"><?php echo $user->getEmail(); ?></div>
+                <?php if($user->getIsInvited() == 1 && $user->getHasAcceptedInvite() == 0){ ?>
+                    <span class="pagedescription alert alert-info" style="display:block; text-align:left; padding:2px; margin-top:5px; margin-bottom:0;">Farmer invited. Activation pending</span>
+                <?php } ?>
+            </div> 
+            <div class="control-group">
+              <label class="control-label" for="username">Username:</label>
+              <div class="controls"><?php echo $user->getUsername(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="regdate">Status:</label>
+                <div class="controls"><?php echo $user->isUserActive() ? 'Active' : 'In Active'; ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="regdate"><?php echo $this->translate("farmgroup_dateregistered_label"); ?>:</label>
+                <div class="controls"><?php echo changeMySQLDateToPageFormat($user->getRegDate()); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="regdate">Date Activated:</label>
+                <div class="controls"><?php echo changeMySQLDateToPageFormat($user->getActivationDate()); ?></div>
+            </div>
+            
+        </fieldset>
+        <fieldset class="fieldsetcontainer well">
+            <legend>Location</legend>
+            <div class="control-group">
+              <label class="control-label" for="country"><?php echo $this->translate("global_country_label"); ?>:</label>
+              <div class="controls"><?php echo $user->getCountryName(); ?></div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="districtid"><?php echo $this->translate("global_district_label"); ?>:</label>
+              <div class="controls"><?php echo $user->getLocation()->getName(); ?></div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="county"><?php echo $county_label; ?>:</label>
+              <div class="controls"><?php echo $user->getCounty()->getName(); ?></div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="subcounty"><?php echo $subcounty_label; ?>:</label>
+              <div class="controls"><?php echo $user->getSubCounty()->getName(); ?></div>
+            </div>
+            <?php if($user->isUgandan()){ ?>
+                <div class="control-group">
+                  <label class="control-label" for="parish"><?php echo $this->translate("global_parish_label"); ?>:</label>
+                  <div class="controls"><?php echo $user->getParish()->getName(); ?></div>
+                </div>
+                <div class="control-group">
+                  <label class="control-label" for="village"><?php echo $this->translate("global_village_label"); ?>:</label>
+                  <div class="controls"><?php echo $user->getVillage()->getName(); ?></div>
+                </div>
+            <?php } ?>
+            <div class="control-group">
+              <label class="control-label" for="address"><?php echo $this->translate("contact_address_label"); ?>:</label>
+              <div class="controls"><?php echo nl2br($user->getStreetAddress()); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="lat">GPS Cordinates:</label>
+                <div class="controls"><?php echo $user->hasGPSCoordinates() ? $user->getLat().",".$user->getLng() : '--'; ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="lng">Location Map:</label>
+                <?php if(!$user->hasGPSCoordinates()){ ?>
+					<a href="<?php echo $this->baseUrl('mobile/gps/id/'.encode($user->getID())); ?>" class="btn btn-mini">Auto Detect Position</a>
+                <?php } ?>
+                <?php if($user->hasGPSCoordinates()){ ?>
+					<a href="<?php echo $this->baseUrl('mobile/gps/id/'.encode($user->getID())); ?>" class="btn btn-mini">Recompute Position</a>
+                <?php } ?>
+                <?php if($user->hasGPSCoordinates()){ ?>
+                	<div id="map_canvas" class="span12" style="height:400px; width:100%; margin-left:0;"></div>
+                <?php } else { ?>
+                	<div id="map_canvas" class="span12" style="height:0; width:100%; margin-left:0;"></div>
+                <?php } ?>
+            </div>
+        </fieldset>
+        <fieldset class="fieldsetcontainer well hideonsuper">
+            <legend>About</legend>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmer_biography_label"); ?>:</label>
+                <div class="controls"><?php echo $user->getBio(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="educationlevel"><?php echo $this->translate("farmer_educlevel_label"); ?>:</label>
+                <div class="controls"><?php echo $user->getEducationLevelText(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="maritalstatus"><?php echo $this->translate("farmer_maritalstatus_label"); ?>:</label>
+                <div class="controls"><?php echo $user->getMaritalStatusText(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="nochildren"><?php echo $this->translate("farmer_nochildren_label"); ?>:</label>
+                <div class="controls"><?php echo $user->getNumberOfChildren(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="numberofdependants"><?php echo $this->translate("farmer_nodependants_label"); ?>:</label>
+                <div class="controls"><?php echo $user->getNumberOfDependants(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="totalhousehold"><?php echo $this->translate("farmer_totalhousehold_label"); ?>:</label>
+                <div class="controls"><?php echo $user->getTotalHousehold(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="nextofkin_name"><?php echo $this->translate("farmer_nextofkin_label")." ".$this->translate("global_name_label"); ?>:</label>
+                <div class="controls"><?php echo $user->getNextofkin_Name(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="nextofkin_phone"><?php echo $this->translate("farmer_nextofkin_label")." ".$this->translate("global_phone_label"); ?>:</label>
+                <div class="controls"><?php echo $user->getNextofkin_phone(); ?></div>
+            </div>
+        </fieldset>
+        <fieldset class="fieldsetcontainer well hideonsuper">
+            <legend>Farm</legend>
+            <div class="control-group">
+              <label class="control-label" for="businessname"><?php echo $this->translate("farm_name_label"); ?>:</label>
+              <div class="controls"><?php echo $user->getBusinessName(); ?></div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="startyear"><?php echo $this->translate("farm_since_label"); ?>:</label>
+              <div class="controls"><?php echo $user->getFullStartDate(); ?></div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="numberofemployees"><?php echo $this->translate("farm_numberofemployees_label"); ?>:</label>
+              <div class="controls"><?php echo $user->getNumberOfEmployees(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="landsize"><?php echo $this->translate("farm_landsize_label"); ?>:</label>
+                <div class="controls"><?php echo $user->displayLandSize(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="landsizeactive"><?php echo $this->translate("farm_landsizeactive_label"); ?>:</label>
+                <div class="controls"><?php echo $user->displayActiveLandSize(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="landacquiremethod"><?php echo $this->translate("farm_landacquiremethod_label"); ?>:</label>
+                <div class="controls"><?php echo $user->getLandAcquireMethodLabel(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="farmlands"><?php echo $this->translate("farm_farmlands_label"); ?>:</label>
+                <div class="controls"><?php echo $user->getNumberOfFields(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="crops"><?php echo $this->translate("farm_crops_label"); ?>:</label>
+                <ul class="nav nav-tabs">
+                    <?php 
+                        $crops = $user->getTheCrops();
+                        $countcrops = $crops->count();
+                        //debugMessage($crops->toArray());
+                        if($countcrops == 0) { ?>
+                        None
+                    <?php } else { ?>                
+                        <label class="labeldescription"><?php echo $countcrops; ?> currently profiled</label>
+                        <?php foreach($crops as $crop){ ?>
+                            <li style="margin-right:20px; margin-bottom:5px;">
+                                <label style="color:#55A411; margin:5px 0; font-weight:bold;"><?php echo $crop->getCrop()->getName(); ?></label>
+                                <img class="imagecontainer profileinfo" src="<?php echo $crop->getCrop()->getImagePath(); ?>" />
+                            </li>
+                        <?php } ?>
+                    <?php } ?>
+                </ul>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="enterprises"><?php echo $this->translate("farm_otherenteprises_label"); ?>:</label>
+                <ul class="nav">
+                    <?php 
+                        $others = $user->getTheEnterprises();
+                        $countothers = $others->count();
+                        //debugMessage($others->toArray());
+                        if($countothers == 0) { ?>
+                        None
+                    <?php } else { ?>                
+                        <label class="labeldescription"><?php echo $countothers; ?> currently profiled</label>
+                        <?php foreach($others as $enterprise){ ?>
+                            <li style="margin-right:20px; margin-bottom:5px;">
+                                <label style="color:#55A411; margin:5px 0; font-weight:bold;"><?php echo $enterprise->getCrop()->getName(); ?></label>
+                            </li>
+                        <?php } ?>
+                    <?php } ?>
+                </ul>
+            </div>
+		</fieldset>
+        <fieldset class="fieldsetcontainer well hideonsuper">
+            <legend>Profile Settings</legend>            
+            <div class="control-group">
+              <label class="control-label" style="width:100%;">Recieve Market Information alerts?</label>
+              <div class="controls" style="margin-left:0;">
+                 <div class="blocked" style="margin-top:5px;"><label class="lineblocked">Send updates and alerts to Phone?</label> <?php echo $user->getreceivephonealerts() == 0 ? 'No' : 'Yes'; ?></div>
+                 <div class="blocked" style="margin-top:5px;"><label class="lineblocked">Send updates and alerts to Email?</label> <?php echo $user->getreceiveemailalerts() == 0 ? 'No' : 'Yes'; ?></div>
+              </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="updatesfrequency">Frequency of Updates<?php //echo $this->translate("farmer_updatesfrequency_label"); ?>:</label>
+                <div class="controls">
+                    <?php
+                        $values = array("1"=>"Weekly","2"=>"Bi-weekly","3"=>"Fortnightly","4"=>"Monthly");
+                        echo $values[$user->getUpdatesFrequency()]; 
+                   ?>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="landacquiremethod">Profiled By:</label>
+                <div class="controls"><?php echo $user->getCreator()->getName(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="landacquiremethod">Date:</label>
+                <div class="controls"><?php echo formatDateAndTime($user->getDateCreated(), true); ?></div>
+            </div>
+        </fieldset>
+        <div class="control-group well actions" id="bottomactions"></div>       
+      </form>
+  </div>
+</div>
+<?php require APPLICATION_PATH."/views/scripts/mobile/dialog.phtml"; ?>
+</body>
+</html>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

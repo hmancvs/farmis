@@ -1,175 +1,935 @@
 <?php
 	require_once APPLICATION_PATH.'/includes/header.php';
-		
-	# Set id of the record to populate. If no value in request, use session userid
-	if(isEmptyString($request->id)){
-		$id = $userid;
-	} else {
-		$id = decode($request->id);
+	
+	$user = new UserAccount();
+	
+	$theid = decode($request->id);
+	if(isEmptyString($theid)){
+		$theid = $userid;
+	}
+	if(!isEmptyString($theid)){
+		$user->populate($theid);
 	}
 	
-	$useraccount = new UserAccount(); 
-	$useraccount->populate($id);
-	// debugMessage($useraccount->toArray());
-	$title = sprintf($this->translate("useraccount_pagetitle_view"), $useraccount->getName());
-	$isadmin = true; 
-	if($userid != $useraccount->getID()){
-		# admin user is view another profile
-		//$isadmin = true; 
-		//$title = sprintf($this->translate("useraccount_pagetitle_view")." - admin ", $useraccount->getName());
-	} 
+	$country = 'UG';
+	$location_label = 'District';
+	$locations_label = 'Districts';
+	$countrycode = COUNTRY_CODE_UG;
+	$county_label = $this->translate("global_county_label");
+	$subcounty_label = $this->translate("global_subcounty_label");
 	
-	$this->headTitle($title); 
+	if(isKenya() || $user->isKenyan()){
+		$country = 'KE';
+		$session->setVar('country', 'ke');
+		$location_label = 'County';
+		$locations_label = 'Counties';
+		$countrycode = COUNTRY_CODE_KE;
+		$county_label = $this->translate("global_subcounty_label");
+		$subcounty_label = $this->translate("global_ward_label");
+	}
+	
+	// debugMessage($user->toArray()); exit();
+	$id = $user->getID();	
+	$name = $user->getName();
+	$firstname = $user->getFirstName();
+	
+	# profile for one viewing
+	$isme = false;
+	if($userid == $user->getID()){
+		$isme = true;
+	}
+	
+	$tab = $request->tab;
+	if(isEmptyString($tab)) {
+		$tab = 'basics';
+	}
+	
+	$loadgps = false;
+	$title = $user->getName();
+	$this->headTitle($title);
+	
 ?>
+<style>
+#map {
+	width: 100%;
+	height: 450px;
+}
+#center .ui-widget-content {
+	width:100%;
+	float:left;
+}
+.alert.alert-success {
+	width:90%;
+}
+#row1_left .table tr td {
+	padding-top:15px;
+	padding-bottom:20px;
+}
+#xrow2_right .table tr td {
+	padding-top:10px;
+	padding-bottom:10px;
+}
+#center .ui-widget-content {
+	width:98%;
+}
+</style>
+<?php if(!isFarmer()){ ?>
+<h1><?php echo $title; ?></h1>
+<?php } ?>
+<div id="tabs">
+    <?php require APPLICATION_PATH."/views/scripts/profile/profileleftcolumn.phtml"; ?>
+    <div class="span9 tab-content" id="center">   
+        <div id="basics">
+            <form id="profileform-basics" class="form-horizontal basics">
+            <?php if($tab == 'basics'){ ?>
+        		<?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+                    <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+                <?php } ?>
+            <div class="row margin0" style="width:98%;">
+                <div class="row margin0 pull-left">
+                	<?php if($isme || isFarmGroupAdmin() || isAdmin() || isDataClerk()){ ?>
+                        <a class="btn btn-primary" href="<?php echo $this->baseUrl('profile/index/id/'.encode($id)); ?>" id="update"><i class="icon-pencil icon-white"></i> Update Profile</a>
+                    <?php } ?>
+                    <?php if(isFarmGroupAdmin() || isAdmin() || isDataClerk()){ ?>
+                    	<?php if($user->isFarmer()){ ?>
+	                        <a class="btn" href="<?php echo $this->baseUrl('profile/list'); ?>"><i class="icon-list"></i> Farmers</a>
+                        <?php } ?>
+                        <?php if($user->isPIA()){ ?>
+	                        <a class="btn" href="<?php echo $this->baseUrl('profile/users'); ?>"><i class="icon-list"></i> Profiles</a>
+                        <?php } ?>
+                    <?php } ?>
+                </div>
+				<div class="divider10"></div>
+                <span class="span6 marginleft0" style="width:72%;">
+                    <div id="row1_left" class="well lighter row marginleft0" style="min-height:250px; padding-left:10px;">                        
+                        <table class="table noborder">                       
+                           	<tr>
+                                <td style="width:20%;"><label class="control-label"><?php echo "Full ".$this->translate("farmer_name_label"); ?>:</label></td>
+                                <td style="width:32%;"><?php echo $user->getName(); ?><?php echo $user->getSalutationLabel(); ?></td>
+                                <td style="width:23%;"><label class="control-label"><?php echo $this->translate("farmer_gender_label"); ?>:</label></td>
+                                <td><?php echo $user->getGenderLabel(); ?></td>                                                             
+                            </tr>
+                            <tr>
+                                <td><label class="control-label"><?php echo $this->translate("farmer_dateofbirth_label"); ?>:</label></td>
+                                <td><?php echo $user->getBirthDateFormatted(); ?></td>
+                                <td><label class="control-label"><?php echo $this->translate("farmer_country_label"); ?>:</label></td>
+                                <td><?php echo $user->getCountryName(); ?></td>
+                                                           
+                            </tr>
+                            <tr>
+                                <td><label class="control-label"><?php echo $this->translate("farmer_dateregistered_label"); ?>:</label></td>
+                                <td><?php echo isEmptyString($user->getRegDate()) ? '--' : changeMySQLDateToPageFormat($user->getRegDate()); ?></td>          
+                                <td><label class="control-label"><?php echo $location_label; ?>:</label></td>
+                                <td><?php echo isEmptyString($user->getLocationID()) ? '--' : $user->getLocation()->getName(); ?></td>
+                            </tr>
+                            <?php if(strtolower($country) == 'ug'){ ?>
+                                <tr>		                    
+                                    <td><label class="control-label prefix"><?php echo $this->translate("farmer_refno_label"); ?>:</label></td>
+                                    <td><?php echo $user->getRefNo(); ?></td>
+                                    <td><label class="control-label prefix"><?php echo $this->translate("farmer_regno_label"); ?>:</label></td>
+                                    <td><?php echo $user->getRegNo(); ?></td>
+                                </tr>
+                            <?php } ?>
+                            <?php if(strtolower($country) == 'ke'){ ?>
+                            	<tr>		                    
+                                    <td><label class="control-label">National ID#:</label></td>
+                                    <td><?php echo $user->getRefNo(); ?></td>
+                                    <?php if($user->isPIA()){ ?>
+                                        <td><label class="control-label">PID#</label></td>
+                                        <td><?php echo $user->getID(); ?></td>
+                                    <?php } else { ?>
+                                    	<td></td>
+                                        <td></td>
+                                    <?php } ?>
+                                </tr>
+                            <?php } ?>      
+                            <tr>
+                                <td><label class="control-label"><?php //echo $this->translate("farmer_profilepath_label").':'; ?></label></td>
+                                <td colspan="3"><?php //echo $user->getProfilePath(); ?></td>                                                             
+                            </tr>
+                            <?php if($user->hasFarmGroup()){ ?>  
+                            <tr>
+                                <td colspan="2"><label class="control-label"><?php echo $this->translate("farmer_dna_label"); ?>:</label>
+									<?php echo isEmptyString($user->getFarmGroupID()) ? '--' : $user->getFarmGroup()->getName(); ?></td>
+                                <td colspan="2">
+                                	<?php if($user->hasSubGroup()){ ?>  
+                                        <label class="control-label"><?php echo $this->translate("farmer_subgroup_label"); ?>:</label>
+                                        <?php echo isEmptyString($user->getFarmGroupID()) ? '--' : $user->getSubGroup()->getName(); ?>
+                                    <?php } ?>
+                                </td>
+                            </tr>
+                            <?php } ?>
+                        </table>
+                    </div>
+                    <div id="xrow2_left" class="well lighter row marginleft0" style="min-height:212px;">
+                        <h3 class="well-legend margin0">About</h3>
+                        <table class="table">                       
+                           <tr>		                    
+                                <td valign="top"><?php echo isEmptyString($user->getBio()) ? '--' : nl2br($user->getBio()); ?></td>
+                           </tr>
+                        </table>
+                    </div>                    
+                </span>
+                <span class="span3 pull-right" style="width:24%;">
+                    <div id="xrow2_right" class="well lighter row" style="height:600px;">
+                        <h3 class="well-legend margin0">Account Summary</h3>
+                        <table class="table table-striped table-bordered table-condensed" id="stats">
+                            <tr>		                    
+                                <td class="profilerightlabel">Account Status:</td>
+                                <td class="profilerightvalue nullifempty"><?php echo getUserStatus($user->getisActive()); ?></td>
+                            </tr>
+                            <tr>		                    
+                                <td class="profilerightlabel">Account Type:</td>
+                                <td class="profilerightvalue nullifempty">
+								<?php if($user->isFarmer()){ ?>
+                                	<?php echo $user->getPlan()->getName(); ?>
+                                <?php } else { ?>
+                                	<?php echo $user->getTypeLabel(); ?>
+                                <?php } ?>
+                                </td>
+                            </tr>
+                            <tr>		                    
+                                <td class="profilerightlabel">Date Joined:</td>
+                                <td class="profilerightvalue nullifempty"><?php echo isEmptyString($user->getActivationDate()) ? '--' : changeMySQLDateToPageFormat($user->getActivationDate()); ?></td>
+                            </tr>
+                            <?php if($user->isFarmer()){ ?>
+                            <tr>		                    
+                                <td class="profilerightlabel">Subscription Start:</td>
+                                <td class="profilerightvalue nullifempty"><?php echo changeMySQLDateToPageFormat($user->getLatestSubscription()->getStartDate()); ?></td>
+                            </tr>
+                            <tr>		                    
+                                <td class="profilerightlabel">Expiry Date:</td>
+                                <td class="profilerightvalue nullifempty"><?php echo changeMySQLDateToPageFormat($user->getLatestSubscription()->getEndDate()); ?></td>
+                            </tr>
+                            <?php } ?>
+                            <tr>		                    
+                                <td class="profilerightlabel">Profiled By:</td>
+                                <td class="profilerightvalue nullifempty"><?php echo $user->getCreator()->getName(); ?></td>
+                            </tr>
+                            <tr>		                    
+                                <td class="profilerightlabel">Entry Date:</td>
+                                <td class="profilerightvalue nullifempty"><?php echo formatDateAndTime($user->getDateCreated(), true); ?></td>
+                            </tr>
+                            <?php if($user->isDataClerk() || $user->isFarmer()){ ?>
+                                <tr>             
+                                    <td class="profilerightlabel nullifempty">
+                                    <?php if($user->isDataClerk()){ ?>
+                                    	PID#:
+                                    <?php } ?>
+                                    <?php if($user->isFarmer()){ ?>
+                                    	FIN#:
+                                    <?php } ?>
+                                    </td>
+                                    <td class="profilerightvalue nullifempty"><?php echo $user->isPIA() ? $user->getID() : $user->getRefNo(); ?></td>
+                                </tr>
+                            <?php } ?>
+                            <tr>             
+                                <td class="profilerightlabel">Phone:</td>
+                                <td class="profilerightvalue nullifempty"><?php echo $user->getFormattedPhone(); ?></td>
+                            </tr>
+                            <?php if($user->isFarmer()){ ?>
+                                <tr>             
+                                    <td class="profilerightlabel">No of Crops:</td>
+                                    <td class="profilerightvalue nullifempty"><a href="<?php echo $this->baseUrl('profile/view/id/'.$user->getID().'/tab/farm'); ?>"><?php echo $user->getCrops()->count(); ?></a></td>
+                                </tr>
+                                <tr>             
+                                    <td class="profilerightlabel">No of Seasons:</td>
+                                    <td class="profilerightvalue nullifempty"><a href="<?php echo $this->baseUrl('profile/view/id/'.$user->getID().'/tab/seasons'); ?>"><?php echo $user->getSeasons()->count(); ?></a></td>
+                                </tr>
+                            <?php } ?>
+                        </table>
+                    </div>
+                </span>		
+        	</div>
+            <?php } ?>
+        	</form> 
+        </div>
+        <div id="contacts">
+            <h2>Contact Information</h2>
+            <form id="profileform-contacts" class="form-horizontal contacts" action="<?php echo $this->baseUrl("profile/processgps"); ?>" method="post">
+                <?php if($tab == 'contacts'){ ?>
+                <div class="row" style="margin-left:0px;">
+					<?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+                        <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+                    <?php } ?>
+                    <?php if(!isEmptyString($session->getVar("emailinvitesuccess")) ){ ?>
+                        <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar("emailinvitesuccess"); ?></div>
+                    <?php } ?>
+                    <?php if(!isEmptyString($session->getVar("phoneinvitesuccess")) ){ ?>
+                        <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar("phoneinvitesuccess"); ?></div>
+                    <?php } ?>
+                     <div class="row margin0 padding0">
+						 <?php if($isme || isFarmGroupAdmin() || isAdmin() || isDataClerk()){ ?>
+                            <a class="btn btn-primary" href="<?php echo $this->baseUrl('profile/index/id/'.encode($id).'/tab/contacts'); ?>" id="update"><i class="icon-pencil icon-white"></i> Update Contacts</a>                                       
+                        <?php } ?>
+                    </div>
+                    <div class="divider10"></div>        
+                    <span class="span6 marginleft0" style="width:96%;">
+                        <div class="well lighter row marginleft0" style="min-height:150px;">  
+                        	<h3 class="well-legend">Contacts</h3>                   
+                            <table class="table">
+                            	<tr>
+                                    <td width="50%"><label class="control-label">Phone:</label><?php echo isEmptyString($user->getFormattedPhone()) ? '--' : $user->getFormattedPhone(); ?></td>
+                                    <td><label class="control-label">Alt Phone:</label><?php echo isEmptyString($user->getFormattedPhone2()) ? '--' : $user->getFormattedPhone2(); ?></td>
+                            	</tr>
+                                <tr>
+                                    <td><label class="control-label">Email:</label><?php echo isEmptyString($user->getEmail()) ? '--' : $user->getEmail(); ?></td>
+                                    <td><label class="control-label">Alt Email:</label><?php echo isEmptyString($user->getEmail2()) ? '--' : $user->getEmail2(); ?></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </span>
+                </div>
+                <div class="well lighter row marginleft0" style="min-height:100px; width:94%;">
+                    <h3 class="well-legend">Address</h3>
+                    <table class="table">                       
+                    	<tr>
+                            <td width="35%"><label class="control-label">Country:</label>
+                                <?php echo isEmptyString($user->getCountry()) ? '--' : $user->getCountryName(); ?>
+                            </td>
+                            <td width="30%"><label class="control-label"><?php echo $location_label; ?>:</label>
+                                <?php echo isEmptyString($user->getLocationID()) ? '--' : $user->getLocation()->getName(); ?>
+                            </td>
+                            <td width="35%"><label class="control-label"><?php echo $county_label; ?>:</label>
+                                <?php echo isEmptyString($user->getCountyID()) ? '--' : $user->getCounty()->getName(); ?>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><label class="control-label"><?php echo $subcounty_label; ?>:</label>
+                                <?php echo isEmptyString($user->getSubCountyID()) ? '--' : $user->getSubCounty()->getName(); ?>
+                            </td>
+                            <td>
+                            <?php if($user->isUgandan()){ ?>
+                            	<label class="control-label">Parish:</label>
+                                <?php echo isEmptyString($user->getParishID()) ? '--' : $user->getParish()->getName(); ?>
+                            <?php } ?>
+                            </td>
+                            <td>
+                            <?php if($user->isUgandan()){ ?>
+                                <label class="control-label">Village:</label>
+                                <?php echo isEmptyString($user->getVillageID()) ? '--' : $user->getVillage()->getName(); ?>
+                            <?php } ?>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><label class="control-label">Postal/Street Address</label>
+                                <?php echo isEmptyString($user->getStreetAddress()) ? '--' : nl2br($user->getStreetAddress()); ?>
+                            </td>
+                            <td><label class="control-label">GPS Latitude:</label><?php echo $user->getLat(); ?></td>
+                            <td><label class="control-label">GPS Longitude:</label><?php echo $user->getLng(); ?></td>
+                        </tr>
+                    </table>
+                </div>
+                <?php if($tab == 'contacts'){ 
+					$metxt = '';
+					if($isme){
+						$metxt = 'My ';
+					}
+				?>
+					<script src="http://maps.google.com/maps/api/js?sensor=false&libraries=geometry&v=3.7" type="text/javascript"></script>
+                    <script type="text/javascript" src="<?php echo $this->serverUrl($this->baseUrl('javascript/maps/maplace.min.js')); ?>"></script>
+                <?php } ?>
+                <script>
+					$(document).ready(function() {
+						<?php if($user->hasGPSCoordinates() && isEmptyString($request->detect)){ ?>
+							var gpslat = '<?php echo $user->getlat(); ?>';
+							var gpslng = '<?php echo $user->getlng(); ?>';
+							var title = "<?php echo $isme ? 'My Location' : $user->getFirstName()."'s Location "; ?>";
+							
+							/*var maplace = new Maplace(); 
+							maplace.Load(); */
+
+							var maplace = new Maplace(); 
+maplace.Load(); 
+						<?php } ?>
+						<?php if(!isEmptyString($request->detect)){ ?>
+							initialiseMap2();
+							initialise2();
+							var gpslat = '<?php echo $user->getlat(); ?>';
+							var gpslng = '<?php echo $user->getlng(); ?>';
+							$("#lat").val(gpslat);
+							$("#lng").val(gpslng);
+								
+							$("#profileform-contacts").validate({		
+								// define the validation rules one field at a time
+								rules: {
+									lat: {
+										required: true, 					
+										maxlength: 10
+									},
+									lng: {
+										required: true, 					
+										maxlength: 10
+									}
+								}, 
+								// the messages for each of the fields being validated
+								messages: {		
+									lat: {
+										required: "Please enter coordinates", 					
+										maxlength: "Length must not exceed 10 characters"
+									},
+									lng: {
+										required: "Please enter coordinates", 					
+										maxlength: "Length must not exceed 10 characters"
+									}
+								},
+								// custom error positions
+								errorPlacement: function(error, element) {
+									switch(element.attr("name")){					
+										default:
+											error.appendTo("#hasgps_error")
+											break;
+									}			
+								}
+							});
+							
+							// initialise the google map
+							function initialiseMap2(){
+								var myOptions = {
+									  zoom: 14,
+									  mapTypeControl: true,
+									  mapTypeControlOptions: {style: google.maps.MapTypeControlStyle.DROPDOWN_MENU},
+									  navigationControl: true,
+									  navigationControlOptions: {style: google.maps.NavigationControlStyle.SMALL},
+									  mapTypeId: google.maps.MapTypeId.ROADMAP      
+									}        
+								map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+							}
+							function initialise2() {
+								if(geoPosition.init()){
+									document.getElementById('current').innerHTML="Receiving location... please wait... <br / ><br />Click on 'Share Location' to allow your browser to detect your current location";
+									geoPosition.getCurrentPosition(
+										showPosition,
+										function(){
+											document.getElementById('current').innerHTML="Couldn't get location"
+										},
+										{maximumAge:60000, timeout:10000, enableHighAccuracy:true}
+									);
+								} else {
+									document.getElementById('current').innerHTML="Your Browser is not supported for this function";
+								}
+							}
+						
+							function showPosition(p){
+								var latitude = parseFloat(p.coords.latitude);
+								latitude = latitude.toFixed(6);
+								
+								var longitude = parseFloat(p.coords.longitude);
+								longitude = longitude.toFixed(6);
+								
+								$("#lat").val(latitude);
+								$("#lng").val(longitude);
+								if(!isEmptyString(latitude) && !isEmptyString(longitude)){
+									$("#hasgps").val(latitude+','+longitude);
+								}
+								document.getElementById('current').innerHTML=" Latitude: "+latitude+", Longitude: "+longitude+" <br /><br />Location successfully found. Click on 'Save Position' to update profile.<br />"
+								
+								$("#saveposition").show().removeClass('hide');
+								
+								var pos=new google.maps.LatLng(latitude, longitude);
+								map.setCenter(pos);
+								map.setZoom(18);
+						
+								var infowindow = new google.maps.InfoWindow({
+									content: "<strong>New Location Found</strong> <br />Latitude: "+latitude+", <br /> Longitude: "+longitude+"<br /> "
+								});
+						
+								var marker = new google.maps.Marker({
+									position: pos,
+									map: map,
+									title:"You are here"
+								});
+						
+								google.maps.event.addListener(marker, 'click', function() {
+								  infowindow.open(map,marker);
+								});
+							} 
+						<?php } ?>
+					});
+                </script>
+                <div class="row marginleft0" style="width:96%;">
+                    <h3 class="well-legend margin0">Location Map</h3>
+                    <div class="divider5"></div>
+                    <div class="well clearfix makerelative" style="min-height:500px; height:auto; background:none; background:url('<?php echo $this->baseUrl('images/uggoogle.png'); ?>') t; padding-bottom:10px; padding-top:10px;">
+						<?php if(isEmptyString($request->detect)){ ?>
+                            <a class="btn btn-primary makeabsolute" style="top:-25px; left:0;" href="<?php echo $this->baseUrl('profile/view/id/'.encode($user->getID()).'/tab/contacts/detect/1'); ?>"><?php echo $user->hasGPSCoordinates() ? 'Update '.$metxt.'Position' : 'Compute '.$metxt.'Location'; ?></a>
+                            <!--<div id="map_canvas" class="gmaps"></div>-->
+                            <div id="gmap"></div>
+                        <?php } ?>
+                        <?php if(!isEmptyString($request->detect)){ ?>
+                            <div id="current" class="bolded">Initializing...</div>
+                            <input type="text" id="lat" name="lat" value="" class="form-control input-width-small isdecimal" /> &nbsp;
+                            <input type="text" id="lng" name="lng" value="" class="form-control input-width-small isdecimal" /><input type="hidden" id="hasgps" name="hasgps" value="" /><br /><br />
+                            
+                            <a href="<?php echo $this->referer; ?>" class="btn"><i class="icon-remove"></i> <?php echo $this->translate('global_button_cancel'); ?></a>
+                            <a href="<?php echo $this->baseUrl('profile/view/id/'.encode($user->getID()).'/tab/contacts/detect/1'); ?>" class="btn"><i class="icon-refresh"></i> Reload</a>
+                            <button type="submit" class="btn btn-primary hide" id="saveposition"><i class="icon-ok icon-white"></i> <?php echo $this->translate('global_button_save')." Position"; ?></button>
+                            <div class="form-group">
+                                <div id="hasgps_error"></div>
+                            </div>
+                            <div id="map_canvas" class="gmaps"></div>
+                            <div class="divider20"></div>	
+                            <input type="hidden" name="entityname" value="UserAccount" />
+                            <input type="hidden" id="id" name="id" value="<?php echo encode($user->getID()); ?>" />
+                            
+                            
+                            <input type="hidden" name="<?php echo URL_SUCCESS; ?>" value="<?php echo encode($this->baseUrl('profile/view/id/'.encode($user->getID()).'/tab/contacts')); ?>" />
+                            <input type="hidden" name="<?php echo URL_FAILURE; ?>" value="<?php echo encode($this->baseUrl('profile/view/id/'.encode($user->getID()).'/tab/contacts/detect/1')); ?>" />
+                            <input type="hidden" name="<?php echo SUCCESS_MESSAGE; ?>" value="global_save_success" />
+                        <?php } ?>
+                    </div>
+                </div>
+                <?php } ?>
+            </form>
+        </div>
+        <div id="personal">
+            <h2>Personal Bio Data</h2>
+            <form id="profileform-personal" class="form-horizontal personal">
+            <?php if($tab == 'personal'){ ?>
+                <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+                    <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+                <?php } ?>
+                <div class="row margin0 padding0">
+					 <?php if($isme || isFarmGroupAdmin() || isAdmin() || isDataClerk()){ ?>
+                        <a class="btn btn-primary" href="<?php echo $this->baseUrl('profile/index/id/'.encode($id).'/tab/personal'); ?>" id="update"><i class="icon-pencil icon-white"></i> Update Profile</a>                                       
+                    <?php } ?>
+                </div> 
+                <div class="divider10"></div> 
+                <div class="well lighter row marginleft0" style="min-height:75px; width:94%;"> 
+                    <h3 class="well-legend">Family</h3>
+                    <table class="table">                       
+                       
+                        <tr>		  
+                            <td width="35%"><label class="control-label"><?php echo $this->translate("farmer_maritalstatus_label"); ?>:</label>
+                            <?php echo isEmptyString($user->getMaritalStatusText()) ? '--': $user->getMaritalStatusText(); ?>
+                            </td>
+                            <td width="30%"></td>
+                            <td width="35%"></td>
+                        </tr>
+                        <tr>		  
+                            <td><label class="control-label"><?php echo $this->translate("farmer_nochildren_label"); ?>:</label>
+                            <?php echo isEmptyString($user->getNumberOfChildren()) ? '--': $user->getNumberOfChildren(); ?></td>
+                            <td><label class="control-label"><?php echo $this->translate("farmer_nodependants_label"); ?>:</label>
+                            <?php echo isEmptyString($user->getNumberOfDependants()) ? '--': $user->getNumberOfDependants(); ?></td>
+                            <td><label class="control-label"><?php echo $this->translate("farmer_totalhousehold_label"); ?>:</label>
+                            <?php echo isEmptyString($user->getTotalHousehold()) ? '--': $user->getTotalHousehold(); ?></td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="well lighter row marginleft0" style="min-height:100px; width:94%;">
+                    <h3 class="well-legend"><?php echo $this->translate("farmer_nextofkin_label"); ?></h3>
+                    <table class="table">                       
+                       <tr>		  
+                            <td width="35%"><label class="control-label"><?php echo $this->translate("global_name_label"); ?>:</label>
+                            <?php echo isEmptyString($user->getNextofkin_Name()) ? '--': $user->getNextofkin_Name(); ?>
+                            </td>
+                            <td width="30%"><label class="control-label"><?php echo $this->translate("global_phone_label"); ?>:</label>
+                            <?php echo isEmptyString($user->getNextofkin_phone()) ? '--': $user->getNextofkin_phone(); ?>
+                            </td>
+                            <td width="35%"><label class="control-label"><?php echo $this->translate("global_email_label"); ?>:</label>
+                            <?php echo isEmptyString($user->getNextofkin_email()) ? '--': $user->getNextofkin_email(); ?>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="well lighter row marginleft0" style="min-height:100px; width:94%;">
+                    <h3 class="well-legend">Other Information</h3>                       
+                    <table class="table">
+                        <tr>		  
+                            <td width="35%"><label class="control-label"><?php echo $this->translate("farmer_educlevel_label"); ?>:</label>
+                            <?php echo $user->getEducationLevelText(); ?></td>
+                            <td>
+                            	<label class="control-label"><?php echo $this->translate("farmer_signature_label"); ?>:</label>
+                                <div class="profileinfo pull-left" id="signinfo"> 
+                                    <a href="<?php echo $this->baseUrl('profile/picture/id/'.encode($user->getID()).'/type/sign'); ?>" class="editpic" title="Upload Signature Image"><img id="profileimage" src="<?php echo $user->getSignaturePath(); ?>" width="180" height="90" /><pre id="signlink" class="hide absoluteupload"><i class="icon-pencil"></i> Upload Image</pre></a>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <?php } ?>
+            </form>   	
+        </div>
+        <div id="farm">
+            <h2>Manage Farm</h2>
+            <form id="profileform-farm" class="form-horizontal farm">
+                <?php if($tab == 'farm'){ ?>
+                    <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+                        <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+                    <?php } ?>
+                    <div class="row margin0 padding0">
+                         <?php if($isme || isFarmGroupAdmin() || isAdmin() || isDataClerk()){ ?>
+                            <a class="btn btn-primary" href="<?php echo $this->baseUrl('profile/index/id/'.encode($id).'/tab/farm'); ?>" id="update"><i class="icon-pencil icon-white"></i> Update Profile</a>                                       
+                        <?php } ?>
+                    </div> 
+                    <div class="divider10"></div>
+                    <div class="row margin0 padding0" style="width:96%;">
+                        <span style="width:49%; float:left;">
+                            <div class="well lighter row marginleft0" id="farmleft" style="min-height:325px;"> 
+                                <h3 class="well-legend">Manage Farm</h3>
+                                <table class="table"> 
+                                    <tr>
+                                        <td width="40%"><label class="control-label" style="display:inline-block;"><?php echo $this->translate("farm_name_label"); ?>:</label></td>
+                                        <td><?php echo $user->getName(); ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label class="control-label">Practicing Farming Since:</label></td>
+                                        <td><?php echo $user->getFullStartDate(); ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label class="control-label"><?php echo $this->translate("farm_numberofemployees_label"); ?>:</label></td>
+                                        <td><?php echo isEmptyString($user->getNumberOfEmployees()) ? '0' : $user->getNumberOfEmployees(); ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label class="control-label"><?php echo $this->translate("farmer_farminigtypes_label"); ?>: </label></td>
+                                        <td><?php echo $user->getFarminigTypesLabel(); ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label class="control-label">Farming Tools Used</label></td>
+                                        <td><?php echo $user->getFarmingToolsLabel(); ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label class="control-label"><?php echo $this->translate("farmer_activities_label"); ?>: </label></td>
+                                        <td><?php echo $user->getActivityTypesLabel(); ?></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </span>
+                        <span style="width:49%; float:right;">
+                            <div class="well lighter row marginleft0" id="farmright" style="min-height:325px; width:98%">
+                                <h3 class="well-legend">Land Usage</h3>                       
+                                <table class="table higherpadding"> 
+                                    <tr>
+                                        <td width="50%" class="nowrapping"><label class="control-label"><?php echo $this->translate("farm_landsize_label"); ?>:</label></td>
+                                        <td><?php echo $user->displayLandSize(); ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="nowrapping"><label class="control-label"><?php echo $this->translate("farm_landsizeactive_label"); ?>:</label></td>
+                                        <td><?php echo $user->displayActiveLandSize(); ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="nowrapping"><label class="control-label"><?php echo $this->translate("farm_landacquiremethod_label"); ?>:</label></td>
+                                        <td><?php echo $user->getLandAcquireMethodLabel(); ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label class="control-label">No of Farm Lands / Fields:</label></td>
+                                        <td><?php echo $user->getNumberOfFields(); ?></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </span>
+                    </div>
+                    <div class="row" style="margin-left:0px; position:relative;">
+                        <h2>Crops</h2>
+                        <?php require APPLICATION_PATH."/views/scripts/profile/cropscolumn.phtml"; ?>
+                    </div>
+                <?php } ?>
+            </form>
+        </div>
+        <div id="seasons">
+        	<h2>Manage Seasons</h2>
+            <form id="profileform-seasons" class="form-horizontal seasons">
+            	<?php if($tab == 'seasons'){ ?>
+            		<div class="row" style="margin-left:0px;">
+						<?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+                            <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+                        <?php } ?>  
+                        <span class="span6 marginleft0" style="width:97%;">
+                            <div class="well row marginleft0" style="min-height:60px; padding-left:10px; position:relative;">
+                                <div class="margin0" style="position:absolute; right:15px; top:8px;">
+                                     <a class="btn btn-primary" href="<?php echo $this->baseUrl('season/index/userid/'.encode($user->getID())); ?>" title="Setup New Season"><i class="icon-plus icon-white"></i> Setup Season</a>
+                                </div>               
+                            <?php 
+								$seasons = $user->getSeasons();
+								$scount = $seasons->count();
+                                if($scount == 0) { ?>
+                                <div class="alert alert-info">No seasons have been Setup. Click on 'Setup Season' to get started</div>
+                            <?php } else { ?>                
+                                <label class="labeldescription">Viewing <?php echo $scount; ?> <?php echo $scount == 1 ? 'season' : 'seasons'; ?></label>
+                                <ul id="datalist" class="nav nav-stacked">
+                                    <?php 
+                                        foreach($seasons as $season){
+                                    ?>
+                                    <li style="min-height:150px;">
+                                        <table class="table noborder margin0">
+                                            <tr>                                
+                                                <td width="30%" style="padding-top:20px;">
+                                                    <div class="imagecontainer" style="width:90%; min-height:90px; padding:2px;">
+                                                        <img style="width:100%;" src="<?php echo $season->getCrop()->getImagePath(); ?>" />
+                                                    </div>
+                                                </td>
+                                                <td class="padding0">
+                                                    <div style="position:relative;">
+                                                        <table class="itemlist table noborder margin0">
+                                                            <tr>
+                                                                <td colspan="4"><h2 style="font-size:15px;"><a href="<?php echo $this->baseUrl("season/view/id/".encode($season->getID())); ?>" title="Season Details"><?php echo $season->getName()." - ".$season->getRef(); ?></a></h2>
+                                                                </td>
+                                                                <td class="actionbuttons" rowspan="4" style="padding-top:5px;">
+                                                                    <a class="btn btn-primary wrap" style="position:absolute; top:35px; right:10px;" href="<?php echo $this->baseUrl("season/view/id/".encode($season->getID())); ?>">View Details</a>
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td width="90"><label class="control-label">Season Start: </label></td>
+                                                                <td width="140" class="nowrapping"><span><?php echo $season->getFullStartDate(); ?></span></td>
+                                                                <td width="60"><label class="control-label"></label></td>
+                                                                <td width="100" class="nowrapping"><span></span></td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td><label class="control-label">Projected End: </label></td>
+                                                                <td class="nowrapping"><span><?php echo $season->getFullEndDate(); ?></span></td>
+                                                                <td></td>
+                                                                <td class="nowrapping"><span></span></td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td><label class="control-label">Status: </label></td>
+                                                                <td class="nowrapping"><span><?php echo $season->getStatusText(); ?></span></td>
+                                                                <td></td>
+                                                                <td class="nowrapping"><span></span></td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td><label class="control-label">Crop: </label></td>
+                                                                <td class="nowrapping"><span><?php echo $season->getCrop()->getName(); ?></span></td>
+                                                                <td></td>
+                                                                <td class="nowrapping"><span></span></td>
+                                                            </tr>
+                                                        </table>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </li>
+                                    <?php } ?>    
+                                </ul>
+                                <?php } ?>           
+                            </div>
+                        </span>
+                    </div>
+                    
+                    <div class="divider30"></div><div class="divider30"></div>
+                    <h2>Preseason Estimates</h2>
+            	<?php } ?>
+            </form>
+        </div>
+        <div id="calendar">
+        	<h2>Season Activity Calendar</h2>
+            <form id="profileform-calendar" class="form-horizontal calendar clearfix">
+            	<?php if($tab == 'calendar'){ ?>
+                	<script>
+					$(document).ready(function() {
+						$('#calendarcontainer').fullCalendar({
+							header: {
+								left: 'prev,next today',
+								center: 'title',
+								right: 'month,basicWeek,basicDay'
+							},
+							defaultView: 'month',
+							editable: false,
+							events: "<?php echo $this->baseUrl('profile/events/id/'.$user->getID()); ?>",
+							eventRender: function(event, element) {
+								var type = $("#targetposition").html();
+								var tippos = $("#tipposition").html();
+								var tooltip_title = event.formatedstart+': '+event.title+' - ['+event.seasonref+']';
+								var idclass = event.className;
+								if(!isEmptyString(event.end)){
+									tooltip_title = event.formatedstart+' - '+event.formatedend+'<br> '+event.title+' - ['+event.seasonref+']';
+								}
+								element.qtip({
+									content: {
+										text: '<a id="loading"><img style="margin-left:250px;" src="<?php echo $this->baseUrl('images/loader.gif'); ?>" /></a>',
+										title: {
+											text: tooltip_title
+										}
+									},
+									hide: { when: 'mouseout', fixed: true },
+									show: { solo: true, effect: 'slide'},
+									position: {adjust: {x: 30, y: 0} },
+									position: {
+										corner: {target: 'bottomMiddle', tooltip: 'topMiddle'}
+									},
+									style: { 
+										name: 'blue', width: 350, height: 175, padding: 5, background: '#F9F9F9',
+										tip: {corner: 'topMiddle', size: {x: 20, y : 10 }},
+										border:{width: 2,radius: 4, color: '#8F8F8F'},
+										title: { 'color': 'white', 'background': '#81D122'}
+									},
+									api: {
+										onShow: function(){
+											$(".qtip-content").html($("ul#"+idclass).html());
+										}
+									}
+								});
+							}
+						});
+					}); 
+					</script>
+                    <div class="row margin0 padding0">
+                        <div class="divider10"></div>
+                    </div>
+                    <div id='calendarcontainer' class="padding0 margin0 row clearfix" style="margin-top:10px; width:95%;"></div>
+                    <?php
+						$seasons = $user->getOrderedSeasons();
+						foreach ($seasons as $season){
+							$timeline = sort_multi_array($season->getTimeLineDetails(), 'order');
+							foreach($timeline as $activity){
+					?>
+                        <ul id="<?php echo $activity['uniqueid']; ?>" class="nav nav-stacked datalist hide" style="width:360px;">
+                            <li>
+                                <table class="table noborder margin0">
+                                    <tr>                                
+                                        <td class="padding0">
+                                            <div style="position:relative;">
+                                                <div style="position:absolute; top:5px; right:15px;">
+                                                    <a class="btn btn-primary btn-mini wrap"  href="<?php echo $activity['url']; ?>" title="View all details">View</a>
+                                                    <a class="btn btn-primary btn-mini wrap"  href="<?php echo $activity['editurl']; ?>" title="Update Activity">Update</a>
+                                                </div>
+                                                <table class="itemlist table noborder margin0">
+                                                    <tr>
+                                                        <td style="width:65px;"><label class="control-label pull-left">Ref#:</label></td>
+                                                        <td><span><?php echo $activity['ref']; ?></span></td>    
+                                                    </tr>      
+                                                    <tr>
+                                                        <td><label class="control-label pull-left">Details:</label></td>
+                                                        <td><span><?php echo snippet($activity['description'], 300, '...'); ?></span></td>    
+                                                    </tr>
+                                                    <tr>
+                                                        <td><label class="control-label pull-left">Status:</label></td>
+                                                        <td><span><?php echo $activity['status']; ?></span></td>    
+                                                    </tr>
+                                                    <?php if(in_array($activity['type'], array("1","2","3","4","5","6")) && $activity['expenses'] > 0){ ?>
+                                                        <tr>
+                                                            <td><label class="control-label pull-left">Expenses:</label></td>
+                                                            <td><span><?php echo formatNumber($activity['expenses']); ?></span></td>    
+                                                        </tr>  
+                                                    <?php } ?> 
+                                                    <?php if($activity['type'] == "7" && $activity['sale'] > 0){ ?>
+                                                        <tr>
+                                                            <td><label class="control-label pull-left">Revenue:</label></td>
+                                                            <td><span><?php echo formatNumber($activity['sale']); ?></span></td>    
+                                                        </tr>  
+                                                    <?php } ?>      
+                                                </table>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </li>
+                        </ul>       
+            		<?php } } ?>	
+            	<?php } ?>
+            </form>
+        </div>
+        <div id="inventory">
+        	<h2>Farm Inventory</h2>
+            <form id="profileform-inventory" class="form-horizontal inventory">
+            	<?php if($tab == 'inventory'){ 
+					$inventories = $user->getInventoryDetails();
+					$tcount = $inventories->count();
+				?>
+            		<div class="row" style="margin-left:0px;">
+						<?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+                            <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+                        <?php } ?>  
+                        <span class="span6 marginleft0" style="width:94%;">
+                            <div class="well row marginleft0" style="min-height:60px; padding-left:10px; position:relative;">
+                                <div class="margin0" style="position:absolute; right:10px; top:5px;">
+                                    <a class="btn btn-primary" href="<?php echo $this->baseUrl('inventory/index/userid/'.encode($user->getID())); ?>" title="Add Inventory Item"><i class="icon-plus icon-white"></i> Add Item</a>                                       
+                                </div>
+                            <?php 
+                                if($tcount == 0) { ?>
+                                <div class="alert alert-info" style="margin-top:35px;">No inventory has been done yet. Click on 'Add Item' to get started</div>
+                            <?php } else { ?>                
+                                <label class="labeldescription">Viewing <?php echo $tcount; ?> <?php echo $tcount == 1 ? 'item' : 'inventory items'; ?></label>
+                                
+                                <ul id="datalist" class="nav nav-stacked">
+                                    <?php 
+                                        foreach($inventories as $inventory){
+                                    ?>
+                                    <li style="min-height:130px;">
+                                        <table class="table noborder margin0">
+                                            <tr>                                
+                                                <td width="10%" style="padding-top:10px; padding-right:15px; vertical-align:middle;">
+                                                    <div class="<?php echo $inventory->hasProfileImage() ? 'imagecontainer':''; ?>" style="">
+                                                        <img style="width:140px;" src="<?php echo $inventory->getLargePicturePath(); ?>" />
+                                                    </div>
+                                                </td>
+                                                <td class="padding0" style="padding-right:15px;">
+                                                    <div style="position:relative;">
+                                                        <table class="itemlist table noborder margin0">
+                                                            <tr>
+                                                                <td colspan="4"><h2 style="font-size:15px;"><a href="<?php echo $this->baseUrl("inventory/view/id/".encode($inventory->getID())); ?>" title="Details"><?php echo $inventory->getItemName(); ?></a></h2>
+                                                                </td>
+                                                                <td class="actionbuttons" rowspan="4" style="padding-top:5px;">
+                                                                    <a class="btn btn-primary btn-mini wrap" style="position:absolute; top:25px; right:10px;" href="<?php echo $this->baseUrl("inventory/view/id/".encode($inventory->getID())); ?>">Details</a>
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="width:25%;"><label class="control-label">Category: </label></td>
+                                                                <td class="nowrapping"><span><?php echo $inventory->getCategory()->getName(); ?></span></td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td><label class="control-label">Description: </label></td>
+                                                                <td colspan="3" class="nowrapping"><span><?php echo nl2br($inventory->getDescription()); ?></span></td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td><label class="control-label">Quantity: </label></td>
+                                                                <td class="nowrapping"><span><?php echo $inventory->getQuantityText(); ?></span></td>
+                                                            </tr>
+                                                        </table>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </li>
+                                    <?php } ?>    
+                                </ul>
+                                <?php } ?>           
+                            </div>
+                        </span>
+                    </div>
+            	<?php } ?>
+            </form>
+        </div>
+        <div id="finance">
+        	<h2>Reports</h2>
+            <form id="profileform-finance" class="form-horizontal finance">
+            	<?php if($tab == 'finance'){ ?>
+            		<div class="row" style="margin-left:0px;">
+                        <span class="marginleft0 span9" style="width:94%;">
+                            <ul class="sectionitems">
+                                <li>
+                                    <a class="list" href="<?php echo $this->baseUrl("finance/credithistory/id/".encode($user->getID())); ?>" title="Credit History"><img src="<?php echo $this->baseUrl('images/topmenu_market.png'); ?>" /><br /><h2>Credit History</h2></a>
+                                </li>
+                                <li>
+                                    <a class="list" href="<?php echo $this->baseUrl("finance/statement/user/".$user->getID()); ?>" title="Profit and Loss Statement"><img src="<?php echo $this->baseUrl('images/topmenu_market.png'); ?>" /><br /><h2>Profit & Loss <br />Statement</h2></a>
+                                </li>
+                                <li><a class="list" href="<?php echo $this->baseUrl('report/primarybaseline/id/'.$user->getID()); ?>" title="Farmis Baseline Summary Report"><img src="<?php echo $this->baseUrl('images/benefit_report.png'); ?>" /><br /><h2>Farmis Baseline <br />Summary Report</h2></a>
+                                </li>
+                                <li>
+                                    <a class="list" href="<?php echo $this->baseUrl('report/baselinedetail/id/'.$user->getID()); ?>" title="Farmis Baseline Detailed Report"><img src="<?php echo $this->baseUrl('images/benefit_report.png'); ?>" /><br /><h2>Farmis Baseline <br />Detailed Report</h2></a>
+                                </li>
+                            </ul>
+                        </span>
+                    </div>
+            	<?php } ?>
+            </form>
+        </div>
+        <div id="subscription">
+        	<h2>Payment History</h2>
+            <form id="profileform-subscription" class="form-horizontal subscription">
+            	<?php if($tab == 'subscription'){ ?>
+            		
+            	<?php } ?>
+            </form>
+        </div>
+        <?php require APPLICATION_PATH."/views/scripts/profile/settings.phtml"; ?>
+    </div> 
+</div>
 <script>
 	$(document).ready(function() {
-		// if user deactivates account, confirm action
-		$("#deactivate").click(function(){		
-			// Confirm that the user wants to change their password			
-		});
-		
-		// set empty tds				
-		$("table.formtable td.value").each(function(){
-			if($(this).html() == ''){
-				$(this).html('---');
-			}			
-		});
+		equalHeight($("#farmleft, #farmright"));
 	});
 </script>
-
-<h2><?php echo $title; ?></h2>
-<table class="formtable">
-	<tr class="sectionheading">
-		<td colspan="2"><?php echo $this->translate("useraccount_section_general"); ?></td>
-	</tr>
-	<tr>
-		<td class="label"><?php echo $this->translate("useraccount_salutation_label"); ?>:</td>
-		<td class="value"><?php echo $person->getSalutationText(); ?></td>
-	</tr>
-	<tr>
-		<td class="label"><?php echo $this->translate("useraccount_firstname_label"); ?>:</td>
-		<td class="value"><?php echo $useraccount->getFirstName(); ?></td>
-	</tr>
-	<tr>
-		<td class="label"><?php echo $this->translate("useraccount_lastname_label"); ?>:</td>
-		<td class="value"><?php echo $useraccount->getLastName(); ?></td>
-	</tr>
-	<tr>
-		<td class="label"><?php echo $this->translate("useraccount_othername_label"); ?>:</td>
-		<td class="value"><?php echo $useraccount->getOtherName(); ?></td>
-	</tr>
-	<tr>
-		<td class="label"><?php echo $this->translate("useraccount_gender_label"); ?>:</td>
-		<td class="value"><?php echo $useraccount->getGenderText(); ?></td>
-	</tr>
-	<tr>
-		<td class="label"><?php echo $this->translate("useraccount_username_label"); ?>:</td>
-		<td class="value"><?php echo $useraccount->getUserName(); ?></td>
-	</tr>
-	<tr>
-		<td class="label"><?php echo $this->translate("useraccount_email_label"); ?>:</td>
-		<td class="value"><?php echo $useraccount->getEmail(); ?></td>
-	</tr>
-	<tr>
-		<td class="label"><?php echo $this->translate("useraccount_email2_label"); ?>:</td>
-		<td class="value"><?php echo $useraccount->getEmail2(); ?></td>
-	</tr>
-	<tr>
-		<td class="label"><?php echo $this->translate("useraccount_password_label"); ?>:</td>
-		<td class="value">
-			<?php if(!$isadmin){ ?>
-				<a href="<?php echo $this->baseUrl('profile/changepassword'); ?>" title="<?php echo $this->translate("useraccount_changepassword_label"); ?>"><?php echo $this->translate("useraccount_changepassword_label"); ?></a>&nbsp;				
-			<?php }else{ ?>
-				<a href="<?php echo $this->baseUrl('profile/resetpassword'); ?>" title="<?php echo $this->translate("useraccount_resetpassword_label"); ?>"><?php echo $this->translate("useraccount_resetpassword_label"); ?></a>
-			<?php } ?>
-		</td>
-	</tr>
-	<tr>
-		<td class="label"><?php echo $this->translate("useraccount_phone_label"); ?>:</td>
-		<td class="value"><?php echo $useraccount->getPhone(); ?></td>
-	</tr>
-	<tr>
-		<td class="label"><?php echo $this->translate("useraccount_phone2_label"); ?>:</td>
-		<td class="value"><?php echo $useraccount->getPhone2(); ?></td>
-	</tr>
-	<tr>
-		<td class="label"><?php echo $this->translate("useraccount_fax_label"); ?>:</td>
-		<td class="value"><?php echo $useraccount->getFax(); ?></td>
-	</tr>
-	<tr>
-		<td class="label"><?php echo $this->translate("useraccount_address_label"); ?>:</td>
-		<td class="value"><?php echo $useraccount->getAddress(); ?></td>
-	</tr>
-	<tr>
-		<td class="label"><?php echo $this->translate("useraccount_country_label"); ?>:</td>
-		<td class="value"><?php echo $useraccount->getCountry(); ?></td>
-	</tr>
-	<tr>
-		<td class="label"><?php echo $this->translate("useraccount_city_label"); ?>:</td>
-		<td class="value"><?php echo $useraccount->getCity(); ?></td>
-	</tr>
-	<tr>
-		<td class="label"><?php echo $this->translate("useraccount_state_label"); ?>:</td>
-		<td class="value"><?php echo $useraccount->getState(); ?></td>
-	</tr>
-	<tr>
-		<td class="label"><?php echo $this->translate("useraccount_zipcode_label"); ?>:</td>
-		<td class="value"><?php echo $useraccount->getZipcode(); ?></td>
-	</tr>
-	<tr>
-		<td class="label"><?php echo $this->translate("useraccount_website_label"); ?>:</td>
-		<td class="value"><?php echo $useraccount->getWebsiteUrl(); ?></td>
-	</tr>
-	<tr>
-		<td class="label"><?php echo $this->translate("useraccount_securityquestion_label"); ?>:</td>
-		<td class="value"><?php echo $useraccount->getSecurityQuestion(); ?></td>
-	</tr>
-	<tr>
-		<td class="label"><?php echo $this->translate("useraccount_securityanswer_label"); ?>:</td>
-		<td class="value"><?php echo $useraccount->getSecurityAnswer(); ?></td>
-	</tr>
-	<tr>
-		<td class="label"><?php echo $this->translate("useraccount_dateofbirth_label"); ?>:</td>
-		<td class="value"><?php echo changeMySQLDateToPageFormat($useraccount->getDateOfBirth()); ?></td>
-	</tr>
-	<tr>
-		<td class="label"><?php echo $this->translate("useraccount_biography_label"); ?>:</td>
-		<td class="value"><?php echo $useraccount->getBiography(); ?></td>
-	</tr>	
-	<tr>
-		<td class="label"><?php echo $this->translate("useraccount_photo_label"); ?>:</td>
-		<td class="value"><?php echo $useraccount->getPhoto(); ?></td>
-	</tr>
-	<tr>
-		<td class="label"><?php echo $this->translate("useraccount_notes_label"); ?>:</td>
-		<td class="value"><?php echo $useraccount->getNotes(); ?></td>
-	</tr>		
-	<?php if($isadmin){ ?>
-		<tr>
-			<td class="label"><?php echo $this->translate("useraccount_section_groups"); ?>:</td>
-			<td class="value"><?php echo $useraccount->displayGroups(); ?></td>
-		</tr>
-		<tr>
-			<td class="label"><?php echo $this->translate("useraccount_isactive_label"); ?>: </td>
-			<td class="value"><?php echo ($useraccount->isActivated()) ? $this->translate("global_yes_label") : $this->translate("global_no_label"); ?></td>
-		</tr>		
-	<?php } ?>
-</table>
-<table class="formactions">  
-	<tr>
-		<td>
-			<?php if ($acl->checkPermission('User Account', ACTION_DELETE)) { ?>
-				<a href="<?php echo $this->baseUrl('profile/delete/entityname/UserAccount/id/'.encode($useraccount->getID())); ?>" class="negativeaction delete" title="<?php echo $this->translate("useraccount_button_delete_label"); ?>"><img src="<?php echo $this->baseUrl('images/cross.png'); ?>" /><?php echo $this->translate("useraccount_button_delete_label"); ?></a>
-			<?php } ?>
-			<?php if ($acl->checkPermission('User Account', ACTION_EDIT)) { ?>
-				<a href="<?php echo $this->baseUrl('profile/index/id/'.encode($useraccount->getID())); ?>" class="positiveaction" title="<?php echo $this->translate("useraccount_button_edit_label"); ?>"><img src="<?php echo $this->baseUrl('images/edit.png'); ?>" /><?php echo $this->translate("useraccount_button_edit_label"); ?></a>
-			<?php } ?>
-			<?php if ($acl->checkPermission('User Account', ACTION_LIST)) { ?>
-				<a href="<?php echo $this->baseUrl('profile/list'); ?>" class="positiveaction" title="<?php echo $this->translate("useraccount_button_list_label"); ?>"><img src="<?php echo $this->baseUrl('images/arrow_undo.png'); ?>" /><?php echo $this->translate("useraccount_button_list_label"); ?></a>
-			<?php } ?>
-		</td>
-	</tr>  
-</table>
 <?php
 	require_once APPLICATION_PATH.'/includes/footer.php';
 ?>
+	

@@ -13,7 +13,7 @@ class InventoryCategory extends BaseRecord  {
 		
 		// set the table
 		$this->setTableName('inventorycategory');
-		$this->hasColumn('farmid', 'integer', null, array( 'notnull' => true, 'notblank' => true));
+		$this->hasColumn('userid', 'integer', null, array( 'notnull' => true, 'notblank' => true));
 		$this->hasColumn('name', 'string', 255, array( 'notnull' => true, 'notblank' => true));
 		$this->hasColumn('description','string', 1000);
 		$this->hasColumn('dateadded','date', null);
@@ -30,7 +30,7 @@ class InventoryCategory extends BaseRecord  {
 		
 		// set the custom error messages
        	$this->addCustomErrorMessages(array(
-       									"farmid.notblank" => $this->translate->_("inventory_farmid_error"),
+       									"userid.notblank" => $this->translate->_("inventory_userid_error"),
        									"name.notblank" => $this->translate->_("inventory_categoryname_error")
        	       						));
 	}
@@ -38,8 +38,8 @@ class InventoryCategory extends BaseRecord  {
 		parent::setUp();
 		
 		// match the parent id
-		$this->hasOne('Farm as farm',
-							array('local' => 'farmid',
+		$this->hasOne('UserAccount as user',
+							array('local' => 'userid',
 									'foreign' => 'id'
 							)
 						);

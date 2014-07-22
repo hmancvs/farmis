@@ -3,30 +3,39 @@
 class UserController extends IndexController  {
 
     function checkloginAction() {
+    	$this->_helper->layout->disableLayout();
+		$this->_helper->viewRenderer->setNoRender(TRUE);
     	$session = SessionWrapper::getInstance(); 
     	# check that an email has been provided
 		if (isEmptyString($this->_getParam("email"))) {
 			$session->setVar(ERROR_MESSAGE, $this->_translate->translate("useraccount_email_error")); 
 			$session->setVar(FORM_VALUES, $this->_getAllParams());
 			// return to the home page
+			if(!isEmptyString($this->_getParam(URL_FAILURE))){
+				$this->_helper->redirector->gotoUrl(decode($this->_getParam(URL_FAILURE)));
+			}
     		$this->_helper->redirector->gotoSimpleAndExit('login', "user");
 		}
 		if (isEmptyString($this->_getParam("password"))) {
 			$session->setVar(ERROR_MESSAGE, $this->_translate->translate("useraccount_password_error")); 
 			$session->setVar(FORM_VALUES, $this->_getAllParams());
 			// return to the home page
+			if(!isEmptyString($this->_getParam(URL_FAILURE))){
+				$this->_helper->redirector->gotoUrl(decode($this->_getParam(URL_FAILURE)));
+			}
     		$this->_helper->redirector->gotoSimpleAndExit('login', "user");
 		}
 			
 		# check which field user is using to login. default is username
 		$credcolumn = "username";
     	$login = (string)$this->_getParam("email");
+    	debugMessage($this->_getAllParams());
     	
     	# check if credcolumn is phone 
-    	if(strlen($login) == 10 && is_numeric(substr($login, -6, 6))){
+    	if(is_numeric(substr($login, -6, 6)) || is_numeric($login)){
     		$credcolumn = 'phone';
     	}
-    	
+    	$country = $this->_getParam('country'); // $country = 'ug';
     	# check if credcolumn is emai
     	$validator = new Zend_Validate_EmailAddress();
 		if ($validator->isValid($login)) {
@@ -35,7 +44,7 @@ class UserController extends IndexController  {
            		$credcolumn = 'email';
             }
         }
-        // debugMessage($credcolumn);
+        debugMessage($credcolumn); // exit();
         
         if($credcolumn == 'email' || $credcolumn == 'username'){
 	        $authAdapter = new Zend_Auth_Adapter_DbTable(Zend_Registry::get("dbAdapter"));
@@ -43,7 +52,9 @@ class UserController extends IndexController  {
 			$authAdapter->setTableName('useraccount');
 			$authAdapter->setIdentityColumn($credcolumn);
 			$authAdapter->setCredentialColumn('password');
-			$authAdapter->setCredentialTreatment("sha1(?) AND isactive = '1'"); 
+			// AND country = '".$country."'
+			/*AND UPPER(country) = '".strtoupper($country)."'*/
+			$authAdapter->setCredentialTreatment("sha1(?) AND isactive = '1' "); 
 			// set the credentials from the login form
 			$authAdapter->setIdentity($login);
 			$authAdapter->setCredential($this->_getParam("password")); 
@@ -56,12 +67,15 @@ class UserController extends IndexController  {
 				// add failed login to audit trail
 	    		$audit_values['transactiontype'] = USER_LOGIN;
 	    		$audit_values['success'] = "N";
-	    		$audit_values['transactiondetails'] = "Login for user with email '".$this->_getParam("email")."' failed. Invalid username or password";
+	    		$audit_values['transactiondetails'] = "Login for user with Identity '".$this->_getParam("email")."' failed. Invalid Identity or Password";
 				$this->notify(new sfEvent($this, USER_LOGIN, $audit_values));
 				
 				$session->setVar(ERROR_MESSAGE, "Invalid Identity or Password. <br />Please Try Again."); 
 				$session->setVar(FORM_VALUES, $this->_getAllParams());
 				// return to the home page
+				if(!isEmptyString($this->_getParam(URL_FAILURE))){
+					$this->_helper->redirector->gotoUrl(decode($this->_getParam(URL_FAILURE)));
+				}
 	    		$this->_helper->redirector->gotoSimple('login', "user");
 	    		return false; 
 			}
@@ -74,59 +88,84 @@ class UserController extends IndexController  {
 		
         # if user is loggin with phone
         if($credcolumn == 'phone'){
-        	$useracc = new UserAccount(); 
-        	$result = $useracc->validateUserUsingPhone($this->_getParam("password"), $this->_getParam("email"));
-        	if(!$result){
+        	$useracc = new UserAccount();
+        	$phone = substr($this->_getParam("email"), '-9');
+        	// debugMessage($phone); exit();
+        	$result = $useracc->validateUserUsingPhone($this->_getParam("password"), $phone, $country);
+        	// debugMessage($result); exit();
+        	
+        	// user does not exit
+        	if(count($result) == 0){
+        		$browser = new Browser();
+				$audit_values = array("browserdetails" => $browser->getBrowserDetailsForAudit());
         		$audit_values['transactiontype'] = USER_LOGIN;
 	    		$audit_values['success'] = "N";
-	    		$audit_values['transactiondetails'] = "Login for user with email '".$this->_getParam("email")."' failed. Invalid username or password";
+	    		$audit_values['transactiondetails'] = "Login for user with identity '".$this->_getParam("email")."' failed. Invalid username or password";
 				$this->notify(new sfEvent($this, USER_LOGIN, $audit_values));
 				
 				$session->setVar(ERROR_MESSAGE, "Invalid Email Address, Phone or Password. <br />Please Try Again."); 
 				$session->setVar(FORM_VALUES, $this->_getAllParams());
 				// return to the home page
+	        	if(!isEmptyString($this->_getParam(URL_FAILURE))){
+					$this->_helper->redirector->gotoUrl(decode($this->_getParam(URL_FAILURE)));
+				}
 	    		$this->_helper->redirector->gotoSimple('login', "user");
 	    		return false; 
-        	} else {
-        		$useraccount = new UserAccount(); 
-				$useraccount->populate($result['userid']);
+        	}
+        	
+        	// user password successfully validated
+        	$useraccount = new UserAccount(); 
+			$useraccount->populate($result[0]['id']);
+        }
+        
+        // kick out any kenyan logging into uganda OR kick out any ugandan (not admin) logging into kenya
+        if(!isEmptyString($useraccount->getID())){
+        	if((strtolower($country) == 'ug' && $useraccount->isKenyan()) || (strtolower($country) == 'ke' && $useraccount->isUgandan() && !$useraccount->isAdmin())){
+        		$this->clearSession();
+	        	// debugMessage('kenyan accessing uganda invalidly');
+	        	$browser = new Browser();
+				$audit_values = array("browserdetails" => $browser->getBrowserDetailsForAudit());
+	        	$audit_values['transactiontype'] = USER_LOGIN;
+		    	$audit_values['success'] = "N";
+		    	$audit_values['transactiondetails'] = "Login for user with identity '".$this->_getParam("email")."' denied. Invalid domain access (".$useraccount->getCountry().") into ".$country;
+				$this->notify(new sfEvent($this, USER_LOGIN, $audit_values));
+					
+				$session->setVar(ERROR_MESSAGE, "Invalid Email Address, Phone or Password. <br />Please Try Again."); 
+				$session->setVar(FORM_VALUES, $this->_getAllParams());
+					
+				// return to the home page
+		        if(!isEmptyString($this->_getParam(URL_FAILURE))){
+					$this->_helper->redirector->gotoUrl(decode($this->_getParam(URL_FAILURE)));
+				}
+		    	$this->_helper->redirector->gotoSimple('login', "user");
+		    	return false;
         	}
         }
+		// debugMessage($useraccount->toArray()); exit();
 		
-		// exit();
 		$session->setVar("userid", $useraccount->getID());
-		$session->setVar("firstname",$useraccount->getFirstName());
-		$session->setVar("lastname", $useraccount->getLastName());
-		$session->setVar("email", $useraccount->getEmail());
-		$session->setVar("gender", $useraccount->getGender());
-		$session->setVar("farmerid", $useraccount->getFarmerID());
-		$session->setVar("email", $useraccount->getEmail());
-		$session->setVar("phone", $useraccount->getPhone());
-		$session->setVar("regno", $useraccount->getFarmer()->getRegNo());
-		$session->setVar("profilepath", $useraccount->getProfilePath());
 		$session->setVar("type", $useraccount->getType());
-		$session->setVar("farmergroupid", $useraccount->getFarmer()->getFarmGroupID());
-		$session->setVar("farmid", $useraccount->getFarmer()->getFarm()->getID());
-
-		$acl = new ACL($useraccount->getID());
-		if($acl->checkPermission("Application Settings", ACTION_EDIT)){
-			$url = $this->_helper->url('overview', 'appconfig');
-			$session->setVar('settingslink', '<li><a href="'.$url.'" title="Application Settings">Settings</a><span class="toplinkspacer">|</span></li>');
-		}
+		$session->setVar("farmergroupid", $useraccount->getFarmGroupID());
+		$session->setVar('country', $useraccount->getCountry());
 
 		// clear user specific cache, before it is used again
     	$this->clearUserCache();
     
 		// Add successful login event to the audit trail
-		/*$audit_values['transactiontype'] = USER_LOGIN;
+		$browser = new Browser();
+		$audit_values = array("browserdetails" => $browser->getBrowserDetailsForAudit());
+		$audit_values['transactiontype'] = USER_LOGIN;
     	$audit_values['success'] = "Y";
-		$audit_values['userid'] = $user->id;
-		$audit_values['executedby'] = $user->id;
-   		$audit_values['transactiondetails'] = "Login for user with email '".$this->_getParam("email")."' successful";
-		$this->notify(new sfEvent($this, USER_LOGIN, $audit_values));*/
+		$audit_values['userid'] = $useraccount->getID();
+		$audit_values['executedby'] = $useraccount->getID();
+   		$audit_values['transactiondetails'] = "Login for user with Identity '".$this->_getParam("email")."' successful";
+		$this->notify(new sfEvent($this, USER_LOGIN, $audit_values));
 		
 		if (isEmptyString($this->_getParam("redirecturl"))) {
 			# forward to the dashboard
+			if($this->_getParam('mobilelogin') == 1){
+				$this->_helper->redirector->gotoSimple("home", "mobile");
+			}
 			$this->_helper->redirector->gotoSimple("index", "dashboard");
 		} else {
 			# redirect to the page the user was coming from 
@@ -164,7 +203,7 @@ class UserController extends IndexController  {
 	    	$login = (string)$formvalues['email'];
 	    	
 	    	# check if credcolumn is phone 
-	    	if(strlen($login) == 10 && is_numeric(substr($login, -6, 6))){
+	    	if((strlen($login) >= 9 || strlen($login) <= 12) && is_numeric(substr($login, -6, 6))){
 	    		$credcolumn = 'phone';
 	    	}
 	    	
@@ -173,33 +212,28 @@ class UserController extends IndexController  {
 			if ($validator->isValid($login)) {
 	        	$credcolumn = 'email';
 	        }
-        	// debugMessage($credcolumn);
+        	// debugMessage($credcolumn); // exit();
         	$userfond = false;
 	        switch ($credcolumn) {
 	        	case 'email':
-	        		if($useraccount->findByEmail($formvalues['email'])){
-	        			$userfond = true;
-	        			// debugMessage($useraccount->toArray());
-	        		}
+	        		$useraccount->findByEmail($formvalues['email']);
 	        		break;
 	        	case 'phone':
-	        		$useraccount = $user->populateByPhone(getFullPhone($formvalues['email']));
+	        		$useraccount = $user->fetchByPhone(getFullPhone($formvalues['email']));
 	        		if(!isEmptyString($useraccount->getID())){
 	        			$userfond = true;
-	        			// debugMessage($useraccount->toArray());
 	        		}
 	        		break;
 	        	case 'username':
 	       			if($useraccount->findByUsername($formvalues['email'])){
 	        			$userfond = true;
-	        			// debugMessage($useraccount->toArray());
 	        		}
 	        		break;
 	        	default:
 	        		break;
 	        }
-    		// debugMessage($user->toArray());
-	        if(!isEmptyString($useraccount->getID())){
+    		// debugMessage($useraccount->toArray()); exit();
+	        if(!isEmptyString($useraccount->getID()) && (!isEmptyString($useraccount->getEmail()) || !isEmptyString($useraccount->getPhone()))){
     			$useraccount->recoverPassword();
     			// send a link to enable the user to recover their password 
     			$this->_helper->redirector->gotoUrl($this->view->baseUrl("user/recoverpasswordconfirmation"));	

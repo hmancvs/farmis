@@ -7,7 +7,7 @@
 	if(!isEmptyString($request->sid)){
 		$season->populate(decode($request->sid));
 		$harvest->setSeasonID($season->getID());
-		$harvest->setFarmID($season->getFarmID());
+		$harvest->setUserID($season->getUserID());
 		$harvest->setStartDate(date('Y-m-d'));
 		$harvest->setStatus(3);
 		$hcounter = $harvest->getNextReferencePointer();
@@ -31,18 +31,18 @@
 		$hcounter = substr($harvest->getRef(), -3);
 		$successurl = encode($this->baseUrl("season/harvest/id/".$request->id));
 	}
-	$thefarmid = $harvest->getSeason()->getFarmID();
 	$loan = $harvest->getCreditDetails();
+	$request->setParam('tab', 'seasons');
+	$user = $harvest->getUser();
 	
 	#in case of errors in session, populate the fields from session
 	if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
 		$harvest->processPost($session->getVar(FORM_VALUES));	
 	}
 	
-	// $harvesttypes = getAllTillageTypes();
-		
-	$this->headTitle($title);  
-	$farmtitle = isFarmer() ? "Manage Farm" : "Manage Farm: ".$harvest->getFarm()->getName();
+	$title = 'Manage Season: '.$harvest->getActivityName();
+	$farmtitle = $harvest->getUser()->getName();
+	$this->headTitle($title.$browserappend);  
 ?>
 <script>
 	$(document).ready(function() {
@@ -167,9 +167,9 @@
 </script>
 <h1><?php echo $farmtitle; ?></h1>
 <div id="tabs">
-    <?php require APPLICATION_PATH."/views/scripts/farm/farmleftcolumn.phtml"; ?>
+    <?php require APPLICATION_PATH."/views/scripts/profile/profileleftcolumn.phtml"; ?>
     <div class="span9 tab-content" id="center">
-    	<?php require APPLICATION_PATH."/views/scripts/farm/tabstop.phtml"; ?>
+    	<?php require APPLICATION_PATH."/views/scripts/profile/tabstop.phtml"; ?>
 		<div id="seasons">
             <form id="indexform" class="form-horizontal seasons" action="<?php echo $posturl; ?>" method="post">
             <?php if($request->tab == 'seasons'){ ?>
@@ -227,8 +227,7 @@
                                             <input type="hidden" name="entityname" value="SeasonHarvest" />
                                             <input type="hidden" id="id" name="id" value="<?php echo encode($harvest->getID()); ?>" />
                                             <input type="hidden" id="seasonid" name="seasonid" value="<?php echo $harvest->getSeasonID(); ?>" />
-                                            <input type="hidden" id="farmid" name="farmid" value="<?php echo $harvest->getFarmID(); ?>" />
-                                            <input type="hidden" id="farmerid" name="farmerid" value="<?php echo $harvest->getFarm()->getFarmerID(); ?>" />
+                                            <input type="hidden" id="userid" name="userid" value="<?php echo $harvest->getSeason()->getUserID(); ?>" />
                                             <input type="hidden" id="stage" name="stage" value="9" />
                                             <input type="hidden" name="sourcetype" id="sourcetype" value="<?php echo $loan->getSourceType(); ?>" />
                                             <input type="hidden" name="clienttype" id="clienttype" value="<?php echo $loan->getClientType(); ?>" />
@@ -376,7 +375,7 @@
             <?php } ?>    
             </form>
 		</div>
-		<?php require APPLICATION_PATH."/views/scripts/farm/tabsbottom.phtml"; ?> 
+		<?php require APPLICATION_PATH."/views/scripts/profile/tabsbottom.phtml"; ?>  
     </div>
 </div>    
 <?php

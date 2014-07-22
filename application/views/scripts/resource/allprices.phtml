@@ -9,15 +9,6 @@
 	$user = new UserAccount();
 	$user->populate($userid);
 		
-	//if(isFarmer()){
-		$farmer = new Farmer();
-		$farmer->populate($farmerid);
-	//}
-	
-	$farmid = $farmer->getFarm()->getID();
-	$farm = $farmer->getFarm();
-	$thefarmid = $farmid;
-	
 ?>
 <script>
 $(document).ready(function(){

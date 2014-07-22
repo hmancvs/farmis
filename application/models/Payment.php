@@ -10,7 +10,6 @@ class Payment extends BaseRecord  {
 		$this->setTableName('payment');
 		
 		$this->hasColumn('userid', 'integer', null);
-		$this->hasColumn('farmerid', 'integer', null);
 		$this->hasColumn('farmgroupid', 'integer', null);
 		$this->hasColumn('subscriptionid', 'integer', null);
 		$this->hasColumn('stem', 'integer', null, array('default' => 1));
@@ -52,12 +51,6 @@ class Payment extends BaseRecord  {
 									'foreign' => 'id'
 								)
 						);
-		$this->hasOne('Farmer as farmer', 
-								array(
-									'local' => 'farmerid',
-									'foreign' => 'id'
-								)
-						);
 		$this->hasOne('FarmGroup as farmgroup', 
 								array(
 									'local' => 'farmgroupid',
@@ -70,6 +63,12 @@ class Payment extends BaseRecord  {
 									'foreign' => 'id'
 								)
 						);
+		$this->hasOne('UserAccount as verifiedby', 
+								array(
+									'local' => 'verifiedbyid',
+									'foreign' => 'id'
+								)
+						);
 	}
 	/*
 	 * Pre process model data
@@ -78,9 +77,6 @@ class Payment extends BaseRecord  {
 		// trim spaces from the name field
 		if(isArrayKeyAnEmptyString('userid', $formvalues)){
 			unset($formvalues['userid']); 
-		}
-		if(isArrayKeyAnEmptyString('farmerid', $formvalues)){
-			unset($formvalues['farmerid']); 
 		}
 		if(isArrayKeyAnEmptyString('farmgroupid', $formvalues)){
 			unset($formvalues['farmgroupid']); 
@@ -104,7 +100,26 @@ class Payment extends BaseRecord  {
 			$formvalues['datecreated'] = date('Y-m-d H:i:s'); 
 		}
 		if(!isArrayKeyAnEmptyString('phone', $formvalues)){
-			$formvalues['phone'] = getFullPhone($formvalues['phone']);
+			// $formvalues['phone'] = getFullPhone($formvalues['phone']);
+			if(strtoupper($formvalues['country']) == 'KE'){
+				$formvalues['phone'] = str_pad(ltrim($formvalues['phone'], '0'), 12, COUNTRY_CODE_KE, STR_PAD_LEFT);
+			} else {
+				$formvalues['phone'] = str_pad(ltrim($formvalues['phone'], '0'), 12, COUNTRY_CODE_UG, STR_PAD_LEFT);
+			}
+		}
+		
+		$subscription = array();
+		if(!isArrayKeyAnEmptyString('hassubscription', $formvalues)){
+			$formvalues['subscription']['userid'] = $formvalues['userid'];
+			$formvalues['subscription']['startdate'] = changeDateFromPageToMySQLFormat($formvalues['startdate']);
+			$formvalues['subscription']['enddate'] = changeDateFromPageToMySQLFormat($formvalues['enddate']);
+			$formvalues['subscription']['isactive'] = 1;
+			$formvalues['subscription']['istrial'] = 0;
+			$formvalues['subscription']['planid'] = 2;
+			$formvalues['subscription']['verifiedbyid'] = $formvalues['verifiedbyid'];
+			if(!isArrayKeyAnEmptyString('subscriptionid', $formvalues)){
+				$formvalues['subscription']['id'] = $formvalues['subscriptionid'];
+			}
 		}
 		// debugMessage($formvalues); exit();
 		parent::processPost($formvalues);
@@ -203,6 +218,63 @@ class Payment extends BaseRecord  {
 		$plan = new MembershipPlan();
 		$plan->populate(2);
 		return $plan->getAmount();
+	}
+	# determine the default subcription amount
+	function getDefaultFarmerAmountKe(){
+		$plan = new MembershipPlan();
+		$plan->populate(2);
+		return $plan->getAmountKe();
+	}
+	function sendSubscriptionConfirmationByEmail() {
+		$session = SessionWrapper::getInstance();
+    	$userid = $session->getVar('userid');
+    	
+		$template = new EmailTemplate(); 
+		# create mail object
+		$mail = getMailInstance();
+		$view = new Zend_View(); 
+
+		// assign values
+		$template->assign('firstname', $this->getUser()->getFirstName());
+		$template->assign('email', $this->getUser()->getEmail());
+		$template->assign('phone', $this->getUser()->getPhone());
+		$template->assign('paymentdate', changeMySQLDateToPageFormat($this->gettrxdate()));
+		$template->assign('startdate', changeMySQLDateToPageFormat($this->getSubscription()->getStartDate()));
+		$template->assign('enddate', changeMySQLDateToPageFormat($this->getSubscription()->getEndDate()));
+		$template->assign('paymentref', $this->getTrxCode());
+		$template->assign('status', $this->getPaymentStatus());
+		$template->assign('amount', formatMoney($this->getAmount()));
+		
+		$mail->clearRecipients();
+		$mail->clearSubject();
+		$mail->setBodyHtml('');
+		
+		// configure base stuff
+		$mail->addTo($this->getUser()->getEmail(), $this->getUser()->getName());
+		// set the send of the email address
+		$mail->setFrom($this->config->notification->emailmessagesender, $this->translate->_('useraccount_email_notificationsender'));
+		
+		$mail->setSubject("FARMIS Payment Confirmation");
+		// render the view as the body of the email
+		$mail->setBodyHtml($template->render('paymentnotification.phtml'));
+		// debugMessage($template->render('paymentnotification.phtml')); // exit();
+		$mail->send();
+		
+		$mail->clearRecipients();
+		$mail->clearSubject();
+		$mail->setBodyHtml('');
+		$mail->clearFrom();
+		
+		return true;
+	}
+	# invite user by phone to login
+	function sendSubscriptionConfirmationByPhone() {
+		$message =  "Dear ".$this->getUser()->getFirstName().", \nYour Payment of ".formatMoney($this->getAmount())." for FARMIS membership has been successfully received.";
+		// debugMessage($message);
+		$sendresult = sendSMSMessage($this->getUser()->getPhone(), $message);
+		// debugMessage($sendresult);
+		# saving of message to application inbox is not valid here
+		return true;
 	}
 }
 

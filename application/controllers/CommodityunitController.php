@@ -8,6 +8,6 @@ class CommodityunitController extends SecureController {
 	 * @return String
 	 */
 	function getResourceForACL() {
-		return isLGMISAdmin() ? "Location Statistic" : "Commodity Unit"; 
+		return "Commodity Unit"; 
 	}
 }

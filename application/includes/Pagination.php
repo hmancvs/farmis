@@ -49,7 +49,7 @@ class Pagination {
 	protected $_startdate; 
 	protected $_enddate; 
 	protected $_startandenddatefiltercolumn;
-	
+	protected $_listcountdropdown = '';
 	/**
 	 * @return the $_filtertablealias
 	 */
@@ -166,6 +166,43 @@ class Pagination {
 		$this->_startandenddatefiltercolumn = $col;
 	}
 
+	/**
+	 * @return String 
+	 */
+	public function getListCountDropDown() {
+		$listcount = new LookupType();
+    	$listcount->setName("LIST_ITEM_COUNT_OPTIONS");
+    	$values = $listcount->getOptionValues(); 
+    	asort($values, SORT_NUMERIC); 
+    	$session = SessionWrapper::getInstance();
+		
+		$dropdown = new Zend_Form_Element_Select('itemcountperpage',
+							array(
+								'multiOptions' => $values, 
+								'view' => new Zend_View(),
+								'decorators' => array('ViewHelper'),
+							     'class' => array('span1','xform-control','width50')
+							)
+						);
+		
+		if (isEmptyString($this->getItemCountPerPage())) {
+			$dropdown->setValue($session->getVar('itemcountperpage'));
+		} else {
+			$session->setVar('itemcountperpage', $this->getItemCountPerPage());
+			$dropdown->setValue($this->getItemCountPerPage());
+		}  
+	    $selectobj = '<span>Per page: '.$dropdown->render().'</span>';	
+					
+		return $selectobj;
+	}
+	
+	/**
+	 * @param String $_sortorder
+	 */
+	public function setListCountDropDown($_listcountdropdown) {
+		$this->_listcountdropdown = $_listcountdropdown;
+	}
+	
 	function processPost($formvalues) {
 		$this->_dataarray = $formvalues; 
 		
@@ -263,7 +300,7 @@ class Pagination {
 	 * 
 	 * @return String 
 	 */
-	function getSearchAndFilterSQL() {
+	function getSearchAndFilterSQL($custom ='') {
 		$searchcolumns = $this->getSearchColumns();
 		$searchsql = array();
 		$searchterm = $this->getSearchTerm();
@@ -271,9 +308,9 @@ class Pagination {
 			return $this->getFilterSQL();
 		}
 		foreach ($searchcolumns as $column ) {
-			$searchsql[] = $column . " LIKE '%" .$searchterm. "%' ";
+			$searchsql[] = $column . " LIKE '%" .trim($searchterm). "%' ";
 		}
-		return " AND (" . implode("  OR ", $searchsql). ") ".$this->getFilterSQL();
+		return " AND (" . implode("  OR ", $searchsql). " ".$custom." ) ".$this->getFilterSQL();
 	}
 	/**
 	 * Generate SQL for the sortorder and fields to be sorted by
@@ -400,7 +437,7 @@ class Pagination {
 			$options['sortorder'] =  $this->getSortOrder();
 		}
 		// make sure to put back the ? between the link href and the query string which was removed when using the query string functionality
-		return '<a href="'.$this->getView()->url($options).'" title="Click to sort by '.$title.'">'.$title.$this->getSortArrow($column).'</a>';
+		return '<a href="'.$this->getView()->url($options).'" title="Click to sort by '.$title.'" class="sortlink">'.$title.$this->getSortArrow($column).'</a>';
 		return $title; 
 	}
 	
@@ -417,9 +454,9 @@ class Pagination {
 			$thesortorder = $this->getSortOrder();
 		}
 		if ($thesortorder == "ASC") {
-			return '<img src="'.$this->getView()->baseUrl('images/arrowup.png').'" class="sortimage">';
+			return '<i class="icon-white icon-arrow-up sortimage"></i>';
 		} else if ($thesortorder == "DESC") {
-			return '<img src="'.$this->getView()->baseUrl('images/arrowdown.png').'" class="sortimage">';
+			return '<i class="icon-white icon-arrow-down sortimage"></i>';
 		}
 		return "";
 	}

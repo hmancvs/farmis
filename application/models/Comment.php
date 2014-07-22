@@ -7,7 +7,6 @@ class Comment extends BaseEntity {
 		
 		$this->setTableName('comment');
 		$this->hasColumn('userid', 'integer', null, array('notnull' => true, 'notblank' => true));
-		$this->hasColumn('farmerid', 'integer', null);
 		$this->hasColumn('communityforumid', 'integer', null);
 		$this->hasColumn('content', 'string', 1000, array('notnull' => true, 'notblank' => true));
 		$this->hasColumn('type', 'tinyint');
@@ -55,9 +54,6 @@ class Comment extends BaseEntity {
 		# force setting of default none string column values. enum, int and date 	
 		if(isArrayKeyAnEmptyString('parentid', $formvalues)){
 			$formvalues['parentid'] = NULL; 
-		}
-		if(isArrayKeyAnEmptyString('farmerid', $formvalues)){
-			$formvalues['farmerid'] = NULL; 
 		}
 		if(isArrayKeyAnEmptyString('communityforumid', $formvalues)){
 			$formvalues['communityforumid'] = NULL; 

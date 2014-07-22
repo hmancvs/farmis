@@ -13,7 +13,8 @@ class Inventory extends BaseEntity  {
 		
 		// set the table
 		$this->setTableName('inventory');
-		$this->hasColumn('farmid', 'integer', null, array( 'notnull' => true, 'notblank' => true));
+		$this->hasColumn('userid', 'integer', null, array( 'notnull' => true, 'notblank' => true));
+		$this->hasColumn('seasonid', 'integer', null);
 		$this->hasColumn('type', 'integer', null, array('notnull' => true, 'notblank' => true, 'default' => 1)); // 1 Inpug (Assest), 2 Processing, 3 Output  
 		$this->hasColumn('categoryid', 'integer', null);
 		$this->hasColumn('itemname', 'string', 255, array( 'notnull' => true, 'notblank' => true));
@@ -41,19 +42,22 @@ class Inventory extends BaseEntity  {
 		
 		// set the custom error messages
        	$this->addCustomErrorMessages(array(
-       									"farmid.notblank" => $this->translate->_("inventory_farmid_error"),
+       									"userid.notblank" => $this->translate->_("inventory_userid_error"),
        									"type.notblank" => $this->translate->_("inventory_type_error"),
-       									/*"categoryid.notblank" => $this->translate->_("inventory_categoryid_error"),*/
-       									"itemname.notblank" => $this->translate->_("inventory_itemname_error")/*,
-       									"purchasedate.notblank" => $this->translate->_("inventory_purchasedate_error")*/
+       									"itemname.notblank" => $this->translate->_("inventory_itemname_error")
        	       						));
 	}
 	public function setUp() {
 		parent::setUp();
 		
 		// match the parent id
-		$this->hasOne('Farm as farm',
-							array('local' => 'farmid',
+		$this->hasOne('UserAccount as user',
+							array('local' => 'userid',
+									'foreign' => 'id'
+							)
+						);
+		$this->hasOne('Season as season',
+							array('local' => 'seasonid',
 									'foreign' => 'id'
 							)
 						);
@@ -100,6 +104,9 @@ class Inventory extends BaseEntity  {
 		if(isArrayKeyAnEmptyString('vendorid', $formvalues)){
 			unset($formvalues['vendorid']); 
 		}
+		if(isArrayKeyAnEmptyString('seasonid', $formvalues)){
+			unset($formvalues['seasonid']); 
+		}
 		// debugMessage($formvalues); exit();
 		parent::processPost($formvalues);
 	}
@@ -116,7 +123,8 @@ class Inventory extends BaseEntity  {
 	}
 	# determine if person has profile image
 	function hasProfileImage(){
-		$real_path = APPLICATION_PATH.DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR."public".DIRECTORY_SEPARATOR."uploads".DIRECTORY_SEPARATOR."farms".DIRECTORY_SEPARATOR."farm_".$this->getFarmID().DIRECTORY_SEPARATOR."inventory_".$this->getID().DIRECTORY_SEPARATOR."large_".$this->getPhoto();
+		$real_path = APPLICATION_PATH.DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR."public".DIRECTORY_SEPARATOR."uploads".DIRECTORY_SEPARATOR."user_".$this->getUserID().DIRECTORY_SEPARATOR."inventory".DIRECTORY_SEPARATOR."inventory_".$this->getID().DIRECTORY_SEPARATOR."large_".$this->getPhoto();
+		
 		// debugMessage($real_path);
 		if(file_exists($real_path) && !isEmptyString($this->getPhoto())){
 			return true;

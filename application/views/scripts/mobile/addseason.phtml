@@ -1,0 +1,541 @@
+<?php
+	include APPLICATION_PATH.'/includes/header.php';
+	
+	$season = new Season(); 
+	$user = new UserAccount();
+	$user->populate($userid);
+	
+	$posturl = $this->baseUrl("season/create");
+	$button_title = $this->translate("season_button_new"); 
+	
+	// set the payee if provided in the url 
+	if (!isEmptyString($request->id)) {
+		$season->populate(decode($request->id));
+		$title = $this->translate("season_pagetitle_edit"); 
+		$button_title = $this->translate("global_button_save_changes");
+		$posturl = $this->baseUrl("season/edit");	
+		$scounter = substr($season->getRef(), -3);
+		$loan = $season->getLoans()->get(0);
+		$pagetitle = "Update Season";
+	} else {
+		if(!isEmptyString($request->userid)){
+			$user->populate(decode($request->userid));	
+		}
+		$season->setUserID($user->getID());
+		$season->setFieldSizeUnit(1);
+		
+		$loan = $season->getLoans()->get(0);
+		$loan->setInstallmentUnit(2);
+		$loan->setPaybackPeriodUnit(1);
+		$scounter = $season->getNextReferencePointer();
+		$pagetitle = "New Season Setup";
+	}
+	// available commodities
+	if(isEmptyString($season->getUserID())){
+		$season->setUserID($userid);
+	}
+	$availablecrops = getCommoditiesForFarmer($season->getUserID());
+	
+	#in case of errors in session, populate the fields from session
+	if(!isEmptyString($session->getVar(ERROR_MESSAGE))){ 
+		$season->processPost($session->getVar(FORM_VALUES));	
+	}
+	
+	// default title is to enable adding any payee
+	$title = isEmptyString($season->getID()) ? "Start a New Season" : $season->getName();
+	$this->headTitle('New Season'.$browserappend);  
+?>
+<?php include APPLICATION_PATH."/views/scripts/mobile/mobileincludes.phtml"; ?>
+<script>
+	$(document).ready(function() {
+		$("#indexform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				activityname: "required",
+				startyear: "required",
+				startmonth: "required",
+				endyear: "required",					
+				endmonth: "required",
+				status: "required",
+				method: "required",
+				cropid: "required",				
+				interestrate: {
+					required: false,
+					min: 0.1,
+					max:100
+				},
+				fieldsize: {
+					required: true
+				},
+				fieldsizeunit: {
+					required: true
+				},
+				netcapital: {
+					required: true
+				}
+			}, 
+			// the messages for each of the fields being validated
+			messages: {		
+				activityname: "<?php echo $this->translate("season_activityname_error"); ?>",
+				startyear: "<?php echo $this->translate("season_startyear_error"); ?>",
+				startmonth: "<?php echo $this->translate("season_startmonth_error"); ?>",
+				endyear: "<?php echo $this->translate("season_endyear_error"); ?>",
+				endmonth: "<?php echo $this->translate("season_endmonth_error"); ?>",
+				status: "<?php echo $this->translate("season_status_error"); ?>",
+				method: "<?php echo $this->translate("season_method_error"); ?>",
+				cropid: "<?php echo $this->translate("season_cropid_error"); ?>",
+				interestrate: {
+					min: "Value should be greater than 0",
+					max: "Value should be less than 100"
+				},
+				fieldsize: {
+					required: "Please enter value"
+				},
+				fieldsizeunit: {
+					required: "Please select a Unit"
+				},
+				netcapital: {
+					required: "Please enter a Value"
+				}
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						error.appendTo("#"+element.attr("name")+"_error")
+						break;
+				}			
+			}
+		});
+		// add the validation for wholesale price to be less than retail price
+		$.validator.addMethod("validamount", function(value, element, params) { 
+			if (IsValidAmount(value)) {
+				return true; 
+			}
+			return false;        
+		}, "<?php echo $this->translate("global_amount_error"); ?>");
+	
+		
+		$("#method-1").click(function(){
+			enableContainerByID("single");
+			disableContainerByID("multiple");
+		});
+		$("#method-2").click(function(){
+			enableContainerByID("multiple");
+			disableContainerByID("single");
+		});
+		
+		//$("#method").change();
+		<?php if($season->getMethod() == 1){ ?>
+			$("#method-1").click();
+		<?php } else { ?>
+		enableContainerByID("multiple");
+			$("#method-2").click();
+		<?php } ?>
+		
+		$("#startyear, #startmonth").change(function(){
+			var label = '';
+			var counter = '<?php echo $scounter; ?>';
+			var label = "<?php echo SEASON_PREFIX; ?>"+$("#startmonth option:selected").text()+"/"+$("#startyear").val()+"/"+counter;
+			$("#reflabel").html(label);
+			$("#ref").val(label);
+		});
+		$("#startyear, #startmonth").change();
+		
+		$("#creditdate").datepicker(datepickerOpts);
+		
+		$("#sourcetype").val("");
+		$("#clienttype").val("");
+		$("#financetype-1, #financetype-2").click(function(){
+			multipleDisableContainerByID('hasloan,bankrow,softrow,cropfinancing');
+		});
+		$("#financetype-3").click(function(){
+			multipleEnableContainerByID('hasloan,softrow');
+			multipleDisableContainerByID('bankrow','cropfinancing');
+			$("#sourcetype").val(2);
+		});
+		$("#financetype-4").click(function(){
+			enableContainerByID('hasloan');
+			enableContainerByID('bankrow');
+			multipleDisableContainerByID('cropfinancing,softrow');
+			$("#sourcetype").val(1);
+		});
+		$("#financetype-5").click(function(){
+			enableContainerByID('cropfinancing');
+			multipleDisableContainerByID('hasloan,bankrow,softrow');
+			$("#clienttype").val(1);
+		});
+		<?php if(!isEmptyString($season->getFinanceType())){ ?>
+			var currentval = '<?php echo $season->getFinanceType(); ?>';
+			$("#financetype-"+currentval).click();
+		<?php } ?>
+		
+		$("#bottomactions").html($("#topactions").html());
+	}); 
+</script>
+<body>
+<div class="container-fluid">
+  <h4><?php echo $title; ?></h4>
+  <?php if(!isEmptyString($session->getVar(ERROR_MESSAGE)) ){ ?>
+      <div class="row-fluid">
+      	<div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+      </div>
+  <?php } ?>
+  <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+  	<div class="row-fluid">
+      	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+	</div>
+  <?php } ?>
+  <div class="row-fluid">
+      <form class="form-horizontal clearfix" id="indexform" action="<?php echo $posturl; ?>" method="post" style="padding-bottom:25px;">
+        <div class="control-group well actions" id="topactions">
+            <a href="<?php echo $this->referer; ?>" class="btn"><i class="icon-remove"></i> <?php echo $this->translate('global_button_cancel'); ?></a>
+            <button type="submit" class="btn btn-primary"><i class="icon-ok icon-white"></i> <?php echo $this->translate('global_button_save'); ?></button>
+            <input type="hidden" name="entityname" value="Season" />
+            <input type="hidden" id="id" name="id" value="<?php echo encode($season->getID()); ?>" />
+            <input type="hidden" id="userid" name="userid" value="<?php echo $season->getUserID(); ?>" />
+            <input type="hidden" id="stage" name="stage" value="3" />
+            <input type="hidden" name="sourcetype" id="sourcetype" value="<?php echo $loan->getSourceType(); ?>" />
+            <input type="hidden" name="clienttype" id="clienttype" value="<?php echo $loan->getClientType(); ?>" />
+            <input type="hidden" id="<?php echo SUCCESS_MESSAGE; ?>" name="<?php echo SUCCESS_MESSAGE; ?>" value="<?php echo $this->translate("global_save_success"); ?>" />
+            <input type="hidden" class="successurl" id="<?php echo URL_SUCCESS; ?>" name="<?php echo URL_SUCCESS; ?>" value="<?php echo encode($this->baseUrl('mobile/viewseason')); ?>" />
+            <input type="hidden" class="failureurl" id="<?php echo URL_FAILURE; ?>" name="<?php echo URL_FAILURE; ?>" value="<?php echo encode($this->baseUrl('mobile/addseason/id/'.encode($season->getID()))); ?>" />
+        </div>
+        <fieldset class="fieldsetcontainer well">
+            <legend>Season Details</legend>
+            <div class="control-group">
+                <label class="control-label"><?php echo "Season ".$this->translate("season_activityname_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                <div class="controls">
+                    <input type="text" name="activityname" id="activityname" class="span3" value="<?php echo $season->getActivityName(); ?>" placeholder="" /><div id="activityname_error"></div>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label"><?php echo $this->translate("season_ref_label"); ?>:</label>
+                <div class="controls">
+                    <span id="reflabel"></span><input type="hidden" id="ref" name="ref" value="<?php echo $season->getRef(); ?>" />
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label"><?php echo $this->translate("season_commodity_label"); ?> <?php echo $this->translate("global_required_field_marker"); ?></label>
+                <div class="controls">
+                   <?php
+                        $cropdropdown = new Zend_Form_Element_Select('cropid',
+                                            array(
+                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $availablecrops),								
+                                                'view' => new Zend_View(),
+                                                'decorators' => array('ViewHelper'),
+                                                'class' => array('width150')
+                                            )
+                                        );
+                        $cropdropdown->setValue($season->getCropID()); 
+                        echo $cropdropdown->render();
+                   ?><div id="cropid_error"></div>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label">Field Size for cultivation<?php echo $this->translate("global_required_field_marker"); ?></label>
+                <div class="controls">
+                    <input style="width:50px;" type="text" name="fieldsize" id="fieldsize" class="centeralign isdecimal greaterthanzero" value="<?php echo clean_num($season->getFieldSize()); ?>" />
+                    &nbsp;
+                    <?php
+                        $areavalues = getAreaUnits();
+                        $unitdropdown = new Zend_Form_Element_Select('fieldsizeunit',
+                                            array(
+                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $areavalues),								
+                                                'view' => new Zend_View(),
+                                                'decorators' => array('ViewHelper'),
+                                                'style' => "width:80px;"
+                                            )
+                                        );
+                        $unitdropdown->setValue($season->getFieldSizeUnit()); 
+                        echo $unitdropdown->render(); 
+                   ?><div id="fieldsize_error"></div><div id="fieldsizeunit_error"></div>
+                </div>
+            </div>  
+            <div class="control-group">
+                <label class="control-label"><?php echo $this->translate("season_startdate_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                <div class="controls">
+                    <div class="blocked">
+                        <?php
+                            if(isEmptyString($season->getStartYear())){
+                                $season->setStartYear(date("Y"));
+                            }
+                            $years = getAllYears("2","1");
+                            $yeardp = new Zend_Form_Element_Select('startyear',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => 'Year'), $years),	
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'style' => "width:80px;"		
+                                                )
+                                            );
+                            $yeardp->setValue($season->getStartYear()); 
+                            echo $yeardp->render(); 
+                        ?>
+                        <?php
+                            if(isEmptyString($season->getStartMonth())){
+                                $season->setStartMonth(date("m"));
+                            }
+                            $monthdp = new Zend_Form_Element_Select('startmonth',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => 'Month'), getAllMonthsAsShortNames()),	
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'style' => "width:75px;"		
+                                                )
+                                            );
+                            $monthdp->setValue($season->getStartMonth()); 
+                            echo $monthdp->render(); 
+                        ?>
+                        <?php
+                            $daydp = new Zend_Form_Element_Select('startday',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => 'Day'), getMonthDays()),	
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'style' => "width:75px;"
+                                                )
+                                            );
+                            $daydp->setValue($season->getStartDay()); 
+                            echo $daydp->render(); 
+                        ?><div id="startyear_error"></div><div id="startmonth_error"></div>
+                    </div>                		
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label"><?php echo $this->translate("season_enddate_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                <div class="controls">
+                    <div class="blocked">
+                        <?php
+                            $years = getAllYears("2","5");
+                            $yeardp = new Zend_Form_Element_Select('endyear',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => 'Year'), $years),	
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'style' => "width:80px;"
+                                                )
+                                            );
+                            $yeardp->setValue($season->getEndYear()); 
+                            echo $yeardp->render(); 
+                        ?>
+                        <?php
+                            $monthdp = new Zend_Form_Element_Select('endmonth',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => 'Month'), getAllMonthsAsShortNames()),	
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'style' => "width:75px;"
+                                                )
+                                            );
+                            $monthdp->setValue($season->getEndMonth()); 
+                            echo $monthdp->render(); 
+                        ?>
+                        <?php
+                            $daydp = new Zend_Form_Element_Select('endday',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => 'Day'), getMonthDays()),	
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'style' => "width:75px;"
+                                                )
+                                            );
+                            $daydp->setValue($season->getEndDay()); 
+                            echo $daydp->render(); 
+                        ?>
+                        <div id="endyear_error"></div><div id="endmonth_error"></div>
+                    </div>                		
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label"><?php echo $this->translate("season_status_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                <div class="controls">
+                    <?php
+                        $allstatuses = getStatusValues();
+                        $statusesdropdown = new Zend_Form_Element_Select('status',
+                                            array(
+                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $allstatuses),								
+                                                'view' => new Zend_View(),
+                                                'decorators' => array('ViewHelper'),
+                                                'class' => array('span2')
+                                            )
+                                        );
+                        $statusesdropdown->setValue($season->getStatus()); 
+                        echo $statusesdropdown->render(); 
+                   ?><div id="status_error"></div>
+                </div>
+            </div>
+        </fieldset>
+        <fieldset class="fieldsetcontainer well">
+			<legend><?php echo $this->translate("season_credit_finance_title"); ?></legend>
+            <div class="control-group">
+                <label class="control-label"><?php echo $this->translate("season_credit_type_label"); ?>:</label>
+                <div class="controls">
+                   <?php
+						 $data = getCapitalSources();						  
+						 $capitalradio = new Zend_Form_Element_Radio('financetype',
+								  array(
+										  'multiOptions' => $data, 
+										  'view' => new Zend_View(),
+										  'disableLoadDefaultDecorators' => true,
+										  'class' => array('financetype'),
+										  'decorators' => array('ViewHelper',
+															  array('HtmlTag', array('tag' => 'div', 'class' => array('inline', 'radio', 'zendradio'))) // use a sorrounding DIV with classes which are copied to the label by JQuery
+														  )
+								  )
+						  );
+						  $capitalradio->setValue($season->getFinanceType());
+						  echo $capitalradio->render();
+					?>
+                </div>
+            </div>
+			<div class="control-group">               
+                <label class="control-label">Net Capital available at season start:</label>
+                <div class="controls">
+                	<div class="input-prepend"><span class="add-on"><?php echo getCurrencySymbol(); ?></span><input style="width:80px;" type="text" name="netcapital" id="netcapital" class="width100 isamount rightalign greaterthanzero" value="<?php echo $season->getNetCapital(); ?>" /></div><div id="netcapital_error"></div>
+                </div>
+            </div>
+            <div id="hasloan" class="hide">
+                <div class="control-group hide">               
+                    <label class="control-label"><?php echo $this->translate("season_credit_finance_details"); ?></label>
+                    <div class="controls">
+                    
+                    </div>
+                </div>
+                <div class="control-group">               
+                    <label class="control-label"><?php echo $this->translate("season_credit_principal_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                    	<div class="input-prepend"><span class="add-on"><?php echo getCurrencySymbol(); ?></span><input type="text" style="width:80px;" name="principal" id="principal" class="width100 rightalign isamount inputrequired greaterthanzero" value="<?php echo $loan->getPrincipal(); ?>" /></div><div id="principal_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">               
+                    <label class="control-label"><?php echo $this->translate("season_credit_interestrate_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                    	<input style="width:50px;" type="text" name="interestrate" id="interestrate" class="centeralign isdecimal inputrequired" value="<?php echo clean_num($loan->getInterestRate()); ?>" />&nbsp;<span class="pagedescription">(%)</span><div id="interestrate_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">               
+                    <label class="control-label"><?php echo $this->translate("season_credit_repayment_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                        <div class="input-prepend"><span class="add-on"><?php echo getCurrencySymbol(); ?></span><input type="text" style="width:80px;" name="paybackamount" id="paybackamount" class="width100 isamount rightalign inputrequired greaterthanzero" value="<?php echo $loan->getPayBackAmount(); ?>" /></div><div id="paybackamount_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">               
+                    <label class="control-label"><?php echo $this->translate("season_credit_payperiod_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                    	<input style="width:50px;" type="text" name="paybackperiod" id="paybackperiod" class="centeralign isnumber inputrequired greaterthanzero" value="<?php echo $loan->getPayBackPeriod(); ?>" />
+						<?php
+                            $univalues = getLoanFrequencyValues();
+                            $unitdropdown = new Zend_Form_Element_Select('paybackperiodunit',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array('selectrequired'),
+													'style' => "width:80px;"
+                                                )
+                                            );
+                            $unitdropdown->setValue($loan->getPayBackPeriodUnit()); 
+                            echo $unitdropdown->render(); 
+                        ?><div id="paybackperiod_error"></div><div id="paybackperiodunit_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">               
+                    <label class="control-label"><?php echo $this->translate("season_credit_datereceived_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                    	 <input type="text" name="creditdate" id="creditdate" class="datefield width100 inputrequired" value="<?php echo changeMySQLDateToPageFormat($loan->getcreditdate()); ?>" /><div id="creditdate_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">               
+                    <label class="control-label"><?php echo $this->translate("season_credit_regularpay_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                    <div class="controls">
+                    	<div class="input-prepend"><span class="add-on"><?php echo getCurrencySymbol(); ?></span><input type="text" style="width:65px;" name="installment" id="installment" class="width50 isamount rightalign inputrequired greaterthanzero" value="<?php echo $loan->getInstallment(); ?>" /></div>
+                        &nbsp;/&nbsp;
+                        <?php
+                            $univalues = getLoanRepaymentFrequencyValues();
+                            $unitdropdown = new Zend_Form_Element_Select('installmentunit',
+                                                array(
+                                                    'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
+                                                    'view' => new Zend_View(),
+                                                    'decorators' => array('ViewHelper'),
+                                                    'class' => array('span2','width80','selectrequired'),
+													'style' => "width:80px;"
+                                                )
+                                            );
+                            $unitdropdown->setValue($loan->getInstallmentUnit()); 
+                            echo $unitdropdown->render(); 
+                        ?>
+                        <div id="installment_error"></div><div id="installmentunit_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">               
+                    <label class="control-label"><?php echo $this->translate("season_credit_source_label"); ?>:</label>
+                    <div class="controls">
+                    	<span id="bankrow">
+							<?php
+                                $allsources = getAllFinancialInstitutions();
+                                $sourcedropdown = new Zend_Form_Element_Select('financesourceid',
+                                                    array(
+                                                        'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $allsources),								
+                                                        'view' => new Zend_View(),
+                                                        'decorators' => array('ViewHelper'),
+                                                        'class' => array('width150'),
+                                                        'style' => 'width:200px;'
+                                                    )
+                                                );
+                                
+                                $sourcedropdown->setValue($loan->getFinanceSourceID());
+                                echo $sourcedropdown->render();
+                           ?>
+                       </span>
+                       <span id="softrow">
+                       		<input type="text" name="financesourcetext" id="financesourcetext" class="width150 hastooltip" value="<?php echo $loan->getFinanceSourceText(); ?>" placeholder="" title="<?php echo $this->translate("season_financesource_tooltip"); ?>" />
+                       </span>
+                       <div id="financesource_error"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="cropfinancing" class="hide">
+            	<div class="control-group">               
+                    <label class="control-label"><?php echo $this->translate("season_credit_client_label"); ?>:</label>
+                    <div class="controls">
+                    	<?php
+							$allclients = getAllClients();
+							$sourcedropdown = new Zend_Form_Element_Select('clientid',
+												array(
+													'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $allclients),								
+													'view' => new Zend_View(),
+													'decorators' => array('ViewHelper'),
+													'class' => array('hastooltip', 'width150'),
+													'style' => 'width:200px;'
+												)
+											);
+							
+							$sourcedropdown->setValue($loan->getClientID());
+							echo $sourcedropdown->render();
+					   ?>
+                    </div>
+                </div>
+                <div class="control-group">               
+                    <label class="control-label"><?php echo $this->translate("season_credit_value_label"); ?>:</label>
+                    <div class="controls">
+                    	<div class="input-prepend"><span class="add-on"><?php echo getCurrencySymbol(); ?></span><input type="text" style="width:80px;" name="price" id="price" class="width100 isamount rightalign" value="<?php echo $loan->getPrice(); ?>" /></div><div id="price_error"></div>
+                    </div>
+                </div>
+                <div class="control-group">               
+                    <label class="control-label"><?php echo $this->translate("season_credit_terms_label"); ?>:</label>
+                    <div class="controls">
+                    	<textarea id="contract" name="contract" style="width:85%;"><?php echo $loan->getContract(); ?></textarea>
+                    </div>
+                </div>
+            </div>
+		</fieldset>			                
+        <div class="control-group well actions" id="bottomactions"></div>
+      </form>
+  </div>
+</div>
+</body>
+</html>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

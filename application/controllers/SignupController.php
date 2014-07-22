@@ -2,6 +2,16 @@
 
 class SignupController extends IndexController   {	
 	
+	function indexAction() {
+		$formvalues = $this->_getAllParams();
+		$agent = getAgent();
+		
+		if($this->_getParam('mobile') == 1 || isMobile() || $agent == 'mobile'){
+			// debugMessage($formvalues); exit();
+			$this->_helper->redirector->gotoUrl($this->view->baseUrl("mobile/signup/profile/".$formvalues['profile']));
+		}
+		parent::indexAction();
+	}
 	function processstep1Action() {
 		// the group to which the user is to be added
 		$formvalues = $this->_getAllParams();
@@ -11,13 +21,11 @@ class SignupController extends IndexController   {
 		$this->_setParam('entityname', 'UserAccount');
 		$this->_setParam(URL_FAILURE, encode($this->view->baseUrl("signup")));
 		$this->_setParam(URL_SUCCESS, encode($this->view->baseUrl("signup/confirm")));
-		$this->_setParam("action", ACTION_CREATE); 
-		
-		if(isEmptyString($formvalues['farmerid'])){
-			$formvalues['id'] = NULL;
-		} else {
-			$formvalues['id'] = $formvalues['farmerid'];
+		if($this->_getParam('regsource') == 1){
+			$this->_setParam(URL_FAILURE, encode($this->view->baseUrl("mobile/signup")));
+			$this->_setParam(URL_SUCCESS, encode($this->view->baseUrl("mobile/signupconfirm")));
 		}
+		$this->_setParam("action", ACTION_CREATE); 
 		
 		if(isEmptyString($formvalues['birthday'])){
 			$formvalues['birthday'] = NULL;
@@ -29,38 +37,27 @@ class SignupController extends IndexController   {
 			$formvalues['birthyear'] = NULL;
 		}
 		if(!isEmptyString($formvalues['birthday']) && !isEmptyString($formvalues['birthmonth']) && !isEmptyString($formvalues['birthyear'])){
-			$formvalues['dateofbirth'] = $formvalues['birthyear']."-".$formvalues['birthmonth']."-".$formvalues['birthday'];
+			$formvalues['dateofbirth'] = $formvalues['birthyear']."-".number_pad($formvalues['birthmonth'],2)."-".number_pad($formvalues['birthday'],2);
 		} else {
-			if(!isEmptyString($formvalues['dateofbirth'])){
+			if(!isArrayKeyAnEmptyString('dateofbirth', $formvalues)){
 				$formvalues['dateofbirth'] = changeDateFromPageToMySQLFormat($formvalues['dateofbirth']); 
 			} else {
 				$formvalues['dateofbirth'] = NULL;
 			}
 		}
 		$this->_setParam('dateofbirth', $formvalues['dateofbirth']);
-		
-		// set parent's gender from person type
-		$post = array(
-			"createdby" => "1",
-			"usergroups_groupid" => array(2),
-			"type" => $this->_getParam('type'),
-			"farmer" => array(
-				"firstname" => ucfirst($formvalues['firstname']), 
-				"lastname" => ucfirst($formvalues['lastname']),
-				"createdby" => "1",
-				"regdate" => date('Y-m-d'),
-				"selfregistered" => date(1)
-			)
-		);
-		
-		$this->_setParam('firstname', ucfirst($formvalues['firstname']));
-		$this->_setParam('lastname', ucfirst($formvalues['lastname']));
-		$this->_setParam('farmer', $post['farmer']);		
-		$this->_setParam('createdby', $post['createdby']);
-		$this->_setParam('usergroups_groupid', $post['usergroups_groupid']);
-		
+		$this->_setParam('selfregistered', 1);
+		$this->_setParam('regdate', date('Y-m-d'));
+		$this->_setParam('createdby', 1);
 		// debugMessage($this->_getAllParams());
 		// exit();
+		if(!isEmptyString($this->_getParam('spamcheck')) || isEmptyString($this->_getParam('gender'))){
+			$session = SessionWrapper::getInstance(); 
+			$session->setVar(ERROR_MESSAGE, 'Spam detected. Try again later'); 
+			$this->_helper->redirector->gotoUrl($this->view->baseUrl('signup'));
+			exit();
+		}
+		
 		parent::createAction();
 	}
 	
@@ -68,94 +65,47 @@ class SignupController extends IndexController   {
 		$this->_helper->layout->disableLayout();
 		$this->_helper->viewRenderer->setNoRender(TRUE);
 		
+		$user = new UserAccount(); 
 		$formvalues = $this->_getAllParams();
 		$session = SessionWrapper::getInstance(); 
-		$formvalues['id'] = $formvalues['farmerid'];
+		$formvalues['id'] = $formvalues['userid'];
 		// debugMessage($formvalues);
 		
-		$this->_setParam('entityname', 'Farmer');
+		$this->_setParam('entityname', 'UserAccount');
 		$this->_setParam(URL_FAILURE, encode($this->view->baseUrl('signup/index/profile/'.encode($formvalues['id'])."/")));
 		$this->_setParam(URL_SUCCESS, encode($this->view->baseUrl("signup/inviteconfirmation")));
+		if($this->_getParam('regsource') == 1){
+			$this->_setParam(URL_FAILURE, encode($this->view->baseUrl("mobile/signup/profile/".encode($formvalues['id'])."/")));
+			$this->_setParam(URL_SUCCESS, encode($this->view->baseUrl("mobile/login")));
+		}
 		$this->_setParam("action", ACTION_EDIT);
-		$this->_setParam('createdby', 1);
-		
-		$farmer = new Farmer(); 
-		$farmer->populate($formvalues['id']);
-		
-		# determine if is a farmer or farmgroup clerk
-		$isgroupclerk = false;
-		$isfarmer = true;
-		if($farmer->getFarmGroup()->getManagerID() == $farmer->getID()){
-			$isgroupclerk = true;
-			$isfarmer = false;
-		}
-		
-		if(isEmptyString($formvalues['birthday'])){
-			$formvalues['birthday'] = NULL;
-		}
-		if(isEmptyString($formvalues['birthmonth'])){
-			$formvalues['birthmonth'] = NULL;
-		}
-		if(isEmptyString($formvalues['birthmonth'])){
-			$formvalues['birthyear'] = NULL;
-		}
-		if(!isEmptyString($formvalues['birthday']) && !isEmptyString($formvalues['birthmonth']) && !isEmptyString($formvalues['birthyear'])){
-			$formvalues['dateofbirth'] = $formvalues['birthyear']."-".$formvalues['birthmonth']."-".$formvalues['birthday'];
-		} else {
-			if(!isEmptyString($formvalues['dateofbirth'])){
-				$formvalues['dateofbirth'] = changeDateFromPageToMySQLFormat($formvalues['dateofbirth']); 
-			} else {
-				$formvalues['dateofbirth'] = NULL;
-			}
-		}
-		
 		$formvalues['gtype'] = 2;
-		if($farmer->isFarmGroupManager()){
-			$formvalues['gtype'] = 3;
-			$formvalues['membershipplanid'] = 4;
+		if($user->isFarmGroupManager()){
+			$this->_setParam('gtype', 3);
+			$this->_setParam('membershipplanid', 4);
 		}
+		$this->_setParam('hasacceptedinvite', 1);
+		$this->_setParam('isactive', 1);
+		$this->_setParam('activationkey', '');
+  		$this->_setParam('activationdate', date("Y-m-d"));
+		$this->_setParam('usergroups', array(array("groupid" => $formvalues['type'])));
 		
-		// user account data
-		$userarray = array(
-				"id" => $formvalues['userid'],
-				"farmerid" => $formvalues['farmerid'],
-				"gender" => $formvalues['gender'],
-				"type" => $formvalues['gtype'],
-				"firstname" => $formvalues['firstname'],
-			    "lastname" => $formvalues['lastname'],
-		 		"username" => $formvalues['username'],
-			    "email" => $formvalues['email'],
-				"phone" => $formvalues['phone'],
-			    "password" => sha1($formvalues['password']),
-			    "agreedtoterms" => $formvalues['agreedtoterms'], 
-			    "membershipplanid" => $formvalues['membershipplanid'],
-				"isactive" => 1,
-				"activationkey" => NULL,
-  				"activationdate" => date("Y-m-d"),
-				"usergroups" => array(
-					array("groupid" => $formvalues['type'])
-				),
-				"createdby" => "1"
-			);
-
-		$formvalues['user'] = $userarray;
-		$formvalues['hasacceptedinvite'] = '1';
-		// debugMessage($formvalues);
-		// exit(); 
-		$farmer->processPost($formvalues);
-		/*debugMessage($farmer->toArray()); 
-		debugMessage('process errors are '.$farmer->getErrorStackAsString()); exit(); */
+		$user->populate($formvalues['id']);
+		$user->processPost($this->_getAllParams());
+		/*debugMessage($user->toArray()); 
+		debugMessage('process errors are '.$user->getErrorStackAsString()); exit(); */
 		// check for processing errors
-		if($farmer->hasError()) {
-			// debugMessage('process errors are '.$farmer->getErrorStackAsString()); exit();
+		if($user->hasError()) {
+			// debugMessage('process errors are '.$user->getErrorStackAsString()); exit();
 			$session->setVar(FORM_VALUES, $this->_getAllParams());
-    		$session->setVar(ERROR_MESSAGE, $farmer->getErrorStackAsString()); 
+    		$session->setVar(ERROR_MESSAGE, $user->getErrorStackAsString()); 
 			$this->_helper->redirector->gotoUrl(decode($this->_getParam(URL_FAILURE)));
 		} else {
 			try {
-				if($farmer->transactionInviteUpdate()){
+				if($user->transactionInviteUpdate()){
 					# set subscription period for user
-					$farmer->setNewSubscription();
+					$user->setNewSubscription();
+					$session->setVar(SUCCESS_MESSAGE, 'Your account on has been successfully activated. Please Login to continue.');
 					$this->_helper->redirector->gotoUrl(decode($this->_getParam(URL_SUCCESS))); 
 				}
 			} catch (Exception $e) {
@@ -182,15 +132,22 @@ class SignupController extends IndexController   {
 			}
 			$user = new UserAccount(); 
 			$user->populate(decode($formvalues['id']));
-			// debugMessage($user->toArray());
+			// debugMessage($user->toArray()); 
 			
 			if ($user->isUserActive() && isEmptyString($user->getActivationKey())) {
 				// account already activated 
-	    		$session->setVar(ERROR_MESSAGE, 'Account is already activated. Please login.'); 
+	    		$session->setVar(ERROR_MESSAGE, 'Account is already activated. Please login.');
+				if($user->getregsource() == 1){
+					$this->_helper->redirector->gotoUrl($this->view->baseUrl("mobile/login"));
+				}
 				$this->_helper->redirector->gotoUrl($this->view->baseUrl("user/login"));
 			}
 			
+			
 			$this->_setParam(URL_FAILURE, encode($this->view->baseUrl("signup/confirm/id/".encode($user->getID()))));
+			if($user->getregsource() == 1){
+				$this->_setParam(URL_FAILURE, encode($this->view->baseUrl("mobile/signupconfirm/id/".encode($user->getID()))));
+			}
 			$key = $this->_getParam('actkey');
 			
 			$this->view->result = $user->activateAccount($key, $isphoneactivation);
@@ -201,8 +158,10 @@ class SignupController extends IndexController   {
 	    		$session->setVar(ERROR_MESSAGE, $user->getErrorStackAsString()); 
 				$this->_helper->redirector->gotoUrl(decode($this->_getParam(URL_FAILURE)));
 			}
+			if($user->getregsource() == 1){
+				$this->_helper->redirector->gotoUrl($this->view->baseUrl("mobile/activate/id/".encode($user->getID())));
+			}
 		}
-		// exit();
 	}
 	
 	function activateaccountAction() {
@@ -252,7 +211,7 @@ class SignupController extends IndexController   {
 			if($useraccount->getActivationKey() == $key){
 				$useraccount->getPhones()->get(0)->setIsPrimary(1);
 				$useraccount->getPhones()->get(0)->activate();
-				$this->_helper->redirector->gotoUrl($this->view->baseUrl("signup/index/profile/".encode($useraccount->getFarmerID()).'/actkey/valid'));
+				$this->_helper->redirector->gotoUrl($this->view->baseUrl("signup/index/profile/".encode($useraccount->getID()).'/actkey/valid'));
 			} else {
 				$this->_helper->redirector->gotoUrl($this->view->baseUrl("signup/activate/acterror/1"));
 			}
@@ -319,8 +278,6 @@ class SignupController extends IndexController   {
 		$user = new UserAccount();
 		$user->populate(decode($this->_getParam('id')));
 		$user->transactionSave();
-		//debugMessage($user->toArray());
-		//debugMessage($user->getFarmer()->getNextRegNo());
 	}
 	
 	function checkusernameAction(){
@@ -366,12 +323,38 @@ class SignupController extends IndexController   {
 	    
 		$formvalues = $this->_getAllParams();
 		$phone = trim($formvalues['phone']);
+		$country = 'UG';
+		if(!isArrayKeyAnEmptyString('country', $formvalues)){
+			$country = $formvalues['country'];
+		}
 		// debugMessage($formvalues);
 		$user = new UserAccount();
 		if(!isArrayKeyAnEmptyString('userid', $formvalues)){
 			$user->populate($formvalues['userid']);
 		}
-		if($user->phoneExists(getFullPhone($phone))){
+		if($user->phoneExists(getFullPhone($phone), $country)){
+			echo '1';
+		} else {
+			echo '0';
+		}
+	}
+	
+	function checkrefnoAction(){
+		$this->_helper->layout->disableLayout();
+	    $this->_helper->viewRenderer->setNoRender(true);
+	    
+		$formvalues = $this->_getAllParams();
+		$idno = trim($formvalues['refno']);
+		$country = 'UG';
+		if(!isArrayKeyAnEmptyString('country', $formvalues)){
+			$country = $formvalues['country'];
+		}
+		// debugMessage($formvalues);
+		$user = new UserAccount();
+		if(!isArrayKeyAnEmptyString('userid', $formvalues)){
+			$user->populate($formvalues['userid']);
+		}
+		if($user->refnoExists($idno, $country)){
 			echo '1';
 		} else {
 			echo '0';

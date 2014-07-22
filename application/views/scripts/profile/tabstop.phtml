@@ -1,0 +1,18 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$controller = $request->getControllerName();
+	
+?>
+<?php if($controller == 'season'){ ?>
+	<?php echo $basics.$personal.$contacts.$farm; ?>
+<?php } ?>
+<?php if($controller == 'inventory'){ ?>
+	<?php echo $basics.$personal.$contacts.$farm.$calendar; ?>
+<?php } ?>
+<?php if($controller == 'finance'){ ?>
+	<?php echo $basics.$personal.$contacts.$farm.$calendar.$inventory; ?>
+<?php } ?>
+<?php if($controller == 'payment'){ ?>
+	<?php echo $basics.$personal.$contacts.$farm.$calendar.$inventory.$finance; ?>
+<?php } ?>

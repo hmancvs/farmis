@@ -1,3 +1,4 @@
+
 <?php
 	require_once APPLICATION_PATH.'/includes/header.php';
 	
@@ -6,9 +7,9 @@
 	
 	$button_title = "Submit";
 	
-	$farmer = new Farmer();
-	/*if(!isEmptyString($farmerid)){
-		$farmer->populate($farmerid);
+	$user = new UserAccount();
+	/*if(!isEmptyString($userid)){
+		$user->populate($userid);
 	}*/
 	
 	$posturl = $this->baseUrl("contactus/processcontactus");
@@ -88,7 +89,7 @@
 <div class="row marginleft0">
     <div class="span8 pull-left marginleft0 public_leftcolumn">
         <div class="content">
-        	<div class="well row span8" style="margin:0 auto; display:block;">
+        	<div class="well row span8" style="margin:0 auto; display:block; margin-left:100px;">
 				<form class="form-horizontal " id="indexform" action="<?php echo $posturl; ?>" method="post">
                     <h3 class="well-legend" style="text-align:center;"><?php echo $title; ?></h3></legend>
                     <table class="table">
@@ -160,7 +161,10 @@
                         </tr>
                         <tr>
                             <td></td>
-                            <td><button type="submit" id="submit" class="btn btn-primary btn-gold btn-large bolded">Send Message</button></td>
+                            <td><button type="submit" id="submit" class="btn btn-primary btn-gold btn-large bolded">Send Message</button>
+                            	<input type="hidden" id="country" name="country" value="<?php echo getCountry(); ?>" />
+                                <input type="text" style="display:none;" id="spamcheck" name="spamcheck" value="" />
+                            </td>
                         </tr>
                         <?php } ?>
                   </table>

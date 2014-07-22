@@ -78,6 +78,7 @@
 	$note = new Notes();
 	$note->setDateNoted(date('Y-m-d h:m:s', strtotime('now')));
 	$note->setNotedByID($userid);
+	$note->setUserID($userid);
 	$note->setType($typevalue);
 	// debugMessage($note->toArray());
 	// exit();
@@ -140,6 +141,7 @@
             <input type="hidden" id="type" name="type" value="<?php echo $note->getType(); ?>" />
             <input type="hidden" id="datenoted" name="datenoted" value="<?php echo $note->getDateNoted(); ?>" />
             <input type="hidden" id="notedbyid" name="notedbyid" value="<?php echo $note->getNotedByID(); ?>" />
+            <input type="hidden" id="userid" name="userid" value="<?php echo $note->getUserID(); ?>" />
             <input type="hidden" id="<?php echo $refid; ?>" name="<?php echo $refid; ?>" value="<?php echo $refvalue; ?>" />
             <input type="hidden" name="<?php echo URL_FAILURE; ?>" value="<?php echo encode($this->baseUrl('season/notes')); ?>" />			   				
             <div id="description_error"></div></td>

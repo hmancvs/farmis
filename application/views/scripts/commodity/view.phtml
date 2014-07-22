@@ -74,9 +74,7 @@
                         <table class="table">                       
                            <tr>		                    
                                 <td class="formactions">
-                                <?php //if($commodity->getFarmerID() == $farmerid  || $commodity->getCreatedBy() == $userid || isAdmin()){ ?>
-                                    <a class="btn btn-primary" href="<?php echo $this->baseUrl('commodity/index/id/'.encode($commodity->getID())); ?>" id="update"><i class="icon-pencil icon-white"></i> Update</a>                                       
-                                <?php //} ?>
+                                <a class="btn btn-primary" href="<?php echo $this->baseUrl('commodity/index/id/'.encode($commodity->getID())); ?>" id="update"><i class="icon-pencil icon-white"></i> Update</a>                                       
                                 <a class="btn btn-primary" href="<?php echo $this->baseUrl('commodity/list/id/'.encode($commodity->getID())); ?>" id="list"><i class="icon-list icon-white"></i> All Commodities</a>     
                                 </td>
                            </tr>

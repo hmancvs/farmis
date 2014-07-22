@@ -8,6 +8,6 @@ class BusinessdirectorycategoryController extends SecureController {
 	 * @return String
 	 */
 	function getResourceForACL() {
-		return isLGMISAdmin() ? "Location Statistic" : "Business Directory Category"; 
+		return "Business Directory Category"; 
 	}
 }

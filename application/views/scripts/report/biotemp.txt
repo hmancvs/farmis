@@ -1,0 +1,207 @@
+<?php if ($has_no_data) { ?>
+                    <div style="clear:both;" class="alert alert-info margin5"><?php echo $this->translate("farmer_list_norecords"); ?></div>
+                <?php } else { ?>
+                    <div style="width:100%; display:block; height:30px;; position:relative;">
+                        <div class="paginatecustom"><?php echo sprintf($this->translate("farmer_list_counter"), $paginate->getItemCounterText()); ?></div>
+                        <div style="margin-top:5px;"><?php echo $this->listcountdropdown; ?></div>
+                    </div>
+                    <div style="width:100%; height:900px; overflow:scroll; margin-bottom:10px; display:block;">
+                        
+                        <table id="data" class="table table-bordered" style="margin:10px 0 10px 0; width:auto;">
+                            <thead>
+                                <tr>
+                                    <td class="visible ref" style="width:50px;"><label class="control-label">FIN#</label></td>
+                                    <td class="visible regno" style="width:100px;"><label class="control-label">Reg No#</label></td>
+                                    <td class="visible firstname" style="width:120px;"><label class="control-label">First Name</label></td>
+                                    <td class="visible lastname" style="width:120px;"><label class="control-label">Last Name</label></td>
+                                    <td class="visible othername" style="width:120px;"><label class="control-label">Other Names</label></td>
+                                    <td class="visible farmgroup"><label class="control-label">Farmer Group</label></td>
+                                    <td class="visible salutation"><label class="control-label">Salutation</label></td>
+                                    <td class="visible gender"><label class="control-label">Gender</label></td>
+                                    <td class="visible age"><label class="control-label">Age</label></td>
+                                    <td class="visible dateofbirth"><label class="control-label">Date of Birth</label></td>
+                                    <td class="visible dateadded"><label class="control-label">Date Added</label></td>
+                                    <td class="visible active"><label class="control-label">Active</label></td>
+                                    <td class="visible phone"><label class="control-label">Phone</label></td>
+                                    <td class="visible altphone"><label class="control-label">Alt Phone</label></td>
+                                    <td class="visible email" style="width:150px;"><label class="control-label">Email</label></td>
+                                    <td class="visible altemail" style="width:150px;"><label class="control-label">Alt Email</label></td>
+                                    <td class="visible country"><label class="control-label">Country</label></td>
+                                    <td class="visible district"><label class="control-label"><?php echo $location_label; ?></label></td>
+                                    <td class="visible country"><label class="control-label"><?php echo $county_label; ?></label></td>
+                                    <td class="visible subcountry"><label class="control-label"><?php echo $subcounty_label; ?></label></td>
+                                    <?php if(isUganda()){ ?>
+                                        <td class="visible parish"><label class="control-label">Parish</label></td>
+                                        <td class="visible village"><label class="control-label">Village</label></td>
+                                    <?php } ?>
+                                    <td class="visible address" style="width:200px;"><label class="control-label">Physical Address</label></td>
+                                    <td class="visible gpslat"><label class="control-label">GPS Lat</label></td>
+                                    <td class="visible gpslng"><label class="control-label">GPS Lng</label></td>
+                                    <td class="visible maritalstatus"><label class="control-label">Marital Status</label></td>
+                                    <td class="visible educlevel"><label class="control-label">Education Level</label></td>
+                                    <td class="visible noofchildren"><label class="control-label">No of Children</label></td>
+                                    <td class="visible noofdependants"><label class="control-label">No of Dependants</label></td>
+                                    <td class="visible nextofkin" style="width:150px;"><label class="control-label">Next of Keen</label></td>
+                                    <td class="visible businessname"><label class="control-label">Farmer's Business Name</label></td>
+                                    <td class="visible farmingsince"><label class="control-label">Farming Since</label></td>
+                                    <td class="visible acrage"><label class="control-label">Total Acrage</label></td>
+                                    <td class="visible activeacrage"><label class="control-label">Active Use Acrage</label></td>
+                                    <td class="visible acquiremethod"><label class="control-label">Acquire Method</label></td>                                
+                                    <td class="visible labourers"><label class="control-label">No of Labourers</label></td>
+                                    <td class="visible farmlands"><label class="control-label">No of Farm Lands</label></td>
+                                    <td class="visible noofcrops" style="width:150px;"><label class="control-label">No of Crops</label></td>
+                                    <td class="visible cropdetails" style="width:300px;"><label class="control-label">Crops Profiled</label></td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php 
+                                    $allmaritalstatuses = getAllMaritalStatuses();
+                                    $educlevels = getAllEducationLevels();
+                                    
+                                    $suffixlookup = new LookupType();
+                                    $suffixlookup->setName("SALUTATION");
+                                    $salutions = $suffixlookup->getOptionValuesAndDescription();	
+                                    $months = getAllMonthsAsShortNames();
+                                    $allmeasures = getAreaUnits();
+                                    $allmethods = getLandAcquireMethods();  
+                                     foreach($result as $line){
+                                        $refno = $line['refno'];
+                                        $regno = $line['regno'];
+                                        $firstname = $line['firstname'];
+                                        $lastname = $line['lastname'];
+                                        $othername = $line['othernames'];
+                                        $salutation = isEmptyString($line['salutation']) ? '--' : $salutions[$line['salutation']];
+                                        $gender = $line['gender'] == '1' ? 'Male' : 'Female';
+                                        $dateofbirth = changeMySQLDateToPageFormat($line['dateofbirth']);
+                                        $age = !isEmptyString($line['dateofbirth']) ? calcutateAge($line['dateofbirth']) : '';
+                                        $activationdate = changeMySQLDateToPageFormat($line['activationdate']);
+                                        $dateadded = changeMySQLDateToPageFormat($line['datecreated']);
+                                        $activestatus = $line['isactive'] == 0 ? "Yes" : "No";
+                                        $country = strtoupper($line['country']) == 'UG' ? 'Uganda' : 'Kenya';
+                                        $district = $line['district'];
+                                        $county = $line['county'];
+                                        
+                                        /*$subcounty = isEmptyString($user->getSubCountyID()) ? '--' : $user->getSubCounty()->getName();
+                                        $parish = isEmptyString($user->getParishID()) ? '--' : $user->getParish()->getName();
+                                        $village = isEmptyString($user->getVillageID()) ? '--' : $user->getVillage()->getName();*/
+                                        $address = nl2br($line['streetaddress']);
+                                        $bio = nl2br($line['bio']);
+                                        $children = $line['numberofchildren'];
+                                        $dependants = $line['numberofdependants'];
+                                        $maritalstatus = !isEmptyString($line['maritalstatus']) ? $allmaritalstatuses[$line['maritalstatus']] : '--';
+                                        $educlevel = !isEmptyString($line['educationlevel']) ? $educlevels[$line['educationlevel']] : '--';
+                                        $gpslat = $line['lat'];
+                                        $gpslng = $line['lng'];
+                                        
+                                        $phone = $line['phone'];
+                                        $phone2 = $line['phone2'];
+                                        $email = $line['email'];
+                                        $email2 = $line['email2'];
+                                        
+                                        $keen_name = $line['nextofkin_name'];
+                                        $keen_phone = $line['nextofkin_phone'];
+                                        $keen_email = $line['nextofkin_email'];
+                                        $keen = '';
+                                        if(!isEmptyString($keen_name)){
+                                            $keen = $keen_name;
+                                        }
+                                        if(!isEmptyString($keen_phone)){
+                                            $keen .= ', '.$keen_phone;
+                                        }
+                                        if(!isEmptyString($keen_email)){
+                                            $keen .= '<br /> '.$keen_email;
+                                        }
+                                        
+                                        $farmingdate = "--";
+                                        if(!isEmptyString($line['bizstartyear']) && $line['bizstartyear'] != 0){
+                                            $farmingdate = $line['bizstartyear'];
+                                        }
+                                        if(!isEmptyString($line['bizstartmonth']) && !isEmptyString($line['bizstartyear'])){
+                                            $farmingdate = $months[$line['bizstartmonth']].", ".$line['bizstartyear'];
+                                        }
+            
+                                        $regdate =  !isEmptyString($line['regdate']) ? changeMySQLDateToPageFormat($line['regdate']) : '--';
+                                        $farmname = $line['businessname'];
+                                        $description = nl2br($line['description']);
+                                        $farmgroup = $line['orgname'];
+                                        $laborers = isEmptyString($line['numberofemployees']) || $line['numberofemployees'] == 0 ? '--' : $line['numberofemployees'];
+                                        
+                                        $landunitlabel = '--';
+                                        if(!isEmptyString($line['landunits'])){
+                                            $landunitslabel = $allmeasures[$line['landunits']];
+                                        }
+                                        
+                                        if(isEmptyString($line['landsize']) || $line['landsize'] == 0 || $line['landsize'] == 0.00) {
+                                            $landsize = '--';
+                                        } else {
+                                            $landsize = '--';
+                                            if(!isEmptyString($line['landunits'])){
+                                                $landsize = clean_num($line['landsize']).'&nbsp; <span class="pagedescription">('.$landunitlabel.')</span>';
+                                            }
+                                        }
+            
+                                        if(isEmptyString($line['landactivesize']) || $line['landactivesize'] == 0 || $line['landactivesize'] == 0.00) {
+                                            $activeland = '--';
+                                        } else {
+                                            $activeland = '--';
+                                            if(!isEmptyString($line['landunits'])){
+                                                $activeland = clean_num($line['landactivesize']).'&nbsp; <span class="pagedescription">('.$landunitslabel.')</span>';
+                                            }
+                                        }
+            
+                                        $acquiremethod = !isEmptyString($line['landacquiremethod']) || $line['landacquiremethod'] != 0 ? $allmethods[$line['landacquiremethod']] : '--';
+                                        $nooffarms = isEmptyString($line['numberoffields']) || $line['numberoffields'] == 0 ? '--' : $line['numberoffields'];
+                                        // $cropslabel = $user->getCropList()
+                                        //$noofcrops = $user->getCrops()->count();
+                                        //$cropslist = createHTMLCommaListFromArray($user->getCropsArray(), ", ");
+                                ?>
+                                <tr>
+                                    <td class="visible ref"><span class="nullifempty"><?php echo $refno; ?></span></td>
+                                    <td class="visible regno"><span class="nullifempty"><?php echo $regno; ?></span></td>
+                                    <td class="visible firstname"><span class="nullifempty"><?php echo $firstname ; ?></span></td>
+                                    <td class="visible lastname"><span class="nullifempty"><?php echo $lastname; ?></span></td>
+                                    <td class="visible othername"><span class="nullifempty"><?php echo $othername; ?></span></td>
+                                    <td class="visible farmgroup"><span class="nullifempty"><?php echo $farmgroup; ?></span></td>
+                                    <td class="visible salutation"><span class="nullifempty"><?php echo $salutation; ?></span></td>
+                                    <td class="visible gender"><span class="nullifempty"><?php echo $gender; ?></span></td>
+                                    <td class="visible age"><span class="nullifempty"><?php echo $age; ?></span></td>
+                                    <td class="visible dateofbirth"><span class="nullifempty"><?php echo $dateofbirth; ?></span></span></td>
+                                    <td class="visible dateadded"><span class="nullifempty"><?php echo $dateadded; ?></span></td>
+                                    <td class="visible active"><span class="nullifempty"><?php echo $activestatus; ?></span></td>
+                                    <td class="visible phone"><span class="nullifempty"><?php echo $phone; ?></span></td>
+                                    <td class="visible altphone"><span class="nullifempty"><?php echo $phone2; ?></span></td>
+                                    <td class="visible email"><span class="nullifempty"><?php echo $email; ?></span></td>
+                                    <td class="visible altemail"><span class="nullifempty"><?php echo $email2; ?></span></td>
+                                    <td class="visible country"><span class="nullifempty"><?php echo $country; ?></span></td>
+                                    <td class="visible district"><span class="nullifempty"><?php echo $district; ?></span></td>
+                                    <td class="visible country"><span class="nullifempty"><?php echo $county; ?></span></td>
+                                    <td class="visible subcountry"><span class="nullifempty"><?php //echo $subcounty; ?></span></td>
+                                    <?php if(isUganda()){ ?>
+                                        <td class="visible parish"><span class="nullifempty"><?php //echo $parish; ?></span></td>
+                                        <td class="visible village"><span class="nullifempty"><?php //echo $village; ?></span></td>
+                                    <?php } ?>
+                                    <td class="visible address"><span class="nullifempty"><?php echo $address; ?></span></td>
+                                    <td class="visible gpslat"><span class="nullifempty"><?php echo $gpslat; ?></span></td>
+                                    <td class="visible gpslng"><span class="nullifempty"><?php echo $gpslng; ?></span></td>
+                                    <td class="visible maritalstatus"><span class="nullifempty"><?php echo $maritalstatus; ?></span></td>
+                                    <td class="visible educlevel"><span class="nullifempty"><?php echo $educlevel; ?></span></td>
+                                    <td class="visible noofchildren centeralign"><span class="nullifempty"><?php echo $children; ?></span></td>
+                                    <td class="visible noofdependants centeralign"><span class="nullifempty"><?php echo $dependants; ?></span></td>
+                                    <td class="visible nextofkin"><span class="nullifempty"><?php echo $keen; ?></span></td>
+                                    <td class="visible businessname"><span class="nullifempty"><?php echo $farmname; ?></span></td>
+                                    
+                                    <td class="visible farmingsince"><span class="nullifempty"><?php echo $farmingdate; ?></span></td>
+                                    <td class="visible acrage centeralign"><span class="nullifempty"><?php echo $landsize; ?></span></td>
+                                    <td class="visible activeacrage centeralign"><span class="nullifempty"><?php echo $activeland; ?></span></td>
+                                    <td class="visible acquiremethod"><span class="nullifempty"><?php echo $acquiremethod; ?></span></td>
+                                    <td class="visible labourers centeralign"><span class="nullifempty"><?php echo $laborers; ?></span></td>
+                                    <td class="visible farmlands centeralign"><span class="nullifempty"><?php echo $nooffarms; ?></span></td>
+                                    <td class="visible noofcrops centeralign"><span class="nullifempty"><?php //echo $noofcrops; ?></span></td>
+                                    <td class="visible cropdetails"><span class="nullifempty"><?php //echo $cropslist; ?></span></td>
+                                </tr>
+                                <?php } ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <?php echo $paginate->getPaginationLinks(); ?> 
+                <?php } ?>

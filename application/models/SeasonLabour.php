@@ -13,9 +13,8 @@ class SeasonLabour extends BaseEntity  {
 		
 		// set the table
 		$this->setTableName('seasonlabour');
-		$this->hasColumn('farmerid', 'integer', null, array( 'notnull' => true, 'notblank' => true));
-		$this->hasColumn('farmid', 'integer', null, array( 'notnull' => true, 'notblank' => true));
-		$this->hasColumn('seasonid', 'integer', null, array( 'notnull' => true, 'notblank' => true));
+		$this->hasColumn('userid', 'integer', null, array('notblank' => true));
+		$this->hasColumn('seasonid', 'integer', null, array('notblank' => true));
 		
 		$this->hasColumn('inputid', 'integer', null);
 		$this->hasColumn('tillageid', 'integer', null);	
@@ -25,8 +24,8 @@ class SeasonLabour extends BaseEntity  {
 		$this->hasColumn('harvestid', 'integer', null);	
 		$this->hasColumn('saleid', 'integer', null);
 		
-		$this->hasColumn('type', 'integer', null, array('default' => 1,'notnull' => true, 'notblank' => true)); // 1 Season, 2 Non Season/Other sales
-		$this->hasColumn('activityname', 'string', 255, array('notnull' => true, 'notblank' => true));
+		$this->hasColumn('type', 'integer', null, array('default' => 1,'notblank' => true)); // 1 Season, 2 Non Season/Other sales
+		$this->hasColumn('activityname', 'string', 255, array('notblank' => true));
 		$this->hasColumn('mcount', 'decimal', 10, array('default' => NULL));
 		$this->hasColumn('mhoursperday', 'decimal', 10, array('default' => NULL));
 		$this->hasColumn('mtotaldays', 'decimal', 10, array('default' => NULL));
@@ -55,8 +54,7 @@ class SeasonLabour extends BaseEntity  {
 		
 		// set the custom error messages
        	$this->addCustomErrorMessages(array(
-       									"farmerid.notblank" => $this->translate->_("season_farmerid_error"),
-       									"farmid.notblank" => $this->translate->_("season_farmid_error"),
+       									"userid.notblank" => $this->translate->_("season_userid_error"),
        									"seasonid.notblank" => $this->translate->_("season_seasonid_error"),
 										"activityname.notblank" => $this->translate->_("season_activityname_error")
        	));
@@ -64,15 +62,9 @@ class SeasonLabour extends BaseEntity  {
 	public function setUp() {
 		parent::setUp();
 		
-		$this->hasOne('Farm as farm',
-							array('local' => 'farmid',
+		$this->hasOne('UserAccount as user',
+							array('local' => 'userid',
 									'foreign' => 'id'
-							)
-						);
-		$this->hasOne('Farmer as farmer', 
-							array(
-								'local' => 'farmerid',
-								'foreign' => 'id'
 							)
 						);
 		$this->hasOne('Season as season',
@@ -124,11 +116,8 @@ class SeasonLabour extends BaseEntity  {
 		if(isArrayKeyAnEmptyString('type', $formvalues)){
 			unset($formvalues['type']); 
 		}
-		if(isArrayKeyAnEmptyString('farmerid', $formvalues)){
-			unset($formvalues['farmerid']); 
-		}
-		if(isArrayKeyAnEmptyString('farmid', $formvalues)){
-			unset($formvalues['farmid']); 
+		if(isArrayKeyAnEmptyString('userid', $formvalues)){
+			unset($formvalues['userid']); 
 		}
 		if(isArrayKeyAnEmptyString('seasonid', $formvalues)){
 			unset($formvalues['seasonid']); 

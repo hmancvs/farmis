@@ -1,0 +1,103 @@
+<div id="account">
+            <h2>Account Settings</h2>
+            <form id="profileform-account" class="form-horizontal account">
+                <?php if($request->tab == 'account'){ ?>
+                <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+                    <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+                <?php } ?>
+                <?php if($sessionhaserror) { ?>
+                    <div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+                <?php } ?> 
+                <div class="row" style="margin-left:0px;">
+                    <span class="span6 marginleft0" style="width:97%;">
+                        <div class="well row marginleft0" style="min-height:150px; padding-left:10px;">     
+                        <h3 class="well-legend">Login Credentials</h3>                   
+                            <table class="table">                       
+                               <tr>		                    
+                                    <td width="20%"><label class="control-label leftalign">Email: </label></td>
+                                    <td><?php echo isEmptyString($user->getEmail()) ? '--' : $user->getEmail(); ?> &nbsp;
+                                    	<a href="<?php echo $this->baseUrl('profile/changeemail/id/'.encode($user->getID()).'/pgc/true'); ?>" class="addpopup changeemail pull-right" title="Change Email" rel="Change Email" id="changeemail" formtitle="indexform" successurl="<?php echo $this->baseUrl('profile/view/id/'.encode($user->getID()).'/tab/account'); ?>" action="<?php echo $this->baseUrl("profile/processchangeemail"); ?>">Change Email</a></td>
+                               </tr>
+                               <tr>		                    
+                                    <td><label class="control-label leftalign">Username: </label></td>
+                                    <td><?php echo isEmptyString($user->getUserName()) ? '--' : $user->getUserName(); ?> &nbsp;
+                                    	<a href="<?php echo $this->baseUrl('profile/changeusername/id/'.encode($user->getID()).'/pgc/true'); ?>" class="addpopup changeusername pull-right" title="Change Username" rel="Change Username" id="changeusername" formtitle="indexform" successurl="<?php echo $this->baseUrl('profile/view/id/'.encode($user->getID()).'/tab/account'); ?>" action="<?php echo $this->baseUrl("profile/processchangeusername"); ?>">Change Username</a>
+                               </tr>
+                               <tr>		                    
+                                    <td><label class="control-label leftalign">Phone: </label></td>
+                                    <td><div class="makerelative">
+                                    	<?php echo isEmptyString($user->getFormattedPhone()) ? '--' : $user->getFormattedPhone(); ?>
+                                    	<!--<?php //if(!$user->hasPendingActivation(1) && $user->isPhoneValidated()){ ?>
+                                        	<a href="<?php //echo $this->baseUrl('profile/changephone/id/'.encode($user->getID()).'/pgc/true'); ?>" class="addpopup changephone" style="position:absolute; right:0; top:0;" title="Change Phone" rel="Change Phone" id="changephone" formtitle="indexform" successurl="<?php //echo $this->baseUrl('profile/view/id/'.encode($user->getID()).'/tab/account'); ?>" action="<?php //echo $this->baseUrl("profile/processchangephone"); ?>">Change Phone</a>
+                                        <?php //} ?>-->
+                                    </div>
+                                    </td>
+                               </tr>
+                               <tr>		                    
+                                    <td><label class="control-label leftalign"><?php echo $this->translate("useraccount_password_label"); ?>: </label></td>
+                                    <td><?php if($user->isUserActive()){ ?>
+                                        	<b style="font-size:16px;">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</b> &nbsp;
+                                        <?php } else { ?>
+                                        	--
+                                        <?php } ?>
+                                    	<?php if($isme){ ?>
+                                            <a class="changepassword pull-right" id="changepassword" rel="Change Password" href="<?php echo $this->baseUrl('profile/changepassword/pgc/true/id/'.encode($user->getID())); ?>">Change Password</a>
+                                        <?php } else { ?>
+                                            <a class="confirm-dialog pull-right" id="resetpassword" href="<?php echo $this->baseUrl('profile/resetpassword/id/'.encode($user->getID())); ?>" message="Are you sure you want to reset <?php echo $user->getName() ?>'s Password?">Reset Password</a>
+                                        <?php } ?>
+                                    </td>
+                               </tr>
+                               <tr>		                    
+                                    <td><label class="control-label leftalign">Account Status: </label></td>
+                                    <td><?php echo $user->isUserActive() ? 'Active' : 'In Active'; ?></td>
+                               </tr>
+                             	<?php if((isAdmin() || isManagement()) && !$isme){ ?>
+                                    <tr>		                    
+                                        <td colspan="2"><a class="deleteline gonowhere" action="<?php echo $this->baseUrl('profile/delete/id/'.$user->getID()."/entityname/UserAccount/successurl/".encode($this->baseUrl('profile/list'))); ?>"><i class="icon-trash"></i> Delete Profile</a></td>
+                                    </tr>
+                    			<?php } ?> 
+								<?php if((isAdmin() || isManagement()) && !$isme && $user->isUserActive()){ ?>
+                                    <tr>		                    
+                                        <td colspan="2"><a action="<?php echo $this->baseUrl('mobile/deactivate/id/'.$user->getID()."/entityname/Farmer/successurl/".encode($this->baseUrl('mobile/list'))); ?>"><i class="icon-trash"></i> Deactivate</a></td>
+                                    </tr>
+                                <?php } ?>
+                            </table>
+                        </div>
+                    </span>
+                </div>
+                <div class="well row marginleft0" style="min-height:200px; width:94%;">
+                    <h3 class="well-legend">Prefference Settings</h3>
+                    <table class="table">                       
+                        <tr>
+                            <td style="padding-left:10px;">
+                            	<div class="makerelative">
+                                	<span id="emailmeonmessage_wait" class="hidden" style="position:absolute; left:-5px; top:0;">
+                                    	<img style="width:20px;" src='<?php echo $this->baseUrl('images/farmisloader.gif'); ?>' />
+                                    </span>
+                                    <fieldset id="emailmeonmessage" class="radio btn-group lineblocked" style="width:85px;">
+                                        <input type="radio" id="emailmeonmessage1" name="emailmeonmessage" class="changesetting <?php echo $user->getEmailMeOnMessage() == 1 ? 1 : 0; ?>" value="1" field="emailmeonmessage" userid="<?php echo $user->getID(); ?>" /><label id="lbl-emailmeonmessage1" for="emailmeonmessage1">Yes</label>
+                                        <input type="radio" id="emailmeonmessage0" name="emailmeonmessage" class="changesetting <?php echo $user->getEmailMeOnMessage() == 0 ? 1 : 0; ?>" value="0" field="emailmeonmessage" userid="<?php echo $user->getID(); ?>" /><label id="lbl-emailmeonmessage0" for="emailmeonmessage0">No</label>
+                                    </fieldset>
+                                    &nbsp;<div class="lineblocked" style="margin-top:6px; vertical-align:top;"><?php echo $this->translate("useraccount_emailmeonmessage_label"); ?></div>
+                             	</div>   
+                            </td>
+                        </tr>
+                      	<tr>
+                            <td>
+                            	<div class="makerelative">
+                                	<span id="emailmeoncomment_wait" class="hidden" style="position:absolute; left:-5px; top:0;">
+                                    	<img style="width:20px;" src='<?php echo $this->baseUrl('images/farmisloader.gif'); ?>' />
+                                    </span>
+                                    <fieldset id="emailmeoncomment" class="radio btn-group lineblocked" style="width:85px;">
+                                        <input type="radio" id="emailmeoncomment1" name="emailmeoncomment" class="changesetting <?php echo $user->getEmailMeOnComment() == 1 ? 1 : 0; ?>" value="1" field="emailmeoncomment" userid="<?php echo $user->getID(); ?>" /><label id="lbl-emailmeoncomment1" for="emailmeoncomment1">Yes</label>
+                                        <input type="radio" id="emailmeoncomment0" name="emailmeoncomment" class="changesetting <?php echo $user->getEmailMeOnComment() == 0 ? 1 : 0; ?>" value="0" field="emailmeoncomment" userid="<?php echo $user->getID(); ?>" /><label id="lbl-emailmeoncomment0" for="emailmeoncomment0">No</label>
+                                    </fieldset>
+                                    &nbsp;<div class="lineblocked" style="margin-top:6px; vertical-align:top;"><?php echo $this->translate("useraccount_emailmeoncomment_label"); ?></div>
+                                </div>   
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <?php } ?>
+            </form>
+        </div>

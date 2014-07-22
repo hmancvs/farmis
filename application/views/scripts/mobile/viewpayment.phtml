@@ -1,0 +1,131 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$payment = new Payment();
+	$payment->populate(decode($request->id));
+	$listurl = $this->baseUrl('mobile/payments');
+	$addurl = $this->baseUrl('mobile/addpayment');
+	
+	$title = "Payment Details"; 
+	$this->headTitle($title);
+?>
+<?php require APPLICATION_PATH."/views/scripts/mobile/mobileincludes.phtml"; ?>
+<script>
+	$(document).ready(function() {
+		$("#bottomactions").html($("#topactions").html());
+		
+	});
+</script>
+<body>
+<div class="container-fluid viewpage" id="view_payment">
+  <div class="row-fluid">
+   <h4><?php echo $title; ?></h4>
+  </div>
+        <div class="control-group well actions" id="topactions">
+        	<?php if(isAdmin() || isManagement() || isDataClerk()){ ?>
+	            <a href="<?php echo $addurl; ?>" class="btn btn-primary"><i class="icon-plus icon-white"></i> Add Payment</a>
+            <?php } ?>
+            <?php if(isAdmin() || isManagement() || isDataClerk()){ ?>
+                <a class="btn btn-primary" href="<?php echo $this->baseUrl('mobile/addpayment/id/'.encode($payment->getID())); ?>"><i class="icon-pencil icon-white"></i> Update</a>
+            <?php } ?>
+            <?php if((isAdmin() || isManagement())){ ?>
+                <a class="btn deleteline gonowhere" action="<?php echo $this->baseUrl('mobile/delete/id/'.$payment->getID()."/entityname/Payment/successurl/".encode($this->baseUrl('mobile/list'))); ?>"><i class="icon-trash"></i> Delete</a>
+            <?php } ?>    
+            <?php if(isAdmin() || isManagement() || isDataClerk()){ ?>
+       			<a class="btn" href="<?php echo $this->baseUrl('mobile/payments'); ?>"><i class="icon-list"></i> Payments</a>
+            <?php } ?>
+            <a class="btn" href="<?php echo $this->baseUrl('mobile/home'); ?>"><i class="icon-home"></i> Home</a>
+        </div>
+	<?php if($sessionhaserror) { ?>
+        <div class="row-fluid">
+        	<div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+        </div>
+    <?php } ?>
+    <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+        <div class="row-fluid">
+        	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+        </div>
+    <?php } ?>
+	<?php if(!isEmptyString($session->getVar("emailinvitesuccess")) ){ ?>
+        <div class="row-fluid">
+        	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar("emailinvitesuccess"); ?></div>
+        </div>
+    <?php } ?>
+    <?php if(!isEmptyString($session->getVar("phoneinvitesuccess")) ){ ?>
+        <div class="row-fluid">
+        	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar("phoneinvitesuccess"); ?></div>
+        </div>
+    <?php } ?>
+  <div class="row-fluid">
+      <form class="form-horizontal" id="viewform">
+      	<fieldset class="fieldsetcontainer well">
+            <legend>Profile</legend>
+            <div class="control-group">
+              <label class="control-label" for="farmer">Farmer:</label>
+              <div class="controls"><a href="<?php echo $this->baseUrl('mobile/view/id/'.encode($payment->getUserID())); ?>"><?php echo $payment->getUser()->getName(); ?></a></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="phone"><?php echo $this->translate("farmer_phone_label"); ?>: </label>
+                <div class="controls phone"><?php echo getShortPhone($payment->getPhone()); ?></div>
+            </div>
+		</fieldset>
+        <div class="divider15"></div>
+        <fieldset class="fieldsetcontainer well">
+            <legend>Payment Details</legend>
+            <div class="control-group">
+                <label class="control-label">Subject:</label>
+                <div class="controls"><?php echo $payment->getSubject(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label">Method:</label>
+                <div class="controls"><?php echo $payment->getMethod(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label">Status:</label>
+                <div class="controls"><?php echo $payment->getPaymentStatus(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label">Total Amount:</label>
+                <div class="controls"><?php echo $payment->getAmount(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label">Trx Ref / Receipt#: </label>
+                <div class="controls"><?php echo $payment->getTrxCode(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label">Verified By:</label>
+                <div class="controls"><?php echo $payment->getverifiedby()->getName(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label">Notes: </label>
+                <div class="controls"><?php echo $payment->getdescription(); ?></div>
+            </div>
+        </fieldset>
+        <fieldset class="fieldsetcontainer well">
+            <legend>Subscription Details</legend>
+            <div class="control-group">
+                <label class="control-label">Service Provision Start Date:</label>
+                <div class="controls"><?php echo changeMySQLDateToPageFormat($payment->getSubscription()->getStartDate()); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label">Service Provision End Date:</label>
+                <div class="controls"><?php echo changeMySQLDateToPageFormat($payment->getSubscription()->getEndDate()); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label">Verified By:</label>
+                <div class="controls"><?php echo $payment->getverifiedby()->getName(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label">Notes: </label>
+                <div class="controls"><?php echo $payment->getdescription(); ?></div>
+            </div>
+        </fieldset>
+        <div class="control-group well actions" id="bottomactions"></div>       
+      </form>
+  </div>
+</div>
+</body>
+</html>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

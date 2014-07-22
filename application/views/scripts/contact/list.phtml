@@ -5,6 +5,19 @@
 	$title = $this->translate("contact_pagetitle_list");
 	$this->headTitle($title);
 	
+	$loggedinuser = new UserAccount();
+	$loggedinuser->populate($userid);
+	
+	$country = 'UG';
+	$location_label = 'District';
+	$locations_label = 'Districts';
+	if(isKenya()){
+		$country = 'KE';
+		$location_label = 'County';
+		$locations_label = 'Counties';
+	}
+	$countryreq = strtolower($request->country); 
+	
 	$list_title = "All Contacts";
 	$searched = false;
 	if(!isEmptyString($request->searchterm)){
@@ -17,7 +30,7 @@
 	$paginate->setView($this);
 	# set the search columns to be used on this list
 	$paginate->setSearchColumns(array("c.firstname", "c.firstname", "c.othernames", "c.orgname", "c.phone", "c.address", "b.name"));
-	$paginate->setFilterColumns(array("c.locationid","g.categoryid", "c.categoryid", "c.contacttype", "c.farmerid", "c.farmgroupid"));
+	$paginate->setFilterColumns(array("c.locationid","g.categoryid", "c.categoryid", "c.contacttype", "c.userid", "c.farmgroupid"));
 	$paginate->setDefaultSortBy("c.datecreated");	
 	$paginate->setDefaultSortOrder("DESC");	
 	$paginate->setItemCountPerPage("25");
@@ -29,19 +42,19 @@
 		$searched = true;
 	}
 	
-	$thefarmerid = "";
+	$theuserid = "";
 	$thefarmergroupid = "";
 	$farmgroup_query = "";
 	if(isFarmer()){
-		$thefarmerid = $farmerid;
-		if(!isEmptyString($farmergroupid)){
-			$thefarmergroupid = $farmergroupid;
+		$theuserid = $userid;
+		if(!isEmptyString($usergroupid)){
+			$thefarmergroupid = $usergroupid;
 			$farmgroup_query = " OR c.farmgroupid = '".$thefarmergroupid."' ";
 		}
 		
 		if(isEmptyString($request->getParam('show')) || $request->getParam('show') == 1){
 			$request->setParam('show', '1'); 
-			$where_query .= " AND `c`.`farmerid` = '".$thefarmerid."' ";
+			$where_query .= " AND `c`.`userid` = '".$theuserid."' ";
 		} else {
 			$where_query .= " AND (c.visibility = 3 ".$farmgroup_query.") ";
 		}
@@ -52,12 +65,12 @@
 			$request->setParam('show', '3'); 
 			$where_query .= " ";
 		} else {
-			$where_query .= " AND `c`.`farmerid` = '".$thefarmerid."' ";
+			$where_query .= " AND `c`.`userid` = '".$theuserid."' ";
 		}
 	}
 	
 	$paginate->processPost($request->getParams());
-	$all_results_query = "SELECT c.id, c.contacttype, if(contacttype = '1' , CONCAT(c.firstname,' ',c.lastname,' ',c.othernames), c.orgname) as `Name`, if(contacttype = '1' , 'Person','Company') as `Contact Type`, c.categoryid as categoryid, b.name as `Category`, c.phone as `Phone`, c.phone2 as `Alt Phone`, email as `Email`, address as `Address`, c.goodsorservicesoffered, group_concat(b.name separator ',') as `Sub Categories`  FROM contact c LEFT JOIN contactcategory g ON (g.contactid = c.id) LEFT JOIN businessdirectorycategory b ON (c.categoryid = b.id) WHERE c.id <> '' ".$where_query."".$paginate->getSearchAndFilterSQL()." GROUP BY c.id ".$paginate->getSortSQL();
+	$all_results_query = "SELECT c.id, c.contacttype, if(contacttype = '1' , CONCAT(c.firstname,' ',c.lastname,' ',c.othernames), c.orgname) as `Name`, if(contacttype = '1' , 'Person','Company') as `Contact Type`, c.categoryid as categoryid, b.name as `Category`, c.phone as `Phone`, c.phone2 as `Alt Phone`, email as `Email`, address as `Address`, c.goodsorservicesoffered, group_concat(b.name separator ',') as `Sub Categories`  FROM contact c LEFT JOIN contactcategory g ON (g.contactid = c.id) LEFT JOIN businessdirectorycategory b ON (c.categoryid = b.id) WHERE c.id <> '' AND c.country = UPPER('".$session->getVar('country')."') ".$where_query."".$paginate->getSearchAndFilterSQL()." GROUP BY c.id ".$paginate->getSortSQL();
 	
 	// debugMessage($all_results_query);
 	$paginate->setItemCountFromSQLQuery($all_results_query);
@@ -101,15 +114,29 @@
                     <?php if($searched){ ?>
                     <a href="<?php echo $this->baseUrl('contact/list'); ?>" id="reset" class="btn btn-primary btn-mini pull-left" title="Reset list or clear all filters">Reset</a>&nbsp;&nbsp;
                     <?php } ?>
-                    
             	</div>
                 <ul id="searchbox">
                     <li>
                         <a style="padding-left:0; padding-right:0; width:100%;">
                             <table id="directorysearchtable" class="table noborder margin0">
                                 <tr>
-                                    <td style="width:60px;">                                    
-                                        <a href="<?php echo $this->baseUrl('contact/add/pgc/true/farmerid/'.encode($thefarmerid)); ?>" class="addpopup addcontact btn btn-primary btn-mini" title="New Contact" rel="New Contact" id="newcontact" formtitle="indexform" successurl="<?php echo $this->baseUrl('contact/list'); ?>" action="<?php echo $this->baseUrl("contact/create"); ?>"><i class="icon-plus icon-white"></i> New</a>
+                                    <td style="width:70px;">                                    
+                                        <a href="<?php echo $this->baseUrl('contact/add/pgc/true/userid/'.encode($theuserid).'/country/'.$country); ?>" class="addpopup addcontact btn btn-primary" title="New Contact" rel="New Contact" id="newcontact" formtitle="indexform" successurl="<?php echo $this->baseUrl('contact/list'); ?>" action="<?php echo $this->baseUrl("contact/create"); ?>"><i class="icon-plus icon-white"></i> New</a>
+                                   	</td>
+									<?php if($loggedinuser->isUgandan() && isUganda() && (isAdmin() || isManagement())){ ?>
+                                        <td style="width:130px;">  
+                                            <?php if(isEmptyString($request->country) || $countryreq == 'ug'){ ?>
+                                                <a class="btn btn-primary" href="<?php echo $this->baseUrl('contact/list/country/ke'); ?>" title="Browse Kenya Directory"><i class="icon-list icon-white"></i> Browse Kenya</a>
+                                            <?php } ?>
+                                        </td>
+                                    <?php } ?>
+                                    <?php if($loggedinuser->isUgandan() && isKenya() && (isAdmin() || isManagement())){ ?>
+                                    	<td style="width:130px;">  
+                                            <?php if(!isEmptyString($request->country) && strotolower($country) == 'ke'){ ?>
+                                                <a class="btn btn-primary" href="<?php echo $this->baseUrl('contact/list/country/ug'); ?>" title="Browse Uganda Directory"><i class="icon-list icon-white"></i> Browse Uganda</a>
+                                            <?php } ?>
+                                        </td>
+                                    <?php } ?>
                                     </td>
                                     <td style="width:100px; padding-left:2px; padding-right:2px;">
                                         <!--<label class="control-label">Show:</label>-->
@@ -166,9 +193,6 @@
             <?php } ?>
             <div class="paginatelisttop maxwidth blocked clear">
             	<label class="listlabel pull-left control-label 30width lineblocked" style="text-align:left;"><?php echo $list_title; ?></label>
-                <?php if (!$has_no_data) { ?>
-            	<div class="paginatecustom pull-right lineblocked"><?php echo sprintf($this->translate("contact_list_counter"), $paginate->getItemCounterText()); ?></div>
-                <?php } ?>
             </div>
             
 			<?php if ($has_no_data) { ?>
@@ -199,7 +223,7 @@
                                                 <tr>
                                                     <td width="90"><label class="control-label">Phone: </label></td>
                                                     <td width="140" class="nowrapping"><span><?php echo $contact->getPhone(); ?></span></td>
-                                                    <td width="60"><label class="control-label">District: </label></td>
+                                                    <td width="60"><label class="control-label"><?php echo $location_label; ?>: </label></td>
                                                     <td width="100" class="nowrapping"><span><?php echo isEmptyString($contact->getLocationID()) ? '--' : $contact->getLocation()->getName(); ?></span></td>
                                                 </tr>
                                                 <tr>
@@ -222,7 +246,12 @@
                     </li>
                 	<?php } ?>    
             	</ul>
-            <?php echo $paginate->getPaginationLinks(); ?>  
+            	<div style="display:block; position:relative;">
+					<?php echo $paginate->getPaginationLinks(); ?>  
+                    <?php if (!$has_no_data) { ?>
+                        <div class="paginatecustom"><?php echo sprintf($this->translate("farmgroup_list_counter"), $paginate->getItemCounterText()); ?></div>
+                    <?php } ?>
+                </div>
             <?php } ?>
 			
 		</div>

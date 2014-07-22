@@ -6,15 +6,15 @@
 	// meta data
 	$this->headTitle($title); 
 	
-	$farmer = new Farmer();
+	$user = new UserAccount();
 	$id = $request->id;
 	
-	$loggedinfarmer = new Farmer();
-	$loggedinfarmer->populate($farmerid);
+	$loggedinfarmer = new UserAccount();
+	$loggedinfarmer->populate($userid);
 	$farmgroupid = $loggedinfarmer->getFarmGroupID();
 	
 	if(!isEmptyString($id)){
-		$farmer->populate($id);
+		$user->populate($id);
 	}
 	
 	$isexport = false;
@@ -23,6 +23,24 @@
 		$isexport = true;
 		$maxwidth = "width: 940px;";
 	}
+	
+	$country = 'UG';
+	$location_label = 'District';
+	$locations_label = 'Districts';
+	$countrycode = COUNTRY_CODE_UG;
+	$county_label = $this->translate("global_county_label");
+	$subcounty_label = $this->translate("global_subcounty_label");
+	
+	if(isKenya()){
+		$country = 'KE';
+		$session->setVar('country', 'ke');
+		$location_label = 'County';
+		$locations_label = 'Counties';
+		$countrycode = COUNTRY_CODE_KE;
+		$county_label = $this->translate("global_subcounty_label");
+		$subcounty_label = $this->translate("global_ward_label");
+	}
+	$countryreq = strtolower($request->country); 
 		
 ?>
 <script>
@@ -48,29 +66,27 @@ $(document).ready(function() {
   <div id="centercolumn" class="reportpage">
   	<div class="printpage"></div>
     <div class="hideonprint" style="width:100%;">
-        <?php if((isAdmin() || isFarmGroupAdmin())){ ?>
+        <?php if((isAdmin() || isFarmGroupAdmin() || isManagement())){ ?>
         	<table class="table table-condensed noborder margin0" style="width:100%;">
             	<tr>
                     <td>
-                    	<?php if(isAdmin() || isFarmGroupAdmin()){ ?>
-                            <span class="reportfilter pull-right">
-                                <label class="reportlabel cal-font">Farmer: </label>
-                                <?php
-                                    $farmerarray = getFarmers($farmgroupid);
-                                    $farmerdropdown = new Zend_Form_Element_Select('id',
-                                                        array(
-                                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Browse Farmer>'), $farmerarray),								
-                                                            'view' => new Zend_View(),
-                                                            'decorators' => array('ViewHelper'),
-                                                                'class' => array('chzn-select', 'width180', 'novalidate')
-                                                        )
-                                                    );
-                                    $farmerdropdown->setValue($request->getParam('id')); 
-                                    echo $farmerdropdown->render(); 
-                                  ?>&nbsp;&nbsp;
-                                 <a id="generate" href="<?php echo $this->baseUrl('report/primarybaseline/id/'); ?>" class="btn btn-primary" title="Generate Report"><i class="icon-list-alt icon-white"></i> Generate</a>&nbsp;
-                            </span>
-                        <?php } ?>
+                        <span class="reportfilter pull-right">
+                            <label class="reportlabel cal-font">Farmer: </label>
+                            <?php
+                                $userarray = getFarmers($farmgroupid, false, false, false, '', $session->getVar('country'));
+                                $userdropdown = new Zend_Form_Element_Select('id',
+                                                    array(
+                                                            'multiOptions' => array_merge_maintain_keys(array('' => '<Browse Farmer>'), $userarray),								
+                                                        'view' => new Zend_View(),
+                                                        'decorators' => array('ViewHelper'),
+                                                            'class' => array('chzn-select', 'width180', 'novalidate')
+                                                    )
+                                                );
+                                $userdropdown->setValue($request->getParam('id')); 
+                                echo $userdropdown->render(); 
+                              ?>&nbsp;&nbsp;
+                             <a id="generate" href="<?php echo $this->baseUrl('report/primarybaseline/id/'); ?>" class="btn btn-primary" title="Generate Report"><i class="icon-list-alt icon-white"></i> Generate</a>&nbsp;
+                        </span>
                     </td>
                 </tr>
             </table>
@@ -92,58 +108,58 @@ $(document).ready(function() {
                 <h3 class="reportpagetitle"><?php echo $title; ?></h3>
 				<?php if($request->print != 1){ ?>
                     <span class="reportactions hideonprint">
-                    	<a href="<?php echo $this->baseUrl('report/primarybaseline/id/'.$farmer->getID().'/print/1'); ?>" target="_blank" class="btn btn-primary btn-mini" title="Print Report"><i class="icon-print icon-white"></i> Print</a>&nbsp;
-                        <a href="<?php echo $this->baseUrl('report/primarybaseline/id/'.$farmer->getID().'/pdf/1'); ?>" target="_blank" class="btn btn-primary btn-mini" title="View PDF Report"><i class="icon-list-alt icon-white"></i> PDF</a>&nbsp;
+                    	<a href="<?php echo $this->baseUrl('report/primarybaseline/id/'.$user->getID().'/print/1'); ?>" target="_blank" class="btn btn-primary btn-mini" title="Print Report"><i class="icon-print icon-white"></i> Print</a>&nbsp;
+                        <a href="<?php echo $this->baseUrl('report/primarybaseline/id/'.$user->getID().'/pdf/1'); ?>" target="_blank" class="btn btn-primary btn-mini" title="View PDF Report"><i class="icon-list-alt icon-white"></i> PDF</a>&nbsp;
                         
                     </span>
                 <?php } ?>
             <?php 
-				$activationdate = isEmptyString($farmer->getUser()->getActivationDate()) ? "--" : changeMySQLDateToPageFormat($farmer->getUser()->getActivationDate());
-				$country = isEmptyString($farmer->getUser()->getAddress()->getCountry()) ? '--' : $farmer->getUser()->getAddress()->getCountryName();
-				$district = isEmptyString($farmer->getUser()->getLocationID()) ? '--' : $farmer->getUser()->getLocation()->getName();
-				$county = isEmptyString($farmer->getUser()->getAddress()->getCountyID()) ? '--' : $farmer->getUser()->getAddress()->getCounty()->getName();
-				$subcounty = isEmptyString($farmer->getUser()->getAddress()->getSubCountyID()) ? '--' : $farmer->getUser()->getAddress()->getSubCounty()->getName();
-				$parish = isEmptyString($farmer->getUser()->getAddress()->getParishID()) ? '--' : $farmer->getUser()->getAddress()->getParish()->getName();
-				$village = isEmptyString($farmer->getUser()->getAddress()->getVillageID()) ? '--' : $farmer->getUser()->getAddress()->getVillage()->getName();
-				$address = isEmptyString($farmer->getUser()->getAddress()->getStreetAddress()) ? '--' : nl2br($farmer->getUser()->getAddress()->getStreetAddress());
-				$bio = isEmptyString($farmer->getUser()->getBio()) ? '--' : nl2br($farmer->getUser()->getBio());
-				$children = isEmptyString($farmer->getNumberOfChildren()) ? '--': $farmer->getNumberOfChildren();
-				$dependants = isEmptyString($farmer->getNumberOfDependants()) ? '--': $farmer->getNumberOfDependants();
-				$households = isEmptyString($farmer->getTotalHousehold()) ? '--': $farmer->getTotalHousehold();
+				$activationdate = isEmptyString($user->getActivationDate()) ? "--" : changeMySQLDateToPageFormat($user->getActivationDate());
+				$country = isEmptyString($user->getCountry()) ? '--' : $user->getCountryName();
+				$district = isEmptyString($user->getLocationID()) ? '--' : $user->getLocation()->getName();
+				$county = isEmptyString($user->getCountyID()) ? '--' : $user->getCounty()->getName();
+				$subcounty = isEmptyString($user->getSubCountyID()) ? '--' : $user->getSubCounty()->getName();
+				$parish = isEmptyString($user->getParishID()) ? '--' : $user->getParish()->getName();
+				$village = isEmptyString($user->getVillageID()) ? '--' : $user->getVillage()->getName();
+				$address = isEmptyString($user->getStreetAddress()) ? '--' : nl2br($user->getStreetAddress());
+				$bio = isEmptyString($user->getBio()) ? '--' : nl2br($user->getBio());
+				$children = isEmptyString($user->getNumberOfChildren()) ? '--': $user->getNumberOfChildren();
+				$dependants = isEmptyString($user->getNumberOfDependants()) ? '--': $user->getNumberOfDependants();
+				$households = isEmptyString($user->getTotalHousehold()) ? '--': $user->getTotalHousehold();
 				
-				if($farmer->hasFarmGroup()){
+				if($user->hasFarmGroup()){
 					$grouplabel = "Farm Group";
-					$thefarmgroup = isEmptyString($farmer->getFarmGroupID()) ? '--' : $farmer->getFarmGroup()->getName();
+					$thefarmgroup = isEmptyString($user->getFarmGroupID()) ? '--' : $user->getFarmGroup()->getName();
 				} else {
 					$grouplabel = "Support Provider";
-					$thefarmgroup = isEmptyString($farmer->getSupportProvider()) ? '--' : $farmer->getSupportProvider();
+					$thefarmgroup = isEmptyString($user->getSupportProvider()) ? '--' : $user->getSupportProvider();
 				}
 				
-				$maritalstatus = isEmptyString($farmer->getMaritalStatusText()) ? '--': $farmer->getMaritalStatusText();
-				$educlevel = isEmptyString($farmer->getEducationLevelText()) ? '--': $farmer->getEducationLevelText();
-				$gpslat = $farmer->getLatGPSFormatted();
-				$gpslng = $farmer->getLngGPSFormatted();
+				$maritalstatus = isEmptyString($user->getMaritalStatusText()) ? '--': $user->getMaritalStatusText();
+				$educlevel = isEmptyString($user->getEducationLevelText()) ? '--': $user->getEducationLevelText();
+				$gpslat = $user->getLatGPSFormatted();
+				$gpslng = $user->getLngGPSFormatted();
 				
-				$phone = isEmptyString($farmer->getUser()->getPhone()) ? '--' : $farmer->getUser()->getPhone();
-				$phone2 = isEmptyString($farmer->getUser()->getAltPhone()) ? '--' : $farmer->getUser()->getAltPhone();
-				$email = isEmptyString($farmer->getUser()->getEmail()) ? '--' : $farmer->getUser()->getEmail();
-				$email2 = -isEmptyString($farmer->getUser()->getEmail2()) ? '--' : $farmer->getUser()->getEmail2();
-				$keen_name = isEmptyString($farmer->getNextofkin_name()) ? '--': $farmer->getNextofkin_name();
-				$keen_phone = isEmptyString($farmer->getNextofkin_phone()) ? '--': $farmer->getNextofkin_phone();
-				$keen_email = isEmptyString($farmer->getNextofkin_email()) ? '--': $farmer->getNextofkin_email();
+				$phone = isEmptyString($user->getPhone()) ? '--' : $user->getPhone();
+				$phone2 = isEmptyString($user->getPhone2()) ? '--' : $user->getPhone2();
+				$email = isEmptyString($user->getEmail()) ? '--' : $user->getEmail();
+				$email2 = -isEmptyString($user->getEmail2()) ? '--' : $user->getEmail2();
+				$keen_name = isEmptyString($user->getNextofkin_name()) ? '--': $user->getNextofkin_name();
+				$keen_phone = isEmptyString($user->getNextofkin_phone()) ? '--': $user->getNextofkin_phone();
+				$keen_email = isEmptyString($user->getNextofkin_email()) ? '--': $user->getNextofkin_email();
 				
 				$farmis_logo = $this->serverUrl($this->baseUrl('images/logo_gray.png'));
 				$infotrade_logo = $this->serverUrl($this->baseUrl('images/logo_infotrade.png'));
-				$profile_image = $this->serverUrl($farmer->getUser()->getMediumPicturePath());
+				$profile_image = $this->serverUrl($user->getMediumPicturePath());
 				
 				$thesubgroup = '';
-				if(!isEmptyString($farmer->getSubGroupID())){
-					$thesubgroup = '<tr><td><label class="control-label">Sub Group:</label><?php echo $farmer->getSubGroup()->getName(); ?></td></tr>';
+				if(!isEmptyString($user->getSubGroupID())){
+					$thesubgroup = '<tr><td><label class="control-label">Sub Group:</label><?php echo $user->getSubGroup()->getName(); ?></td></tr>';
 				}
-				$supportlist = $farmer->getSupportTypesLabel();
-				$activitylist = $farmer->getActivityTypesLabel();
-				$farmingtypelist = $farmer->getFarminigTypesLabel();
-				$leadership = isEmptyString($farmer->getLeadershipRole()) ? '--' : $farmer->getLeadershipRole();
+				$supportlist = $user->getSupportTypesLabel();
+				$activitylist = $user->getActivityTypesLabel();
+				$farmingtypelist = $user->getFarminigTypesLabel();
+				$leadership = isEmptyString($user->getLeadershipRole()) ? '--' : $user->getLeadershipRole();
 				
 			?>		
 				<div>
@@ -164,19 +180,19 @@ $(document).ready(function() {
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td style="width:<?php echo $isexport == true ? '320px' : '50%'; ?>;"><label class="control-label">Name of Farmer:</label><?php echo $farmer->getName(); ?><input type="hidden" name="id" id="id" value="<?php echo $farmer->getID(); ?>" /></td>
-                                            <td><label class="control-label"><?php echo $this->translate("farmer_gender_label"); ?>:</label><?php echo $farmer->getGenderLabel(); ?></td>
+                                            <td style="width:<?php echo $isexport == true ? '320px' : '50%'; ?>;"><label class="control-label">Name of Farmer:</label><?php echo $user->getName(); ?><input type="hidden" name="id" id="id" value="<?php echo $user->getID(); ?>" /></td>
+                                            <td><label class="control-label"><?php echo $this->translate("farmer_gender_label"); ?>:</label><?php echo $user->getGenderLabel(); ?></td>
                                         </tr>
                                         <tr>
-                                            <td><label class="control-label nowrapping">Farmer Identification (FIN ID#):</label><?php echo $farmer->getRegNo(); ?></td>
-                                            <td><label class="control-label"><?php echo $this->translate("farmer_dateofbirth_label"); ?>:</label><?php echo $farmer->getUser()->getBirthDateFormatted(); ?></td> 
+                                            <td><label class="control-label nowrapping">Farmer Identification (FIN ID#):</label><?php echo $user->getRefNo(); ?></td>
+                                            <td><label class="control-label"><?php echo $this->translate("farmer_dateofbirth_label"); ?>:</label><?php echo $user->getBirthDateFormatted(); ?></td> 
                                         </tr>
                                         <tr>
                                             <td></td> <td></td>
                                         </tr>
 										<tr>
-											<td><label class="control-label"><?php echo $this->translate("farmer_farminigtypes_label"); ?>:</label><?php echo $farmer->getFarminigTypesLabel(); ?></td>  
-                                            <td><label class="control-label"><?php echo $this->translate("farmer_activities_label"); ?>:</label><?php echo $farmer->getActivityTypesLabel(); ?></td>
+											<td><label class="control-label"><?php echo $this->translate("farmer_farminigtypes_label"); ?>:</label><?php echo $user->getFarminigTypesLabel(); ?></td>  
+                                            <td><label class="control-label"><?php echo $this->translate("farmer_activities_label"); ?>:</label><?php echo $user->getActivityTypesLabel(); ?></td>
 										</tr>
 										
                                     </tbody>
@@ -190,13 +206,19 @@ $(document).ready(function() {
                                     <tbody>
                                         <tr>
                                             <td style="width:<?php echo $isexport == true ? '200px' : '35%'; ?>;"><label class="control-label">Country:</label> <?php echo $country; ?>
-                                            <td style="width:<?php echo $isexport == true ? '200px' : '35%'; ?>;"><label class="control-label">District:</label><?php echo $district; ?></td>
-                                            <td><label class="control-label">County:</label><?php echo $county; ?></td>
+                                            <td style="width:<?php echo $isexport == true ? '200px' : '35%'; ?>;"><label class="control-label"><?php echo $location_label; ?>:</label><?php echo $district; ?></td>
+                                            <td><label class="control-label"><?php echo $county_label; ?>:</label><?php echo $county; ?></td>
                                         </tr>
                                         <tr>
-                                            <td><label class="control-label">Sub-county:</label><?php echo $subcounty; ?></td>
-                                            <td><label class="control-label">Parish:</label><?php echo $parish; ?></td>
-                                            <td><label class="control-label">Village:</label><?php echo $village; ?></td>
+                                            <td><label class="control-label"><?php echo $subcounty_label; ?>:</label><?php echo $subcounty; ?></td>
+                                            <td><?php if($user->isUgandan()){ ?>
+                                            		<label class="control-label">Parish:</label><?php echo $parish; ?>
+                                                <?php } ?>
+                                            </td>
+                                            <td><?php if($user->isUgandan()){ ?>
+                                            		<label class="control-label">Village:</label><?php echo $village; ?>
+                                                <?php } ?>
+                                            </td>
                                         </tr>
 										 <tr>
                                             <td><label class="control-label">GPS (Latitude):</label><?php echo str_replace('°', '&deg;', $gpslat); ?></td>
@@ -260,7 +282,7 @@ $(document).ready(function() {
                                                         <td><label class="control-label">Support Received:</label><?php echo $supportlist; ?></td>
                                                     </tr>
 													<tr>
-                                                        <td><label class="control-label">Leadership Role:</label><?php echo $leadership; ?></td>
+                                                        <td></td>
                                                     </tr>
                                                 </tbody>
                                             </table>
@@ -310,8 +332,8 @@ $(document).ready(function() {
                                                 <tbody>
                                                     <tr>
                                                         <td style="height:100px;">
-														 <?php if($farmer->hasSignature()){ ?>
-                                                            <div class="profileinfo pull-left" id="signinfo"><img id="profileimage" src="<?php echo $farmer->getSignaturePath(); ?>" width="180" height="90" /></div>
+														 <?php if($user->hasSignature()){ ?>
+                                                            <div class="profileinfo pull-left" id="signinfo"><img id="profileimage" src="<?php echo $user->getSignaturePath(); ?>" width="180" height="90" /></div>
                                                          <?php } else { ?>
                                                             <div>--</div>
                                                          <?php } ?>

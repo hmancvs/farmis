@@ -22,7 +22,7 @@ class ReportController extends SecureController   {
 	}
 
 	function primarybaselineAction(){
-		$farmerid = decode($this->_getParam('id'));
+		$userid = decode($this->_getParam('id'));
 		
 		if($this->_getParam('download') == 1 && !isEmptyString($this->_getParam('filename'))){
 			// automatic file mime type handling
@@ -44,7 +44,7 @@ class ReportController extends SecureController   {
 	}
 	
 	function baselinedetailAction(){
-		$farmerid = decode($this->_getParam('id'));
+		$userid = decode($this->_getParam('id'));
 		
 		if($this->_getParam('download') == 1 && !isEmptyString($this->_getParam('filename'))){
 			// automatic file mime type handling
@@ -92,6 +92,10 @@ class ReportController extends SecureController   {
 	    $this->view->listcountdropdown = '<span class="pull-right">'.$this->_translate->translate("global_list_itemcount_dropdown").$dropdown->render().'</span>';
 	}
 	
+	function allfarmersdataAction(){
+		$this->_helper->layout->disableLayout();
+	}
+	
 	function allfarmerssearchAction(){
 		$this->_helper->redirector->gotoSimple("allfarmers", "report", 
     											$this->getRequest()->getModuleName(),
@@ -107,4 +111,41 @@ class ReportController extends SecureController   {
     											$this->getRequest()->getModuleName(),
     											array_remove_empty(array_merge_maintain_keys($this->_getAllParams(), $this->getRequest()->getQuery())));
 	}
+	
+	function dnaAction(){
+		
+	}
+	function dnasearchAction(){
+		$this->_helper->redirector->gotoSimple("dna", "report", 
+    											$this->getRequest()->getModuleName(),
+    											array_remove_empty(array_merge_maintain_keys($this->_getAllParams(), $this->getRequest()->getQuery())));
+	}
+	
+	function locationAction(){
+		
+	}
+	function locationsearchAction(){
+		$this->_helper->redirector->gotoSimple("location", "report", 
+    											$this->getRequest()->getModuleName(),
+    											array_remove_empty(array_merge_maintain_keys($this->_getAllParams(), $this->getRequest()->getQuery())));
+	}
+	
+	function piaAction(){
+		
+	}
+	function piasearchAction(){
+		$this->_helper->redirector->gotoSimple("pia", "report", 
+    											$this->getRequest()->getModuleName(),
+    											array_remove_empty(array_merge_maintain_keys($this->_getAllParams(), $this->getRequest()->getQuery())));
+	}
+	
+	function cropAction(){
+		
+	}
+	function cropsearchAction(){
+		$this->_helper->redirector->gotoSimple("crop", "report", 
+    											$this->getRequest()->getModuleName(),
+    											array_remove_empty(array_merge_maintain_keys($this->_getAllParams(), $this->getRequest()->getQuery())));
+	}
+	
 }

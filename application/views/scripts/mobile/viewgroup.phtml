@@ -1,0 +1,286 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$farmgroup = new FarmGroup();
+	$farmgroup->populate(decode($request->id));
+	
+	$total_farmers = $farmgroup->getListOfFarmers()->count();
+	$thefarmers = $farmgroup->getFeaturedFarmers(10);
+	$user_count = $thefarmers->count();
+	
+	$id = $farmgroup->getManagerID();
+	
+	$controller = $request->getControllerName();
+	$action = $request->getActionName();
+	
+	$subgroups = $farmgroup->getListOfSubGroups();
+	$hassubgroups = false;
+	if($farmgroup->hasSubGroups()){
+		$hassubgroups = true;
+	}
+	$typestring = "";
+	if($farmgroup->isSubGroup()){
+		$typestring = "/type/6";
+	}
+	$groupfilter = "";
+	if(isFarmGroupAdmin()){
+		$user = new UserAccount();
+		$user->populate($userid);
+		$groupfilter = "/dnaid/".$user->getFarmGroupID();
+	}
+	
+	$country = 'UG';
+	$location_label = 'District';
+	$locations_label = 'Districts';
+	$countrycode = COUNTRY_CODE_UG;
+	$county_label = $this->translate("global_county_label");
+	$subcounty_label = $this->translate("global_subcounty_label");
+	
+	if(isKenya() || $farmgroup->isKenyan()){
+		$country = 'KE';
+		$session->setVar('country', 'ke');
+		$location_label = 'County';
+		$locations_label = 'Counties';
+		$countrycode = COUNTRY_CODE_KE;
+		$county_label = $this->translate("global_subcounty_label");
+		$subcounty_label = $this->translate("global_ward_label");
+	}
+	
+	$title = $farmgroup->getName();
+	$this->headTitle($title);
+	
+?>
+<?php require APPLICATION_PATH."/views/scripts/mobile/mobileincludes.phtml"; ?>
+
+<script>
+	$(document).ready(function() {
+		$("#bottomactions").html($("#topactions").html());
+		
+	});
+</script>
+<body>
+<div class="container-fluid viewpage" id="view_farmer">
+  <div class="row-fluid">
+   <h4><?php echo $title; ?></h4>
+  </div>
+    <div class="control-group well actions" id="topactions">
+        <?php if(isAdmin() || isManagement()){ ?>
+            <a class="btn btn-primary" href="<?php echo $this->baseUrl('mobile/addgroup/country/'.$country); ?>"><i class="icon-plus icon-white"></i> New DNA</a>
+        <?php } ?>
+        <?php if(isAdmin() || isManagement() || isDataClerk() || isFarmGroupAdmin()){ ?>
+            <a class="btn btn-primary" href="<?php echo $this->baseUrl('mobile/addgroup/type/1/parentid/'.$farmgroup->getID().'/country/'.$country); ?>"><i class="icon-plus icon-white"></i> New Farm Group</a>
+        <?php } ?>
+        <?php if((isAdmin() || isManagement() || isFarmGroupAdmin()) && $farmgroup->isGroup()){ ?>
+            <a class="btn btn-primary clearfix" href="<?php echo $this->baseUrl('mobile/addgroup/id/'.encode($farmgroup->getID()).'/country/'.$country); ?>"><i class="icon-pencil icon-white"></i> Update</a>
+        <?php } ?>
+        <?php if((isAdmin() || isManagement() || isDataClerk() || isFarmGroupAdmin()) && $farmgroup->isSubGroup()){ ?>
+            <a class="btn btn-primary clearfix" href="<?php echo $this->baseUrl('mobile/addgroup/id/'.encode($farmgroup->getID()).'/country/'.$country); ?>"><i class="icon-pencil icon-white"></i> Update</a>
+        <?php } ?>
+        <?php if(isAdmin() || isManagement()){ ?>
+            <a class="btn deleteline gonowhere" action="<?php echo $this->baseUrl('mobile/delete/id/'.$farmgroup->getID()."/entityname/FarmGroup/successurl/".encode($this->baseUrl('mobile/groups'.$typestring))); ?>"><i class="icon-trash"></i> Delete</a>
+        <?php } ?>    
+        <?php if(isAdmin() || isManagement() || isDataClerk()){ ?>
+            <a class="btn" href="<?php echo $this->baseUrl('mobile/groups'); ?>"><i class="icon-list"></i> DNA Profiles</a>
+        <?php } ?>    
+        <?php if(isAdmin() || isManagement() || isDataClerk() || isFarmGroupAdmin()){ ?>
+            <a class="btn" href="<?php echo $this->baseUrl('mobile/groups/type/6'.$groupfilter); ?>"><i class="icon-list"></i> Farm Groups</a>
+        <?php } ?>    
+        <a class="btn" href="<?php echo $this->baseUrl('mobile/home'); ?>"><i class="icon-home"></i> Home</a>
+    </div>
+  <?php if($sessionhaserror) { ?>
+      <div class="row-fluid">
+      	<div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+      </div>
+  <?php } ?>
+  <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+  	<div class="row-fluid">
+      	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+	</div>
+  <?php } ?>
+  <?php if(!isEmptyString($session->getVar("custommessage")) ){ ?>
+  	<div class="row-fluid">
+      	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar("custommessage"); ?></div>
+	</div>
+  <?php } ?>
+  <?php if(!isEmptyString($session->getVar("emailinvitesuccess")) ){ ?>
+  	<div class="row-fluid">
+      	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar("emailinvitesuccess"); ?></div>
+	</div>
+  <?php } ?>
+  <?php if(!isEmptyString($session->getVar("phoneinvitesuccess")) ){ ?>
+  	<div class="row-fluid">
+      	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar("phoneinvitesuccess"); ?></div>
+	</div>
+  <?php } ?>
+  <div class="row-fluid">
+      <form class="form-horizontal" id="viewform">
+      	<fieldset class="fieldsetcontainer well">
+        <legend>Account</legend>
+            <div class="control-group" style="margin-bottom:0;">
+                <div class="well lighter clearfix padding2 nobg" id="profiletop">
+                    <div id="profileinfo"> 
+                        <?php if(isAdmin() || isManagement() || isDataClerk() || isFarmGroupAdmin()){ ?>
+                            <a href="<?php echo $this->baseUrl('mobile/gpicture/id/'.encode($farmgroup->getID()).'/type/photo'); ?>"><img id="profileimage" src="<?php echo $farmgroup->getMediumLogoPath(); ?>" /><pre id="uploadlink" class="hide absoluteupload"><i class="icon-pencil"></i> Upload Image</pre></a>
+                        <?php } else { ?>
+                            <img id="profileimage" src="<?php echo $farmgroup->getMediumLogoPath(); ?>" />
+                        <?php } ?>
+                    </div>
+                </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label"><?php echo $this->translate("farmgroup_name_label"); ?>:</label>
+              <div class="controls"><?php echo $farmgroup->getName(); ?></div>
+            </div>
+            <?php if(!isEmptyString($farmgroup->getParentID())){ ?>
+                <div class="control-group">
+                  <label class="control-label">Parent DNA:</label>
+                  <div class="controls"><a href="<?php echo $this->baseUrl('mobile/viewgroup/id/'.encode($farmgroup->getParentID())); ?>" title="View Details"><?php echo $farmgroup->getParent()->getName(); ?></a></div>
+                </div>
+            <?php } ?>
+            <div class="control-group">
+              <label class="control-label"><?php echo $this->translate("farmgroup_type_label"); ?>:</label>
+              <div class="controls"><?php echo $farmgroup->getTypeLabel(); ?></div>
+            </div>
+            <div class="control-group">
+              <label class="control-label"><?php echo $this->translate("farmgroup_shortname_label"); ?>:</label>
+              <div class="controls"><?php echo $farmgroup->getShortName(); ?></div>
+            </div>
+            <div class="control-group">
+              <label class="control-label"><?php echo $this->translate("farmgroup_refno_label"); ?>:</label>
+              <div class="controls"><?php echo $farmgroup->getRefNo(); ?></div>
+            </div>
+            <div class="control-group">
+              <label class="control-label"><?php echo $this->translate("farmgroup_regno_label"); ?>:</label>
+              <div class="controls"><?php echo $farmgroup->getRegNo(); ?></div>
+            </div>
+            <div class="control-group">
+              <label class="control-label"><?php echo $this->translate("farmgroup_dateregistered_label"); ?>:</label>
+              <div class="controls"><?php echo $farmgroup->getRegDateFormatted(); ?></div>
+            </div>
+        </fieldset>
+        <fieldset class="fieldsetcontainer well">
+            <legend>Location</legend>
+            <div class="control-group">
+              <label class="control-label" for="country"><?php echo $this->translate("global_country_label"); ?>:</label>
+              <div class="controls"><?php echo $farmgroup->getCountryName(); ?></div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="districtid"><?php echo $location_label; ?>:</label>
+              <div class="controls"><?php echo $farmgroup->getDistrict()->getName(); ?></div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="county"><?php echo $county_label; ?>:</label>
+              <div class="controls"><?php echo $farmgroup->getCounty()->getName(); ?></div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="subcounty"><?php echo $subcounty_label; ?>:</label>
+              <div class="controls"><?php echo $farmgroup->getSubCounty()->getName(); ?></div>
+            </div>
+            <?php if($farmgroup->isUgandan()){ ?>
+                <div class="control-group">
+                  <label class="control-label" for="parish"><?php echo $this->translate("global_parish_label"); ?>:</label>
+                  <div class="controls"><?php echo $farmgroup->getParish()->getName(); ?></div>
+                </div>
+                <div class="control-group">
+                  <label class="control-label" for="village"><?php echo $this->translate("global_village_label"); ?>:</label>
+                  <div class="controls"><?php echo $farmgroup->getVillage()->getName(); ?></div>
+                </div>
+            <?php } ?>
+            <div class="control-group">
+              <label class="control-label" for="address"><?php echo $this->translate("contact_address_label"); ?>:</label>
+              <div class="controls"><?php echo nl2br($farmgroup->getStreetAddress()); ?></div>
+            </div>
+        </fieldset>
+        <fieldset class="fieldsetcontainer well hideonsuper">
+            <legend>About</legend>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmer_biography_label"); ?>:</label>
+                <div class="controls"><?php echo nl2br($farmgroup->getNotes()); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmgroup_membershipclerk_label"); ?>:</label>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmgroup_name_label"); ?>:</label>
+                <div class="controls"><?php echo $farmgroup->getContactName2(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmgroup_phone_label"); ?>:</label>
+                <div class="controls"><?php echo getShortPhone($farmgroup->getContactPhone2()); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmgroup_email_label"); ?>:</label>
+                <div class="controls"><?php echo $farmgroup->getContactEmail2(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmgroup_bizclerk_label"); ?>:</label>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmgroup_name_label"); ?>:</label>
+                <div class="controls"><?php echo $farmgroup->getContactName3(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmgroup_phone_label"); ?>:</label>
+                <div class="controls"><?php echo getShortPhone($farmgroup->getContactPhone3()); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmgroup_email_label"); ?>:</label>
+                <div class="controls"><?php echo $farmgroup->getContactEmail3(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmgroup_dataclerk_label"); ?>:</label>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmgroup_name_label"); ?>:</label>
+                <div class="controls">
+				<?php if(!isEmptyString($farmgroup->getManagerID()) && !isEmptyString($farmgroup->getManagerID())){ ?>
+                                                <a title="View Profile" href="<?php echo $this->baseUrl("profile/view/id/".encode($farmgroup->getManagerID())); ?>"><?php echo $farmgroup->getManager()->getName(); ?></a>
+                                            <?php } else { ?>
+                                                <?php echo isEmptyString($farmgroup->getContactName()) ? '--' : $farmgroup->getContactName(); ?>
+                                            <?php } ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmgroup_phone_label"); ?>:</label>
+                <div class="controls"><?php echo getShortPhone($farmgroup->getPhone()); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmgroup_email_label"); ?>:</label>
+                <div class="controls">
+					<?php if(isFarmer()){ ?>
+						<?php echo isEmptyString($farmgroup->getEmail()) ? '--' : $farmgroup->getEmail(); ?>
+                    <?php } ?>
+                    <?php if(isFarmGroupAdmin() || isAdmin()){ ?>
+                        <?php if($farmgroup->getManager()->isUserActive()){ ?>
+							<?php echo isEmptyString($farmgroup->getEmail()) ? '--' : $farmgroup->getEmail(); ?>
+                        <?php } else { ?>
+                            <?php if(isEmptystring($farmgroup->getManagerID())){ ?>
+								<?php echo '--'; ?>
+                            <?php } else { ?>
+                                <span class="inv_before" id="inv_before_<?php echo $id; ?>" style="margin-top:2px;">
+                                    <input type="text" name="email_<?php echo $id; ?>" id="email_<?php echo $id; ?>" placeholder="enter email" title="Invite <?php echo $farmgroup->getManager()->getFirstName(); ?> to join FARMIS" value="<?php echo $farmgroup->getEmail(); ?>" class="invite invite_<?php echo $id; ?> span3" /><br />
+                                    <a href="javascript:doNothing();" class="btn btn-primary btn-mini invitetrigger" style="margin-top:5px;" id="invite_<?php echo $id; ?>" title="Invite <?php echo $farmgroup->getManager()->getFirstName(); ?> to join <?php echo $this->translate('appname'); ?>"><i class="icon-envelope icon-white"></i> Invite</a>
+                                    <label class="hide invite_<?php echo $id; ?>" title="<?php echo $id; ?>"><?php echo $id; ?></label>                            
+                                    <div id="invite_<?php echo $id; ?>_error" style="margin-top:4px;"></div>
+                                </span>
+                                <span class="inv_after" id="inv_after_<?php echo $id; ?>">
+                                    <a id="loading_<?php echo $id; ?>" class="hidden"><img style="margin-left:0" src="<?php echo $this->baseUrl('images/loader.gif'); ?>" /></a>
+                                </span>
+                            <?php } ?>
+                            <?php if($farmgroup->getManager()->getIsInvited() == 1 && $farmgroup->getManager()->getHasAcceptedInvite() == 0){ ?>
+                                <?php echo isEmptyString($farmgroup->getEmail()) ? '--' : $farmgroup->getEmail(); ?>
+                                <span class="pagedescription alert alert-info" style="display:block; text-align:center; padding:2px; margin-top:5px; margin-bottom:0;">Invitation sent. Confirmation pending</span>
+                            <?php } ?>                         
+                        <?php } ?>
+                    <?php } ?>
+                </div>
+            </div>
+        </fieldset>
+        <div class="control-group well actions" id="bottomactions"></div>       
+      </form>
+  </div>
+</div>
+</body>
+</html>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

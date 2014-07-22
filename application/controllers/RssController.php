@@ -12,15 +12,17 @@ class RssController extends IndexController  {
 	    $rssfeed .= '<channel>';
 	    $rssfeed .= '<title>FARMIS | Latest News</title>';
 	    $rssfeed .= '<link>'.$this->view->baseUrl('rss').'</link>';
-	    $rssfeed .= '<description>Subscribe to the latest news and developments for Infotrade FARMIS</description>';
+	    $brand = 'Infotrade';
+	    if(isKenya()){
+	    	$brand = 'Sokopepe';
+	    }
+	    $rssfeed .= '<description>Subscribe to the latest news and developments for '.$brand.' FARMIS</description>';
 	    $rssfeed .= '<language>en-us</language>';
-	    $rssfeed .= '<copyright>Copyright (C) 2010 farmis.ug</copyright>';
+	    $rssfeed .= '<copyright>Copyright (C) 2010 '.getDomain().'</copyright>';
 	    
 	    $rssfeed .= '</channel>';
 	    $rssfeed .= '</rss>';
 	    echo $rssfeed;
-	    
 	}
-	
 }
 

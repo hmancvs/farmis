@@ -1,0 +1,184 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	switch($stage){
+		case 'input':
+			$financetype = $input->getFinanceType();
+			break;
+		case 'tillage':
+			$financetype = $tillage->getFinanceType();
+			break;
+		case 'plant':
+			$financetype = $plant->getFinanceType();
+			break;
+		case 'treat':
+			$financetype = $treat->getFinanceType();
+			break;
+		case 'harvest':
+			$financetype = $harvest->getFinanceType();
+			break;
+		case 'activity':
+			$financetype = $activity->getFinanceType();
+			break;
+		case 'sale':
+			$financetype = $sale->getFinanceType();
+			break;
+		default:
+			break;
+	}
+	
+?>
+<fieldset class="fieldsetcontainer well">
+	<legend><?php echo $this->translate("season_credit_finance_title"); ?></legend>
+    <div class="control-group">
+        <label class="control-label"><?php echo $this->translate("season_credit_type_label"); ?></label>
+        <div class="controls">
+            <?php
+				 $data = getActivityFinanceSources(2);						  
+				 $capitalradio = new Zend_Form_Element_Radio('financetype',
+						  array(
+								  'multiOptions' => $data, 
+								  'view' => new Zend_View(),
+								  'disableLoadDefaultDecorators' => true,
+								  'class' => array('financetype'),
+								  'decorators' => array('ViewHelper',
+													  array('HtmlTag', array('tag' => 'div', 'class' => array('inline', 'radio', 'zendradio'))) // use a sorrounding DIV with classes which are copied to the label by JQuery
+												  )
+						  )
+				  );
+				  $capitalradio->setValue($financetype);
+				  echo $capitalradio->render();
+			?>
+        </div>
+    </div>
+    <div id="hasloan" class="hide">
+    	<div class="control-group">
+            <label class="control-label" style="font-size:14px;"><?php echo $this->translate("season_credit_finance_details"); ?></label>
+            <label class="control-label"><?php echo $this->translate("season_credit_principal_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+            <div class="controls">
+                <div class="input-prepend"><span class="add-on"><?php echo getCurrencySymbol(); ?></span><input type="text" style="width:80px;" name="principal" id="principal" class="width100 isamount rightalign inputrequired greaterthanzero" value="<?php echo $loan->getPrincipal(); ?>" /></div><div id="principal_error"></div>
+            </div>
+		</div>
+        <div class="control-group">
+        	<label class="control-label"><?php echo $this->translate("season_credit_interestrate_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+            <div class="controls">
+            	<input style="width:50px;" type="text" name="interestrate" id="interestrate" class="centeralign isdecimal inputrequired greaterthanzero" value="<?php echo $loan->getInterestRate(); ?>" />&nbsp;<span class="pagedescription">(%)</span><div id="interestrate_error"></div>
+            </div>
+        </div>
+        <div class="control-group">
+        	<label class="control-label"><?php echo $this->translate("season_credit_repayment_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+            <div class="controls">     
+            	<div class="input-prepend"><span class="add-on"><?php echo getCurrencySymbol(); ?></span><input type="text" style="width:80px;" name="paybackamount" id="paybackamount" class="width100 isamount rightalign inputrequired greaterthanzero" value="<?php echo $loan->getPayBackAmount(); ?>" /></div><div id="paybackamount_error"></div>
+            </div>
+       	</div>
+        <div class="control-group">
+        	<label class="control-label"><?php echo $this->translate("season_credit_payperiod_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+            <div class="controls">
+            	<input style="width:50px;" type="text" name="paybackperiod" id="paybackperiod" class="centeralign isnumber inputrequired greaterthanzero" value="<?php echo $loan->getPayBackPeriod(); ?>" />
+				<?php
+                    $univalues = getLoanFrequencyValues();
+                    $unitdropdown = new Zend_Form_Element_Select('paybackperiodunit',
+                                        array(
+                                            'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
+                                            'view' => new Zend_View(),
+                                            'decorators' => array('ViewHelper'),
+                                            'class' => array('span2','width100','selectrequired'),
+											'style' => "width:80px;"
+                                        )
+                                    );
+                    $unitdropdown->setValue($loan->getPayBackPeriodUnit()); 
+                    echo $unitdropdown->render(); 
+                ?>
+                <div id="paybackperiod_error"></div><div id="paybackperiodunit_error"></div>
+            </div>
+        </div>
+        <div class="control-group">
+        	<label class="control-label"><?php echo $this->translate("season_credit_datereceived_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+            <div class="controls">
+            	<input type="text" name="creditdate" id="creditdate" class="datefield width100 selectrequired" value="<?php echo changeMySQLDateToPageFormat($loan->getcreditdate()); ?>" /><div id="creditdate_error"></div>
+            </div>
+        </div>
+        <div class="control-group">
+        	<label class="control-label"><?php echo $this->translate("season_credit_regularpay_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+            <div class="controls">
+            	<div class="input-prepend"><span class="add-on"><?php echo getCurrencySymbol(); ?></span><input type="text" style="width:65px;" name="installment" id="installment" class="width50 isamount rightalign inputrequired greaterthanzero" value="<?php echo $loan->getInstallment(); ?>" /></div>
+                &nbsp;/&nbsp;
+                <?php
+                    $univalues = getLoanRepaymentFrequencyValues();
+                    $unitdropdown = new Zend_Form_Element_Select('installmentunit',
+                                        array(
+                                            'multiOptions' => array_merge_maintain_keys(array('' => '<Select>'), $univalues),								
+                                            'view' => new Zend_View(),
+                                            'decorators' => array('ViewHelper'),
+                                            'class' => array('span2','width80','selectrequired'),
+											'style' => "width:80px;"
+                                        )
+                                    );
+                    $unitdropdown->setValue($loan->getInstallmentUnit()); 
+                    echo $unitdropdown->render(); 
+                ?>
+                <div id="installment_error"></div><div id="installmentunit_error"></div>
+            </div>
+        </div>
+        <div class="control-group">
+        	<label class="control-label"><?php echo $this->translate("season_credit_source_label"); ?>:</label>
+            <div class="controls">
+            	<span id="bankrow">
+					<?php
+                        $allsources = getAllFinancialInstitutions();
+                        $sourcedropdown = new Zend_Form_Element_Select('financesourceid',
+                                            array(
+                                                'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $allsources),								
+                                                'view' => new Zend_View(),
+                                                'decorators' => array('ViewHelper'),
+                                                'class' => array('span3'),
+                                                'style' => 'width:200px;'
+                                            )
+                                        );
+                        
+                        $sourcedropdown->setValue($loan->getFinanceSourceID());
+                        echo $sourcedropdown->render();
+                   ?>
+               </span>
+               <span id="softrow">
+                <input type="text" name="financesourcetext" id="financesourcetext" class="width150" value="<?php echo $loan->getFinanceSourceText(); ?>" />
+               </span>
+               <div id="financesource_error"></div>
+            </div>
+        </div>
+	</div>     
+    <div id="cropfinancing" class="hide">
+        <div class="control-group">
+            <label class="control-label"><?php echo $this->translate("season_credit_client_label"); ?>:</label>
+            <div class="controls">
+                <?php
+                    $allclients = getAllClients();
+                    $sourcedropdown = new Zend_Form_Element_Select('clientid',
+                                        array(
+                                            'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $allclients),								
+                                            'view' => new Zend_View(),
+                                            'decorators' => array('ViewHelper'),
+                                            'class' => array('span3'),
+                                            'style' => 'width:215px;'
+                                        )
+                                    );
+                    
+                    $sourcedropdown->setValue($loan->getClientID());
+                    echo $sourcedropdown->render();
+               ?>
+            </div>
+        </div>
+        <div class="control-group">
+            <label class="control-label"><?php echo $this->translate("season_credit_value_label"); ?>:</label>
+            <div class="controls">
+                <div class="input-prepend"><span class="add-on"><?php echo getCurrencySymbol(); ?></span><input type="text" style="width:80px;" name="price" id="price" class="width100 isamount rightalign" value="<?php echo $loan->getPrice(); ?>" /></div><div id="price_error"></div>
+            </div>
+        </div>
+        <div class="control-group">
+            <label class="control-label"><?php echo $this->translate("season_credit_terms_label"); ?>:</label>
+            <div class="controls">
+                <textarea id="contract" name="contract" class="span3"><?php echo $loan->getContract(); ?></textarea>
+            </div>
+        </div>
+	</div>           
+</fieldset>    

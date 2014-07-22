@@ -2,7 +2,7 @@
 
 Dear <?php echo $this->firstname; ?>,<br /><br />
 
-This is to inform you that you have been invited by <b><?php echo $this->inviter; ?></b> to Join <?php echo $this->appname; ?>.<br /><br />
+You have been invited by <?php echo $this->inviter; ?> to activate your <?php echo $this->appname; ?> Account.<br /><br />
 
 <?php if($this->isfarmgroupmanager == 1){ ?>
 	You have been assigned a managerial role for the <b><?php echo $this->groupname; ?></b> Account and you will be required to carry out the following tasks;<br /><br />
@@ -12,16 +12,17 @@ This is to inform you that you have been invited by <b><?php echo $this->inviter
     - Keep track of your farmer's activities.<br /><br />
 <?php } ?>
 
-<?php echo $this->appname; ?> is a simple tool to help farmers know what's happening on their farms. <br />
-Start saving time and money. Ditch the spreadsheets and paper records!<br /><br />
-
+<?php if($this->type == 2){ ?>
+	<?php echo $this->appname; ?> is a simple tool to help farmers know what's happening on their farms. <br />
+    Start saving time and money. Ditch the spreadsheets and paper records!<br /><br />
+<?php } ?>
 In order to get started, you will have to activate your account first by clicking on link below:<br /><br />
 
 <?php echo $this->invitelink; ?><br /><br />
 
 If the page fails to open, copy the activation link and paste it in the address window of the browser.<br />
 
-After activating your account, you should be able to login using the your email address and password.<br /><br />
+After activating your account, you should be able to login using either email address, username, phone number and your password.<br /><br />
 
 If you need any further assistance or have any question, please feel free to <a href="<?php echo $this->serverUrl($this->baseUrl('contactus')); ?>" title="Contact us">Contact us</a><br /><br />
 

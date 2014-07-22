@@ -104,7 +104,7 @@ $(document).ready(function() {
 	/*equalHeight($("#forum, #tabs"));
 	var hght = $("#tabs").height();
 	$("#tabs").css({'height': hght - 50+'px'}).css({'z-index':'100'});/**/
-	$("#tabs").css({'height': '1000px'});
+	// $("#tabs").css({'height': '1000px'});
 }); 
 </script>
 <style>
@@ -114,12 +114,12 @@ $(document).ready(function() {
     <div class="span8 pull-left marginleft0 public_leftcolumn" >
         <div class="content">
             <h2 style="font-size:20px;"><?php echo $title; ?></h2> 
-            <div id="tabs" class="discussion">   
+            <div id="tabs" class="discussion clear clearfix">   
                 <ul>       
                    <li id="topiclist"><a href="#topics"><?php echo $this->translate('communityforum_section_topics'); ?></a></li>
                    <li id="create"><a href="#newtopic"><img src="<?php echo $this->baseUrl("images/add.png"); ?>" />&nbsp; <?php echo $this->translate('communityforum_section_newtopic'); ?></a></li>   
                 </ul>
-                <div id="topics">
+                <div id="topics" class="clear clearfix">
                     <form action="<?php echo $this->baseUrl("communityforum/listsearch"); ?>" method="get" id="inboxform">
                         <ul id="searchbox">
                             <li>
@@ -155,10 +155,7 @@ $(document).ready(function() {
                             <div style="clear:both;" class="alert alert-info margin5"><?php echo $this->translate("communityforum_list_norecords"); ?></div>
                         <?php } else { ?>
 						<label style="text-align:left; width:75%; padding:0; margin:0; margin-bottom:10px;" class="searchedterm control-label pull-left leftalign"><?php echo $viewing_label; ?></label>
-						<?php if (!$has_no_data) { ?>
-                            <div class="paginatecustom" style="width:25%; padding:0; margin:0; margin-bottom:10px;"><?php echo sprintf($this->translate("communityforum_list_counter"), $paginate->getItemCounterText()); ?></div>
-                        <?php } ?>
-                        <div id="listresults_div">
+                        <div id="listresults_div" class="clearfix">
                             <ul class="comments">
                             <?php 				  		
                                 foreach($result as $line){		
@@ -197,10 +194,12 @@ $(document).ready(function() {
                             </ul>
                         </div>    
                         <?php } ?> 
-                        <div>
-                            <div id="counter" style="float:left"><?php //echo $paginate->getItemCounterFormattedText(); ?></div>	
-                            <div style="float:right" class="paginationlinks"><?php echo $paginate->getPaginationLinks(); ?></div>
-                        </div><br />  
+                        <div style="display:block; position:relative;">
+							<?php echo $paginate->getPaginationLinks(); ?>  
+                            <?php if (!$has_no_data) { ?>
+                                <div class="paginatecustom"><?php echo sprintf($this->translate("farmgroup_list_counter"), $paginate->getItemCounterText()); ?></div>
+                            <?php } ?>
+                        </div>  
                     </form>
                 </div>
                 <div id="newtopic">

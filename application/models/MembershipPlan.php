@@ -12,6 +12,7 @@ class MembershipPlan extends BaseEntity  {
 		$this->hasColumn('trialdays', 'integer', null, array('default' => 0));
 		$this->hasColumn('usagedays', 'integer', null, array('default' => 0));
 		$this->hasColumn('amount', 'decimal', null, array('default' => 0));
+		$this->hasColumn('amountke', 'decimal', null, array('default' => 0));
 		$this->hasColumn('nooffarms', 'integer', null, array('default' => 0));
 		$this->hasColumn('noofseasons', 'integer', null, array('default' => 0));
 		$this->hasColumn('noofactivities', 'integer', null, array('default' => 0));
@@ -69,14 +70,6 @@ class MembershipPlan extends BaseEntity  {
     * @return MembershipPlan collection
     */
 	function getAllPlans() {
-		/*# query all plans
-		$q = Doctrine_Query::create()->from('Farm f')->where("f.farmerid = '".$this->getID()."' AND f.isdefault = '1' ");
-		$result = $q->fetchOne();
-		// debugMessage($result->toArray());
-		if(!$result){
-			$result = $farm = new Farm();
-		}
-		return $result;*/
 		return $this->getTable()->findAll();
 	}
 }

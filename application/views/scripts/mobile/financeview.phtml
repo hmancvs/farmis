@@ -1,0 +1,94 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	switch($stage){
+		case 'input':
+			$object = $input;
+			break;
+		case 'tillage':
+			$object = $tillage;
+			break;
+		case 'plant':
+			$object = $plant;
+			break;
+		case 'treat':
+			$object = $treat;
+			break;
+		case 'harvest':
+			$object = $harvest;
+			break;
+		case 'activity':
+			$object = $activity;
+			break;
+		case 'sale':
+			$object = $sale;
+			break;
+		default:
+			break;
+	}
+	$loan = $object->getCreditDetails();
+?>
+<fieldset class="fieldsetcontainer well">
+	<legend><?php echo $this->translate("season_credit_finance_title"); ?></legend>
+    <div class="control-group">
+        <label class="control-label"><?php echo $this->translate("season_credit_type_label"); ?></label>
+        <div class="controls"><?php $data = getCapitalSources(); echo $data[$object->getFinanceType()]; ?></div>
+    </div>
+    <?php if($object->getFinanceType() == 3 || $object->getFinanceType() == 4){ ?>
+        <div id="hasloan">
+            <div class="control-group">
+                <label class="control-label" style="font-size:14px;"><?php echo $this->translate("season_credit_finance_details"); ?></label>
+                <label class="control-label"><?php echo $this->translate("season_credit_principal_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                <div class="controls"><?php echo formatMoney($loan->getPrincipal()); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label"><?php echo $this->translate("season_credit_interestrate_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                <div class="controls"><?php echo $loan->getInterestRate().'&nbsp;<span class="pagedescription">(%)</span>'; ?>&nbsp;</div>
+            </div>
+            <div class="control-group">
+                <label class="control-label"><?php echo $this->translate("season_credit_repayment_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                <div class="controls"><?php echo isEmptyString($loan->getPayBackPeriodText()) ? '--' : $loan->getPayBackPeriodText(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label"><?php echo $this->translate("season_credit_payperiod_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                <div class="controls"><?php echo formatMoney($loan->getPayBackAmount()); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label"><?php echo $this->translate("season_credit_datereceived_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                <div class="controls"><?php echo isEmptyString($loan->getcreditdate()) ? '--' : changeMySQLDateToPageFormat($loan->getcreditdate()); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label"><?php echo $this->translate("season_credit_regularpay_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+                <div class="controls"><?php echo $loan->getInstallmentText(); ?></div>
+            </div>
+            <?php if($object->getFinanceType() == 4){ ?>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_credit_source_label"); ?>:</label>
+                    <div class="controls"><?php echo $loan->getFinancialSourceValue(); ?></div>
+                </div>
+            <?php } ?>
+            <?php if($object->getFinanceType() == 5){ ?>
+                <div class="control-group">
+                    <label class="control-label"><?php echo $this->translate("season_credit_source_label"); ?>:</label>
+                    <div class="controls"><?php echo isEmptyString($loan->getFinanceSourceText()) ? '--' : $loan->getFinanceSourceText(); ?></div>
+                </div>
+            <?php } ?>
+        </div> 
+    <?php } ?>
+    <?php if($object->getFinanceType() == 5){ ?>    
+        <div id="cropfinancing">
+            <div class="control-group">
+                <label class="control-label"><?php echo $this->translate("season_credit_client_label"); ?>:</label>
+                <div class="controls"><?php echo $loan->getTheClient(); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label"><?php echo $this->translate("season_credit_value_label"); ?>:</label>
+                <div class="controls"><?php echo nl2br($loan->getPrice()); ?></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label"><?php echo $this->translate("season_credit_terms_label"); ?>:</label>
+                <div class="controls"><?php echo isEmptyString($loan->getContract()) ? '--' : nl2br($loan->getContract()); ?></div>
+            </div>
+        </div> 
+    <?php } ?>         
+</fieldset>    

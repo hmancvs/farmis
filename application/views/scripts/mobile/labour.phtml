@@ -1,0 +1,443 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+?>
+<fieldset class="fieldsetcontainer">
+	<legend><?php echo $this->translate("season_labour_estimates_label"); ?></legend>
+    <div class="control-group" style="margin-bottom:5px; width:340px;">
+	<?php 
+        switch($stage){
+            case 'tillage':
+                $labourdetails = $tillage->getFamilyLabourDetails();
+                break;
+            case 'plant':
+                $labourdetails = $plant->getFamilyLabourDetails();
+                break;
+            case 'treat':
+                $labourdetails = $treat->getFamilyLabourDetails();
+                break;
+            case 'harvest':
+                $labourdetails = $harvest->getFamilyLabourDetails();
+                break;
+            case 'activity':
+                $labourdetails = $activity->getFamilyLabourDetails();
+                break;
+            case 'sale':
+                $labourdetails = $sale->getFamilyLabourDetails();
+                break;
+            default:
+                break;
+        }
+        $nooflines = $labourdetails->count();
+        $e = 0; $x = 0;
+        foreach($labourdetails as $labour){
+            $class = "visible_row_labour";
+    ?>
+        <div class="<?php echo $class; ?> row_labour_<?php echo $e; ?>" id="row_labour_<?php echo $e; ?>">
+            <fieldset class="fieldsetcontainer well " >
+                <legend><?php echo $this->translate("season_labour_family_label"); ?> : Task <?php echo ($e+1); ?></legend>
+                <div style="margin-left:10px; width:320px;">
+                    <label class="control-label" style="display:block;">Task Description: </label>
+                    <input type="text" style="width:94%;" name="labourdetails[<?php echo md5($e); ?>][activityname]" id="labourdetails_activityname_<?php echo $e; ?>" class="activityname 94width activityname_validate_<?php echo $e; ?> useid_error" value="<?php echo $labour->getActivityName(); ?>" />
+                    <div id="labourdetails_activityname_<?php echo $e; ?>_error"></div>
+                    <input type="hidden" name="labourdetails[<?php echo md5($e); ?>][type]" id="labourdetails_type_<?php echo $e; ?>" value="1" />
+                    <input type="hidden" name="labourdetails[<?php echo md5($e); ?>][id]" id="labourdetails_id_<?php echo $e; ?>" value="<?php echo $labour->getID(); ?>" />
+                    <table class="table table-stripped table-bordered hasheader" style="margin-top:5px; margin-bottom:5px; ">
+                        <thead>
+                            <tr class="rowheader">
+                                <td colspan="3"><label class="control-label centeralign"><?php echo $this->translate("season_labour_men_label"); ?></label></td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_number_label"); ?></span></td>
+                                <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_hrs_label"); ?></span></td>
+                                <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_days_label"); ?></span></td>
+                            </tr>
+                            <tr>
+                                <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($e); ?>][mcount]" id="labourdetails_mcount_<?php echo $e; ?>" class="mcount 94width mcount_validate_<?php echo $e; ?> useid_error isnumber centeralign" value="<?php echo clean_num($labour->getmcount()); ?>" />
+                                        <div id="labourdetails_mcount_<?php echo $e; ?>_error"></div>
+                                </td>
+                                <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($e); ?>][mhoursperday]" id="labourdetails_mhoursperday_<?php echo $e; ?>" class="mhoursperday 94width mcount_validate_<?php echo $e; ?> useid_error isdecimal centeralign" value="<?php echo clean_num($labour->getmhoursperday()); ?>" />
+                                        <div id="labourdetails_mhoursperday_<?php echo $e; ?>_error"></div>
+                                </td>
+                                <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($e); ?>][mtotaldays]" id="labourdetails_mtotaldays_<?php echo $e; ?>" class="mtotaldays 94width mcount_validate_<?php echo $e; ?> useid_error isdecimal centeralign" value="<?php echo clean_num($labour->getmtotaldays()); ?>" />
+                                        <div id="labourdetails_mtotaldays_<?php echo $e; ?>_error"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <table class="table table-stripped table-bordered hasheader" style="margin-top:5px; margin-bottom:5px; ">
+                        <thead>
+                            <tr class="rowheader">
+                                <td colspan="3"><label class="control-label centeralign"><?php echo $this->translate("season_labour_women_label"); ?></label></td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_number_label"); ?></span></td>
+                                <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_hrs_label"); ?></span></td>
+                                <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_days_label"); ?></span></td>
+                            </tr>
+                            <tr>
+                                <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($e); ?>][wcount]" id="labourdetails_wcount_<?php echo $e; ?>" class="wcount 94width wcount_validate_<?php echo $e; ?> useid_error isnumber centeralign" value="<?php echo clean_num($labour->getwcount()); ?>" />
+                                   	<div id="labourdetails_wcount_<?php echo $e; ?>_error"></div>
+                                </td>
+                                <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($e); ?>][whoursperday]" id="labourdetails_whoursperday_<?php echo $e; ?>" class="whoursperday 94width wcount_validate_<?php echo $e; ?> useid_error isdecimal centeralign" value="<?php echo clean_num($labour->getwhoursperday()); ?>" />
+                              		<div id="labourdetails_whoursperday_<?php echo $e; ?>_error"></div>
+                                </td>
+                                <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($e); ?>][wtotaldays]" id="labourdetails_wtotaldays_<?php echo $e; ?>" class="wtotaldays 94width wcount_validate_<?php echo $e; ?> useid_error isdecimal centeralign" value="<?php echo clean_num($labour->getwtotaldays()); ?>" />
+                            		<div id="labourdetails_wtotaldays_<?php echo $e; ?>_error"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <table class="table table-stripped table-bordered hasheader" style="margin-top:5px; margin-bottom:5px; ">
+                        <thead>
+                            <tr class="rowheader">
+                                <td colspan="3"><label class="control-label centeralign"><?php echo $this->translate("season_labour_children_label"); ?></label></td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_number_label"); ?></span></td>
+                                <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_hrs_label"); ?></span></td>
+                                <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_days_label"); ?></span></td>
+                            </tr>
+                            <tr>
+                                <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($e); ?>][kcount]" id="labourdetails_kcount_<?php echo $e; ?>" class="kcount 94width kcount_validate_<?php echo $e; ?> useid_error isnumber centeralign" value="<?php echo clean_num($labour->getkcount()); ?>" />
+                                	<div id="labourdetails_kcount_<?php echo $e; ?>_error"></div>
+                                </td>
+                                <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($e); ?>][khoursperday]" id="labourdetails_khoursperday_<?php echo $e; ?>" class="khoursperday 94width kcount_validate_<?php echo $e; ?> useid_error isdecimal centeralign" value="<?php echo clean_num($labour->getkhoursperday()); ?>" />
+                       				<div id="labourdetails_khoursperday_<?php echo $e; ?>_error"></div>
+                                </td>
+                                <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($e); ?>][ktotaldays]" id="labourdetails_ktotaldays_<?php echo $e; ?>" class="ktotaldays 94width kcount_validate_<?php echo $e; ?> useid_error isdecimal centeralign" value="<?php echo clean_num($labour->getktotaldays()); ?>" />
+                  					<div id="labourdetails_ktotaldays_<?php echo $e; ?>_error"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </fieldset>
+        </div>
+        <?php $e++; $x++; } ?>
+            <?php 
+                $defaultlines = 1;
+                if($nooflines >= 1){
+                    $defaultlines = $nooflines;
+                }
+                for($i = $e; $i<5; $i++){
+                    // debugMessage($i);
+                    $class = "visible_row_labour";
+                    if($i >= $defaultlines){
+                        $class = "hidden_row_labour";
+                    }
+                
+            ?>
+            <div class="<?php echo $class; ?> row_labour_<?php echo $i; ?>" id="row_labour_<?php echo $i; ?>">
+            <fieldset class="fieldsetcontainer well " >
+                <legend><?php echo $this->translate("season_labour_family_label"); ?> : Task <?php echo ($i+1); ?></legend>
+                <div style="margin-left:10px; width:320px;">
+                    <label class="control-label" style="display:block;">Task Description: </label>
+                    <input type="text" style="width:94%;" name="labourdetails[<?php echo md5($i); ?>][activityname]" id="labourdetails_activityname_<?php echo $i; ?>" class="activityname 94width activityname_validate_<?php echo $i; ?> useid_error" value="" />
+                    <input type="hidden" name="labourdetails[<?php echo md5($i); ?>][type]" id="labourdetails_type_<?php echo $i; ?>" value="1" />
+                    <div id="labourdetails_activityname_<?php echo $i; ?>_error"></div>
+                    <table class="table table-stripped table-bordered hasheader" style="margin-top:5px; margin-bottom:5px; ">
+                        <thead>
+                            <tr class="rowheader">
+                                <td colspan="3"><label class="control-label centeralign"><?php echo $this->translate("season_labour_men_label"); ?></label></td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_number_label"); ?></span></td>
+                                <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_hrs_label"); ?></span></td>
+                                <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_days_label"); ?></span></td>
+                            </tr>
+                            <tr>
+                                <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($i); ?>][mcount]" id="labourdetails_mcount_<?php echo $i; ?>" class="mcount 94width mcount_validate_<?php echo $i; ?> useid_error isnumber centeralign" value="" />
+                                    <div id="labourdetails_mcount_<?php echo $i; ?>_error"></div>
+                                </td>
+                                <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($i); ?>][mhoursperday]" id="labourdetails_mhoursperday_<?php echo $i; ?>" class="mhoursperday 94width mcount_validate_<?php echo $i; ?> useid_error  isdecimal centeralign" value="" />
+                                        <div id="labourdetails_mhoursperday_<?php echo $i; ?>_error"></div>
+                                </td>
+                                <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($i); ?>][mtotaldays]" id="labourdetails_mtotaldays_<?php echo $i; ?>" class="mtotaldays 94width mcount_validate_<?php echo $i; ?> useid_error isdecimal centeralign" value="" />
+                                        <div id="labourdetails_mtotaldays_<?php echo $i; ?>_error"></div>
+                                </td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                    <table class="table table-stripped table-bordered hasheader" style="margin-top:5px; margin-bottom:5px; ">
+                        <thead>
+                            <tr class="rowheader">
+                                <td colspan="3"><label class="control-label centeralign"><?php echo $this->translate("season_labour_women_label"); ?></label></td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_number_label"); ?></span></td>
+                                <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_hrs_label"); ?></span></td>
+                                <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_days_label"); ?></span></td>
+                            </tr>
+                            <tr>
+                                <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($i); ?>][wcount]" id="labourdetails_wcount_<?php echo $i; ?>" class="wcount 94width wcount_validate_<?php echo $i; ?> useid_error isnumber centeralign" value="" />
+                                    <div id="labourdetails_wcount_<?php echo $i; ?>_error"></div>
+                                </td>
+                                <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($i); ?>][whoursperday]" id="labourdetails_whoursperday_<?php echo $i; ?>" class="whoursperday 94width wcount_validate_<?php echo $i; ?> useid_error isdecimal centeralign" value="" />
+                                    <div id="labourdetails_whoursperday_<?php echo $i; ?>_error"></div>
+                                </td>
+                                <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($i); ?>][wtotaldays]" id="labourdetails_wtotaldays_<?php echo $i; ?>" class="wtotaldays 94width wcount_validate_<?php echo $i; ?> useid_error isdecimal centeralign" value="" />
+                                    <div id="labourdetails_wtotaldays_<?php echo $i; ?>_error"></div>
+                                </td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                    <table class="table table-stripped table-bordered hasheader" style="margin-top:5px; margin-bottom:5px; ">
+                        <thead>
+                            <tr class="rowheader">
+                                <td colspan="3"><label class="control-label centeralign"><?php echo $this->translate("season_labour_children_label"); ?></label></td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_number_label"); ?></span></td>
+                                <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_hrs_label"); ?></span></td>
+                                <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_days_label"); ?></span></td>
+                            </tr>
+                            <tr>
+                                <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($i); ?>][kcount]" id="labourdetails_kcount_<?php echo $i; ?>" class="kcount 94width kcount_validate_<?php echo $i; ?> useid_error isnumber centeralign" value="" />
+                                    <div id="labourdetails_kcount_<?php echo $i; ?>_error"></div>
+                                </td>
+                                <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($i); ?>][khoursperday]" id="labourdetails_khoursperday_<?php echo $i; ?>" class="khoursperday 94width kcount_validate_<?php echo $i; ?> useid_error isdecimal centeralign" value="" />
+                                    <div id="labourdetails_khoursperday_<?php echo $i; ?>_error"></div>
+                                </td>
+                                <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($i); ?>][ktotaldays]" id="labourdetails_ktotaldays_<?php echo $i; ?>" class="ktotaldays 94width kcount_validate_<?php echo $i; ?> useid_error isdecimal centeralign" value="" />
+                                    <div id="labourdetails_ktotaldays_<?php echo $i; ?>_error"></div>
+                                </td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </fieldset>
+            </div>
+        <?php $x++; } ?>   
+        <a href="javascript: void(0)" title="Add another" class="addline btn btn-mini pull-left" id="labour">Add Task Line</a>             
+    </div>
+
+
+    <div class="control-group" style="margin-bottom:10px; margin-bottom:5px; width:340px;">
+		<?php 
+			switch($stage){
+				case 'tillage':
+					$labourdetails = $tillage->getHiredLabourDetails();
+					break;
+				case 'plant':
+					$labourdetails = $plant->getHiredLabourDetails();
+					break;
+				case 'treat':
+					$labourdetails = $treat->getHiredLabourDetails();
+					break;
+				case 'harvest':
+					$labourdetails = $harvest->getHiredLabourDetails();
+					break;
+				case 'activity':
+					$labourdetails = $activity->getHiredLabourDetails();
+					break;
+				case 'sale':
+					$labourdetails = $sale->getHiredLabourDetails();
+					break;
+				default:
+					break;
+			}
+           	
+				$nooflines = $labourdetails->count();
+				$e = $x;
+				$l = 1;
+				$areavalues = getAreaUnits();
+				foreach($labourdetails as $labour){
+					$class = "visible_row_hired";
+			?>
+        	<div class="<?php echo $class; ?> row_hired_<?php echo $e; ?>" id="row_hired_<?php echo $e; ?>">
+                <fieldset class="fieldsetcontainer well " >
+                    <legend><?php echo $this->translate("season_labour_hired_label"); ?> : Task <?php echo $l; ?></legend>
+                    <div style="margin-left:10px; width:320px;">
+                        <label class="control-label" style="display:block;">Task Description: </label>
+                        <input type="text" style="width:94%;" name="labourdetails[<?php echo md5($e); ?>][activityname]" id="labourdetails_activityname_<?php echo $e; ?>" class="activityname 94width activityname_validate_<?php echo $e; ?> useid_error" value="<?php echo $labour->getActivityName(); ?>" />
+                        <div id="labourdetails_activityname_<?php echo $e; ?>_error"></div>
+                        <table class="table table-stripped table-bordered hasheader" style="margin-top:5px; margin-bottom:5px; ">
+                        	<thead>
+                                <tr class="rowheader">
+                                    <td colspan="3"><label class="control-label centeralign"><?php echo $this->translate("season_labour_cashexpenditure_label"); ?></label></td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_landsize_label"); ?></span></td>
+                                    <td><span class="blocked centeralign">Total Cost<?php //echo $this->translate("season_labour_cost_label"); ?></span></td>
+                                </tr>
+                                <tr>
+                                    <td><input type="text" style="width:38%;" name="labourdetails[<?php echo md5($e); ?>][fieldsize]" id="labourdetails_fieldsize_<?php echo $e; ?>" class="itemqty 94width fieldsize_validate_<?php echo $e; ?> useid_error isdecimal centeralign" value="<?php echo clean_num($labour->getFieldSize()); ?>" />
+                                        &nbsp;
+                                        <?php
+                                            $unitdropdown = new Zend_Form_Element_Select('labourdetails_fieldsizeunit_'.md5($e),
+                                                                array(
+                                                                    'multiOptions' => array_merge_maintain_keys(array('' => '< >'), $areavalues),								
+                                                                    'view' => new Zend_View(),
+                                                                    'decorators' => array('ViewHelper'),
+                                                                    'class' => array('fieldsizeunit_validate_'.$e),
+                                                                    'style' => 'width:38%'
+                                                                )
+                                                            );
+                                            $unitdropdown->setValue($labour->getFieldSizeUnit()); 
+                                            echo $unitdropdown->render(); 
+                                       ?><div id="labourdetails_fieldsize_<?php echo $e; ?>_error"></div><div id="labourdetails_fieldsizeunit_<?php echo $e; ?>_error"></div>
+                                    </td>
+                                    <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($e); ?>][fieldcost]" id="labourdetails_fieldcost_<?php echo $e; ?>" class="fieldcost 94width fieldcost_validate_<?php echo $e; ?> useid_error isamount centeralign" value="<?php echo $labour->getfieldcost(); ?>" />
+                                    	<div id="labourdetails_fieldcost_<?php echo $e; ?>_error"></div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table class="table table-stripped table-bordered hasheader" style="margin-top:5px; margin-bottom:5px; ">
+                            <thead>
+                                <tr class="rowheader">
+                                    <td><label class="control-label centeralign"><?php echo $this->translate("season_labour_kindexpenditure_label"); ?></label></td>
+                                </tr>
+                            </thead>
+                            <td style="text-align:left;">
+                                <div class="control-group">
+                                    <label class="control-label"><?php echo $this->translate("season_labour_kinditem_label"); ?></label>
+                                    <div class="controls">
+                                        <input type="text" style="width:90%;" name="labourdetails[<?php echo md5($e); ?>][itempaid]" id="labourdetails_itempaid_<?php echo $e; ?>" class="itempaid 94width itempaid_validate_<?php echo $e; ?> useid_error" value="<?php echo $labour->getitempaid(); ?>" />
+                                       	<div id="labourdetails_itempaid_<?php echo $e; ?>_error"></div>
+                                    </div>
+                                </div>
+                                <div class="control-group">
+                                    <label class="control-label"><?php echo $this->translate("season_labour_qty_label"); ?></label>
+                                    <div class="controls">
+                                        <input type="text" style="width:100px;" name="labourdetails[<?php echo md5($e); ?>][itemqty]" id="labourdetails_itemqty_<?php echo $e; ?>" class="itemqty 94width itemqty_validate_<?php echo $e; ?> useid_error isdecimal centeralign" value="<?php echo clean_num($labour->getitemqty()); ?>" />
+                            			<div id="labourdetails_itemqty_<?php echo $e; ?>_error"></div>
+                                    </div>
+                                </div>
+                                <div class="control-group">
+                                    <label class="control-label"><?php echo $this->translate("season_labour_unitcost_label"); ?></label>
+                                    <div class="controls">
+                                        <input type="text" style="width:100px;" name="labourdetails[<?php echo md5($e); ?>][unitprice]" id="labourdetails_unitprice_<?php echo $e; ?>" class="unitprice 94width unitprice_validate_<?php echo $e; ?> useid_error isamount centeralign" value="<?php echo $labour->getunitprice(); ?>" />
+                          				<div id="labourdetails_unitprice_<?php echo $e; ?>_error"></div>
+                                    </div>
+                                </div>
+                                <div class="control-group">
+                                    <label class="control-label"><?php echo $this->translate("season_labour_amount_label"); ?></label>
+                                    <div class="controls">
+                                        <input type="text" style="width:100px;" name="labourdetails[<?php echo md5($e); ?>][amount]" id="labourdetails_amount_<?php echo $e; ?>" class="amount 94width amount_validate_<?php echo $e; ?> useid_error isamount centeralign" value="<?php echo $labour->getamount(); ?>" />
+                          				<div id="labourdetails_amount_<?php echo $e; ?>_error"></div>
+                                        <input type="hidden" name="labourdetails[<?php echo md5($e); ?>][type]" id="labourdetails_type_<?php echo $e; ?>" value="2" />
+                                        <input type="hidden" name="labourdetails[<?php echo md5($e); ?>][id]" id="labourdetails_id_<?php echo $e; ?>" value="<?php echo $labour->getID(); ?>" />
+                                    </div>
+                                </div>
+                            </td>
+                        </table>
+					</div>                        
+            	</fieldset>
+       		</div>
+        <?php $e++; $x++; $l++;} ?>
+		<?php
+            $defaultlines = 6;
+            if($nooflines >= 1){
+                $defaultlines = $nooflines;
+            }
+            for($i = $e; $i < 10; $i++){
+                $class = "visible_row_hired";
+                if($i >= $defaultlines){
+                    $class = "hidden_row_hired";
+                }
+                // debugMessage($defaultlines);
+        ?>
+        	<div class="<?php echo $class; ?> row_hired_<?php echo $i; ?>" id="row_hired_<?php echo $i; ?>">
+            <fieldset class="fieldsetcontainer well " >
+                <legend><?php echo $this->translate("season_labour_hired_label"); ?> : Task <?php echo $l; ?></legend>
+                <div style="margin-left:10px; width:320px;">
+                    <label class="control-label" style="display:block;">Task Description: </label>
+                    <input type="text" style="width:94%;" name="labourdetails[<?php echo md5($i); ?>][activityname]" id="labourdetails_activityname_<?php echo $i; ?>" class="activityname 94width activityname_validate_<?php echo $i; ?> useid_error" value="" />
+                    <div id="labourdetails_activityname_<?php echo $i; ?>_error"></div>
+                    <table class="table table-stripped table-bordered hasheader" style="margin-top:5px; margin-bottom:5px; ">
+                        <thead>
+                            <tr class="rowheader">
+                                <td colspan="3"><label class="control-label centeralign"><?php echo $this->translate("season_labour_cashexpenditure_label"); ?></label></td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="blocked centeralign"><?php echo $this->translate("season_labour_landsize_label"); ?></span></td>
+                                <td><span class="blocked centeralign">Total Cost<?php //echo $this->translate("season_labour_cost_label"); ?></span></td>
+                            </tr>
+                            <tr>
+                                <td><input type="text" style="width:38%;" name="labourdetails[<?php echo md5($i); ?>][fieldsize]" id="labourdetails_fieldsize_<?php echo $i; ?>" class="itemqty 94width fieldsize_validate_<?php echo $i; ?> useid_error isdecimal centeralign" value="" />
+                                    &nbsp;
+                                    <?php
+                                        $unitdropdown = new Zend_Form_Element_Select('labourdetails_fieldsizeunit_'.md5($i),
+                                                            array(
+                                                                'multiOptions' => array_merge_maintain_keys(array('' => '< >'), $areavalues),								
+                                                                'view' => new Zend_View(),
+                                                                'decorators' => array('ViewHelper'),
+                                                                'class' => array('fieldsizeunit_validate_'.$i),
+                                                                'style' => 'width:38%'
+                                                            )
+                                                        );
+                                        $unitdropdown->setValue(1); 
+                                        echo $unitdropdown->render(); 
+                                   ?><div id="labourdetails_fieldsize_<?php echo $i; ?>_error"></div><div id="labourdetails_fieldsizeunit_<?php echo $i; ?>_error"></div>
+                                </td>
+                                <td><input type="text" style="width:85%;" name="labourdetails[<?php echo md5($i); ?>][fieldcost]" id="labourdetails_fieldcost_<?php echo $i; ?>" class="fieldcost 94width fieldcost_validate_<?php echo $i; ?> useid_error isamount centeralign" value="" />
+                                	<div id="labourdetails_fieldcost_<?php echo $i; ?>_error"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <table class="table table-stripped table-bordered hasheader" style="margin-top:5px; margin-bottom:5px; ">
+                        <thead>
+                            <tr class="rowheader">
+                                <td><label class="control-label centeralign"><?php echo $this->translate("season_labour_kindexpenditure_label"); ?></label></td>
+                            </tr>
+                        </thead>
+                        <td style="text-align:left;">
+                        	<div class="control-group">
+                                <label class="control-label"><?php echo $this->translate("season_labour_kinditem_label"); ?></label>
+                                <div class="controls">
+                                    <input type="text" style="width:90%;" name="labourdetails[<?php echo md5($i); ?>][itempaid]" id="labourdetails_itempaid_<?php echo $i; ?>" class="itempaid 94width itempaid_validate_<?php echo $i; ?> useid_error" value="" />
+                           			<div id="labourdetails_itempaid_<?php echo $i; ?>_error"></div>
+                                </div>
+                            </div>
+                            <div class="control-group">
+                                <label class="control-label"><?php echo $this->translate("season_labour_qty_label"); ?></label>
+                                <div class="controls">
+                                    <input type="text" style="width:100px;" name="labourdetails[<?php echo md5($i); ?>][itemqty]" id="labourdetails_itemqty_<?php echo $i; ?>" class="itemqty 94width itemqty_validate_<?php echo $i; ?> useid_error isdecimal centeralign" value="" />
+                                	<div id="labourdetails_itemqty_<?php echo $i; ?>_error"></div>
+                                </div>
+                            </div>
+                            <div class="control-group">
+                                <label class="control-label"><?php echo $this->translate("season_labour_unitcost_label"); ?></label>
+                                <div class="controls">
+                                    <input type="text" style="width:100px;" name="labourdetails[<?php echo md5($i); ?>][unitprice]" id="labourdetails_unitprice_<?php echo $i; ?>" class="unitprice 94width unitprice_validate_<?php echo $i; ?> useid_error isamount centeralign" value="" />
+                                    <div id="labourdetails_unitprice_<?php echo $i; ?>_error"></div>
+                                </div>
+                            </div>
+                            <div class="control-group">
+                                <label class="control-label"><?php echo $this->translate("season_labour_amount_label"); ?></label>
+                                <div class="controls">
+                                    <input type="text" style="width:100px;" name="labourdetails[<?php echo md5($i); ?>][amount]" id="labourdetails_amount_<?php echo $i; ?>" class="amount 94width amount_validate_<?php echo $i; ?> useid_error isamount centeralign" value="" />
+                                    <div id="labourdetails_amount_<?php echo $i; ?>_error"></div>
+                                    <input type="hidden" name="labourdetails[<?php echo md5($i); ?>][type]" id="labourdetails_type_<?php echo $i; ?>" value="2" />
+                                </div>
+                            </div>
+                        </td>
+                    </table>
+               	</div>
+			</fieldset>
+            </div>          
+        <?php $x++; $l++; } ?>
+        <a href="javascript: void(0)" title="Add another" class="addline btn btn-mini pull-left" id="hired">Add Task Line</a>
+	</div>        
+</fieldset>    	

@@ -1,0 +1,561 @@
+<?php
+	include APPLICATION_PATH.'/includes/header.php';
+	
+	$farmgroup = new FarmGroup();
+	
+	if(isEmptyString($request->id)){
+		$title = "New DNA Profile";
+		$posturl = $this->baseUrl("mobile/createaddgroup");
+		$farmgroup->setRegDate(changeMySQLDateToPageFormat(date('Y-m-d')));
+		$parentid = $request->parentid;
+		if(isFarmGroupAdmin()){
+			$user = new UserAccount();
+			$user->populate($userid);
+			$parentid = $user->getFarmGroupID();
+		}
+		if(!isEmptyString($parentid) || !isEmptyString($request->type)){
+			$title = "New FarmGroup";
+			$farmgroup->setParentID($parentid);
+			$farmgroup->setType(6);
+		}
+	} else {
+		$farmgroup->populate(decode($request->id));
+		$title = "Update Profile"; 
+		$posturl = $this->baseUrl("mobile/createaddgroup"); 
+	}
+	
+	$subgroups = $farmgroup->getListOfSubGroups();
+	$hassubgroups = false;
+	if($farmgroup->hasSubGroups()){
+		$hassubgroups = true;
+	}
+	
+	$country = 'UG';
+	$location_label = 'District';
+	$locations_label = 'Districts';
+	$countrycode = COUNTRY_CODE_UG;
+	$locationerror = $this->translate("farmer_district_error");
+	$country_params_refno_placeholder = 'placeholder="Auto" maxlength="8" ';
+	$county_label = $this->translate("global_county_label");
+	$subcounty_label = $this->translate("global_subcounty_label");
+	
+	if(isKenya() || $farmgroup->isKenyan()){
+		$session->setVar('country', 'ke');
+		$country = 'KE';
+		$location_label = 'County';
+		$locations_label = 'Counties';
+		$countrycode = COUNTRY_CODE_KE;
+		$locationerror = $this->translate("farmer_county_error");
+		$country_params_refno_placeholder = 'placeholder="" maxlength="10" ';
+		$county_label = $this->translate("global_subcounty_label");
+		$subcounty_label = $this->translate("global_ward_label");
+	}
+	
+	$thecountry = $farmgroup->getCountry();
+	if(isEmptyString($farmgroup->getID())){
+		$thecountry = $country;
+	}
+	// debugMessage($thecountry);
+?>
+<?php include APPLICATION_PATH."/views/scripts/mobile/mobileincludes.phtml"; ?>
+<script>
+	$(document).ready(function() {
+		$("#indexform").validate({		
+			// define the validation rules one field at a time
+			rules: {
+				orgname: "required",
+				type:  "required",
+				phone: {
+					required: false, 					
+					validnumber: true,
+					maxlength: 10,
+					minlength: 10,
+					<?php if(isUganda()){ ?>
+						validate_ug: true
+					<?php } ?>
+					<?php if(isKenya()){ ?>
+						validate_ke: true
+					<?php } ?>
+				},
+				contactphone2: {
+					required: false, 					
+					validnumber: true,
+					maxlength: 10,
+					minlength: 10,
+					<?php if(isUganda()){ ?>
+						validate_ug: true
+					<?php } ?>
+					<?php if(isKenya()){ ?>
+						validate_ke: true
+					<?php } ?>
+				},
+				contactphone3: {
+					required: false, 					
+					validnumber: true,
+					maxlength: 10,
+					minlength: 10,
+					<?php if(isUganda()){ ?>
+						validate_ug: true
+					<?php } ?>
+					<?php if(isKenya()){ ?>
+						validate_ke: true
+					<?php } ?>
+				},
+				email: {
+					required: false,
+					email: true
+				},
+				contactemail2: {
+					required: false,
+					email: true
+				},
+				contactemail3: {
+					required: false,
+					email: true
+				}
+			}, 
+			// the messages for each of the fields being validated
+			messages: {		
+				orgname: "<?php echo $this->translate("farmgroup_orgname_error"); ?>",
+				type: "<?php echo $this->translate("farmgroup_type_error"); ?>",
+				phone: {
+					validnumber: "Please enter a valid Phone Number",
+					maxlength: "Phone Number must have 10 Digits",
+					minlength: "Phone Number must have 10 Digits",
+					<?php if(isUganda()){ ?>
+						validate_ug: "<?php echo $this->translate("globale_phonenumber_format"); ?>"
+					<?php } ?>
+					<?php if(isKenya()){ ?>
+						validate_ke: "<?php echo $this->translate("globale_phonenumber_format_ke"); ?>"
+					<?php } ?>
+				},
+				contactphone2: {
+					validnumber: "Please enter a valid Phone Number",
+					maxlength: "Phone Number must have 10 Digits",
+					minlength: "Phone Number must have 10 Digits",
+					<?php if(isUganda()){ ?>
+						validate_ug: "<?php echo $this->translate("globale_phonenumber_format"); ?>"
+					<?php } ?>
+					<?php if(isKenya()){ ?>
+						validate_ke: "<?php echo $this->translate("globale_phonenumber_format_ke"); ?>"
+					<?php } ?>
+				},
+				contactphone3: {
+					validnumber: "Please enter a valid Phone Number",
+					maxlength: "Phone Number must have 10 Digits",
+					minlength: "Phone Number must have 10 Digits",
+					<?php if(isUganda()){ ?>
+						validate_ug: "<?php echo $this->translate("globale_phonenumber_format"); ?>"
+					<?php } ?>
+					<?php if(isKenya()){ ?>
+						validate_ke: "<?php echo $this->translate("globale_phonenumber_format_ke"); ?>"
+					<?php } ?>
+				},
+				email: {
+					email: "Invalid Email"
+				},
+				contactemail2: {
+					email: "Invalid Email"
+				},
+				contactemail3: {
+					email: "Invalid Email"
+				}
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						error.appendTo("#"+element.attr("name")+"_error")
+						break;
+				}			
+			}
+		});
+		
+		$("#bottomactions").html($("#topactions").html());
+		
+		multipleDisableContainerByClass('parish_text');
+		multipleEnableContainerByClass('parish_select');
+		$("#parishtrigger").click(function(){
+			if($(this).is(':checked')){
+				disableContainerByClass('parish_select');
+				enableContainerByClass('parish_text');
+				$(".parish_select select").val('');
+			} else {
+				disableContainerByClass('parish_text');
+				enableContainerByClass('parish_select');
+				$(".parish_text input").val('');
+			}
+		});
+		
+		multipleDisableContainerByClass('village_text');
+		multipleEnableContainerByClass('village_select');
+		$("#villagetrigger").click(function(){
+			if($(this).is(':checked')){
+				disableContainerByClass('village_select');
+				enableContainerByClass('village_text');
+				$(".village_select select").val('');
+			} else {
+				disableContainerByClass('village_text');
+				enableContainerByClass('village_select');
+				$(".village_text input").val('');
+			}
+		});
+		
+		// chained select to load the counties for a district
+		$('#districtid').selectChain({
+			target: $('#countyid'),
+			url: '<?php echo $this->baseUrl('index/selectchain/'.SELECT_CHAIN_TYPE.'/district_counties/')?>',
+			data: 'currentvalue=<?php echo $farmgroup->getCountyID(); ?>',
+			type: 'get'
+		});
+		$('#districtid').trigger("change");
+		
+		// chained select to load the subcounties for a county
+		$('#countyid').selectChain({
+			target: $('#subcountyid'),
+			url: '<?php echo $this->baseUrl('index/selectchain/'.SELECT_CHAIN_TYPE.'/county_subcounties/')?>',
+			data: 'currentvalue=<?php echo $farmgroup->getSubcountyID(); ?>',
+			type: 'get'
+		});
+		$('#countyid').trigger("change");
+		
+		// chained select to load the subcounties for a county
+		$('#subcountyid').selectChain({
+			target: $('#parishid'),
+			url: '<?php echo $this->baseUrl('farmgroup/selectchain/'.SELECT_CHAIN_TYPE.'/subcounty_parishes/')?>',
+			data: 'currentvalue=<?php echo $farmgroup->getParishID(); ?>',
+			type: 'get'
+		});
+		$('#subcountyid').trigger("change");
+		
+		// chained select to load the subcounties for a county
+		$('#parishid').selectChain({
+			target: $('#villageid'),
+			url: '<?php echo $this->baseUrl('farmgroup/selectchain/'.SELECT_CHAIN_TYPE.'/parish_villages/')?>',
+			data: 'currentvalue=<?php echo $farmgroup->getVillageID(); ?>',
+			type: 'get'
+		});
+		$('#parishid').trigger("change");
+		
+		$("#isinvited-1").attr('checked', false);
+		$("#isinvited-2").attr('checked', false);
+		
+		
+		/*var dateofregOpts = datepickerOpts;
+		dateofregOpts.yearRange = "-5";
+		dateofregOpts.maxDate = new Date();   
+		<?php //if(isAdmin()){ ?>
+		$("#regdate").datepicker(dateofregOpts);
+		<?php //} ?>*/
+		
+		equalHeight($("#row1_left, #row1_right"));
+		$("#refno").keyup(function(){
+			$("#regno").val('<?php echo FARMGROUP_REG_PREFIX; ?>/'+$(this).val());
+		});
+		$("#refno").trigger('keyup');
+		$(".readonly").each(function(){
+			$(this).attr('readonly','readonly');
+		});
+		
+		<?php if(isEmptyString($farmgroup->getID()) && !isEmptyString($farmgroup->getParentID())){ ?>
+			$("#parentid, #type").attr('readonly','readonly');
+		<?php } ?>
+		
+		<?php if(isEmptyString($request->type) || (!isEmptyString($farmgroup->getID()) && isEmptyString($farmgroup->getParentID()))){ ?>
+			// $("#parentid, #type").attr('readonly','readonly');
+			disableContainerByClass("parent");
+		<?php } else { ?>
+			disableContainerByClass("isdna");
+		<?php } ?>
+		
+		$("#parentid").change(function(){
+			var parent = $(this).val();
+			if(!isEmptyString(parent)){
+				$("#type").val(6);
+			}
+			
+			var groupid = $(this).val();
+			if(!isEmptyString(groupid)){
+				var posturl = "<?php echo $this->baseUrl('mobile/populategroup/id/'); ?>"+groupid;
+				// alert(posturl);
+				$.get(posturl, 
+				   {	
+					// parameters for the request along with a cachebuster to stop IE from caching the request
+					cachebuster: new Date().getTime()}, 			   
+					function(data){	
+						// alert(data);	
+						data = jQuery.parseJSON(data);
+						var districtid = data.districtid;
+						if(!isEmptyString(districtid)){
+							$('#districtid').val(districtid).trigger('change');
+						}
+					}
+				);
+				// wait logic here
+			}
+		});
+		$("#parentid").trigger('change');
+		
+	}); 
+</script>
+<body>
+<div class="container-fluid">
+  <h4><?php echo $title; ?></h4>
+  <?php if(!isEmptyString($session->getVar(ERROR_MESSAGE)) ){ ?>
+      <div class="row-fluid">
+      	<div class="alert alert-error"><?php echo $session->getVar(ERROR_MESSAGE); ?></div>
+      </div>
+  <?php } ?>
+  <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
+  	<div class="row-fluid">
+      	<div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
+	</div>
+  <?php } ?>
+  <div class="row-fluid">
+      <form class="form-horizontal clearfix" id="indexform" action="<?php echo $posturl; ?>" method="post" style="padding-bottom:25px;">
+        <div class="control-group well actions" id="topactions">
+              <a href="<?php echo $this->referer; ?>" class="btn"><i class="icon-remove"></i> <?php echo $this->translate('global_button_cancel'); ?></a>
+              <button type="submit" class="btn btn-primary"><i class="icon-ok icon-white"></i> <?php echo $this->translate('global_button_save'); ?></button>
+        </div>
+        <fieldset class="fieldsetcontainer well">
+        <legend>Account</legend>
+            <?php //if(!isEmptyString($farmgroup->hasSubGroup())){ ?>
+                <div class="control-group parent">
+                  <label class="control-label">Parent DNA:</label>
+                  <div class="controls">
+				  	<?php
+						$groupdropdown = new Zend_Form_Element_Select('parentid',
+											array(
+												'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), getAllFarmGroups('', $session->getVar('country'))),								
+												'view' => new Zend_View(),
+												'decorators' => array('ViewHelper'),
+												'class' => array('span3')
+											)
+										);
+						$groupdropdown->setValue($farmgroup->getParentID()); 
+						echo $groupdropdown->render(); 
+				   ?>
+                  </div>
+                </div>
+            <?php //} ?>
+            <div class="control-group isdna">
+              <label class="control-label"><?php echo $this->translate("farmgroup_type_label"); ?>: <?php echo $this->translate("global_required_field_marker"); ?></label>
+              <div class="controls">
+			  	<?php
+					$alltypes = getFarmGroupTypes();
+					$typedropdown = new Zend_Form_Element_Select('type',
+										array(
+											'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $alltypes),
+											'view' => new Zend_View(),
+											'decorators' => array('ViewHelper'),
+											'class' => array('span2'),
+										)
+					);  
+					$typedropdown->setValue($farmgroup->getType()); 
+					echo $typedropdown->render();
+				?><div id="type_error"></div></div>
+            </div>
+            <div class="control-group">
+              <label class="control-label"><?php echo $this->translate("farmgroup_name_label"); ?>:<?php echo $this->translate("global_required_field_marker"); ?></label>
+              <div class="controls"><input type="text" name="orgname" id="orgname" value="<?php echo $farmgroup->getOrgName(); ?>" class="span3" /><div id="orgname_error"></div>
+              	<input type="hidden" name="entityname" value="FarmGroup" />
+                <input type="hidden" id="id" name="id" value="<?php echo encode($farmgroup->getID()); ?>" />                                					
+                <input type="hidden" name="regdate" id="regdate" value="<?php echo changeMySQLDateToPageFormat($farmgroup->getRegDate()); ?>" />
+                <input type="hidden" class="successurl" id="<?php echo URL_SUCCESS; ?>" name="<?php echo URL_SUCCESS; ?>" value="<?php echo encode($this->baseUrl('mobile/viewgroup')); ?>" />
+                <input type="hidden" class="failureurl" id="<?php echo URL_FAILURE; ?>" name="<?php echo URL_FAILURE; ?>" value="<?php echo encode($this->baseUrl('mobile/addgroup/id/'.encode($farmgroup->getID()))); ?>" />
+                <input type="hidden" id="<?php echo SUCCESS_MESSAGE; ?>" name="<?php echo SUCCESS_MESSAGE; ?>" value="Profile updated successfully" />
+                <?php if(!isEmptyString($request->type)){ ?>
+	                <input type="hidden" id="type" name="type" value="<?php echo $farmgroup->getType(); ?>" />
+                <?php } ?>
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label"><?php echo $this->translate("farmgroup_shortname_label"); ?>:</label>
+              <div class="controls"><input type="text" name="shortname" id="shortname" value="<?php echo $farmgroup->getShortName(); ?>" class="span2" /></div>
+            </div>
+        </fieldset>
+        <fieldset class="fieldsetcontainer well">
+            <legend>Location</legend>
+            <div class="control-group">
+              <label class="control-label" for="country"><?php echo $this->translate("global_country_label"); ?>:</label>
+              <div class="controls">
+                <?php
+					$countries = getCountries();
+					$countrydropdown = new Zend_Form_Element_Select('country',
+										array(
+											'multiOptions' => array_merge_maintain_keys(array('' => "<Select One>", "UG"=>"Uganda"), $countries),
+											'view' => new Zend_View(), 
+											'decorators' => array('ViewHelper'),
+											'class' => array('country', 'xchzn-select', 'disabledfield')                                                            )
+									);
+					$countrydropdown->setValue($thecountry); 
+					echo $countrydropdown->render(); 
+				?><input type="hidden" name="country" id="country" value="<?php echo $thecountry; ?>" />
+				<span id="tooltip_country"></span><div id="country_error"></div>
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="districtid"><?php echo $location_label; ?>:</label>
+              <div class="controls">
+                    <?php
+						$districts = getDistricts($session->getVar('country'));
+						$districtdropdown = new Zend_Form_Element_Select('districtid',
+											array(
+												'multiOptions' => array_merge_maintain_keys(array('' => '<Select One>'), $districts),								
+												'view' => new Zend_View(),
+												'decorators' => array('ViewHelper'),
+												'class' => array('filterselect', 'country')
+											)
+										);
+						$districtdropdown->setValue($farmgroup->getDistrictID()); 
+						echo $districtdropdown->render(); 
+				   ?>
+				   <span id="tooltip_districtid"></span><div id="districtid_error"></div>
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="county"><?php echo $county_label; ?>:</label>
+              <div class="controls">
+                 <select name="countyid" id="countyid" class="country">
+                  <option value="">&lt;Select One&gt;</option>
+                </select>
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="subcounty"><?php echo $subcounty_label; ?>:</label>
+              <div class="controls">
+                <select name="subcountyid" id="subcountyid" class="span2">
+                  <option value="">&lt;Select One&gt;</option>
+                </select>
+              </div>
+            </div>
+            <?php if(strtolower($country == 'ug')){ ?>
+            <div class="control-group">
+              <label class="control-label" for="parish"><?php echo $this->translate("global_parish_label"); ?>:</label>
+              <div class="controls">
+                <div class="parish_text inline">
+                    <input type="text" name="parishname" id="parishname" class="span2" value="<?php //echo $user->getVillageName(); ?>"  />
+                </div>
+                <div class="parish_select inline">
+                    <select name="parishid" id="parishid" class="span2">
+                      <option value="">&lt;Select One&gt;</option>
+                    </select>
+                </div>
+                &nbsp;<input type="checkbox" name="parishtrigger" id="parishtrigger" class="lineblocked" value="1" title="Switch entry mode" placeholder="enter free text" /> 
+                <div id="parishname_error"></div><div id="parishid_error"></div>
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="village"><?php echo $this->translate("global_village_label"); ?>:</label>
+              <div class="controls">
+                <div class="village_text inline">
+                    <input type="text" name="villagename" id="villagename" class="span2" value="<?php //echo $user->getVillageName(); ?>"  />
+                </div>
+                <div class="village_select inline">
+                    <select name="villageid" id="villageid" class="span2">
+                      <option value="">&lt;Select One&gt;</option>
+                    </select>
+                </div>
+                &nbsp;<input type="checkbox" name="villagetrigger" id="villagetrigger" class="lineblocked" value="1" title="Switch entry mode" placeholder="enter free text" /> 
+                <div id="villagename_error"></div><div id="villageid_error"></div>
+              </div>
+            </div>
+            <?php } ?>
+            <div class="control-group">
+              <label class="control-label" for="address"><?php echo $this->translate("contact_address_label"); ?>:</label>
+              <div class="controls">
+                <textarea name="streetaddress" id="streetaddress" class="span4 expanding" style="min-height:60px;"><?php echo $farmgroup->getStreetAddress(); ?></textarea>
+              </div>
+            </div>
+        </fieldset>
+        <fieldset class="fieldsetcontainer well hideonsuper">
+            <legend>About</legend>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmer_biography_label"); ?>:</label>
+                <div class="controls"><textarea name="notes" id="notes" class="span4 expanding" style="min-height:60px;"><?php echo $farmgroup->getNotes(); ?></textarea></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmgroup_membershipclerk_label"); ?>:</label>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmgroup_name_label"); ?>:</label>
+                <div class="controls"><input name="contactname2" id="contactname2" type="text" class="span3" value="<?php echo $farmgroup->getContactName2(); ?>" /></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmgroup_phone_label"); ?>:</label>
+                <div class="controls">
+					<div class="input-prepend">
+                        <span class="add-on"><?php echo '+'.$countrycode; ?></span><input name="contactphone2" id="contactphone2" type="text" maxlength="10" class="span2 minwidth100 isnumber" value="<?php echo getShortPhone($farmgroup->getContactPhone2()); ?>" />
+                    </div>
+                    <div id="contactphone2_error"></div>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmgroup_email_label"); ?>:</label>
+                <div class="controls"><input name="contactemail2" id="contactemail2" type="text" class="span3" value="<?php echo $farmgroup->getContactEmail2(); ?>" /><div id="contactemail2_error"></div></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmgroup_bizclerk_label"); ?>:</label>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmgroup_name_label"); ?>:</label>
+                <div class="controls"><input name="contactname3" id="contactname3" type="text" class="span3" value="<?php echo $farmgroup->getContactName3(); ?>" /></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmgroup_phone_label"); ?>:</label>
+                <div class="controls">
+					<div class="input-prepend">
+                        <span class="add-on"><?php echo '+'.$countrycode; ?></span><input name="contactphone3" id="contactphone3" type="text" maxlength="10" class="span2 minwidth100 isnumber" value="<?php echo getShortPhone($farmgroup->getContactPhone3()); ?>" />
+                    </div>
+                    <div id="contactphone2_error"></div>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmgroup_email_label"); ?>:</label>
+                <div class="controls"><input name="contactemail3" id="contactemail3" type="text" class="span3" value="<?php echo $farmgroup->getContactEmail3(); ?>" /><div id="contactemail3_error"></div></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmgroup_dataclerk_label"); ?>:</label>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmgroup_name_label"); ?>:</label>
+                <div class="controls">
+					<?php if(!isEmptyString($farmgroup->getManagerID()) && !isEmptyString($farmgroup->getManagerID())){ ?>
+                        <a title="View Profile" href="<?php echo $this->baseUrl("profile/view/id/".encode($farmgroup->getManagerID())); ?>"><?php echo $farmgroup->getManager()->getName(); ?></a>
+                        <input type="hidden" name="contactname" id="contactname" value="<?php echo $farmgroup->getManager()->getName(); ?>" />
+                    <?php } else { ?>
+                        <input name="contactname" id="contactname" type="text" class="width180 hastooltip" value="<?php echo $farmgroup->getContactName(); ?>" title="<?php echo $this->translate("farmgroup_contactperson_tooltip"); ?>" />
+                    <?php } ?>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmgroup_phone_label"); ?>:</label>
+                <div class="controls">
+                    <div class="input-prepend">
+                        <span class="add-on"><?php echo '+'.$countrycode; ?></span><input name="phone" id="phone" type="text" maxlength="10" class="span2 minwidth100 isnumber" value="<?php echo getShortPhone($farmgroup->getPhone()); ?>" />
+                    </div>
+                    <div id="phone_error"></div>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="bio"><?php echo $this->translate("farmgroup_email_label"); ?>:</label>
+                <div class="controls">
+					<?php if(!isEmptyString($farmgroup->getManagerID()) && !isEmptyString($farmgroup->getManagerID())){ ?>
+						<?php echo $farmgroup->getEmail(); ?>
+                        <input type="hidden" name="email" id="email" value="<?php echo $farmgroup->getEmail(); ?>" />
+                    <?php } else { ?>
+                        <input name="email" id="email" type="text" class="span3" value="<?php echo $farmgroup->getEmail(); ?>" />
+                    <?php } ?>
+                    <div id="email_error"></div>
+                </div>
+            </div>
+        </fieldset>
+        <div class="control-group well actions" id="bottomactions"></div>
+      </form>
+  </div>
+</div>
+</body>
+</html>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

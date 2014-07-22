@@ -1,24 +1,9 @@
 <?php 
-	$farmer = new Farmer();
-	$farmer->populate($farmerid);
+	$user = new UserAccount();
+	$user->populate($userid);
 	
 	$controllername = $request->getControllerName();
 	$controlleraction = $request->getActionName();
-	
-	$hasfarm = false;
-	$hasmultiplefarms = false;
-	$countfarms = $farmer->getFarms()->count();
-	if($countfarms == 1){
-		$hasfarm = true;
-		$farmid = $farmer->getFarms()->get(0)->getID();
-	}
-	if(!isEmptyString($farmer->getFarm()->getID())){
-		$hasfarm = true;
-		$farmid = $farmer->getFarm()->getID();
-	}
-	if($countfarms > 1){
-		$hasmultiplefarms = true;
-	}
 	
 	$latest_discussions = getLatestForumDiscussions(3);
 
@@ -27,35 +12,29 @@
 	<div id="button">
     	<h2 id="quicklink">Quick Links</h2>
         <ul class="nav nav-tabs nav-stacked leftnav" id="leftnav">
-            <li><a href="<?php echo $this->baseUrl('dashboard'); ?>" class="" id=""><i class="icon-list icon-white"></i> Dashboard</a></li>
-            <li><a href="<?php echo $this->baseUrl('farmer/view/id/'.encode($farmer->getID())); ?>" class="" id=""><i class="icon-list icon-white"></i> My Profile</a></li>
-            <?php if(isAdmin()){ ?>
-                <li><a href="<?php echo $this->baseUrl('farmer/list'); ?>" class="" id=""><i class="icon-list icon-white"></i> Manage Farmers</a></li>
-                <li><a href="<?php echo $this->baseUrl('farmgroup/list'); ?>" class="" id=""><i class="icon-list icon-white"></i> Manage DNA Profiles</a></li>
+            <li><a href="<?php echo $this->baseUrl('dashboard'); ?>"><i class="icon-list icon-white"></i> Dashboard</a></li>
+            <li><a href="<?php echo $this->baseUrl('profile/view/id/'.encode($user->getID())); ?>"><i class="icon-list icon-white"></i> My Profile</a></li>
+            <?php if(isAdmin() || isManagement() || isDataClerk()){ ?>
+                <li><a href="<?php echo $this->baseUrl('profile/list'); ?>"><i class="icon-list icon-white"></i> Farmers</a></li>
+                <li><a href="<?php echo $this->baseUrl('farmgroup/list'); ?>"><i class="icon-list icon-white"></i> DNA Profiles</a></li>
+            <?php } ?>
+            <?php if(isAdmin() || isManagement()){ ?>
+                <li><a href="<?php echo $this->baseUrl('profile/users'); ?>"><i class="icon-list icon-white"></i> System Users</a></li>
             <?php } ?>  
             <?php if(isFarmGroupAdmin()){ 
 				$farmgroup = new FarmGroup();
-				$farmgroup->populate($farmer->getFarmGroupID());
+				$farmgroup->populate($user->getFarmGroupID());
 			?>
-                <li><a href="<?php echo $this->baseUrl('farmgroup/view/id/'.encode($farmer->getFarmGroupID())); ?>" class="" id=""><i class="icon-list icon-white"></i> DNA Profile</a></li>
-                <li><a href="<?php echo $this->baseUrl('farmer/list/farmgroupid/'.$farmer->getFarmGroupID()); ?>" class="" id=""><i class="icon-list icon-white"></i> Farmers</a></li>
+                <li><a href="<?php echo $this->baseUrl('farmgroup/view/id/'.encode($user->getFarmGroupID())); ?>"><i class="icon-list icon-white"></i> DNA Profile</a></li>
+                <li><a href="<?php echo $this->baseUrl('profile/list/farmgroupid/'.$user->getFarmGroupID()); ?>"><i class="icon-list icon-white"></i> Farmers</a></li>
             <?php } ?>  
             <?php if(isFarmer()){ ?>
-                <?php if($hasfarm){ ?>
-                    <?php if($hasmultiplefarms){ ?>
-                        <li><a href="<?php echo $this->baseUrl('farm/list'); ?>" class="" id=""><i class="icon-list icon-white"></i> Manage Farms</a></li>
-                    <?php } else { ?>
-                        <li><a href="<?php echo $this->baseUrl('farm/view/id/'.encode($farmid)); ?>" class="" id=""><i class="icon-list icon-white"></i> Manage Farm</a></li>
-                    <?php } ?>
-                    <li><a href="<?php echo $this->baseUrl('farm/view/id/'.encode($farmid).'/tab/seasons'); ?>" title="Manage Seasons"><i class="icon-list icon-white"></i> Manage Seasons</a></li>
-                <?php } ?>
-                <?php if(!$hasfarm){ ?>
-                	<li><a href="<?php echo $this->baseUrl('farm/index/farmerid/'.encode($session->getVar('farmerid'))); ?>" title="Setup Farm" id="newfarm"><i class="icon-plus icon-white"></i> Setup Farm</a></li>
-                <?php } ?>
+                <li><a href="<?php echo $this->baseUrl('profile/view/id/'.encode($user->getID()).'/tab/farm'); ?>"><i class="icon-list icon-white"></i> Manage Farm</a></li>
+                <li><a href="<?php echo $this->baseUrl('profile/view/id/'.encode($user->getID()).'/tab/seasons'); ?>" title="Manage Seasons"><i class="icon-list icon-white"></i> Manage Seasons</a></li>
             <?php } ?>
-            <li><a href="<?php echo $this->baseUrl('contact/list'); ?>" class="" id=""><i class="icon-list icon-white"></i> Business Directory</a></li>
+            <li><a href="<?php echo $this->baseUrl('contact/list'); ?>"><i class="icon-list icon-white"></i> Business Directory</a></li>
             <?php if(isAdmin()){ ?>
-                <li><a href="<?php echo $this->baseUrl('commodity/list'); ?>" class="" id=""><i class="icon-list icon-white"></i> Commodities</a></li>
+                <li><a href="<?php echo $this->baseUrl('commodity/list'); ?>"><i class="icon-list icon-white"></i> Commodities</a></li>
             <?php } ?>
             <li><a href="<?php echo $this->baseUrl('message/list'); ?>"><i class="icon-list icon-white"></i> Inbox <span class="pagedescription" style="color:#fff; font-size:14px;">(<?php echo $unread_messages; ?> Unread)</span></a></li>
         </ul>
@@ -66,22 +45,18 @@
             <div style="margin-left:-8px; margin-top:2px;">
                 
                 <ul class="nav nav-tabs nav-stacked leftnav bottom">
-                    <?php if(isAdmin()){ ?>
+                    <?php if(isAdmin() || isManagement()){ ?>
                         <li><a href="<?php echo $this->baseUrl('farmgroup/add/pgc/true'); ?>" class="addpopup addgroup" title="New DNA Profile" rel="New DNA Profile" id="newfarmgroup" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmgroup/list'); ?>" action="<?php echo $this->baseUrl("farmgroup/create"); ?>"><i class="icon-plus "></i> <span>New Farm Group</span></a></li>
-                        <li><a href="<?php echo $this->baseUrl('farmer/add/pgc/true'); ?>" class="addpopup addfarmer" title="New Farmer" rel="New Farmer" id="newfarmer" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmer/list'); ?>" action="<?php echo $this->baseUrl("farmer/create"); ?>"><i class="icon-plus"></i> <span>New Farmer</span></a></li>
-                    <?php } ?>  
+                        
+                    <?php } ?>
+                    <?php if(isAdmin() || isManagement() || isDataClerk()){ ?>
+                    	<li><a href="<?php echo $this->baseUrl('profile/add/pgc/true'); ?>" class="addpopup addfarmer" title="New Farmer" rel="New Farmer" id="newfarmer" formtitle="indexform" successurl="<?php echo $this->baseUrl('profile/list'); ?>" action="<?php echo $this->baseUrl("profile/create"); ?>"><i class="icon-plus"></i> <span>New Farmer</span></a></li>
+                    <?php } ?>
                     <?php if(isFarmer()){ 
-						$newseason = $this->baseUrl('season/index/farmid/'.encode($farmer->getFarmID()));
-						$logactivity = $this->baseUrl('farm/view/id/'.encode($farmer->getFarmID()).'/tab/seasons');
-						$newxpense = $this->baseUrl('farm/view/id/'.encode($farmer->getFarmID()).'/tab/seasons');
-						$inventory = $this->baseUrl('inventory/index/farmid/'.encode($farmer->getFarmID()).'/tab/inventory');
-						if(isEmptyString($farmer->getFarmID())){
-							$newseason = $logactivity = $newxpense = $inventory = $this->baseUrl('farm/index/farmerid/'.encode($farmer->getID()).'/restart/1');
-						}
-						
-						if(isEmptyString($farmer->getFarmID())){
-							
-						}
+						$newseason = $this->baseUrl('season/index/farmerid/'.encode($user->getID()));
+						$logactivity = $this->baseUrl('profile/view/id/'.encode($user->getID()).'/tab/seasons');
+						$newxpense = $this->baseUrl('profile/view/id/'.encode($user->getID()).'/tab/seasons');
+						$inventory = $this->baseUrl('profile/view/id/'.encode($user->getID()).'/tab/inventory');
 					?>
                     	<li><a href="<?php echo $newseason; ?>"><i class="icon-plus"></i> <span>New Season</span></a></li>
                         <li><a href="<?php echo $logactivity; ?>"><i class="icon-plus"></i> <span>Log Activity</span></a></li>
@@ -90,7 +65,7 @@
                         <li><a href="<?php echo $this->baseUrl('contact/index'); ?>"><i class="icon-plus"></i> <span>New Contact</span></a></li>
                     <?php } ?>
                     <?php if(isFarmGroupAdmin()){ ?>
-                    	<li><a href="<?php echo $this->baseUrl('farmer/add/pgc/true/farmgroupid/'.$farmgroup->getID()); ?>" class="addfarmer addpopup"  rel="Add Farmer | <?php echo $farmgroup->getName(); ?>" title="Add Farmer" id="addfarmer" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmer/list/farmgroupid/'.$farmgroup->getID()); ?>" action="<?php echo $this->baseUrl("farmer/create"); ?>"><i class="icon-plus"></i> <span>New Farmer</span></a></li>
+                    	<li><a href="<?php echo $this->baseUrl('profile/add/pgc/true/farmgroupid/'.$farmgroup->getID()); ?>" class="addfarmer addpopup"  rel="Add Farmer | <?php echo $farmgroup->getName(); ?>" title="Add Farmer" id="addfarmer" formtitle="indexform" successurl="<?php echo $this->baseUrl('profile/list/farmgroupid/'.$farmgroup->getID()); ?>" action="<?php echo $this->baseUrl("profile/create"); ?>"><i class="icon-plus"></i> <span>New Farmer</span></a></li>
                         <li><a href="<?php echo $this->baseUrl('contact/index'); ?>"><i class="icon-plus"></i> <span>New Contact</span></a></li>	
                     <?php } ?>
                 </ul> 
@@ -104,19 +79,19 @@
                     
                     <tr>		                    
                         <td class="profilerightlabel">Total Farmers:</td>
-                        <td class="profilerightvalue leftalign"><?php echo $farmer->getFarmGroup()->getCountFarmers(); ?></td>
+                        <td class="profilerightvalue leftalign"><?php echo $user->getFarmGroup()->getCountFarmers(); ?></td>
                     </tr>
                     <tr>		                    
                         <td class="profilerightlabel">No of Male:</td>
-                        <td class="profilerightvalue leftalign"><?php echo $farmer->getFarmGroup()->getMaleFarmers(); ?></td>
+                        <td class="profilerightvalue leftalign"><?php echo $user->getFarmGroup()->getMaleFarmers(); ?></td>
                     </tr>
                     <tr>		                    
                         <td class="profilerightlabel">No of Female:</td>
-                        <td class="profilerightvalue leftalign"><?php echo $farmer->getFarmGroup()->getFeMaleFarmers(); ?></td>
+                        <td class="profilerightvalue leftalign"><?php echo $user->getFarmGroup()->getFeMaleFarmers(); ?></td>
                     </tr>
                     <tr>		                    
                         <td class="profilerightlabel">Active Farmers:</td>
-                        <td class="profilerightvalue leftalign"><?php echo $farmer->getFarmGroup()->getCountRegisteredFarmers(); ?></td>
+                        <td class="profilerightvalue leftalign"><?php echo $user->getFarmGroup()->getCountRegisteredFarmers(); ?></td>
                     </tr>
                 </table>
             </div>
@@ -129,15 +104,15 @@
                         <table class="table table-striped table-bordered table-condensed" id="stats">
                             <tr>		                    
                                 <td class="profilerightlabel">No of Crops:</td>
-                                <td class="profilerightvalue leftalign"><?php echo $farmer->getFarm()->getCrops()->count(); ?></td>
+                                <td class="profilerightvalue leftalign"><?php echo $user->getCrops()->count(); ?></td>
                             </tr>
                             <tr>		                    
                                 <td class="profilerightlabel">No of Farms:</td>
-                                <td class="profilerightvalue leftalign"><?php echo $farmer->getFarms()->count(); ?></td>
+                                <td class="profilerightvalue leftalign">1</td>
                             </tr>
                             <tr>		                    
                                 <td class="profilerightlabel">No of Seasons:</td>
-                                <td class="profilerightvalue leftalign"><?php echo $farmer->getFarm()->getSeasons()->count(); ?></td>
+                                <td class="profilerightvalue leftalign"><?php echo $user->getSeasons()->count(); ?></td>
                             </tr>
                         </table>
                      </div>
@@ -158,7 +133,7 @@
                 <div style="margin-top:5px;">
                  	<?php
 						$seasonactivities = array();
-						$allseasons = $farmer->getFarm()->getSeasons();
+						$allseasons = $user->getSeasons();
 						$allactivities = array();
 						$x=0;
 						foreach($allseasons as $season){

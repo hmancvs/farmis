@@ -9,14 +9,13 @@
 	$user->populate($userid);
 		
 	if(isFarmer()){
-		$farmer = new Farmer();
-		$farmer->populate($farmerid);
+		$user = new UserAccount();
+		$user->populate($userid);
 		
-		$farmid = $farmer->getFarms()->get(0)->getID();
 		$showlink = false;
 		$inventoryurl = 'javascript: void(0)';
-		if(!isEmptyString($farmid)){
-			$inventoryurl = $this->baseUrl("farm/view/id/".encode($farmid)."/tab/inventory");
+		if(!isEmptyString($userid)){
+			$inventoryurl = $this->baseUrl("profile/view/id/".encode($userid)."/tab/inventory");
 		}
 	}
 	
@@ -44,10 +43,12 @@
                             <a class="list" href="<?php echo $this->baseUrl('commodity/list'); ?>" title="Manage Commodities"><img src="<?php echo $this->baseUrl('images/icon_commodity.png'); ?>" /><br /><h2>Commodities</h2></a>
                         </li>
                         <?php } ?>
+						<?php if(isUganda()){ ?>
                         <li>
                             <a class="list" href="<?php echo $this->baseUrl("resource/allprices"); ?>" title="Market Prices"><img src="<?php echo $this->baseUrl('images/icon_price.png'); ?>" /><br /><h2>Current Market Prices</h2></a>
                         </li>
-                        <?php if(isAdmin()){ ?>
+                        <?php } ?>
+                        <?php if(isAdmin() && isUganda()){ ?>
                         <li>
                             <a class="list" href="<?php echo $this->baseUrl('resource/variables'); ?>" title="System Variables"><img src="<?php echo $this->baseUrl('images/icon_variable.png'); ?>" /><br /><h2>System Variables</h2></a>
                         </li>
@@ -56,14 +57,16 @@
                         <li>
                             <a class="list" href="<?php echo $this->baseUrl('resource/massmail'); ?>" title="Mass Mail"><img src="<?php echo $this->baseUrl('images/icon_mail.png'); ?>" /><br /><h2>Mass Mail</h2></a>
                         </li>
-                        <li>
-                            <a class="list" href="<?php echo $this->baseUrl('resource/bulksms'); ?>" title="Bulk Sms"><img src="<?php echo $this->baseUrl('images/icon_sms.png'); ?>" /><br /><h2>Bulk Sms</h2></a>
-                        </li>
+                        	<?php if(isUganda()){ ?>
+                            <li>
+                                <a class="list" href="<?php echo $this->baseUrl('resource/bulksms'); ?>" title="Bulk Sms"><img src="<?php echo $this->baseUrl('images/icon_sms.png'); ?>" /><br /><h2>Bulk Sms</h2></a>
+                            </li>
+                            <?php } ?>
                         <?php } ?>
                         <?php if(isAdmin()){ ?>
-                        <li>
-                            <a class="list" href="<?php echo $this->baseUrl('resource/locations'); ?>" title="Locations"><img src="<?php echo $this->baseUrl('images/icon_location.png'); ?>" /><br /><h2>Locations</h2></a>
-                        </li>
+                            <li>
+                                <a class="list" href="<?php echo $this->baseUrl('location/list'); ?>" title="Locations"><img src="<?php echo $this->baseUrl('images/icon_location.png'); ?>" /><br /><h2>Locations</h2></a>
+                            </li>
                         <?php } ?>
                     </ul>
                 </span>

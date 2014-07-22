@@ -8,10 +8,7 @@ class Address extends BaseEntity {
 		
 		$this->setTableName('address');
 		$this->hasColumn('userid', 'integer', null);
-		$this->hasColumn('farmerid', 'integer', null);
-		$this->hasColumn('farmid', 'integer', null);
 		$this->hasColumn('farmgroupid', 'integer', null);
-		$this->hasColumn('organisationid', 'integer', null);
 		$this->hasColumn('type', 'integer', null, array('default' => '1')); // 1 farmer, 2 farm group, 3 farm, 4 organisation
 		
 		$this->hasColumn('country', 'string', 2, array('default' => 'UG'));
@@ -46,43 +43,37 @@ class Address extends BaseEntity {
 									'foreign' => 'id'
 								)
 						);
-		$this->hasOne('Farmer as farmer', 
-								array(
-									'local' => 'farmerid',
-									'foreign' => 'id'
-								)
-						);
 		$this->hasOne('FarmGroup as farmgroup', 
 								array(
 									'local' => 'farmgroupid',
 									'foreign' => 'id'
 								)
 						);
-		$this->hasOne('District as district',
+		$this->hasOne('Location as district',
 						 array(
 								'local' => 'districtid',
 								'foreign' => 'id'
 							)
 					); 
-		$this->hasOne('County as county',
+		$this->hasOne('Location as county',
 						 array(
 								'local' => 'countyid',
 								'foreign' => 'id'
 							)
 					); 
-		$this->hasOne('Subcounty as subcounty',
+		$this->hasOne('Location as subcounty',
 						 array(
 								'local' => 'subcountyid',
 								'foreign' => 'id'
 							)
 					); 
-		$this->hasOne('Parish as parish',
+		$this->hasOne('Location as parish',
 						 array(
 								'local' => 'parishid',
 								'foreign' => 'id'
 							)
 					); 
-		$this->hasOne('Village as village',
+		$this->hasOne('Location as village',
 						 array(
 								'local' => 'villageid',
 								'foreign' => 'id'
@@ -97,17 +88,8 @@ class Address extends BaseEntity {
 		if(isArrayKeyAnEmptyString('userid', $formvalues)){
 			unset($formvalues['userid']); 
 		}
-		if(isArrayKeyAnEmptyString('farmerid', $formvalues)){
-			unset($formvalues['farmerid']); 
-		}
 		if(isArrayKeyAnEmptyString('farmgroupid', $formvalues)){
 			unset($formvalues['farmgroupid']); 
-		}
-		if(isArrayKeyAnEmptyString('farmid', $formvalues)){
-			unset($formvalues['farmid']); 
-		}
-		if(isArrayKeyAnEmptyString('organisationid', $formvalues)){
-			unset($formvalues['organisationid']); 
 		}
 		if(isArrayKeyAnEmptyString('districtid', $formvalues)){
 			unset($formvalues['districtid']); 
@@ -175,5 +157,19 @@ class Address extends BaseEntity {
 		$countries = getCountries(); 
 		return $countries[$this->getCountry()];
 	}
+	function getVillageName() {
+		$q = Doctrine_Query::create()->from('Village v')->where("v.id = '".$this->getID()."' ");
+		$result = $q->execute();
+		debugMessage($result->toArray());
+		//return $result->getName();
+	}
+	# determine if is ugandan
+    function isUgandan() {
+    	return $this->getCountry() == 'UG' || isEmptyString($this->getCountry()) ? true : false; 
+    }
+	# determine if is kenyan
+    function isKenyan() {
+    	return $this->getCountry() == 'KE' ? true : false; 
+    }
 }
 ?>

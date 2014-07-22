@@ -13,18 +13,17 @@ class Season extends BaseEntity  {
 		
 		// set the table
 		$this->setTableName('season');
-		$this->hasColumn('farmerid', 'integer', null, array( 'notnull' => true, 'notblank' => true));
-		$this->hasColumn('farmid', 'integer', null, array( 'notnull' => true, 'notblank' => true));
-		$this->hasColumn('activityname', 'string', 255, array( 'notnull' => true, 'notblank' => true));
+		$this->hasColumn('userid', 'integer', null, array('notblank' => true));
+		$this->hasColumn('activityname', 'string', 255, array('notblank' => true));
 		$this->hasColumn('ref', 'string', 50);
 		$this->hasColumn('startday', 'string', 4);
-		$this->hasColumn('startmonth', 'string', 4, array( 'notnull' => true, 'notblank' => true));
-		$this->hasColumn('startyear', 'string', 4, array( 'notnull' => true, 'notblank' => true));
+		$this->hasColumn('startmonth', 'string', 4, array('notblank' => true));
+		$this->hasColumn('startyear', 'string', 4, array('notblank' => true));
 		$this->hasColumn('endday', 'string', 4);
 		$this->hasColumn('endmonth', 'string', 4);
 		$this->hasColumn('endyear', 'string', 4);
 		$this->hasColumn('status', 'integer', null, array('default' => '2'));
-		$this->hasColumn('cropid', 'integer', null, array('notnull' => true, 'notblank' => true));
+		$this->hasColumn('cropid', 'integer', null, array('notblank' => true));
 		$this->hasColumn('method', 'integer', null, array('default' => '1'));
 		$this->hasColumn('notes','string', 1000);
 		
@@ -41,8 +40,7 @@ class Season extends BaseEntity  {
 		parent::construct();
 		// set the custom error messages
        	$this->addCustomErrorMessages(array(
-       									"farmid.notblank" => $this->translate->_("season_farmid_error"),
-       									"farmerid.notblank" => $this->translate->_("season_farmerid_error"),
+       									"userid.notblank" => $this->translate->_("season_userid_error"),
        									"cropid.notblank" => $this->translate->_("season_cropid_error"),
        									"activityname.notblank" => $this->translate->_("season_activityname_error")
        	       						));
@@ -51,15 +49,10 @@ class Season extends BaseEntity  {
 		parent::setUp();
 		
 		// match the parent id
-		$this->hasOne('Farmer as farmer', 
+		$this->hasOne('UserAccount as user', 
 							array(
-								'local' => 'farmerid',
+								'local' => 'userid',
 								'foreign' => 'id'
-							)
-						);
-		$this->hasOne('Farm as farm',
-							array('local' => 'farmid',
-									'foreign' => 'id'
 							)
 						);
 		$this->hasMany('SeasonInput as seasoninputs',
@@ -111,10 +104,7 @@ class Season extends BaseEntity  {
 		if(!isArrayKeyAnEmptyString('financetype', $formvalues)){
 			if($formvalues['financetype'] == 3 || $formvalues['financetype'] == 4 || $formvalues['financetype'] == 5){
 				$formvalues['loans'][0]['financetype'] = $formvalues['financetype'];
-				$formvalues['loans'][0]['farmerid'] = $formvalues['farmerid'];
-				$formvalues['loans'][0]['farmid'] = $formvalues['farmid'];
-				// $formvalues['activitycredit'][0]['stage'] = $formvalues['stage'];
-				// $formvalues['activitycredit'][0]['type'] = 1;
+				$formvalues['loans'][0]['userid'] = $formvalues['userid'];
 				isArrayKeyAnEmptyString('principal', $formvalues) ? $formvalues['loans'][0]['principal'] = NULL : $formvalues['loans'][0]['principal'] = $formvalues['principal'];
 				isArrayKeyAnEmptyString('interestrate', $formvalues) ? $formvalues['loans'][0]['interestrate'] = NULL : $formvalues['loans'][0]['interestrate'] = $formvalues['interestrate'];
 				isArrayKeyAnEmptyString('paybackamount', $formvalues) ? $formvalues['loans'][0]['paybackamount'] = NULL : $formvalues['loans'][0]['paybackamount'] = $formvalues['paybackamount'];
@@ -136,7 +126,7 @@ class Season extends BaseEntity  {
 				$formvalues['loans'] = array();
 			}
 		}
-		// debugMessage($formvalues); exit();
+		// debugMessage($formvalues); // exit();
 		parent::processPost($formvalues);
 	}
 	# the season start date
@@ -248,8 +238,8 @@ class Season extends BaseEntity  {
     function getNextReferencePointer() {
     	$conn = Doctrine_Manager::connection();
     	$session = SessionWrapper::getInstance();
-    	$farmerid = $session->getVar('farmerid');
-		$sql = "SELECT COUNT(id) FROM season WHERE farmerid = ".$farmerid." "; 
+    	$userid = $session->getVar('userid');
+		$sql = "SELECT COUNT(id) FROM season WHERE userid = ".$userid." "; 
 		$result = $conn->fetchOne($sql);
 		return str_pad(($result+1), 3, "0", STR_PAD_LEFT);
     }
@@ -478,7 +468,7 @@ class Season extends BaseEntity  {
 		return $expense_data;
     }
     #determine all activities part of this timeline
-    function getTimeLineDetails(){
+    function getTimeLineDetails($ismobile = false){
     	$data_array = array();
     	$inputlines = $this->getAllInputDetails();
     	$i = 1;
@@ -500,6 +490,10 @@ class Season extends BaseEntity  {
     		$data_array[$i]['activityname'] = !isEmptyString($input->getActivityName()) ? $input->getActivityName() : "Season Inputs";
     		$data_array[$i]['url'] = $baseUrl."/season/inputview/id/".encode($input->getID());
     		$data_array[$i]['editurl'] = $baseUrl."/season/input/id/".encode($input->getID());
+    		if($ismobile){
+    			$data_array[$i]['url'] = $baseUrl."/mobile/viewseasonevent/stage/input/id/".encode($input->getID());
+    			$data_array[$i]['editurl'] = $baseUrl."/mobile/addseasonevent/stage/input/id/".encode($input->getID());
+    		}
     		$data_array[$i]['subtype'] = 1;
     		if($input->getType() == 2){
     			$data_array[$i]['subtype'] = 2;
@@ -526,6 +520,10 @@ class Season extends BaseEntity  {
     		$data_array[$i]['activityname'] = !isEmptyString($tillage->getActivityName()) ? $tillage->getActivityName() : "Tillage";
     		$data_array[$i]['url'] = $baseUrl."/season/tillageview/id/".encode($tillage->getID());
     		$data_array[$i]['editurl'] = $baseUrl."/season/tillage/id/".encode($tillage->getID());
+    		if($ismobile){
+    			$data_array[$i]['url'] = $baseUrl."/mobile/viewseasonevent/stage/tillage/id/".encode($tillage->getID());
+    			$data_array[$i]['editurl'] = $baseUrl."/mobile/addseasonevent/stage/tillage/id/".encode($tillage->getID());
+    		}
     		$data_array[$i]['uniqueid'] = 'type'.$data_array[$i]['type'].'_'.$data_array[$i]['id'];
     		$i++;
     	}
@@ -546,6 +544,10 @@ class Season extends BaseEntity  {
     		$data_array[$i]['activityname'] = !isEmptyString($plant->getActivityName()) ? $plant->getActivityName() : "Planting";
     		$data_array[$i]['url'] = $baseUrl."/season/plantview/id/".encode($plant->getID());
     		$data_array[$i]['editurl'] = $baseUrl."/season/plant/id/".encode($plant->getID());
+    		if($ismobile){
+    			$data_array[$i]['url'] = $baseUrl."/mobile/viewseasonevent/stage/plant/id/".encode($plant->getID());
+    			$data_array[$i]['editurl'] = $baseUrl."/mobile/addseasonevent/stage/plant/id/".encode($plant->getID());
+    		}
     		$data_array[$i]['uniqueid'] = 'type'.$data_array[$i]['type'].'_'.$data_array[$i]['id'];
     		$i++;
     	}
@@ -566,6 +568,10 @@ class Season extends BaseEntity  {
     		$data_array[$i]['activityname'] = !isEmptyString($treat->getActivityName()) ? $treat->getActivityName() : "Treatment";
     		$data_array[$i]['url'] = $baseUrl."/season/treatview/id/".encode($treat->getID());
     		$data_array[$i]['editurl'] = $baseUrl."/season/treat/id/".encode($treat->getID());
+    		if($ismobile){
+    			$data_array[$i]['url'] = $baseUrl."/mobile/viewseasonevent/stage/treat/id/".encode($treat->getID());
+    			$data_array[$i]['editurl'] = $baseUrl."/mobile/addseasonevent/stage/treat/id/".encode($treat->getID());
+    		}
     		$data_array[$i]['uniqueid'] = 'type'.$data_array[$i]['type'].'_'.$data_array[$i]['id'];
     		$i++;
     	}
@@ -586,6 +592,10 @@ class Season extends BaseEntity  {
     		$data_array[$i]['activityname'] = !isEmptyString($harvest->getActivityName()) ? $harvest->getActivityName() : "Harvesting";
     		$data_array[$i]['url'] = $baseUrl."/season/harvestview/id/".encode($harvest->getID());
     		$data_array[$i]['editurl'] = $baseUrl."/season/harvest/id/".encode($harvest->getID());
+    		if($ismobile){
+    			$data_array[$i]['url'] = $baseUrl."/mobile/viewseasonevent/stage/harvest/id/".encode($harvest->getID());
+    			$data_array[$i]['editurl'] = $baseUrl."/mobile/addseasonevent/stage/harvest/id/".encode($harvest->getID());
+    		}
     		$data_array[$i]['uniqueid'] = 'type'.$data_array[$i]['type'].'_'.$data_array[$i]['id'];
     		$i++;
     	}
@@ -607,6 +617,10 @@ class Season extends BaseEntity  {
     		$data_array[$i]['activityname'] = !isEmptyString($sale->getActivityName()) ? $sale->getActivityName() : "Season Sales";
     		$data_array[$i]['url'] = $baseUrl."/season/saleview/id/".encode($sale->getID());
     		$data_array[$i]['editurl'] = $baseUrl."/season/sale/id/".encode($sale->getID());
+    		if($ismobile){
+    			$data_array[$i]['url'] = $baseUrl."/mobile/viewseasonevent/stage/sale/id/".encode($sale->getID());
+    			$data_array[$i]['editurl'] = $baseUrl."/mobile/addseasonevent/stage/sale/id/".encode($sale->getID());
+    		}
     		$data_array[$i]['uniqueid'] = 'type'.$data_array[$i]['type'].'_'.$data_array[$i]['id'];
     		$i++;
     	}

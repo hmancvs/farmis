@@ -125,7 +125,7 @@
             <td><label class="control-label pull-left">New Primary Phone: <?php echo $this->translate("global_required_field_marker"); ?></label></td>
             <td>
             	<div class="input-prepend">
-                  <span class="add-on"><?php echo '+'.COUNTRY_CODE_UG; ?></span><input name="phone" id="phone" type="text" maxlength="10" class="span2" value="<?php echo getShortPhone($useraccount->getAltPhone()); ?>" />
+                  <span class="add-on"><?php echo '+'.getCurrencyCode(); ?></span><input name="phone" id="phone" type="text" maxlength="10" class="span2" value="<?php echo getShortPhone($useraccount->getPhone2()); ?>" />
                </div>
                <label class='lineblocked'><a href="javascript: void(0);" class="btn btn-primary btn-mini" id='check_phone_availability' title="Check Availability">Check</a></label><label class="pagedescription" style="font-size:10px;">e.g &nbsp; <span class="green">0772123456</span></label>
                 <div id="phone_error"></div><div id="phone_availability_result" style="margin-top:5px;"></div>

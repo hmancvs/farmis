@@ -5,14 +5,26 @@
 	$this->headMeta()->appendName('keywords', '');
 	$this->headMeta()->appendName('description', $title);
 	
-	$farmer = new Farmer();
-	$farmer->populate($farmerid);
+	$user = new UserAccount();
+	$user->populate($userid);
 	
-	$farms = $farmer->getFarms();
+	$country = 'UG';
+	$location_label = 'District';
+	$locations_label = 'Districts';
+	$countrycode = COUNTRY_CODE_UG;
+	$county_label = $this->translate("global_county_label");
+	$subcounty_label = $this->translate("global_subcounty_label");
 	
-	$farmid = $farmer->getFarm()->getID();
-	$farm = $farmer->getFarm();
-	$thefarmid = $farmid;
+	if(isKenya()){
+		$country = 'KE';
+		$session->setVar('country', 'ke');
+		$location_label = 'County';
+		$locations_label = 'Counties';
+		$countrycode = COUNTRY_CODE_KE;
+		$county_label = $this->translate("global_subcounty_label");
+		$subcounty_label = $this->translate("global_ward_label");
+	}
+	$countryreq = strtolower($request->country);
 	
 	$this->headTitle($title);
 ?>
@@ -25,34 +37,48 @@
                 <span class="marginleft0">
                     <ul class="sectionitems">
                     	<li>
-                            <a class="list" href="<?php echo $this->baseUrl('report/certificate'); ?>" title="Provisional Membership Certificate"><img src="<?php echo $this->baseUrl('images/benefit_report.png'); ?>" /><br /><h2>Provisional Membership <br />Certificate</h2></a>
+                            <a class="list" href="<?php echo $this->baseUrl('report/certificate'); ?>" title="Provisional Membership Certificate"><img src="<?php echo $this->baseUrl('images/benefit_report.png'); ?>" /><br /><h2>Provisional Membership <br />Certificates</h2></a>
                         </li>
-						<?php if(isAdmin() || isFarmGroupAdmin()){ ?>
+						<?php if(isAdmin() || isFarmGroupAdmin() || isManagement()){ ?>
                             <li>
                                 <a class="list" href="<?php echo $this->baseUrl('report/primarybaseline'); ?>" title="Farmers Profile Summary Report"><img src="<?php echo $this->baseUrl('images/benefit_report.png'); ?>" /><br /><h2>Farmers Profile <br />Summary Report</h2></a>
                             </li>
                         <?php } else { ?>
                             <li>
-                                <a class="list" href="<?php echo $this->baseUrl('report/primarybaseline/id/'.$farmerid); ?>" title="Farmis Baseline Summary Report"><img src="<?php echo $this->baseUrl('images/benefit_report.png'); ?>" /><br /><h2>Farmis Baseline <br />Summary Report</h2></a>
+                                <a class="list" href="<?php echo $this->baseUrl('report/primarybaseline/id/'.$userid); ?>" title="Farmis Baseline Summary Report"><img src="<?php echo $this->baseUrl('images/benefit_report.png'); ?>" /><br /><h2>Farmis Baseline <br />Summary Report</h2></a>
                             </li>
                         <?php } ?>
-                        <?php if(isAdmin() || isFarmGroupAdmin()){ ?>
+                        <?php if(isAdmin() || isFarmGroupAdmin() || isManagement()){ ?>
                             <li>
                                 <a class="list" href="<?php echo $this->baseUrl('report/baselinedetail'); ?>" title="Farmers Profile Detailed Report"><img src="<?php echo $this->baseUrl('images/benefit_report.png'); ?>" /><br /><h2>Farmers Profile <br />Detailed Report</h2></a>
                             </li>
 						<?php } else { ?>
                         	<li>
-                                <a class="list" href="<?php echo $this->baseUrl('report/baselinedetail/id/'.$farmerid); ?>" title="Farmis Baseline Detailed Report"><img src="<?php echo $this->baseUrl('images/benefit_report.png'); ?>" /><br /><h2>Farmis Baseline <br />Detailed Report</h2></a>
+                                <a class="list" href="<?php echo $this->baseUrl('report/baselinedetail/id/'.$userid); ?>" title="Farmis Baseline Detailed Report"><img src="<?php echo $this->baseUrl('images/benefit_report.png'); ?>" /><br /><h2>Farmis Baseline <br />Detailed Report</h2></a>
                             </li>
 						<?php } ?>
-                        <?php if(isAdmin() || isFarmGroupAdmin()){ ?>
+                        <?php if(isAdmin() || isFarmGroupAdmin() || isManagement()){ ?>
                             <li>
-                                <a class="list" href="<?php echo $this->baseUrl('report/allfarmers'); ?>" title="Farmers Bio Data Report"><img src="<?php echo $this->baseUrl('images/benefit_report.png'); ?>" /><br /><h2>All Farmers Data <br />Detailed Report</h2></a>
+                                <a class="list" href="<?php echo $this->baseUrl('report/allfarmers'); ?>" title="Farmers Bio Data Report"><img src="<?php echo $this->baseUrl('images/benefit_report.png'); ?>" /><br /><h2>Farmers Bio Data <br /> Report</h2></a>
+                            </li>
+                        <?php } ?>
+                        <?php if(isAdmin() || isManagement()){ ?>
+                            <li>
+                                <a class="list" href="<?php echo $this->baseUrl('report/dna'); ?>" title="DNA Aggregated Data Report"><img src="<?php echo $this->baseUrl('images/benefit_report.png'); ?>" /><br /><h2>DNA Profiling <br />Aggregated Report</h2></a>
+                            </li>
+                            <li>
+                                <a class="list" href="<?php echo $this->baseUrl('report/location'); ?>" title="<?php echo $location_label; ?> Aggregated Data Report"><img src="<?php echo $this->baseUrl('images/benefit_report.png'); ?>" /><br /><h2><?php echo $location_label; ?> Profiling <br />Aggregated Report</h2></a>
+                            </li>
+                            <li>
+                                <a class="list" href="<?php echo $this->baseUrl('report/crop'); ?>" title="Crop Utilisation Report"><img src="<?php echo $this->baseUrl('images/benefit_report.png'); ?>" /><br /><h2>Crop Profiling<br />Aggregated Report</h2></a>
+                            </li>
+                            <li>
+                                <a class="list" href="<?php echo $this->baseUrl('report/pia'); ?>" title="PIA Profiling Performance Report"><img src="<?php echo $this->baseUrl('images/benefit_report.png'); ?>" /><br /><h2>PIA Profiling<br />Performance Report</h2></a>
                             </li>
 						<?php } ?>
                         <?php if(isFarmer()){ ?>
                         <li>
-                            <a class="list" href="<?php echo $this->baseUrl("finance/statement/farmid/".$thefarmid); ?>" title="Profit and Loss Statement"><img src="<?php echo $this->baseUrl('images/topmenu_market.png'); ?>" /><br /><h2>Profit & Loss <br />Statement</h2></a>
+                            <a class="list" href="<?php echo $this->baseUrl("finance/statement/user/".$userid); ?>" title="Profit and Loss Statement"><img src="<?php echo $this->baseUrl('images/topmenu_market.png'); ?>" /><br /><h2>Profit & Loss <br />Statement</h2></a>
                         </li>
                         <li>
                             <a class="list" href="<?php echo $this->baseUrl("resource/allprices"); ?>" title="Market Prices"><img src="<?php echo $this->baseUrl('images/topmenu_market.png'); ?>" /><br /><h2>Current Market <br />Prices Report</h2></a>

@@ -8,7 +8,7 @@ class CommoditycategoryController extends SecureController {
 	 * @return String
 	 */
 	function getResourceForACL() {
-		return isLGMISAdmin() ? "Location Statistic" : "Commodity Category"; 
+		return  "Commodity Category"; 
 	}
 
 }

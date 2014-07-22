@@ -1,0 +1,131 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	// the usermaking the payment
+	$useraccount = new UserAccount();
+	$id = decode($request->id);
+	// $id = 13;
+	$user->populate($id);
+	// debugMessage($user->toArray());	
+	
+	$hasid = false;
+	$mobileactivate = false;
+	if(!isEmptyString($id)){
+		$hasid = true;
+		if ($this->result) {
+			$title = $this->translate("useraccount_pagetitle_activation_success"); 
+			$this->headTitle($title);
+		} else {
+			$title = $this->translate("useraccount_pagetitle_activation_failure"); 
+			$this->headTitle($title);
+		}
+	} else {
+		$mobileactivate = true;
+		$title = "Activate Account"; 
+		$this->headTitle($title);
+	}
+	// $this->result = true;
+	
+?>
+<?php require APPLICATION_PATH."/views/scripts/mobile/mobileincludes.phtml"; ?>
+<script>
+	$(document).ready(function() {
+		// define the validation rules
+		$("#activateform").validate({		
+			rules: {
+				phone: {
+					required: true, 					
+					validnumber: true,
+					maxlength: 10,
+					minlength: 10,
+					validate_ug: true
+				},
+				actkey: {
+					required: true,
+					maxlength: 6,
+					minlength: 6		
+				}
+			}, 
+			// the messages for each of the fields being validated
+			messages: {	
+				phone: {
+					required: "<?php echo $this->translate("useraccount_phonenumber_error"); ?>", 					
+					maxlength: "Phone Number must have 10 Digits",
+					minlength: "Phone Number must have 10 Digits",
+					validate_ug: "<?php echo $this->translate("globale_phonenumber_format"); ?>"
+				},
+				actkey: {
+					required: "Please enter the activation code",
+					maxlength: "Code must have 6 Characters",
+					minlength: "Code must have 6 Characters"
+				}
+			},
+			// custom error positions
+			errorPlacement: function(error, element) {
+				switch(element.attr("name")){					
+					default:
+						error.appendTo("#"+element.attr("name")+"_error")
+						break;
+				}			
+			}
+		});
+		
+		// add the validation for wholesale price to be less than retail price
+		$.validator.addMethod("validnumber", function(value, element, params) { 
+			if (IsValidAmount(value)) {
+				return true; 
+			}
+			return false;        
+		}, "Please enter a valid Phone Number");
+		$.validator.addMethod("validate_ug", function(value, element, params) { 
+			if(!isUgNumber(value)) {
+				return false; 
+			}
+			return true;        
+		}, "<?php echo $this->translate("globale_phonenumber_format"); ?>");
+	});
+</script>
+<body>
+<div class="container-fluid viewpage">
+  <div class="row-fluid">
+   <h4><?php echo $title; ?></h4>
+  </div>
+  <div class="row-fluid">
+      <form id="profileform-personal" class="form-horizontal">
+      	<div class="control-group" style="margin-bottom:0;">
+            <?php if($hasid){ ?>
+				<?php if($this->result){ ?>
+                	 Below are your unique identification credentials. Please note them down or in future visit your profile for more details:<br><br />
+                    <div class="control-group">
+                        <label class="control-label controlright">Email Address:<br /><span class="pagedescription">(used to login)</span></label>
+                        <div class="controls"><?php echo $user->getEmail(); ?></div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label controlright">Username<br /><span class="pagedescription">(used to login)</span>:</label>
+                        <div class="controls"><?php echo $user->getUsername(); ?></div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label controlright">Phone Number:<br /><span class="pagedescription">(used to login)</span></label>
+                        <div class="controls"><?php echo $user->getFormattedPhone(); ?></div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label controlright span3">Farmer Identification Number (FIN):</label>
+                        <div class="controls"><b><?php echo $user->getRefNo(); ?></b></div>
+                    </div>
+                    <div class="control-group">
+                        You can now click button below to login using either your email, username or phone.<br /><br />
+                        <a class="positiveaction btn btn-primary" href="<?php echo $this->baseUrl("mobile/logout")?>"><i class="icon-lock icon-white"></i> Login</a>
+                    </div>
+                <?php } else { ?>
+                	<div class="alert alert-error" style="height:auto; min-height:30px;"><?php echo $this->message; ?></div>
+                <?php } ?>
+           	<?php } ?>
+        </div>
+      </form>
+  </div>
+</div>
+</body>
+</html>
+<?php
+	require_once APPLICATION_PATH.'/includes/footer.php';
+?>

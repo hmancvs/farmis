@@ -14,89 +14,74 @@
                         <table class="table"> 
                         	<tr>		                    
                                 <td>
-                                	<?php if(isAdmin() || $farmerid == $farmgroup->getManagerID()){ ?>
-                                        <a class="btn btn-primary btn-mini addpopup" style="margin-bottom: 10px;" href="<?php echo $this->baseUrl('farmer/add/pgc/true/farmgroupid/'.$farmgroup->getID()); ?>" rel="Add Farmer | <?php echo $farmgroup->getName(); ?>" title="Add Farmer" id="addfarmer" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmgroup/view/id/'.encode($farmgroup->getID()).'/tab/farmers'); ?>" action="<?php echo $this->baseUrl("farmer/create"); ?>"><i class="icon-plus icon-white"></i> Add Farmer</a>
+                                	<?php if(isAdmin() || $userid == $farmgroup->getManagerID()){ ?>
+                                        <a class="btn btn-primary btn-mini addpopup" style="margin-bottom: 10px;" href="<?php echo $this->baseUrl('profile/add/pgc/true/farmgroupid/'.$farmgroup->getID().'/country/'.$country); ?>" rel="Add Farmer | <?php echo $farmgroup->getName(); ?>" title="Add Farmer" id="addfarmer" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmgroup/view/id/'.encode($farmgroup->getID()).'/tab/farmers'); ?>" action="<?php echo $this->baseUrl("profile/create"); ?>"><i class="icon-plus icon-white"></i> Add Farmer</a>
                                         <a class="btn btn-primary btn-mini" style="margin-bottom: 10px;" href="<?php echo $this->baseUrl('report/allfarmers/farmgroupid/'.$farmgroup->getID()); ?>" title="View Report"><i class="icon-list icon-white"></i> Bio Data Report</a>
                                         
                                     <?php } ?>
                                     
                                 	<label class="labeldescription" style="margin-top:15px;"><?php echo $total_farmers == 0 ? "There are currently no farmers for ".$farmgroup->getName(): "There are currently ".$total_farmers." farmers in ".$farmgroup->getName(); ?></label>
-                                    <?php if($farmer_count > 0){ ?>
+                                    <?php if($user_count > 0){ ?>
                                     <div style="position:absolute; right:30px; top:20px;">
-										<?php echo "Viewing ".$farmer_count." out of ".$total_farmers." farmers "; ?>
-                                        <a class="btn btn-primary btn-mini" style="" href="<?php echo $this->baseUrl('farmer/list/farmgroupid/'.$farmgroup->getID()); ?>" title="View Report"><i class="icon-list icon-white"></i> List all</a>
+										<?php echo "Viewing ".$user_count." out of ".$total_farmers." farmers "; ?>
+                                        <a class="btn btn-primary btn-mini" style="" href="<?php echo $this->baseUrl('profile/list/farmgroupid/'.$farmgroup->getID()); ?>" title="View Report"><i class="icon-list icon-white"></i> List all</a>
                                     </div>
                                     <?php } ?>
                                     <ul id="datalist" class="nav nav-stacked">
 									<?php 				  		
-                                        foreach($thefarmers as $farmer){
-                                            $id = $farmer->getID();	
-                                            $name = $farmer->getName();
-                                            $firstname = $farmer->getFirstName();
+                                        foreach($thefarmers as $user){
+                                            $id = $user->getID();	
+                                            $name = $user->getName();
+                                            $firstname = $user->getFirstName();
 											$haspic = false;
-											if($farmer->hasProfileImage()){
+											if($user->hasProfileImage()){
 												$haspic = true;
 											}
-											$email = $farmer->getUser()->getEmail();
-											$username = $farmer->getUser()->getUserName();
+											$email = $user->getEmail();
+											$username = $user->getUserName();
 											if(isEmptyString($email)){
 												$email = '--';
 											}
 											if(isEmptyString($username)){
 												$username = '--';
 											}	
+											
+											$refno = $user->getRegNo();
+											if($user->isKenyan()){
+												$refno = $user->getRefNo();
+											}
                                     ?>
                                     <li>
-                                        <a class="btn btn-primary btn-mini" style="position:absolute; top:10px; right:25px;" href="<?php echo $this->baseUrl("farmer/view/id/".encode($farmer->getID())); ?>">View Profile</a>
+                                        <a class="btn btn-primary btn-mini" style="position:absolute; top:10px; right:25px;" href="<?php echo $this->baseUrl("profile/view/id/".encode($user->getID())); ?>">View Profile</a>
                                         <table class="table noborder margin0">
                                             <tr>                                
                                                 <td width="75">
                                                     <div id="thumbinfo" class=""> 
-                                                        <a href="<?php echo $this->baseUrl("farmer/view/id/".encode($farmer->getID())); ?>" title="<?php echo $this->translate("person_button_view_profile"); ?>"><img src="<?php echo $farmer->getUser()->getThumbnailPicturePath(); ?>" /></a>
+                                                        <a href="<?php echo $this->baseUrl("profile/view/id/".encode($user->getID())); ?>" title="<?php echo $this->translate("person_button_view_profile"); ?>"><img src="<?php echo $user->getThumbnailPicturePath(); ?>" /></a>
                                                     </div>
                                                 </td>
                                                 <td class="padding0">                                                    
                                                     <table class="itemlist table noborder margin0">
                                                         <tr>
                                                         	<td colspan="4">
-                                                            	<h2><a href="<?php echo $this->baseUrl("farmer/view/id/".encode($farmer->getID())); ?>" title="<?php echo "View ".$farmer->getFirstName()."'s Profile"; ?>"><?php echo $farmer->getName(); ?></a></h2>
+                                                            	<h2><a href="<?php echo $this->baseUrl("profile/view/id/".encode($user->getID())); ?>" title="<?php echo "View ".$user->getFirstName()."'s Profile"; ?>"><?php echo $user->getName(); ?></a></h2>
                                                             </td>
                                                         </tr>
                                                         <tr>
                                                             <td style="width:65px;"><label class="control-label">FIN#: </label></td>
-                                                            <td style="width:140px;" class="nowrapping"><span><?php echo $farmer->getRegNo(); ?></span></td>
+                                                            <td style="width:140px;" class="nowrapping"><span><?php echo $refno; ?></span></td>
                                                             <td style="width:60px;"><label class="control-label">Phone: </label></td>
-                                                            <td class="nowrapping"><span><?php echo isEmptyString($farmer->getUser()->getPhone()) ? '--' : $farmer->getUser()->getPhone(); ?></span></td>
+                                                            <td class="nowrapping"><span><?php echo isEmptyString($user->getPhone()) ? '--' : getShortPhone($user->getPhone()); ?></span></td>
                                                         </tr>
                                                         <tr>
-                                                            <td><label class="control-label">District:</label></td>
-                                                            <td class="nowrapping"><span><?php echo isEmptyString($farmer->getUser()->getLocationID()) ? '--' : $farmer->getUser()->getAddress()->getDistrict()->getName(); ?></span></td>
+                                                            <td><label class="control-label"><?php echo $location_label; ?>:</label></td>
+                                                            <td class="nowrapping"><span><?php echo isEmptyString($user->getLocationID()) ? '--' : $user->getLocation()->getName(); ?></span></td>
                                                             <td><label class="control-label">Email: </label></td>
-                                                            <td class="nowrapping"><span><?php // echo $email; ?></span>
-                                                            	<?php if(isFarmGroupAdmin() || isAdmin()){ ?>
-																	<?php if($farmer->getUser()->isUserActive()){ ?>
-                                                                        <?php echo isEmptyString($farmer->getUser()->getEmail()) ? '--' : $farmer->getUser()->getEmail(); ?>
-                                                                    <?php } else { ?>
-                                                                            <span class="inv_before" id="inv_before_<?php echo $id; ?>" style="margin-top:2px;">
-                                                                                <input type="text" name="email_<?php echo $id; ?>" id="email_<?php echo $id; ?>" placeholder="enter email" title="Invite <?php echo $farmer->getFirstName(); ?> to join FARMIS" value="<?php echo $farmer->getUser()->getEmail(); ?>" class="invite invite_<?php echo $id; ?>" style="width:200px;" />&nbsp;
-                                                                                <a href="javascript:doNothing();" class="btn btn-primary btn-mini invitetrigger" style="margin-top:-5px;" id="invite_<?php echo $id; ?>" title="Invite <?php echo $farmer->getFirstName(); ?> to join <?php echo $this->translate('appname'); ?>"><i class="icon-envelope icon-white"></i> Invite</a>
-                                                                                <label class="hide invite_<?php echo $id; ?>" title="<?php echo $id; ?>"><?php echo $id; ?></label>                            
-                                                                                <div id="invite_<?php echo $id; ?>_error" style="margin-top:4px;"></div>
-                                                                            </span>
-                                                                            <span class="inv_after" id="inv_after_<?php echo $id; ?>">
-                                                                                <a id="loading_<?php echo $id; ?>" class="hidden"><img style="margin-left:0" src="<?php echo $this->baseUrl('images/loader.gif'); ?>" /></a>
-                                                                            </span>
-                                                                        
-                                                                        <?php if($farmer->getIsInvited() == 1 && $farmer->getHasAcceptedInvite() == 0){ ?>
-                                                                            <span class="pagedescription alert alert-info" style="display:block; text-align:center; padding:2px; margin-top:5px; margin-bottom:0;">Farmer invited. Confirmation pending</span>
-                                                                        <?php } ?>
-                                                                    <?php } ?>
-                                                                <?php } ?>
-                                                            </td>
+                                                            <td class="nowrapping"><span><?php echo $user->getEmail(); ?></span></td>
                                                         </tr>
                                                         <tr>
                                                             <td><label class="control-label">Subscribed:</label></td>
-                                                            <td class="nowrapping"><span><?php echo $farmer->isSubscribed() ? 'Yes' : 'No'; ?></span></td>
+                                                            <td class="nowrapping"><span><?php echo $user->isSubscribed() ? 'Yes' : 'No'; ?></span></td>
                                                             <td><label class="control-label">Username:</label></td>
                                                             <td class="nowrapping"><span><?php echo $username; ?></span></td>
                                                         </tr>
@@ -134,7 +119,7 @@
                                             <?php if(isAdmin()){ ?>
                                                 <a href="<?php echo $this->baseUrl('farmgroup/add/pgc/true/subgroupid/'.$farmgroup->getID()); ?>" class="addpopup btn btn-primary btn-mini" title="New Sub Group" rel="New Sub Group" id="newsubgroup" formtitle="indexform" successurl="<?php echo $this->baseUrl('farmgroup/view/id/'.encode($farmgroup->getID())."/tab/subgroups"); ?>" action="<?php echo $this->baseUrl("farmgroup/create"); ?>"><i class="icon-plus icon-white"></i> New</a>
                                             <?php } ?>
-                                            <label class="labeldescription" style="margin-top:10px;"><?php echo $farmer_count == 0 ? "There are currently no sub groups for ".$farmgroup->getName(): "Viewing ".$farmer_count." sub groups(s)"; ?></label>
+                                            <label class="labeldescription" style="margin-top:10px;"><?php echo $user_count == 0 ? "There are currently no sub groups for ".$farmgroup->getName(): "Viewing ".$user_count." sub groups(s)"; ?></label>
                                             <ul id="datalist" class="nav nav-stacked">
                                             <?php 				  		
                                                 foreach($subgroups as $group){
@@ -160,7 +145,7 @@
                                                                 </tr>
                                                                 <tr>
                                                                     <td style="width:100px;"><label class="control-label">District:</label></td>
-                                                                    <td style="width:120px;" class="nowrapping"><span><?php echo isEmptyString($group->getAddress()->getDistrictID()) ? '--' : $farmgroup->getAddress()->getDistrict()->getName(); ?></span></td>
+                                                                    <td style="width:120px;" class="nowrapping"><span><?php echo isEmptyString($group->getDistrictID()) ? '--' : $farmgroup->getDistrict()->getName(); ?></span></td>
                                                                     <td style="width:100px;"><label class="control-label">Reg No#:</label></td>
                                                                     <td class="nowrapping"><span><?php echo isEmptyString($group->getRegNo()) ? '--' : $group->getRegNo(); ?></span></td>
                                                                 </tr>
@@ -194,25 +179,6 @@
                 </form> 
             </div>
         <?php } ?>
-        <div id="resources">
-        	<h2>Resources</h2>
-            <form id="profileform-resources" class="form-horizontal resources">
-            <?php if($request->tab == 'resources'){ ?>
-        	<div class="row" style="margin-left:0px;">
-                <?php if(!isEmptyString($session->getVar(SUCCESS_MESSAGE)) ){ ?>
-                    <div class="alert alert-success"><a class="close" data-dismiss="alert">×</a><?php echo $session->getVar(SUCCESS_MESSAGE); ?></div>
-                <?php } ?>
-                <span class="marginleft0 span9" style="width:98%;">
-                    <div class="well row marginleft0" style="min-height:60px; padding-left:10px;">                        
-                        <table class="table"> 
-                        
-                        </table>
-                    </div>
-                </span>
-            </div>
-            <?php } ?>
-            </form>    
-        </div>
         <div id="subscription">
         	<h2>Payment History</h2>
             <form id="profileform-subscription" class="form-horizontal subscription">

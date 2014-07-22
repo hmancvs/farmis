@@ -1,0 +1,17 @@
+<?php
+	require_once APPLICATION_PATH.'/includes/header.php';
+	
+	$controller = $request->getControllerName();
+?>
+<?php if($controller == 'season'){ ?>
+	<?php  echo $calendar.$inventory.$finance.$subscription.$accsettings; ?>
+<?php } ?>
+<?php if($controller == 'inventory'){ ?>
+	<?php	echo $finance.$subscription.$accsettings; ?>
+<?php } ?>
+<?php if($controller == 'finance'){ ?>
+	<?php echo $subscription.$accsettings; ?>
+<?php } ?>
+<?php if($controller == 'payment'){ ?>
+	<?php echo $accsettings; ?>
+<?php } ?>
